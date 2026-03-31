@@ -4,7 +4,7 @@
 import { prisma } from '@/lib/prisma';
 import { runLayoutProcessor } from '@/lib/pipelines/processors/layout';
 import { runCompareProcessor } from '@/lib/pipelines/processors/compare';
-import { runLLMProcessor } from '@/lib/pipelines/processors/llm';
+import { runExternalApiProcessor } from '@/lib/pipelines/processors/external-api';
 
 export interface PipelineStep {
   processor: string;
@@ -92,94 +92,149 @@ export async function runPipeline(operationId: string): Promise<void> {
         },
       });
 
-      // Load processor from DB
-      const processor = await prisma.processor.findUnique({ where: { slug: step.processor } });
-      if (!processor) {
-        throw new Error(`Processor '${step.processor}' not found in database.`);
-      }
+      const variables = step.variables ?? {};
+      let ctx: ProcessorContext;
+      let result: ProcessorResult;
+      let stepOutputFormat = 'md';
 
-      // Look for Client Overrides
-      let systemPrompt = processor.systemPrompt;
-      let responseSchema = processor.responseSchema;
-      let maxOutputTokens = processor.maxOutputTokens;
-      let temperature = processor.temperature;
-      let modelOverride = processor.modelOverride;
-      let processorConfigStr = processor.processorConfig;
+      if (step.processor.startsWith('prebuilt-')) {
+        // --- 1. LOCAL / PREBUILT Processor Logic ---
+        const processor = await prisma.processor.findUnique({ where: { slug: step.processor } });
+        if (!processor) {
+          throw new Error(`Legacy Processor '${step.processor}' not found in database.`);
+        }
 
-      if (operation.apiKeyId) {
-        const override = await prisma.processorOverride.findUnique({
-          where: {
-            processorId_apiKeyId: {
-              processorId: processor.id,
-              apiKeyId: operation.apiKeyId,
+        let systemPrompt = processor.systemPrompt;
+        let responseSchema = processor.responseSchema;
+        let maxOutputTokens = processor.maxOutputTokens;
+        let temperature = processor.temperature;
+        let modelOverride = processor.modelOverride;
+        let processorConfigStr = processor.processorConfig;
+
+        if (operation.apiKeyId) {
+          const override = await prisma.processorOverride.findUnique({
+            where: {
+              processorId_apiKeyId: {
+                processorId: processor.id,
+                apiKeyId: operation.apiKeyId,
+              },
             },
-          },
-        });
+          });
+          if (override) {
+            systemPrompt = override.systemPrompt ?? systemPrompt;
+            responseSchema = override.responseSchema ?? responseSchema;
+            maxOutputTokens = override.maxOutputTokens ?? maxOutputTokens;
+            temperature = override.temperature ?? temperature;
+            modelOverride = override.modelOverride ?? modelOverride;
+            processorConfigStr = override.processorConfig ?? processorConfigStr;
+          }
+        }
 
-        if (override) {
-          systemPrompt = override.systemPrompt ?? systemPrompt;
-          responseSchema = override.responseSchema ?? responseSchema;
-          maxOutputTokens = override.maxOutputTokens ?? maxOutputTokens;
-          temperature = override.temperature ?? temperature;
-          modelOverride = override.modelOverride ?? modelOverride;
-          processorConfigStr = override.processorConfig ?? processorConfigStr;
-          console.log(`[Pipeline] Applied client override for processor '${step.processor}'`);
+        let resolvedPrompt = systemPrompt;
+        for (const [key, value] of Object.entries(variables)) {
+          resolvedPrompt = resolvedPrompt.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value));
+        }
+        if (currentText) {
+          resolvedPrompt = resolvedPrompt.replace(/\{\{input_content\}\}/g, currentText);
+        }
+
+        ctx = {
+          operationId,
+          stepIndex: i,
+          totalSteps: pipeline.length,
+          inputFilePath: i === 0 ? (operation.inputPath ?? undefined) : undefined,
+          inputText: currentText,
+          sourceFilePath: operation.sourceFilePath ?? undefined,
+          targetFilePath: operation.targetFilePath ?? undefined,
+          sourceFileName: operation.sourceFileName ?? undefined,
+          targetFileName: operation.targetFileName ?? undefined,
+          fileName: operation.fileName ?? undefined,
+          processorSlug: processor.slug,
+          systemPrompt: resolvedPrompt,
+          responseSchema: responseSchema,
+          variables,
+          outputFormat: operation.outputFormat,
+          processorConfig: processorConfigStr ? JSON.parse(processorConfigStr) : {},
+          maxOutputTokens: maxOutputTokens,
+          temperature: temperature,
+          modelOverride: modelOverride,
+        };
+
+        if (processor.slug === 'prebuilt-layout') {
+          result = await runLayoutProcessor(ctx);
+        } else if (processor.slug === 'prebuilt-compare') {
+          result = await runCompareProcessor(ctx);
+        } else {
+          throw new Error(`Unsupported prebuilt processor: ${processor.slug}`);
+        }
+        stepOutputFormat = processor.outputFormats.split(',')[0];
+
+      } else {
+        // --- 2. EXTERNAL API CONNECTOR Logic ---
+        const connection = await prisma.externalApiConnection.findUnique({
+          where: { slug: step.processor },
+        });
+        if (!connection) {
+          throw new Error(`ExternalApiConnection '${step.processor}' not found.`);
+        }
+        if (connection.state !== 'ENABLED') {
+          throw new Error(`ExternalApiConnection '${connection.slug}' is currently DISABLED.`);
+        }
+
+        const extOverride = operation.apiKeyId
+          ? await prisma.externalApiOverride.findUnique({
+              where: {
+                connectionId_apiKeyId: {
+                  connectionId: connection.id,
+                  apiKeyId: operation.apiKeyId,
+                },
+              },
+            })
+          : null;
+
+        if (extOverride) {
+          console.log(`[Pipeline] Applied ExternalApiOverride for '${connection.slug}' (apiKeyId: ${operation.apiKeyId})`);
+        }
+
+        // Inject content if chained
+        if (currentText) {
+          variables['input_content'] = currentText;
+        }
+
+        ctx = {
+          operationId,
+          stepIndex: i,
+          totalSteps: pipeline.length,
+          inputFilePath: i === 0 ? (operation.inputPath ?? undefined) : undefined,
+          inputText: currentText,
+          sourceFilePath: operation.sourceFilePath ?? undefined,
+          targetFilePath: operation.targetFilePath ?? undefined,
+          sourceFileName: operation.sourceFileName ?? undefined,
+          targetFileName: operation.targetFileName ?? undefined,
+          fileName: operation.fileName ?? undefined,
+          processorSlug: connection.slug,
+          systemPrompt: '', // Handled directly inside runExternalApiProcessor via connection.defaultPrompt
+          variables,
+          outputFormat: operation.outputFormat,
+          processorConfig: {},
+          maxOutputTokens: 4096,
+          temperature: 0.1,
+        };
+
+        result = await runExternalApiProcessor(ctx, connection, extOverride);
+        
+        // Infer basic output format from connection slug
+        if (connection.slug.includes('-extractor') || connection.slug.includes('-classifier') || connection.slug.includes('-fact-')) {
+          stepOutputFormat = 'json';
+        } else {
+          stepOutputFormat = 'md';
         }
       }
 
-      // Build context
-      const variables = step.variables ?? {};
-      const procConfig = processorConfigStr ? JSON.parse(processorConfigStr) : {};
-
-      // Interpolate variables into system prompt
-      let resolvedPrompt = systemPrompt;
-      for (const [key, value] of Object.entries(variables)) {
-        resolvedPrompt = resolvedPrompt.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value));
-      }
-      // Replace {{input_content}} with text from previous step
-      if (currentText) {
-        resolvedPrompt = resolvedPrompt.replace(/\{\{input_content\}\}/g, currentText);
-      }
-
-      const ctx: ProcessorContext = {
-        operationId,
-        stepIndex: i,
-        totalSteps: pipeline.length,
-        inputFilePath: i === 0 ? (operation.inputPath ?? undefined) : undefined,
-        inputText: currentText,
-        sourceFilePath: operation.sourceFilePath ?? undefined,
-        targetFilePath: operation.targetFilePath ?? undefined,
-        sourceFileName: operation.sourceFileName ?? undefined,
-        targetFileName: operation.targetFileName ?? undefined,
-        fileName: operation.fileName ?? undefined,
-        processorSlug: processor.slug,
-        systemPrompt: resolvedPrompt,
-        responseSchema: responseSchema,
-        variables,
-        outputFormat: operation.outputFormat,
-        processorConfig: procConfig,
-        maxOutputTokens: maxOutputTokens,
-        temperature: temperature,
-        modelOverride: modelOverride,
-      };
-
-      // Route to appropriate processor implementation
-      let result: ProcessorResult;
-
-      if (processor.slug === 'prebuilt-layout') {
-        result = await runLayoutProcessor(ctx);
-      } else if (processor.slug === 'prebuilt-compare') {
-        result = await runCompareProcessor(ctx);
-      } else {
-        // All other processors use the generic LLM processor
-        result = await runLLMProcessor(ctx);
-      }
-
       // Record step result
-      const stepOutputFormat = processor.outputFormats.split(',')[0];
       stepsResult.push({
         step: i,
-        processor: processor.slug,
+        processor: ctx.processorSlug,
         output_format: stepOutputFormat,
         content_preview: result.content ? result.content.substring(0, 2000) : null,
         extracted_data: result.extractedData,
@@ -192,7 +247,7 @@ export async function runPipeline(operationId: string): Promise<void> {
       totalPages += result.pagesProcessed;
       lastModelUsed = result.modelUsed;
       usageBreakdown.push({
-        processor: processor.slug,
+        processor: ctx.processorSlug,
         input_tokens: result.inputTokens,
         output_tokens: result.outputTokens,
         cost_usd: result.costUsd,

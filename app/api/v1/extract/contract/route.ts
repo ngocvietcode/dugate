@@ -2,9 +2,8 @@
 // POST /api/v1/extract/contract — Recipe: Extract clauses from legal contracts
 // Shortcut for pipeline: [{ processor: "prebuilt-contract", variables: { clauses_focus } }]
 
-import { NextRequest, NextResponse } from 'next/server';
-import { submitPipelineJob } from '@/lib/pipelines/submit';
-import { formatOperationResponse } from '@/lib/pipelines/format';
+import { NextRequest } from 'next/server';
+import { runEndpoint } from '@/lib/endpoints/runner';
 
 /**
  * @swagger
@@ -44,40 +43,5 @@ import { formatOperationResponse } from '@/lib/pipelines/format';
  *         description: Missing file
  */
 export async function POST(req: NextRequest) {
-  try {
-    const form = await req.formData();
-
-    const clausesFocusRaw = form.get('clauses_focus') as string | null;
-    const clausesFocus = clausesFocusRaw
-      ? clausesFocusRaw.split(',').map(s => s.trim()).filter(Boolean)
-      : undefined;
-
-    const result = await submitPipelineJob({
-      pipeline: [{
-        processor: 'prebuilt-contract',
-        variables: clausesFocus ? { clauses_focus: clausesFocus } : {},
-      }],
-      file:         form.get('file') as File | null,
-      outputFormat: 'json',
-      webhookUrl:   form.get('webhook_url') as string | null,
-      idempotencyKey: req.headers.get('idempotency-key') ?? undefined,
-      apiKeyId: req.headers.get('x-api-key-id') ?? undefined,
-    });
-
-    if (!result.ok) return result.errorResponse;
-
-    return NextResponse.json(formatOperationResponse(result.operation), {
-      status: result.isIdempotent ? 200 : 202,
-      headers: result.isIdempotent
-        ? {}
-        : { 'Operation-Location': `/api/v1/operations/${result.operation.id}` },
-    });
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.error('[POST /api/v1/extract/contract] Error:', msg);
-    return NextResponse.json(
-      { type: 'https://dugate.vn/errors/internal', title: 'Internal Error', status: 500, detail: msg },
-      { status: 500 },
-    );
-  }
+  return runEndpoint('extract-contract', req);
 }

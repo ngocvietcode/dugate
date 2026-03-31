@@ -18,12 +18,12 @@ model Processor {
   id              String   @id @default(uuid())
   slug            String   @unique              // "prebuilt-layout"
   displayName     String                        // "Document Layout Extraction"
-  type            String                        // "PREBUILT" | "CUSTOM"
+  type            String                        // "PREBUILT" | "RECIPE" | "EXTERNAL_API"
   category        String                        // "extract" | "generate" | "analyze"
   description     String?  @db.Text
   state           String   @default("ENABLED")  // "ENABLED" | "DISABLED"
 
-  // AI Config — Server-side only, NEVER exposed to client
+  // AI Config — Server-side only (chỉ dùng cho PREBUILT/RECIPE)
   systemPrompt    String   @db.Text             // Template: "Dịch sang {{target_language}}..."
   responseSchema  String?  @db.Text             // JSON Schema → structured output
   maxOutputTokens Int      @default(4096)
@@ -43,6 +43,10 @@ model Processor {
   // Tenant scoping
   tenantApiKeyId  String?                       // null = prebuilt (global)
 
+  // External API connection (chỉ dùng khi type = EXTERNAL_API)
+  externalApiConnectionId String?
+  externalApiConnection   ExternalApiConnection? @relation(fields: [externalApiConnectionId], references: [id])
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -51,6 +55,7 @@ model Processor {
   @@index([slug])
   @@index([type, state])
   @@index([tenantApiKeyId])
+  @@index([externalApiConnectionId])
 }
 
 // ═══════════════════════════════════════════════
@@ -138,8 +143,10 @@ model ApiKey {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  operations    Operation[]
-  overrides     ProcessorOverride[]
+  operations          Operation[]
+  overrides           ProcessorOverride[]
+  externalApiOverrides ExternalApiOverride[]
+  profileEndpoints    ProfileEndpoint[]
 
   @@index([status])
 }
@@ -168,6 +175,105 @@ model ProcessorOverride {
 
   // Each API Key can have at most ONE override per processor
   @@unique([processorId, apiKeyId])
+  @@index([apiKeyId])
+}
+
+// ═══════════════════════════════════════════════
+// External AI Service — API Connection Registry
+// ═══════════════════════════════════════════════
+model ExternalApiConnection {
+  id              String   @id @default(uuid())
+  name            String                        // "VPBank ADK Invoice Extractor"
+  slug            String   @unique              // "ext-vpbank-adk"
+  description     String?  @db.Text
+
+  // Endpoint
+  endpointUrl     String   @db.Text             // Full URL (kèm query string nếu cần)
+  httpMethod      String   @default("POST")     // POST | PUT
+
+  // Authentication — Server-side only, NEVER expose to client
+  authType        String   @default("API_KEY_HEADER") // API_KEY_HEADER | BEARER | NONE
+  authKeyHeader   String   @default("x-api-key")     // Tên header xác thực
+  authSecret      String   @db.Text             // Plaintext secret
+
+  // Request format: multipart/form-data
+  promptFieldName String   @default("query")   // Tên field chứa prompt
+  fileFieldName   String   @default("files")   // Tên field chứa file upload
+
+  // Default prompt — client chỉ được override trường này
+  defaultPrompt   String   @db.Text
+
+  // Static form fields — cố định, client KHÔNG thể thay đổi
+  // JSON array: [{"key": "user_id", "value": "tritm13"}, ...]
+  staticFormFields String?  @db.Text
+
+  // Extra request headers (ngoài auth header)
+  // JSON object: {"accept": "application/json"}
+  extraHeaders    String?  @db.Text
+
+  // Dot-path để lấy text content từ response JSON
+  // VD: "data.response", "choices.0.message.content"
+  responseContentPath String?  @default("content")
+
+  // Settings
+  timeoutSec      Int      @default(60)
+  state           String   @default("ENABLED") // ENABLED | DISABLED
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  processors      Processor[]
+  overrides       ExternalApiOverride[]
+
+  @@index([slug])
+  @@index([state])
+}
+
+// ═══════════════════════════════════════════════
+// External API Override — Per-client Prompt Override
+// ═══════════════════════════════════════════════
+model ExternalApiOverride {
+  id              String   @id @default(uuid())
+  connectionId    String
+  apiKeyId        String
+
+  // Client chỉ được override prompt
+  // null = dùng defaultPrompt của connection
+  promptOverride  String?  @db.Text
+
+  connection      ExternalApiConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  apiKey          ApiKey                @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([connectionId, apiKeyId])
+  @@index([apiKeyId])
+  @@index([connectionId])
+}
+
+// ═══════════════════════════════════════════════
+// Profile Endpoint — Per-client Endpoint Configuration
+// ═══════════════════════════════════════════════
+model ProfileEndpoint {
+  id            String   @id @default(uuid())
+  apiKeyId      String
+  endpointSlug  String   // Khớp với key trong ENDPOINT_REGISTRY
+
+  enabled       Boolean  @default(true)
+
+  // Tham số mặc định, client có thể override khi gửi request
+  defaultParams String?  @db.Text
+
+  // Tham số riêng của Profile (Nghiệp vụ), block nếu client cố tình gửi
+  profileParams String?  @db.Text
+
+  apiKey        ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([apiKeyId, endpointSlug])
   @@index([apiKeyId])
 }
 

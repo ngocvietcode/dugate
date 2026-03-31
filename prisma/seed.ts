@@ -1,11 +1,13 @@
 // prisma/seed.ts
-// Seed 10 prebuilt processors for Dugate Document AI
+// Master Seed Script for Dugate Document AI Production
 
 import { PrismaClient } from '@prisma/client';
+import * as crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
 const PDF_DOCX_MIMES = 'application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const defaultEndpointUrl = 'http://localhost:8000/v1/external-proxy/completions';
 
 const PREBUILT_PROCESSORS = [
   {
@@ -22,150 +24,6 @@ const PREBUILT_PROCESSORS = [
     canBeFirstStep: true,
     canBeChainStep: false,
     processorConfig: JSON.stringify({ docxMode: 'ai', docxFormat: 'html', compressLevel: 'ebook' }),
-  },
-  {
-    slug: 'prebuilt-invoice',
-    displayName: 'Bóc tách dữ liệu Hóa đơn',
-    type: 'PREBUILT',
-    category: 'extract',
-    description: 'Trích xuất dữ liệu từ hóa đơn VAT: số hóa đơn, người bán, tổng tiền, thuế.',
-    systemPrompt: 'Extract structured data from this invoice document. Return JSON with fields: invoice_no, date, seller_name, seller_tax_code, buyer_name, items (array of {description, quantity, unit_price, amount}), subtotal, vat_amount, total_amount, currency.',
-    responseSchema: JSON.stringify({
-      type: 'object',
-      properties: {
-        invoice_no: { type: 'string' },
-        date: { type: 'string' },
-        seller_name: { type: 'string' },
-        seller_tax_code: { type: 'string' },
-        buyer_name: { type: 'string' },
-        subtotal: { type: 'number' },
-        vat_amount: { type: 'number' },
-        total_amount: { type: 'number' },
-        currency: { type: 'string' },
-      },
-    }),
-    acceptedMimes: PDF_DOCX_MIMES,
-    outputFormats: 'json',
-    variablesSchema: null,
-    canBeFirstStep: true,
-    canBeChainStep: false,
-    processorConfig: JSON.stringify({ docxMode: 'ai', docxFormat: 'html', compressLevel: 'ebook' }),
-  },
-  {
-    slug: 'prebuilt-id-card',
-    displayName: 'Bóc tách CCCD/CMND',
-    type: 'PREBUILT',
-    category: 'extract',
-    description: 'Trích xuất thông tin từ ảnh/scan Căn cước công dân hoặc Chứng minh nhân dân.',
-    systemPrompt: 'Extract structured data from this identity card document. Return JSON with fields: full_name, date_of_birth, gender, nationality, place_of_origin, place_of_residence, id_number, expiry_date.',
-    responseSchema: JSON.stringify({
-      type: 'object',
-      properties: {
-        full_name: { type: 'string' },
-        date_of_birth: { type: 'string' },
-        gender: { type: 'string' },
-        id_number: { type: 'string' },
-        place_of_origin: { type: 'string' },
-        place_of_residence: { type: 'string' },
-      },
-    }),
-    acceptedMimes: PDF_DOCX_MIMES + ',image/jpeg,image/png',
-    outputFormats: 'json',
-    variablesSchema: null,
-    canBeFirstStep: true,
-    canBeChainStep: false,
-    processorConfig: null,
-  },
-  {
-    slug: 'prebuilt-contract',
-    displayName: 'Trích xuất điều khoản Hợp đồng',
-    type: 'PREBUILT',
-    category: 'extract',
-    description: 'Trích xuất các điều khoản, bên ký kết, thời hạn, và cam kết từ hợp đồng.',
-    systemPrompt: 'Extract structured data from this contract document. Return JSON with: parties (array), effective_date, expiry_date, key_clauses (array of {clause_number, title, summary}), penalties, total_value.',
-    responseSchema: JSON.stringify({
-      type: 'object',
-      properties: {
-        parties: { type: 'array', items: { type: 'string' } },
-        effective_date: { type: 'string' },
-        expiry_date: { type: 'string' },
-        key_clauses: { type: 'array', items: { type: 'object' } },
-        total_value: { type: 'string' },
-      },
-    }),
-    acceptedMimes: PDF_DOCX_MIMES,
-    outputFormats: 'json',
-    variablesSchema: JSON.stringify({
-      type: 'object',
-      properties: {
-        clauses_focus: { type: 'array', items: { type: 'string' }, description: 'Specific clauses to focus on' },
-      },
-    }),
-    canBeFirstStep: true,
-    canBeChainStep: false,
-    processorConfig: JSON.stringify({ docxMode: 'ai', docxFormat: 'html' }),
-  },
-  {
-    slug: 'prebuilt-summarize',
-    displayName: 'Tóm tắt tài liệu',
-    type: 'PREBUILT',
-    category: 'generate',
-    description: 'Tóm tắt nội dung tài liệu theo độ dài và phong cách yêu cầu.',
-    systemPrompt: 'Summarize the following document content in {{max_words}} words or less. Write in a clear, professional tone. Preserve key facts and figures.\n\n---\n\n{{input_content}}',
-    responseSchema: null,
-    acceptedMimes: PDF_DOCX_MIMES,
-    outputFormats: 'md',
-    variablesSchema: JSON.stringify({
-      type: 'object',
-      properties: {
-        max_words: { type: 'number', default: 500, description: 'Maximum words for summary' },
-      },
-    }),
-    canBeFirstStep: true,
-    canBeChainStep: true,
-    processorConfig: JSON.stringify({ docxMode: 'ai', docxFormat: 'html', compressLevel: 'ebook' })
-  },
-  {
-    slug: 'prebuilt-translate',
-    displayName: 'Dịch thuật tài liệu',
-    type: 'PREBUILT',
-    category: 'generate',
-    description: 'Dịch toàn bộ tài liệu sang ngôn ngữ đích, giữ nguyên cấu trúc Markdown.',
-    systemPrompt: 'Translate the following document to {{target_language}}. Tone: {{tone}}. CRITICAL: Preserve ALL Markdown formatting including headings, tables, lists, bold, italic, and code blocks exactly as they are. Only translate the text content.\n\n---\n\n{{input_content}}',
-    responseSchema: null,
-    acceptedMimes: PDF_DOCX_MIMES,
-    outputFormats: 'md,html',
-    variablesSchema: JSON.stringify({
-      type: 'object',
-      required: ['target_language'],
-      properties: {
-        target_language: { type: 'string', description: 'Target language', examples: ['Tiếng Việt', 'English', 'Japanese'] },
-        tone: { type: 'string', enum: ['formal', 'casual', 'technical'], default: 'formal' },
-      },
-    }),
-    canBeFirstStep: true,
-    canBeChainStep: true,
-    processorConfig: JSON.stringify({ docxMode: 'ai', docxFormat: 'html', compressLevel: 'ebook' })
-  },
-  {
-    slug: 'prebuilt-redact',
-    displayName: 'Che mờ thông tin nhạy cảm (PII)',
-    type: 'PREBUILT',
-    category: 'generate',
-    description: 'Nhận diện và thay thế thông tin cá nhân (tên, SĐT, email, số tài khoản) bằng placeholder.',
-    systemPrompt: 'Redact all personally identifiable information (PII) from the following document. Replace names with [TÊN], phone numbers with [SĐT], emails with [EMAIL], bank accounts with [TK], ID numbers with [CCCD]. Preserve ALL formatting.\n\n---\n\n{{input_content}}',
-    responseSchema: null,
-    acceptedMimes: PDF_DOCX_MIMES,
-    outputFormats: 'md',
-    variablesSchema: JSON.stringify({
-      type: 'object',
-      properties: {
-        pii_types: { type: 'array', items: { type: 'string' }, description: 'Specific PII types to redact' },
-      },
-    }),
-    canBeFirstStep: true,
-    canBeChainStep: true,
-    processorConfig: JSON.stringify({ docxMode: 'ai', docxFormat: 'html' }),
   },
   {
     slug: 'prebuilt-compare',
@@ -201,65 +59,46 @@ const PREBUILT_PROCESSORS = [
     canBeFirstStep: true,
     canBeChainStep: false,
     processorConfig: JSON.stringify({ docxMode: 'ai', docxFormat: 'html', compressLevel: 'ebook' }),
+  }
+];
+
+const CONNECTORS = [
+  {
+    slug: 'ext-claim-extractor',
+    name: 'Claim Extractor (Fact Check Step 1)',
+    description: 'Trích xuất các nhận định (claims), số liệu, và sự kiện quan trọng từ tài liệu.',
+    endpointUrl: defaultEndpointUrl,
+    httpMethod: 'POST',
+    promptFieldName: 'prompt',
+    fileFieldName: 'file',
+    authType: 'API_KEY_HEADER',
+    authKeyHeader: 'x-api-key',
+    authSecret: 'DUMMY_SECRET_KEY',
+    timeoutSec: 120,
+    state: 'ENABLED',
+    staticFormFields: JSON.stringify([{ key: 'model', value: 'gpt-4o' }, { key: 'temperature', value: '0.1' }]),
+    defaultPrompt: `Extract all factual claims, numeric figures, entities, dates, and key statements from the document. 
+Return ONLY a valid JSON list of strings representing these claims.
+
+---
+DOCUMENT CONTENT:
+{{input_content}}`,
   },
   {
-    slug: 'prebuilt-classify',
-    displayName: 'Phân loại tài liệu',
-    type: 'PREBUILT',
-    category: 'analyze',
-    description: 'Tự động phân loại tài liệu thuộc loại gì: Hóa đơn, Hợp đồng, CV, Báo cáo...',
-    systemPrompt: 'Classify this document. Return JSON with: document_type (one of: invoice, contract, resume, report, letter, form, regulation, other), confidence (0-1), language, page_count_estimate, key_topics (array of strings).',
-    responseSchema: JSON.stringify({
-      type: 'object',
-      properties: {
-        document_type: { type: 'string' },
-        confidence: { type: 'number' },
-        language: { type: 'string' },
-        key_topics: { type: 'array', items: { type: 'string' } },
-      },
-    }),
-    acceptedMimes: PDF_DOCX_MIMES,
-    outputFormats: 'json',
-    variablesSchema: JSON.stringify({
-      type: 'object',
-      properties: {
-        labels: { type: 'array', items: { type: 'string' }, description: 'Custom classification labels' },
-      },
-    }),
-    canBeFirstStep: true,
-    canBeChainStep: true,
-    processorConfig: JSON.stringify({ docxMode: 'ai', docxFormat: 'html' })
-  },
-  {
-    slug: 'dynamic-genai',
-    displayName: 'Dynamic GenAI (Admin Only)',
-    type: 'PREBUILT',
-    category: 'advanced',
-    description: 'Processor tự do cho phép truyền prompt tùy ý. Yêu cầu API Key quyền ADMIN.',
-    systemPrompt: '{{prompt}}',
-    responseSchema: null,
-    acceptedMimes: PDF_DOCX_MIMES,
-    outputFormats: 'md,html,json',
-    variablesSchema: JSON.stringify({
-      type: 'object',
-      required: ['prompt'],
-      properties: {
-        prompt: { type: 'string', description: 'Custom system prompt' },
-        response_schema: { type: 'object', description: 'JSON Schema for structured output' },
-      },
-    }),
-    canBeFirstStep: true,
-    canBeChainStep: true,
-    processorConfig: null
-  },
-  // ── Fact-check ───────────────────────────────────────────────────────────
-  {
-    slug: 'prebuilt-fact-check',
-    displayName: 'Kiểm tra & Đối chiếu Nội dung (Fact-Check)',
-    type: 'PREBUILT',
-    category: 'analyze',
-    description: 'Kiểm tra và đối chiếu nội dung tài liệu với dữ liệu tham chiếu theo các quy tắc nghiệp vụ tùy chỉnh. Trả về kết quả PASS/FAIL/WARNING cho từng điều khoản kiểm tra kèm giải thích chi tiết.',
-    systemPrompt: `You are a professional document compliance and fact-checking auditor.
+    slug: 'ext-fact-verifier',
+    name: 'Fact Verifier (Fact Check Step 2)',
+    description: 'Kiểm tra và đối chiếu các thông tin dựa trên dữ liệu tham chiếu (Reference Data).',
+    endpointUrl: defaultEndpointUrl,
+    httpMethod: 'POST',
+    promptFieldName: 'prompt',
+    fileFieldName: 'file',
+    authType: 'API_KEY_HEADER',
+    authKeyHeader: 'x-api-key',
+    authSecret: 'DUMMY_SECRET_KEY',
+    timeoutSec: 180,
+    state: 'ENABLED',
+    staticFormFields: JSON.stringify([{ key: 'model', value: 'gpt-4o' }, { key: 'temperature', value: '0.1' }]),
+    defaultPrompt: `You are a professional document compliance and fact-checking auditor.
 
 **TASK:** Verify the document content against the provided reference data, following the business rules specified below.
 
@@ -302,56 +141,198 @@ Return ONLY a valid JSON object with this exact structure (no markdown fences, n
   ],
   "discrepancies": ["<list of key discrepancies found, each as a concise statement>"]
 }`,
-    responseSchema: JSON.stringify({
-      type: 'object',
-      required: ['verdict', 'score', 'summary', 'checks'],
-      properties: {
-        verdict: { type: 'string', enum: ['PASS', 'FAIL', 'WARNING', 'INCONCLUSIVE'] },
-        score: { type: 'integer', minimum: 0, maximum: 100 },
-        summary: { type: 'string' },
-        checks: {
-          type: 'array',
-          items: {
-            type: 'object',
-            required: ['rule', 'status', 'explanation'],
-            properties: {
-              rule: { type: 'string' },
-              status: { type: 'string', enum: ['PASS', 'FAIL', 'WARNING', 'NOT_APPLICABLE'] },
-              document_value: { type: 'string' },
-              reference_value: { type: 'string' },
-              explanation: { type: 'string' },
-            },
-          },
-        },
-        discrepancies: { type: 'array', items: { type: 'string' } },
-      },
-    }),
-    acceptedMimes: PDF_DOCX_MIMES,
-    outputFormats: 'json',
-    variablesSchema: JSON.stringify({
-      type: 'object',
-      required: ['reference_text', 'check_prompt'],
-      properties: {
-        reference_text: {
-          type: 'string',
-          description: 'Dữ liệu tham chiếu để đối chiếu (văn bản thuần hoặc JSON string)',
-        },
-        check_prompt: {
-          type: 'string',
-          description: 'Quy tắc nghiệp vụ hoặc tiêu chí kiểm tra cụ thể',
-        },
-      },
-    }),
-    canBeFirstStep: true,
-    canBeChainStep: true,
-    processorConfig: JSON.stringify({ docxMode: 'ai', docxFormat: 'html', compressLevel: 'ebook' }),
   },
+  {
+    slug: 'ext-invoice-extractor',
+    name: 'Invoice Extractor',
+    description: 'Trích xuất dữ liệu từ hóa đơn VAT: số hóa đơn, người bán, tổng tiền, thuế.',
+    endpointUrl: defaultEndpointUrl,
+    httpMethod: 'POST',
+    promptFieldName: 'prompt',
+    fileFieldName: 'file',
+    authType: 'API_KEY_HEADER',
+    authKeyHeader: 'x-api-key',
+    authSecret: 'DUMMY_SECRET_KEY',
+    timeoutSec: 120,
+    state: 'ENABLED',
+    staticFormFields: JSON.stringify([{ key: 'model', value: 'gpt-4o' }, { key: 'response_format', value: 'json_object' }]),
+    defaultPrompt: `Extract structured data from this invoice document. Return strictly a JSON object matching this schema:
+{
+  "invoice_no": "string",
+  "date": "string",
+  "seller_name": "string",
+  "seller_tax_code": "string",
+  "buyer_name": "string",
+  "items": [{"description": "string", "quantity": "number", "unit_price": "number", "amount": "number"}],
+  "subtotal": "number",
+  "vat_amount": "number",
+  "total_amount": "number",
+  "currency": "string"
+}
+
+---
+BUSINESS RULES: {{business_rules}}
+---
+DOCUMENT CONTENT:
+{{input_content}}`,
+  },
+  {
+    slug: 'ext-contract-extractor',
+    name: 'Contract Extractor',
+    description: 'Trích xuất các điều khoản, bên ký kết, thời hạn, và cam kết từ hợp đồng.',
+    endpointUrl: defaultEndpointUrl,
+    httpMethod: 'POST',
+    promptFieldName: 'prompt',
+    fileFieldName: 'file',
+    authType: 'API_KEY_HEADER',
+    authKeyHeader: 'x-api-key',
+    authSecret: 'DUMMY_SECRET_KEY',
+    timeoutSec: 180,
+    state: 'ENABLED',
+    staticFormFields: JSON.stringify([{ key: 'model', value: 'gpt-4o' }, { key: 'response_format', value: 'json_object' }]),
+    defaultPrompt: `Extract structured data from this contract document. Return strictly a JSON with:
+{
+  "parties": ["string"],
+  "effective_date": "string",
+  "expiry_date": "string",
+  "key_clauses": [{"clause_number": "string", "title": "string", "summary": "string"}],
+  "total_value": "string"
+}
+
+---
+BUSINESS RULES: {{business_rules}}
+---
+DOCUMENT CONTENT:
+{{input_content}}`,
+  },
+  {
+    slug: 'ext-id-card-extractor',
+    name: 'ID Card Extractor',
+    description: 'Trích xuất thông tự ảnh/scan Căn cước công dân hoặc Chứng minh nhân dân.',
+    endpointUrl: defaultEndpointUrl,
+    httpMethod: 'POST',
+    promptFieldName: 'prompt',
+    fileFieldName: 'file',
+    authType: 'API_KEY_HEADER',
+    authKeyHeader: 'x-api-key',
+    authSecret: 'DUMMY_SECRET_KEY',
+    timeoutSec: 100,
+    state: 'ENABLED',
+    staticFormFields: JSON.stringify([{ key: 'model', value: 'gpt-4o' }, { key: 'response_format', value: 'json_object' }]),
+    defaultPrompt: `Extract structured data from this identity card document. Return JSON with fields:
+{
+  "full_name": "string",
+  "date_of_birth": "string",
+  "gender": "string",
+  "nationality": "string",
+  "place_of_origin": "string",
+  "place_of_residence": "string",
+  "id_number": "string",
+  "expiry_date": "string"
+}
+
+---
+BUSINESS RULES: {{business_rules}}
+---
+DOCUMENT CONTENT:
+{{input_content}}`,
+  },
+  {
+    slug: 'ext-document-classifier',
+    name: 'Document Classifier',
+    description: 'Tự động phân loại tài liệu thuộc loại gì: Hóa đơn, Hợp đồng, CV, Báo cáo...',
+    endpointUrl: defaultEndpointUrl,
+    httpMethod: 'POST',
+    promptFieldName: 'prompt',
+    fileFieldName: 'file',
+    authType: 'API_KEY_HEADER',
+    authKeyHeader: 'x-api-key',
+    authSecret: 'DUMMY_SECRET_KEY',
+    timeoutSec: 60,
+    state: 'ENABLED',
+    staticFormFields: JSON.stringify([{ key: 'model', value: 'gpt-4o-mini' }, { key: 'response_format', value: 'json_object' }]),
+    defaultPrompt: `Classify this document into one of the following categories: {{categories}}.
+Return JSON with:
+{
+  "document_type": "string",
+  "confidence": "number (0-1)",
+  "language": "string",
+  "page_count_estimate": "number",
+  "key_topics": ["string"]
+}
+
+---
+BUSINESS RULES: {{business_rules}}
+---
+DOCUMENT CONTENT:
+{{input_content}}`,
+  },
+  {
+    slug: 'ext-summarize',
+    name: 'Document Summarizer',
+    description: 'Tóm tắt nội dung tài liệu theo độ dài và phong cách yêu cầu.',
+    endpointUrl: defaultEndpointUrl,
+    httpMethod: 'POST',
+    promptFieldName: 'prompt',
+    fileFieldName: 'file',
+    authType: 'API_KEY_HEADER',
+    authKeyHeader: 'x-api-key',
+    authSecret: 'DUMMY_SECRET_KEY',
+    timeoutSec: 150,
+    state: 'ENABLED',
+    staticFormFields: JSON.stringify([{ key: 'model', value: 'gpt-4o-mini' }]),
+    defaultPrompt: `Summarize the following document content in {{max_words}} words or less. Write in a clear, professional tone. Preserve key facts and figures.
+Focus Areas: {{focus_areas}}
+Tone: {{tone}}
+
+---
+DOCUMENT CONTENT:
+{{input_content}}`,
+  },
+  {
+    slug: 'ext-translate',
+    name: 'Document Translator',
+    description: 'Dịch toàn bộ tài liệu sang ngôn ngữ đích, giữ nguyên cấu trúc Markdown.',
+    endpointUrl: defaultEndpointUrl,
+    httpMethod: 'POST',
+    promptFieldName: 'prompt',
+    fileFieldName: 'file',
+    authType: 'API_KEY_HEADER',
+    authKeyHeader: 'x-api-key',
+    authSecret: 'DUMMY_SECRET_KEY',
+    timeoutSec: 300,
+    state: 'ENABLED',
+    staticFormFields: JSON.stringify([{ key: 'model', value: 'gpt-4o' }]),
+    defaultPrompt: `Translate the following document to {{target_language}}. 
+Tone: {{tone}}
+Glossary instructions: {{glossary}}
+
+CRITICAL: Preserve ALL Markdown formatting including headings, tables, lists, bold, italic, and code blocks exactly as they are. Only translate the text content.
+
+---
+DOCUMENT CONTENT:
+{{input_content}}`,
+  }
 ];
 
+// Map endpoints from ENDPOINT_REGISTRY logic
+const ENDPOINT_SLUGS = [
+  'layout',
+  'summarize',
+  'translate',
+  'invoice-extractor',
+  'contract-extractor',
+  'id-card-extractor',
+  'document-classifier',
+  'fact-check',
+  'compare'
+];
 
 async function main() {
-  console.log('🌱 Seeding processors...');
+  console.log('🌱 Starting Master Data Seed for Production...');
 
+  // 1. Seed Legacy/Local Processors
+  console.log('\\n[1/4] Seeding Legacy/Local Processors...');
   for (const proc of PREBUILT_PROCESSORS) {
     await prisma.processor.upsert({
       where: { slug: proc.slug },
@@ -361,9 +342,64 @@ async function main() {
     console.log(`  ✅ ${proc.slug}`);
   }
 
-  console.log(`\n🎉 Seeded ${PREBUILT_PROCESSORS.length} processors.`);
+  // 2. Seed External API Connectors
+  console.log('\\n[2/4] Seeding External API Connectors...');
+  for (const conn of CONNECTORS) {
+    await prisma.externalApiConnection.upsert({
+      where: { slug: conn.slug },
+      update: { ...conn },
+      create: { ...conn },
+    });
+    console.log(`  ✅ ${conn.slug}`);
+  }
+
+  // 3. Setup Default Admin Hash Key
+  console.log('\\n[3/4] Ensuring Default Admin API Key...');
+  // WARNING: This hash corresponds to 'sk-admin-default-secret-key'. Change it on production.
+  const rawAdminKey = 'sk-admin-default-secret-key';
+  const hashedKey = crypto.createHash('sha256').update(rawAdminKey).digest('hex');
+
+  const adminKey = await prisma.apiKey.upsert({
+    where: { keyHash: hashedKey },
+    update: { role: 'ADMIN', status: 'active' },
+    create: {
+      name: 'System Admin (Default)',
+      prefix: 'sk-admin',
+      keyHash: hashedKey,
+      role: 'ADMIN',
+      status: 'active',
+      spendingLimit: 0,
+      totalUsed: 0,
+    },
+  });
+  console.log(`  🔑 System Admin API Key seeded (ID: ${adminKey.id})`);
+  console.log(`  ℹ️  Default key raw string: ${rawAdminKey}`);
+
+  // 4. Enroll Admin to All Profile Endpoints
+  console.log('\\n[4/4] Generating ProfileEndpoints for Admin API Key...');
+  for (const slug of ENDPOINT_SLUGS) {
+    await prisma.profileEndpoint.upsert({
+      where: {
+        apiKeyId_endpointSlug: {
+          apiKeyId: adminKey.id,
+          endpointSlug: slug,
+        },
+      },
+      update: { enabled: true },
+      create: {
+        apiKeyId: adminKey.id,
+        endpointSlug: slug,
+        enabled: true,
+      },
+    });
+    console.log(`  📡 Enabled ProfileEndpoint: ${slug}`);
+  }
+
+  console.log('\\n🎉 Master Data Seeding completed successfully!');
 }
 
 main()
   .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

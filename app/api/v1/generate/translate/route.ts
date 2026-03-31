@@ -2,9 +2,8 @@
 // POST /api/v1/generate/translate — Recipe: Translate a document
 // Shortcut for pipeline: [{ processor: "prebuilt-translate", variables: { target_language, tone } }]
 
-import { NextRequest, NextResponse } from 'next/server';
-import { submitPipelineJob } from '@/lib/pipelines/submit';
-import { formatOperationResponse } from '@/lib/pipelines/format';
+import { NextRequest } from 'next/server';
+import { runEndpoint } from '@/lib/endpoints/runner';
 
 /**
  * @swagger
@@ -55,52 +54,5 @@ import { formatOperationResponse } from '@/lib/pipelines/format';
  *         description: Missing file or target_language
  */
 export async function POST(req: NextRequest) {
-  try {
-    const form = await req.formData();
-
-    const targetLanguage = form.get('target_language') as string | null;
-    if (!targetLanguage?.trim()) {
-      return NextResponse.json(
-        { type: 'https://dugate.vn/errors/missing-parameter', title: 'Missing Parameter', status: 400, detail: 'The "target_language" field is required.' },
-        { status: 400 },
-      );
-    }
-
-    const tone = (form.get('tone') as string) ?? 'formal';
-    const validTones = ['formal', 'casual', 'technical'];
-    if (!validTones.includes(tone)) {
-      return NextResponse.json(
-        { type: 'https://dugate.vn/errors/invalid-parameter', title: 'Invalid Parameter', status: 400, detail: `The "tone" must be one of: ${validTones.join(', ')}.` },
-        { status: 400 },
-      );
-    }
-
-    const result = await submitPipelineJob({
-      pipeline: [{
-        processor: 'prebuilt-translate',
-        variables: { target_language: targetLanguage.trim(), tone },
-      }],
-      file:         form.get('file') as File | null,
-      outputFormat: (form.get('output_format') as string) ?? 'md',
-      webhookUrl:   form.get('webhook_url') as string | null,
-      idempotencyKey: req.headers.get('idempotency-key') ?? undefined,
-      apiKeyId: req.headers.get('x-api-key-id') ?? undefined,
-    });
-
-    if (!result.ok) return result.errorResponse;
-
-    return NextResponse.json(formatOperationResponse(result.operation), {
-      status: result.isIdempotent ? 200 : 202,
-      headers: result.isIdempotent
-        ? {}
-        : { 'Operation-Location': `/api/v1/operations/${result.operation.id}` },
-    });
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.error('[POST /api/v1/generate/translate] Error:', msg);
-    return NextResponse.json(
-      { type: 'https://dugate.vn/errors/internal', title: 'Internal Error', status: 500, detail: msg },
-      { status: 500 },
-    );
-  }
+  return runEndpoint('generate-translate', req);
 }

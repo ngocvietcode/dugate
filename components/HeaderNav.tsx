@@ -3,7 +3,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Home, Clock, Settings, FileText, SlidersHorizontal } from 'lucide-react';
+import { Home, Clock, Settings, FileText, SlidersHorizontal, PlugZap } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
 export default function HeaderNav() {
@@ -61,6 +61,15 @@ export default function HeaderNav() {
           >
             <SlidersHorizontal className="w-4 h-4" />
             Overrides
+          </Link>
+          <Link
+            href="/api-connections"
+            className={`pill-nav-item ${
+              pathname.startsWith('/api-connections') ? 'pill-nav-active' : 'pill-nav-inactive'
+            }`}
+          >
+            <PlugZap className="w-4 h-4" />
+            API Connections
           </Link>
           
           <div className="w-[1px] h-6 bg-border mx-2" />

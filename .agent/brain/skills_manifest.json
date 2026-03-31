@@ -1,0 +1,3574 @@
+{
+  "3d-web-experience": {
+    "description": "Expert in building 3D experiences for the web - Three.js, React Three Fiber, Spline, WebGL, and interactive 3D scenes. Covers product configurators, 3",
+    "size_kb": 5.6
+  },
+  "ab-test-setup": {
+    "description": "Structured guide for setting up A/B tests with mandatory gates for hypothesis, metrics, and execution readiness.",
+    "size_kb": 4.9
+  },
+  "accessibility-compliance-accessibility-audit": {
+    "description": "You are an accessibility expert specializing in WCAG compliance, inclusive design, and assistive technology compatibility. Conduct audits, identify ba",
+    "size_kb": 1.9
+  },
+  "active-directory-attacks": {
+    "description": "This skill should be used when the user asks to \"attack Active Directory\", \"exploit AD\", \"Kerberoasting\", \"DCSync\", \"pass-the-hash\", \"BloodHound enume",
+    "size_kb": 9.7
+  },
+  "activecampaign-automation": {
+    "description": "Automate ActiveCampaign tasks via Rube MCP (Composio): manage contacts, tags, list subscriptions, automation enrollment, and tasks. Always search tool",
+    "size_kb": 8.3
+  },
+  "address-github-comments": {
+    "description": "Use when you need to address review or issue comments on an open GitHub Pull Request using the gh CLI.",
+    "size_kb": 1.3
+  },
+  "agent-evaluation": {
+    "description": "Testing and benchmarking LLM agents including behavioral testing, capability assessment, reliability metrics, and production monitoring—where even top",
+    "size_kb": 2.1
+  },
+  "agent-framework-azure-ai-py": {
+    "description": "Build Azure AI Foundry agents using the Microsoft Agent Framework Python SDK (agent-framework-azure-ai). Use when creating persistent agents with Azur",
+    "size_kb": 10.4
+  },
+  "agent-manager-skill": {
+    "description": "Manage multiple local CLI agents via tmux sessions (start/stop/monitor/assign) with cron-friendly scheduling.",
+    "size_kb": 1.1
+  },
+  "agent-memory-mcp": {
+    "description": "A hybrid memory system that provides persistent, searchable knowledge management for AI agents (Architecture, Patterns, Decisions).",
+    "size_kb": 2.1
+  },
+  "agent-memory-systems": {
+    "description": "Memory is the cornerstone of intelligent agents. Without it, every interaction starts from zero. This skill covers the architecture of agent memory: s",
+    "size_kb": 2.3
+  },
+  "agent-orchestration-improve-agent": {
+    "description": "Systematic improvement of existing agents through performance analysis, prompt engineering, and continuous iteration.",
+    "size_kb": 10.2
+  },
+  "agent-orchestration-multi-agent-optimize": {
+    "description": "Optimize multi-agent systems with coordinated profiling, workload distribution, and cost-aware orchestration. Use when improving agent performance, th",
+    "size_kb": 6.9
+  },
+  "agent-skill-creator": {
+    "description": ">-",
+    "size_kb": 28.4
+  },
+  "agent-tool-builder": {
+    "description": "Tools are how AI agents interact with the world. A well-designed tool is the difference between an agent that works and one that hallucinates, fails s",
+    "size_kb": 1.7
+  },
+  "agents-v2-py": {
+    "description": "|",
+    "size_kb": 9.4
+  },
+  "ai-agents-architect": {
+    "description": "Expert in designing and building autonomous AI agents. Masters tool use, memory systems, planning strategies, and multi-agent orchestration. Use when:",
+    "size_kb": 2.6
+  },
+  "ai-engineer": {
+    "description": "Build production-ready LLM applications, advanced RAG systems, and",
+    "size_kb": 8.9
+  },
+  "ai-product": {
+    "description": "Every product will be AI-powered. The question is whether you'll build it right or ship a demo that falls apart in production.  This skill covers LLM ",
+    "size_kb": 2.2
+  },
+  "ai-wrapper-product": {
+    "description": "Expert in building products that wrap AI APIs (OpenAI, Anthropic, etc.) into focused tools people will pay for. Not just 'ChatGPT but different' - pro",
+    "size_kb": 6.7
+  },
+  "airflow-dag-patterns": {
+    "description": "Build production Apache Airflow DAGs with best practices for operators, sensors, testing, and deployment. Use when creating data pipelines, orchestrat",
+    "size_kb": 1.4
+  },
+  "airtable-automation": {
+    "description": "Automate Airtable tasks via Rube MCP (Composio): records, bases, tables, fields, views. Always search tools first for current schemas.",
+    "size_kb": 6.6
+  },
+  "algolia-search": {
+    "description": "Expert patterns for Algolia search implementation, indexing strategies, React InstantSearch, and relevance tuning Use when: adding search to, algolia,",
+    "size_kb": 2.0
+  },
+  "algorithmic-art": {
+    "description": "Creating algorithmic art using p5.js with seeded randomness and interactive parameter exploration. Use this when users request creating art using code",
+    "size_kb": 19.7
+  },
+  "amplitude-automation": {
+    "description": "Automate Amplitude tasks via Rube MCP (Composio): events, user activity, cohorts, user identification. Always search tools first for current schemas.",
+    "size_kb": 8.0
+  },
+  "analytics-tracking": {
+    "description": ">",
+    "size_kb": 7.8
+  },
+  "angular": {
+    "description": ">-",
+    "size_kb": 20.6
+  },
+  "angular-best-practices": {
+    "description": "Angular performance optimization and best practices guide. Use when writing, reviewing, or refactoring Angular code for optimal performance, bundle si",
+    "size_kb": 13.3
+  },
+  "angular-migration": {
+    "description": "Migrate from AngularJS to Angular using hybrid mode, incremental component rewriting, and dependency injection updates. Use when upgrading AngularJS a",
+    "size_kb": 10.5
+  },
+  "angular-state-management": {
+    "description": "Master modern Angular state management with Signals, NgRx, and RxJS. Use when setting up global state, managing component stores, choosing between sta",
+    "size_kb": 15.7
+  },
+  "angular-ui-patterns": {
+    "description": "Modern Angular UI patterns for loading states, error handling, and data display. Use when building UI components, handling async data, or managing com",
+    "size_kb": 11.4
+  },
+  "anti-reversing-techniques": {
+    "description": "Understand anti-reversing, obfuscation, and protection techniques encountered during software analysis. Use when analyzing protected binaries, bypassi",
+    "size_kb": 2.1
+  },
+  "antigravity-workflows": {
+    "description": "Orchestrate multiple Antigravity skills through guided workflows for SaaS MVP delivery, security audits, AI agent builds, and browser QA.",
+    "size_kb": 2.6
+  },
+  "api-design-principles": {
+    "description": "Master REST and GraphQL API design principles to build intuitive, scalable, and maintainable APIs that delight developers. Use when designing new APIs",
+    "size_kb": 1.5
+  },
+  "api-designer": {
+    "description": "Designs standard RESTful API endpoints and exports to OpenAPI.",
+    "size_kb": 0.6
+  },
+  "api-documentation-generator": {
+    "description": "Generate comprehensive, developer-friendly API documentation from code, including endpoints, parameters, examples, and best practices",
+    "size_kb": 11.4
+  },
+  "api-documenter": {
+    "description": "Master API documentation with OpenAPI 3.1, AI-powered tools, and",
+    "size_kb": 8.2
+  },
+  "api-fuzzing-bug-bounty": {
+    "description": "This skill should be used when the user asks to \"test API security\", \"fuzz APIs\", \"find IDOR vulnerabilities\", \"test REST API\", \"test GraphQL\", \"API p",
+    "size_kb": 10.5
+  },
+  "api-patterns": {
+    "description": "API design principles and decision-making. REST vs GraphQL vs tRPC selection, response formats, versioning, pagination.",
+    "size_kb": 2.5
+  },
+  "api-security-best-practices": {
+    "description": "Implement secure API design patterns including authentication, authorization, input validation, rate limiting, and protection against common API vulne",
+    "size_kb": 23.7
+  },
+  "api-testing-observability-api-mock": {
+    "description": "You are an API mocking expert specializing in realistic mock services for development, testing, and demos. Design mocks that simulate real API behavio",
+    "size_kb": 1.9
+  },
+  "app-builder": {
+    "description": "Main application building orchestrator. Creates full-stack applications from natural language requests. Determines project type, selects tech stack, c",
+    "size_kb": 3.2
+  },
+  "app-store-optimization": {
+    "description": "Complete App Store Optimization (ASO) toolkit for researching, optimizing, and tracking mobile app performance on Apple App Store and Google Play Stor",
+    "size_kb": 16.5
+  },
+  "application-performance-performance-optimization": {
+    "description": "Optimize end-to-end application performance with profiling, observability, and backend/frontend tuning. Use when coordinating performance optimization",
+    "size_kb": 11.0
+  },
+  "architect-review": {
+    "description": "Master software architect specializing in modern architecture",
+    "size_kb": 8.4
+  },
+  "architecture": {
+    "description": "Architectural decision-making framework. Requirements analysis, trade-off evaluation, ADR documentation. Use when making architecture decisions or ana",
+    "size_kb": 1.8
+  },
+  "architecture-auditor": {
+    "description": "Reviews architecture, checks standards, security, and technical debt.",
+    "size_kb": 1.0
+  },
+  "architecture-decision-records": {
+    "description": "Write and maintain Architecture Decision Records (ADRs) following best practices for technical decision documentation. Use when documenting significan",
+    "size_kb": 13.2
+  },
+  "architecture-patterns": {
+    "description": "Implement proven backend architecture patterns including Clean Architecture, Hexagonal Architecture, and Domain-Driven Design. Use when architecting c",
+    "size_kb": 1.6
+  },
+  "arm-cortex-expert": {
+    "description": ">",
+    "size_kb": 13.0
+  },
+  "asana-automation": {
+    "description": "Automate Asana tasks via Rube MCP (Composio): tasks, projects, sections, teams, workspaces. Always search tools first for current schemas.",
+    "size_kb": 6.0
+  },
+  "async-python-patterns": {
+    "description": "Master Python asyncio, concurrent programming, and async/await patterns for high-performance applications. Use when building async APIs, concurrent sy",
+    "size_kb": 1.7
+  },
+  "attack-tree-construction": {
+    "description": "Build comprehensive attack trees to visualize threat paths. Use when mapping attack scenarios, identifying defense gaps, or communicating security ris",
+    "size_kb": 1.3
+  },
+  "audio-transcriber": {
+    "description": "Transform audio recordings into professional Markdown documentation with intelligent summaries using LLM integration",
+    "size_kb": 15.5
+  },
+  "auth-implementation-patterns": {
+    "description": "Master authentication and authorization patterns including JWT, OAuth2, session management, and RBAC to build secure, scalable access control systems.",
+    "size_kb": 1.5
+  },
+  "automate-whatsapp": {
+    "description": "Build WhatsApp automations with Kapso workflows: configure WhatsApp triggers, edit workflow graphs, manage executions, deploy functions, and use datab",
+    "size_kb": 10.9
+  },
+  "autonomous-agent-patterns": {
+    "description": "Design patterns for building autonomous coding agents. Covers tool integration, permission systems, browser automation, and human-in-the-loop workflow",
+    "size_kb": 23.3
+  },
+  "autonomous-agents": {
+    "description": "Autonomous agents are AI systems that can independently decompose goals, plan actions, execute tools, and self-correct without constant human guidance",
+    "size_kb": 2.2
+  },
+  "avalonia-layout-zafiro": {
+    "description": "Guidelines for modern Avalonia UI layout using Zafiro.Avalonia, emphasizing shared styles, generic components, and avoiding XAML redundancy.",
+    "size_kb": 2.3
+  },
+  "avalonia-viewmodels-zafiro": {
+    "description": "Optimal ViewModel and Wizard creation patterns for Avalonia using Zafiro and ReactiveUI.",
+    "size_kb": 1.7
+  },
+  "avalonia-zafiro-development": {
+    "description": "Mandatory skills, conventions, and behavioral rules for Avalonia UI development using the Zafiro toolkit.",
+    "size_kb": 1.8
+  },
+  "aws-penetration-testing": {
+    "description": "This skill should be used when the user asks to \"pentest AWS\", \"test AWS security\", \"enumerate IAM\", \"exploit cloud infrastructure\", \"AWS privilege es",
+    "size_kb": 10.1
+  },
+  "aws-serverless": {
+    "description": "Specialized skill for building production-ready serverless applications on AWS. Covers Lambda functions, API Gateway, DynamoDB, SQS/SNS event-driven p",
+    "size_kb": 8.0
+  },
+  "aws-skills": {
+    "description": "AWS development with infrastructure automation and cloud architecture patterns",
+    "size_kb": 0.7
+  },
+  "azd-deployment": {
+    "description": "Deploy containerized applications to Azure Container Apps using Azure Developer CLI (azd). Use when setting up azd projects, writing azure.yaml config",
+    "size_kb": 8.4
+  },
+  "azure-ai-agents-persistent-dotnet": {
+    "description": "|",
+    "size_kb": 11.2
+  },
+  "azure-ai-agents-persistent-java": {
+    "description": "|",
+    "size_kb": 3.7
+  },
+  "azure-ai-anomalydetector-java": {
+    "description": "Build anomaly detection applications with Azure AI Anomaly Detector SDK for Java. Use when implementing univariate/multivariate anomaly detection, tim",
+    "size_kb": 8.3
+  },
+  "azure-ai-contentsafety-java": {
+    "description": "Build content moderation applications with Azure AI Content Safety SDK for Java. Use when implementing text/image analysis, blocklist management, or h",
+    "size_kb": 7.8
+  },
+  "azure-ai-contentsafety-py": {
+    "description": "|",
+    "size_kb": 5.8
+  },
+  "azure-ai-contentsafety-ts": {
+    "description": "Analyze text and images for harmful content using Azure AI Content Safety (@azure-rest/ai-content-safety). Use when moderating user-generated content,",
+    "size_kb": 7.8
+  },
+  "azure-ai-contentunderstanding-py": {
+    "description": "|",
+    "size_kb": 8.0
+  },
+  "azure-ai-document-intelligence-dotnet": {
+    "description": "|",
+    "size_kb": 11.2
+  },
+  "azure-ai-document-intelligence-ts": {
+    "description": "Extract text, tables, and structured data from documents using Azure Document Intelligence (@azure-rest/ai-document-intelligence). Use when processing",
+    "size_kb": 9.2
+  },
+  "azure-ai-formrecognizer-java": {
+    "description": "Build document analysis applications with Azure Document Intelligence (Form Recognizer) SDK for Java. Use when extracting text, tables, key-value pair",
+    "size_kb": 10.4
+  },
+  "azure-ai-ml-py": {
+    "description": "|",
+    "size_kb": 6.0
+  },
+  "azure-ai-openai-dotnet": {
+    "description": "|",
+    "size_kb": 13.0
+  },
+  "azure-ai-projects-dotnet": {
+    "description": "|",
+    "size_kb": 11.0
+  },
+  "azure-ai-projects-java": {
+    "description": "|",
+    "size_kb": 4.8
+  },
+  "azure-ai-projects-py": {
+    "description": "Build AI applications using the Azure AI Projects Python SDK (azure-ai-projects). Use when working with Foundry project clients, creating versioned ag",
+    "size_kb": 9.1
+  },
+  "azure-ai-projects-ts": {
+    "description": "Build AI applications using Azure AI Projects SDK for JavaScript (@azure/ai-projects). Use when working with Foundry project clients, agents, connecti",
+    "size_kb": 7.0
+  },
+  "azure-ai-textanalytics-py": {
+    "description": "|",
+    "size_kb": 6.8
+  },
+  "azure-ai-transcription-py": {
+    "description": "|",
+    "size_kb": 1.8
+  },
+  "azure-ai-translation-document-py": {
+    "description": "|",
+    "size_kb": 6.9
+  },
+  "azure-ai-translation-text-py": {
+    "description": "|",
+    "size_kb": 7.5
+  },
+  "azure-ai-translation-ts": {
+    "description": "Build translation applications using Azure Translation SDKs for JavaScript (@azure-rest/ai-translation-text, @azure-rest/ai-translation-document). Use",
+    "size_kb": 7.4
+  },
+  "azure-ai-vision-imageanalysis-java": {
+    "description": "Build image analysis applications with Azure AI Vision SDK for Java. Use when implementing image captioning, OCR text extraction, object detection, ta",
+    "size_kb": 8.1
+  },
+  "azure-ai-vision-imageanalysis-py": {
+    "description": "|",
+    "size_kb": 6.8
+  },
+  "azure-ai-voicelive-dotnet": {
+    "description": "|",
+    "size_kb": 8.6
+  },
+  "azure-ai-voicelive-java": {
+    "description": "|",
+    "size_kb": 7.4
+  },
+  "azure-ai-voicelive-py": {
+    "description": "Build real-time voice AI applications using Azure AI Voice Live SDK (azure-ai-voicelive). Use this skill when creating Python applications that need r",
+    "size_kb": 9.3
+  },
+  "azure-ai-voicelive-ts": {
+    "description": "|",
+    "size_kb": 13.2
+  },
+  "azure-appconfiguration-java": {
+    "description": "|",
+    "size_kb": 13.2
+  },
+  "azure-appconfiguration-py": {
+    "description": "|",
+    "size_kb": 5.7
+  },
+  "azure-appconfiguration-ts": {
+    "description": "Build applications using Azure App Configuration SDK for JavaScript (@azure/app-configuration). Use when working with configuration settings, feature ",
+    "size_kb": 8.4
+  },
+  "azure-communication-callautomation-java": {
+    "description": "Build call automation workflows with Azure Communication Services Call Automation Java SDK. Use when implementing IVR systems, call routing, call reco",
+    "size_kb": 8.4
+  },
+  "azure-communication-callingserver-java": {
+    "description": "Azure Communication Services CallingServer (legacy) Java SDK. Note - This SDK is deprecated. Use azure-communication-callautomation instead for new pr",
+    "size_kb": 2.8
+  },
+  "azure-communication-chat-java": {
+    "description": "Build real-time chat applications with Azure Communication Services Chat Java SDK. Use when implementing chat threads, messaging, participants, read r",
+    "size_kb": 9.6
+  },
+  "azure-communication-common-java": {
+    "description": "Azure Communication Services common utilities for Java. Use when working with CommunicationTokenCredential, user identifiers, token refresh, or shared",
+    "size_kb": 9.7
+  },
+  "azure-communication-sms-java": {
+    "description": "Send SMS messages with Azure Communication Services SMS Java SDK. Use when implementing SMS notifications, alerts, OTP delivery, bulk messaging, or de",
+    "size_kb": 8.2
+  },
+  "azure-compute-batch-java": {
+    "description": "|",
+    "size_kb": 11.1
+  },
+  "azure-containerregistry-py": {
+    "description": "|",
+    "size_kb": 6.2
+  },
+  "azure-cosmos-db-py": {
+    "description": "Build Azure Cosmos DB NoSQL services with Python/FastAPI following production-grade patterns. Use when implementing database client setup with dual au",
+    "size_kb": 9.4
+  },
+  "azure-cosmos-java": {
+    "description": "|",
+    "size_kb": 7.5
+  },
+  "azure-cosmos-py": {
+    "description": "|",
+    "size_kb": 7.0
+  },
+  "azure-cosmos-rust": {
+    "description": "|",
+    "size_kb": 3.3
+  },
+  "azure-cosmos-ts": {
+    "description": "|",
+    "size_kb": 11.4
+  },
+  "azure-data-tables-java": {
+    "description": "Build table storage applications with Azure Tables SDK for Java. Use when working with Azure Table Storage or Cosmos DB Table API for NoSQL key-value ",
+    "size_kb": 9.1
+  },
+  "azure-data-tables-py": {
+    "description": "|",
+    "size_kb": 5.7
+  },
+  "azure-eventgrid-dotnet": {
+    "description": "|",
+    "size_kb": 13.4
+  },
+  "azure-eventgrid-java": {
+    "description": "Build event-driven applications with Azure Event Grid SDK for Java. Use when publishing events, implementing pub/sub patterns, or integrating with Azu",
+    "size_kb": 8.5
+  },
+  "azure-eventgrid-py": {
+    "description": "|",
+    "size_kb": 4.7
+  },
+  "azure-eventhub-dotnet": {
+    "description": "|",
+    "size_kb": 10.5
+  },
+  "azure-eventhub-java": {
+    "description": "Build real-time streaming applications with Azure Event Hubs SDK for Java. Use when implementing event streaming, high-throughput data ingestion, or b",
+    "size_kb": 10.5
+  },
+  "azure-eventhub-py": {
+    "description": "|",
+    "size_kb": 7.0
+  },
+  "azure-eventhub-rust": {
+    "description": "|",
+    "size_kb": 3.5
+  },
+  "azure-eventhub-ts": {
+    "description": "Build event streaming applications using Azure Event Hubs SDK for JavaScript (@azure/event-hubs). Use when implementing high-throughput event ingestio",
+    "size_kb": 7.2
+  },
+  "azure-functions": {
+    "description": "Expert patterns for Azure Functions development including isolated worker model, Durable Functions orchestration, cold start optimization, and product",
+    "size_kb": 1.4
+  },
+  "azure-identity-dotnet": {
+    "description": "|",
+    "size_kb": 9.8
+  },
+  "azure-identity-java": {
+    "description": "Azure Identity Java SDK for authentication with Azure services. Use when implementing DefaultAzureCredential, managed identity, service principal, or ",
+    "size_kb": 11.1
+  },
+  "azure-identity-py": {
+    "description": "|",
+    "size_kb": 5.5
+  },
+  "azure-identity-rust": {
+    "description": "|",
+    "size_kb": 3.5
+  },
+  "azure-identity-ts": {
+    "description": "Authenticate to Azure services using Azure Identity SDK for JavaScript (@azure/identity). Use when configuring authentication with DefaultAzureCredent",
+    "size_kb": 6.9
+  },
+  "azure-keyvault-certificates-rust": {
+    "description": "|",
+    "size_kb": 4.6
+  },
+  "azure-keyvault-keys-rust": {
+    "description": "|",
+    "size_kb": 4.0
+  },
+  "azure-keyvault-keys-ts": {
+    "description": "Manage cryptographic keys using Azure Key Vault Keys SDK for JavaScript (@azure/keyvault-keys). Use when creating, encrypting/decrypting, signing, or ",
+    "size_kb": 6.3
+  },
+  "azure-keyvault-py": {
+    "description": "|",
+    "size_kb": 6.9
+  },
+  "azure-keyvault-secrets-rust": {
+    "description": "|",
+    "size_kb": 3.6
+  },
+  "azure-keyvault-secrets-ts": {
+    "description": "Manage secrets using Azure Key Vault Secrets SDK for JavaScript (@azure/keyvault-secrets). Use when storing and retrieving application secrets or conf",
+    "size_kb": 6.3
+  },
+  "azure-maps-search-dotnet": {
+    "description": "|",
+    "size_kb": 15.3
+  },
+  "azure-messaging-webpubsub-java": {
+    "description": "Build real-time web applications with Azure Web PubSub SDK for Java. Use when implementing WebSocket-based messaging, live updates, chat applications,",
+    "size_kb": 8.7
+  },
+  "azure-messaging-webpubsubservice-py": {
+    "description": "|",
+    "size_kb": 5.9
+  },
+  "azure-mgmt-apicenter-dotnet": {
+    "description": "|",
+    "size_kb": 12.9
+  },
+  "azure-mgmt-apicenter-py": {
+    "description": "|",
+    "size_kb": 6.5
+  },
+  "azure-mgmt-apimanagement-dotnet": {
+    "description": "|",
+    "size_kb": 9.9
+  },
+  "azure-mgmt-apimanagement-py": {
+    "description": "|",
+    "size_kb": 6.9
+  },
+  "azure-mgmt-applicationinsights-dotnet": {
+    "description": "|",
+    "size_kb": 17.6
+  },
+  "azure-mgmt-arizeaiobservabilityeval-dotnet": {
+    "description": "|",
+    "size_kb": 7.3
+  },
+  "azure-mgmt-botservice-dotnet": {
+    "description": "|",
+    "size_kb": 9.8
+  },
+  "azure-mgmt-botservice-py": {
+    "description": "|",
+    "size_kb": 7.8
+  },
+  "azure-mgmt-fabric-dotnet": {
+    "description": "|",
+    "size_kb": 11.1
+  },
+  "azure-mgmt-fabric-py": {
+    "description": "|",
+    "size_kb": 6.4
+  },
+  "azure-mgmt-mongodbatlas-dotnet": {
+    "description": "Manage MongoDB Atlas Organizations as Azure ARM resources using Azure.ResourceManager.MongoDBAtlas SDK. Use when creating, updating, listing, or delet",
+    "size_kb": 11.0
+  },
+  "azure-mgmt-weightsandbiases-dotnet": {
+    "description": "|",
+    "size_kb": 10.7
+  },
+  "azure-microsoft-playwright-testing-ts": {
+    "description": "Run Playwright tests at scale using Azure Playwright Workspaces (formerly Microsoft Playwright Testing). Use when scaling browser tests across cloud-h",
+    "size_kb": 8.1
+  },
+  "azure-monitor-ingestion-java": {
+    "description": "|",
+    "size_kb": 7.3
+  },
+  "azure-monitor-ingestion-py": {
+    "description": "|",
+    "size_kb": 5.5
+  },
+  "azure-monitor-opentelemetry-exporter-java": {
+    "description": "|",
+    "size_kb": 8.8
+  },
+  "azure-monitor-opentelemetry-exporter-py": {
+    "description": "|",
+    "size_kb": 6.4
+  },
+  "azure-monitor-opentelemetry-py": {
+    "description": "|",
+    "size_kb": 5.2
+  },
+  "azure-monitor-opentelemetry-ts": {
+    "description": "Instrument applications with Azure Monitor and OpenTelemetry for JavaScript (@azure/monitor-opentelemetry). Use when adding distributed tracing, metri",
+    "size_kb": 8.5
+  },
+  "azure-monitor-query-java": {
+    "description": "|",
+    "size_kb": 13.3
+  },
+  "azure-monitor-query-py": {
+    "description": "|",
+    "size_kb": 6.0
+  },
+  "azure-postgres-ts": {
+    "description": "|",
+    "size_kb": 12.9
+  },
+  "azure-resource-manager-cosmosdb-dotnet": {
+    "description": "|",
+    "size_kb": 8.0
+  },
+  "azure-resource-manager-durabletask-dotnet": {
+    "description": "|",
+    "size_kb": 12.5
+  },
+  "azure-resource-manager-mysql-dotnet": {
+    "description": "|",
+    "size_kb": 13.5
+  },
+  "azure-resource-manager-playwright-dotnet": {
+    "description": "|",
+    "size_kb": 9.9
+  },
+  "azure-resource-manager-postgresql-dotnet": {
+    "description": "|",
+    "size_kb": 15.4
+  },
+  "azure-resource-manager-redis-dotnet": {
+    "description": "|",
+    "size_kb": 11.6
+  },
+  "azure-resource-manager-sql-dotnet": {
+    "description": "|",
+    "size_kb": 9.9
+  },
+  "azure-search-documents-dotnet": {
+    "description": "|",
+    "size_kb": 9.8
+  },
+  "azure-search-documents-py": {
+    "description": "|",
+    "size_kb": 14.4
+  },
+  "azure-search-documents-ts": {
+    "description": "Build search applications using Azure AI Search SDK for JavaScript (@azure/search-documents). Use when creating/managing indexes, implementing vector/",
+    "size_kb": 6.7
+  },
+  "azure-security-keyvault-keys-dotnet": {
+    "description": "|",
+    "size_kb": 12.1
+  },
+  "azure-security-keyvault-keys-java": {
+    "description": "Azure Key Vault Keys Java SDK for cryptographic key management. Use when creating, managing, or using RSA/EC keys, performing encrypt/decrypt/sign/ver",
+    "size_kb": 11.0
+  },
+  "azure-security-keyvault-secrets-java": {
+    "description": "Azure Key Vault Secrets Java SDK for secret management. Use when storing, retrieving, or managing passwords, API keys, connection strings, or other se",
+    "size_kb": 11.5
+  },
+  "azure-servicebus-dotnet": {
+    "description": "|",
+    "size_kb": 10.6
+  },
+  "azure-servicebus-py": {
+    "description": "|",
+    "size_kb": 8.1
+  },
+  "azure-servicebus-ts": {
+    "description": "Build messaging applications using Azure Service Bus SDK for JavaScript (@azure/service-bus). Use when implementing queues, topics/subscriptions, mess",
+    "size_kb": 6.6
+  },
+  "azure-speech-to-text-rest-py": {
+    "description": "|",
+    "size_kb": 10.9
+  },
+  "azure-storage-blob-java": {
+    "description": "Build blob storage applications with Azure Storage Blob SDK for Java. Use when uploading, downloading, or managing files in Azure Blob Storage, workin",
+    "size_kb": 10.2
+  },
+  "azure-storage-blob-py": {
+    "description": "|",
+    "size_kb": 6.0
+  },
+  "azure-storage-blob-rust": {
+    "description": "|",
+    "size_kb": 3.3
+  },
+  "azure-storage-blob-ts": {
+    "description": "|",
+    "size_kb": 12.6
+  },
+  "azure-storage-file-datalake-py": {
+    "description": "|",
+    "size_kb": 5.6
+  },
+  "azure-storage-file-share-py": {
+    "description": "|",
+    "size_kb": 5.1
+  },
+  "azure-storage-file-share-ts": {
+    "description": "|",
+    "size_kb": 12.4
+  },
+  "azure-storage-queue-py": {
+    "description": "|",
+    "size_kb": 5.2
+  },
+  "azure-storage-queue-ts": {
+    "description": "|",
+    "size_kb": 13.4
+  },
+  "azure-web-pubsub-ts": {
+    "description": "Build real-time messaging applications using Azure Web PubSub SDKs for JavaScript (@azure/web-pubsub, @azure/web-pubsub-client). Use when implementing",
+    "size_kb": 7.8
+  },
+  "backend-architect": {
+    "description": "Expert backend architect specializing in scalable API design,",
+    "size_kb": 18.7
+  },
+  "backend-dev-guidelines": {
+    "description": "Opinionated backend development standards for Node.js + Express + TypeScript microservices. Covers layered architecture, BaseController pattern, depen",
+    "size_kb": 7.8
+  },
+  "backend-development-feature-development": {
+    "description": "Orchestrate end-to-end backend feature development from requirements to deployment. Use when coordinating multi-phase feature delivery across teams an",
+    "size_kb": 11.1
+  },
+  "backend-security-coder": {
+    "description": "Expert in secure backend coding practices specializing in input",
+    "size_kb": 9.8
+  },
+  "backtesting-frameworks": {
+    "description": "Build robust backtesting systems for trading strategies with proper handling of look-ahead bias, survivorship bias, and transaction costs. Use when de",
+    "size_kb": 1.4
+  },
+  "bamboohr-automation": {
+    "description": "Automate BambooHR tasks via Rube MCP (Composio): employees, time-off, benefits, dependents, employee updates. Always search tools first for current sc",
+    "size_kb": 8.4
+  },
+  "basecamp-automation": {
+    "description": "Automate Basecamp project management, to-dos, messages, people, and to-do list organization via Rube MCP (Composio). Always search tools first for cur",
+    "size_kb": 12.3
+  },
+  "bash-defensive-patterns": {
+    "description": "Master defensive Bash programming techniques for production-grade scripts. Use when writing robust shell scripts, CI/CD pipelines, or system utilities",
+    "size_kb": 1.7
+  },
+  "bash-linux": {
+    "description": "Bash/Linux terminal patterns. Critical commands, piping, error handling, scripting. Use when working on macOS or Linux systems.",
+    "size_kb": 4.3
+  },
+  "bash-pro": {
+    "description": "Master of defensive Bash scripting for production automation, CI/CD",
+    "size_kb": 18.2
+  },
+  "bats-testing-patterns": {
+    "description": "Master Bash Automated Testing System (Bats) for comprehensive shell script testing. Use when writing tests for shell scripts, CI/CD pipelines, or requ",
+    "size_kb": 1.3
+  },
+  "bazel-build-optimization": {
+    "description": "Optimize Bazel builds for large-scale monorepos. Use when configuring Bazel, implementing remote execution, or optimizing build performance for enterp",
+    "size_kb": 10.1
+  },
+  "beautiful-prose": {
+    "description": "Hard-edged writing style contract for timeless, forceful English prose without AI tics",
+    "size_kb": 0.7
+  },
+  "behavioral-modes": {
+    "description": "AI operational modes (brainstorm, implement, debug, review, teach, ship, orchestrate). Use to adapt behavior based on task type.",
+    "size_kb": 5.5
+  },
+  "billing-automation": {
+    "description": "Build automated billing systems for recurring payments, invoicing, subscription lifecycle, and dunning management. Use when implementing subscription ",
+    "size_kb": 1.6
+  },
+  "binary-analysis-patterns": {
+    "description": "Master binary analysis patterns including disassembly, decompilation, control flow analysis, and code pattern recognition. Use when analyzing executab",
+    "size_kb": 10.1
+  },
+  "bitbucket-automation": {
+    "description": "Automate Bitbucket repositories, pull requests, branches, issues, and workspace management via Rube MCP (Composio). Always search tools first for curr",
+    "size_kb": 12.0
+  },
+  "blockchain-developer": {
+    "description": "Build production-ready Web3 applications, smart contracts, and",
+    "size_kb": 9.8
+  },
+  "blockrun": {
+    "description": "Use when user needs capabilities Claude lacks (image generation, real-time X/Twitter data) or explicitly requests external models (\"blockrun\", \"use gr",
+    "size_kb": 9.1
+  },
+  "box-automation": {
+    "description": "Automate Box cloud storage operations including file upload/download, search, folder management, sharing, collaborations, and metadata queries via Rub",
+    "size_kb": 12.1
+  },
+  "brain-manager": {
+    "description": "Manage your project's brain — export/import decisions, architecture notes, and project context.",
+    "size_kb": 1.4
+  },
+  "brainstorming": {
+    "description": ">",
+    "size_kb": 5.2
+  },
+  "brand-guidelines-anthropic": {
+    "description": "Applies Anthropic's official brand colors and typography to any sort of artifact that may benefit from having Anthropic's look-and-feel. Use it when b",
+    "size_kb": 2.3
+  },
+  "brand-guidelines-community": {
+    "description": "Applies Anthropic's official brand colors and typography to any sort of artifact that may benefit from having Anthropic's look-and-feel. Use it when b",
+    "size_kb": 2.3
+  },
+  "brevo-automation": {
+    "description": "Automate Brevo (Sendinblue) tasks via Rube MCP (Composio): manage email campaigns, create/edit templates, track senders, and monitor campaign performa",
+    "size_kb": 7.8
+  },
+  "broken-authentication": {
+    "description": "This skill should be used when the user asks to \"test for broken authentication vulnerabilities\", \"assess session management security\", \"perform crede",
+    "size_kb": 12.8
+  },
+  "browser-automation": {
+    "description": "Browser automation powers web testing, scraping, and AI agent interactions. The difference between a flaky script and a reliable system comes down to ",
+    "size_kb": 2.3
+  },
+  "browser-extension-builder": {
+    "description": "Expert in building browser extensions that solve real problems - Chrome, Firefox, and cross-browser extensions. Covers extension architecture, manifes",
+    "size_kb": 6.1
+  },
+  "bullmq-specialist": {
+    "description": "BullMQ expert for Redis-backed job queues, background processing, and reliable async execution in Node.js/TypeScript applications. Use when: bullmq, b",
+    "size_kb": 1.6
+  },
+  "bun-development": {
+    "description": "Modern JavaScript/TypeScript development with Bun runtime. Covers package management, bundling, testing, and migration from Node.js. Use when working ",
+    "size_kb": 14.5
+  },
+  "burp-suite-testing": {
+    "description": "This skill should be used when the user asks to \"intercept HTTP traffic\", \"modify web requests\", \"use Burp Suite for testing\", \"perform web vulnerabil",
+    "size_kb": 11.0
+  },
+  "business-analyst": {
+    "description": "Master modern business analysis with AI-powered analytics,",
+    "size_kb": 7.8
+  },
+  "busybox-on-windows": {
+    "description": "How to use a Win32 build of BusyBox to run many of the standard UNIX command line tools on Windows.",
+    "size_kb": 1.9
+  },
+  "c-pro": {
+    "description": "Write efficient C code with proper memory management, pointer",
+    "size_kb": 1.7
+  },
+  "c4-architecture-c4-architecture": {
+    "description": "Generate comprehensive C4 architecture documentation for an existing repository/codebase using a bottom-up analysis approach.",
+    "size_kb": 16.5
+  },
+  "c4-code": {
+    "description": "Expert C4 Code-level documentation specialist. Analyzes code",
+    "size_kb": 7.9
+  },
+  "c4-component": {
+    "description": "Expert C4 Component-level documentation specialist. Synthesizes C4",
+    "size_kb": 4.9
+  },
+  "c4-container": {
+    "description": "Expert C4 Container-level documentation specialist. Synthesizes",
+    "size_kb": 5.7
+  },
+  "c4-context": {
+    "description": "Expert C4 Context-level documentation specialist. Creates",
+    "size_kb": 5.2
+  },
+  "cal-com-automation": {
+    "description": "Automate Cal.com tasks via Rube MCP (Composio): manage bookings, check availability, configure webhooks, and handle teams. Always search tools first f",
+    "size_kb": 7.4
+  },
+  "calendly-automation": {
+    "description": "Automate Calendly scheduling, event management, invitee tracking, availability checks, and organization administration via Rube MCP (Composio). Always",
+    "size_kb": 10.5
+  },
+  "canva-automation": {
+    "description": "Automate Canva tasks via Rube MCP (Composio): designs, exports, folders, brand templates, autofill. Always search tools first for current schemas.",
+    "size_kb": 8.1
+  },
+  "canvas-design": {
+    "description": "Create beautiful visual art in .png and .pdf documents using design philosophy. You should use this skill when the user asks to create a poster, piece",
+    "size_kb": 11.8
+  },
+  "cc-skill-backend-patterns": {
+    "description": "Backend architecture patterns, API design, database optimization, and server-side best practices for Node.js, Express, and Next.js API routes.",
+    "size_kb": 13.5
+  },
+  "cc-skill-clickhouse-io": {
+    "description": "ClickHouse database patterns, query optimization, analytics, and data engineering best practices for high-performance analytical workloads.",
+    "size_kb": 10.2
+  },
+  "cc-skill-coding-standards": {
+    "description": "Universal coding standards, best practices, and patterns for TypeScript, JavaScript, React, and Node.js development.",
+    "size_kb": 11.7
+  },
+  "cc-skill-continuous-learning": {
+    "description": "Development skill from everything-claude-code",
+    "size_kb": 0.2
+  },
+  "cc-skill-frontend-patterns": {
+    "description": "Frontend development patterns for React, Next.js, state management, performance optimization, and UI best practices.",
+    "size_kb": 14.6
+  },
+  "cc-skill-project-guidelines-example": {
+    "description": "Project Guidelines Skill (Example)",
+    "size_kb": 9.9
+  },
+  "cc-skill-security-review": {
+    "description": "Use this skill when adding authentication, handling user input, working with secrets, creating API endpoints, or implementing payment/sensitive featur",
+    "size_kb": 12.4
+  },
+  "cc-skill-strategic-compact": {
+    "description": "Development skill from everything-claude-code",
+    "size_kb": 0.2
+  },
+  "changelog-automation": {
+    "description": "Automate changelog generation from commits, PRs, and releases following Keep a Changelog format. Use when setting up release workflows, generating rel",
+    "size_kb": 1.3
+  },
+  "ci-cd-setup": {
+    "description": "Generate CI/CD pipelines (GitHub Actions).",
+    "size_kb": 0.3
+  },
+  "cicd-automation-workflow-automate": {
+    "description": "You are a workflow automation expert specializing in creating efficient CI/CD pipelines, GitHub Actions workflows, and automated development processes",
+    "size_kb": 2.2
+  },
+  "circleci-automation": {
+    "description": "Automate CircleCI tasks via Rube MCP (Composio): trigger pipelines, monitor workflows/jobs, retrieve artifacts and test metadata. Always search tools ",
+    "size_kb": 6.6
+  },
+  "clarity-gate": {
+    "description": "Pre-ingestion verification for epistemic quality in RAG systems with 9-point verification and Two-Round HITL workflow",
+    "size_kb": 0.8
+  },
+  "claude-ally-health": {
+    "description": "A health assistant skill for medical information analysis, symptom tracking, and wellness guidance.",
+    "size_kb": 0.8
+  },
+  "claude-code-guide": {
+    "description": "Master guide for using Claude Code effectively. Includes configuration templates, prompting strategies \"Thinking\" keywords, debugging techniques, and ",
+    "size_kb": 2.2
+  },
+  "claude-d3js-skill": {
+    "description": "Creating interactive data visualisations using d3.js. This skill should be used when creating custom charts, graphs, network diagrams, geographic visu",
+    "size_kb": 22.1
+  },
+  "claude-scientific-skills": {
+    "description": "Scientific research and analysis skills",
+    "size_kb": 0.6
+  },
+  "claude-speed-reader": {
+    "description": "-Speed read Claude's responses at 600+ WPM using RSVP with Spritz-style ORP highlighting",
+    "size_kb": 0.8
+  },
+  "claude-win11-speckit-update-skill": {
+    "description": "Windows 11 system management",
+    "size_kb": 0.6
+  },
+  "clean-code": {
+    "description": "Applies principles from Robert C. Martin's 'Clean Code'. Use this skill when writing, reviewing, or refactoring code to ensure high quality, readabili",
+    "size_kb": 4.4
+  },
+  "clerk-auth": {
+    "description": "Expert patterns for Clerk auth implementation, middleware, organizations, webhooks, and user sync Use when: adding authentication, clerk auth, user au",
+    "size_kb": 1.5
+  },
+  "clickup-automation": {
+    "description": "Automate ClickUp project management including tasks, spaces, folders, lists, comments, and team operations via Rube MCP (Composio). Always search tool",
+    "size_kb": 11.6
+  },
+  "close-automation": {
+    "description": "Automate Close CRM tasks via Rube MCP (Composio): create leads, manage calls/SMS, handle tasks, and track notes. Always search tools first for current",
+    "size_kb": 6.7
+  },
+  "cloud-architect": {
+    "description": "Expert cloud architect specializing in AWS/Azure/GCP multi-cloud",
+    "size_kb": 7.9
+  },
+  "cloud-penetration-testing": {
+    "description": "This skill should be used when the user asks to \"perform cloud penetration testing\", \"assess Azure or AWS or GCP security\", \"enumerate cloud resources",
+    "size_kb": 14.2
+  },
+  "coda-automation": {
+    "description": "Automate Coda tasks via Rube MCP (Composio): manage docs, pages, tables, rows, formulas, permissions, and publishing. Always search tools first for cu",
+    "size_kb": 9.0
+  },
+  "code-documentation-code-explain": {
+    "description": "You are a code education expert specializing in explaining complex code through clear narratives, visual diagrams, and step-by-step breakdowns. Transf",
+    "size_kb": 1.8
+  },
+  "code-documentation-doc-generate": {
+    "description": "You are a documentation expert specializing in creating comprehensive, maintainable documentation from code. Generate API docs, architecture diagrams,",
+    "size_kb": 1.9
+  },
+  "code-refactoring-context-restore": {
+    "description": "Use when working with code refactoring context restore",
+    "size_kb": 6.2
+  },
+  "code-refactoring-refactor-clean": {
+    "description": "You are a code refactoring expert specializing in clean code principles, SOLID design patterns, and modern software engineering best practices. Analyz",
+    "size_kb": 1.9
+  },
+  "code-refactoring-tech-debt": {
+    "description": "You are a technical debt expert specializing in identifying, quantifying, and prioritizing technical debt in software projects. Analyze the codebase t",
+    "size_kb": 10.3
+  },
+  "code-review-ai-ai-review": {
+    "description": "You are an expert AI-powered code review specialist combining automated static analysis, intelligent pattern recognition, and modern DevOps practices.",
+    "size_kb": 15.6
+  },
+  "code-review-checklist": {
+    "description": "Comprehensive checklist for conducting thorough code reviews covering functionality, security, performance, and maintainability",
+    "size_kb": 11.8
+  },
+  "code-review-excellence": {
+    "description": "Master effective code review practices to provide constructive feedback, catch bugs early, and foster knowledge sharing while maintaining team morale.",
+    "size_kb": 1.4
+  },
+  "code-reviewer": {
+    "description": "Automated code quality review with pattern-based analysis. Scans for anti-patterns, naming issues, security risks, and best practices.",
+    "size_kb": 1.1
+  },
+  "codebase-cleanup-deps-audit": {
+    "description": "You are a dependency security expert specializing in vulnerability scanning, license compliance, and supply chain security. Analyze project dependenci",
+    "size_kb": 2.0
+  },
+  "codebase-cleanup-refactor-clean": {
+    "description": "You are a code refactoring expert specializing in clean code principles, SOLID design patterns, and modern software engineering best practices. Analyz",
+    "size_kb": 1.8
+  },
+  "codebase-cleanup-tech-debt": {
+    "description": "You are a technical debt expert specializing in identifying, quantifying, and prioritizing technical debt in software projects. Analyze the codebase t",
+    "size_kb": 10.3
+  },
+  "codebase-navigator": {
+    "description": "Index & Search code quickly (Token Saver) for legacy projects.",
+    "size_kb": 1.1
+  },
+  "codex-review": {
+    "description": "Professional code review with auto CHANGELOG generation, integrated with Codex AI",
+    "size_kb": 1.0
+  },
+  "color-palette-generator": {
+    "description": "Generates standard Color Palettes for UI design.",
+    "size_kb": 0.7
+  },
+  "commit": {
+    "description": "Create commit messages following Sentry conventions. Use when committing code changes, writing commit messages, or formatting git history. Follows con",
+    "size_kb": 4.3
+  },
+  "competitive-landscape": {
+    "description": "This skill should be used when the user asks to \"analyze",
+    "size_kb": 1.2
+  },
+  "competitor-alternatives": {
+    "description": "When the user wants to create competitor comparison or alternative pages for SEO and sales enablement. Also use when the user mentions 'alternative pa",
+    "size_kb": 19.9
+  },
+  "competitor-analyzer": {
+    "description": "Analyzes competitor products, finding main features, strengths/weaknesses.",
+    "size_kb": 0.5
+  },
+  "comprehensive-review-full-review": {
+    "description": "Use when working with comprehensive review full review",
+    "size_kb": 9.8
+  },
+  "comprehensive-review-pr-enhance": {
+    "description": "You are a PR optimization expert specializing in creating high-quality pull requests that facilitate efficient code reviews. Generate comprehensive PR",
+    "size_kb": 1.8
+  },
+  "computer-use-agents": {
+    "description": "Build AI agents that interact with computers like humans do - viewing screens, moving cursors, clicking buttons, and typing text. Covers Anthropic's C",
+    "size_kb": 9.5
+  },
+  "computer-vision-expert": {
+    "description": "SOTA Computer Vision Expert (2026). Specialized in YOLO26, Segment Anything 3 (SAM 3), Vision Language Models, and real-time spatial analysis.",
+    "size_kb": 3.9
+  },
+  "concise-planning": {
+    "description": "Use when a user asks for a plan for a coding task, to generate a clear, actionable, and atomic checklist.",
+    "size_kb": 1.3
+  },
+  "conductor-implement": {
+    "description": "Execute tasks from a track's implementation plan following TDD workflow",
+    "size_kb": 8.7
+  },
+  "conductor-manage": {
+    "description": "Manage track lifecycle: archive, restore, delete, rename, and cleanup",
+    "size_kb": 1.3
+  },
+  "conductor-new-track": {
+    "description": "Create a new track with specification and phased implementation plan",
+    "size_kb": 8.6
+  },
+  "conductor-revert": {
+    "description": "Git-aware undo by logical work unit (track, phase, or task)",
+    "size_kb": 9.4
+  },
+  "conductor-setup": {
+    "description": "Initialize project with Conductor artifacts (product definition,",
+    "size_kb": 9.1
+  },
+  "conductor-status": {
+    "description": "Display project status, active tracks, and next actions",
+    "size_kb": 9.7
+  },
+  "conductor-validator": {
+    "description": "Validates Conductor project artifacts for completeness,",
+    "size_kb": 1.6
+  },
+  "confluence-automation": {
+    "description": "Automate Confluence page creation, content search, space management, labels, and hierarchy navigation via Rube MCP (Composio). Always search tools fir",
+    "size_kb": 11.1
+  },
+  "content-creator": {
+    "description": "Create SEO-optimized marketing content with consistent brand voice. Includes brand voice analyzer, SEO optimizer, content frameworks, and social media",
+    "size_kb": 7.5
+  },
+  "content-marketer": {
+    "description": "Elite content marketing strategist specializing in AI-powered",
+    "size_kb": 8.7
+  },
+  "context-compression": {
+    "description": "Design and evaluate compression strategies for long-running sessions",
+    "size_kb": 12.2
+  },
+  "context-degradation": {
+    "description": "Recognize patterns of context failure: lost-in-middle, poisoning, distraction, and clash",
+    "size_kb": 15.6
+  },
+  "context-driven-development": {
+    "description": "Use this skill when working with Conductor's context-driven",
+    "size_kb": 12.0
+  },
+  "context-fundamentals": {
+    "description": "Understand what context is, why it matters, and the anatomy of context in agent systems",
+    "size_kb": 12.1
+  },
+  "context-management-context-restore": {
+    "description": "Use when working with context management context restore",
+    "size_kb": 6.2
+  },
+  "context-management-context-save": {
+    "description": "Use when working with context management context save",
+    "size_kb": 5.8
+  },
+  "context-manager": {
+    "description": "Minifier & Context Controller for Token Saving.",
+    "size_kb": 0.7
+  },
+  "context-optimization": {
+    "description": "Apply compaction, masking, and caching strategies",
+    "size_kb": 8.5
+  },
+  "context-router": {
+    "description": "Universal query router for all skills' data. Retrieves only relevant data to save tokens.",
+    "size_kb": 1.7
+  },
+  "context-window-management": {
+    "description": "Strategies for managing LLM context windows including summarization, trimming, routing, and avoiding context rot Use when: context window, token limit",
+    "size_kb": 1.5
+  },
+  "context7-auto-research": {
+    "description": "Automatically fetch latest library/framework documentation for Claude Code via Context7 API",
+    "size_kb": 1.1
+  },
+  "conversation-memory": {
+    "description": "Persistent memory systems for LLM conversations including short-term, long-term, and entity-based memory Use when: conversation memory, remember, memo",
+    "size_kb": 1.8
+  },
+  "convertkit-automation": {
+    "description": "Automate ConvertKit (Kit) tasks via Rube MCP (Composio): manage subscribers, tags, broadcasts, and broadcast stats. Always search tools first for curr",
+    "size_kb": 7.1
+  },
+  "copilot-sdk": {
+    "description": "Build applications powered by GitHub Copilot using the Copilot SDK. Use when creating programmatic integrations with Copilot across Node.js/TypeScript",
+    "size_kb": 15.2
+  },
+  "copy-editing": {
+    "description": "When the user wants to edit, review, or improve existing marketing copy. Also use when the user mentions 'edit this copy,' 'review my copy,' 'copy fee",
+    "size_kb": 13.1
+  },
+  "copywriting": {
+    "description": ">",
+    "size_kb": 5.2
+  },
+  "core-components": {
+    "description": "Core component library and design system patterns. Use when building UI, using design tokens, or working with the component library.",
+    "size_kb": 4.9
+  },
+  "cost-optimization": {
+    "description": "Optimize cloud costs through resource rightsizing, tagging strategies, reserved instances, and spending analysis. Use when reducing cloud expenses, an",
+    "size_kb": 6.8
+  },
+  "cpp-pro": {
+    "description": "Write idiomatic C++ code with modern features, RAII, smart",
+    "size_kb": 1.9
+  },
+  "cqrs-implementation": {
+    "description": "Implement Command Query Responsibility Segregation for scalable architectures. Use when separating read and write models, optimizing query performance",
+    "size_kb": 1.2
+  },
+  "create-pr": {
+    "description": "Create pull requests following Sentry conventions. Use when opening PRs, writing PR descriptions, or preparing changes for review. Follows Sentry's co",
+    "size_kb": 5.1
+  },
+  "crewai": {
+    "description": "Expert in CrewAI - the leading role-based multi-agent framework used by 60% of Fortune 500 companies. Covers agent design with roles and goals, task d",
+    "size_kb": 6.1
+  },
+  "csharp-pro": {
+    "description": "Write modern C# code with advanced features like records, pattern",
+    "size_kb": 2.2
+  },
+  "culture-index": {
+    "description": "Index and search culture documentation",
+    "size_kb": 1.5
+  },
+  "customer-support": {
+    "description": "Elite AI-powered customer support specialist mastering",
+    "size_kb": 8.7
+  },
+  "daily-news-report": {
+    "description": "Scrapes content based on a preset URL list, filters high-quality technical information, and generates daily Markdown reports.",
+    "size_kb": 13.4
+  },
+  "data-engineer": {
+    "description": "Build scalable data pipelines, modern data warehouses, and",
+    "size_kb": 11.4
+  },
+  "data-engineering-data-driven-feature": {
+    "description": "Build features guided by data insights, A/B testing, and continuous measurement using specialized agents for analysis, implementation, and experimenta",
+    "size_kb": 11.9
+  },
+  "data-engineering-data-pipeline": {
+    "description": "You are a data pipeline architecture expert specializing in scalable, reliable, and cost-effective data pipelines for batch and streaming data process",
+    "size_kb": 7.0
+  },
+  "data-quality-frameworks": {
+    "description": "Implement data quality validation with Great Expectations, dbt tests, and data contracts. Use when building data quality pipelines, implementing valid",
+    "size_kb": 1.4
+  },
+  "data-scientist": {
+    "description": "Expert data scientist for advanced analytics, machine learning, and",
+    "size_kb": 10.4
+  },
+  "data-storytelling": {
+    "description": "Transform data into compelling narratives using visualization, context, and persuasive structure. Use when presenting analytics to stakeholders, creat",
+    "size_kb": 13.0
+  },
+  "database-admin": {
+    "description": "Expert database administrator specializing in modern cloud",
+    "size_kb": 10.0
+  },
+  "database-architect": {
+    "description": "Expert database architect specializing in data layer design from",
+    "size_kb": 17.1
+  },
+  "database-cloud-optimization-cost-optimize": {
+    "description": "You are a cloud cost optimization expert specializing in reducing infrastructure expenses while maintaining performance and reliability. Analyze cloud",
+    "size_kb": 1.9
+  },
+  "database-design": {
+    "description": "Database design principles and decision-making. Schema design, indexing strategy, ORM selection, serverless databases.",
+    "size_kb": 1.5
+  },
+  "database-migration": {
+    "description": "Execute database migrations across ORMs and platforms with zero-downtime strategies, data transformation, and rollback procedures. Use when migrating ",
+    "size_kb": 11.3
+  },
+  "database-migrations-migration-observability": {
+    "description": "Migration monitoring, CDC, and observability infrastructure",
+    "size_kb": 13.4
+  },
+  "database-migrations-sql-migrations": {
+    "description": "SQL database migrations with zero-downtime strategies for",
+    "size_kb": 2.3
+  },
+  "database-optimizer": {
+    "description": "Expert database optimizer specializing in modern performance",
+    "size_kb": 10.2
+  },
+  "datadog-automation": {
+    "description": "Automate Datadog tasks via Rube MCP (Composio): query metrics, search logs, manage monitors/dashboards, create events and downtimes. Always search too",
+    "size_kb": 9.2
+  },
+  "db-designer": {
+    "description": "Generates standard SQL or Prisma database schemas.",
+    "size_kb": 0.5
+  },
+  "dbt-transformation-patterns": {
+    "description": "Master dbt (data build tool) for analytics engineering with model organization, testing, documentation, and incremental strategies. Use when building ",
+    "size_kb": 1.4
+  },
+  "debugger": {
+    "description": "Debugging specialist for errors, test failures, and unexpected",
+    "size_kb": 1.3
+  },
+  "debugging-strategies": {
+    "description": "Master systematic debugging techniques, profiling tools, and root cause analysis to efficiently track down bugs across any codebase or technology stac",
+    "size_kb": 1.3
+  },
+  "debugging-toolkit-smart-debug": {
+    "description": "Use when working with debugging toolkit smart debug",
+    "size_kb": 6.1
+  },
+  "deep-research": {
+    "description": "Execute autonomous multi-step research using Google Gemini Deep Research Agent. Use for: market analysis, competitive landscaping, literature reviews,",
+    "size_kb": 3.0
+  },
+  "defi-protocol-templates": {
+    "description": "Implement DeFi protocols with production-ready templates for staking, AMMs, governance, and lending systems. Use when building decentralized finance a",
+    "size_kb": 14.8
+  },
+  "dependency-management-deps-audit": {
+    "description": "You are a dependency security expert specializing in vulnerability scanning, license compliance, and supply chain security. Analyze project dependenci",
+    "size_kb": 1.8
+  },
+  "dependency-upgrade": {
+    "description": "Manage major dependency version upgrades with compatibility analysis, staged rollout, and comprehensive testing. Use when upgrading framework versions",
+    "size_kb": 9.6
+  },
+  "deployment-engineer": {
+    "description": "Expert deployment engineer specializing in modern CI/CD pipelines,",
+    "size_kb": 9.7
+  },
+  "deployment-pipeline-design": {
+    "description": "Design multi-stage CI/CD pipelines with approval gates, security checks, and deployment orchestration. Use when architecting deployment workflows, set",
+    "size_kb": 9.0
+  },
+  "deployment-procedures": {
+    "description": "Production deployment principles and decision-making. Safe deployment workflows, rollback strategies, and verification. Teaches thinking, not scripts.",
+    "size_kb": 5.8
+  },
+  "deployment-validation-config-validate": {
+    "description": "You are a configuration management expert specializing in validating, testing, and ensuring the correctness of application configurations. Create comp",
+    "size_kb": 14.3
+  },
+  "design-md": {
+    "description": "Analyze Stitch projects and synthesize a semantic design system into DESIGN.md files",
+    "size_kb": 7.9
+  },
+  "design-orchestration": {
+    "description": ">",
+    "size_kb": 3.5
+  },
+  "devops-troubleshooter": {
+    "description": "Expert DevOps troubleshooter specializing in rapid incident",
+    "size_kb": 9.8
+  },
+  "diff-applier": {
+    "description": "Smart Patcher — Apply Diff, Lint, and Auto-Index.",
+    "size_kb": 0.9
+  },
+  "discord-automation": {
+    "description": "Automate Discord tasks via Rube MCP (Composio): messages, channels, roles, webhooks, reactions. Always search tools first for current schemas.",
+    "size_kb": 7.0
+  },
+  "discord-bot-architect": {
+    "description": "Specialized skill for building production-ready Discord bots. Covers Discord.js (JavaScript) and Pycord (Python), gateway intents, slash commands, int",
+    "size_kb": 8.2
+  },
+  "dispatching-parallel-agents": {
+    "description": "Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies",
+    "size_kb": 6.1
+  },
+  "distributed-debugging-debug-trace": {
+    "description": "You are a debugging expert specializing in setting up comprehensive debugging environments, distributed tracing, and diagnostic tools. Configure debug",
+    "size_kb": 1.9
+  },
+  "distributed-tracing": {
+    "description": "Implement distributed tracing with Jaeger and Tempo to track requests across microservices and identify performance bottlenecks. Use when debugging mi",
+    "size_kb": 10.8
+  },
+  "django-pro": {
+    "description": "Master Django 5.x with async views, DRF, Celery, and Django",
+    "size_kb": 7.0
+  },
+  "doc-coauthoring": {
+    "description": "Guide users through a structured workflow for co-authoring documentation. Use when user wants to write documentation, proposals, technical specs, deci",
+    "size_kb": 15.8
+  },
+  "doc-generator": {
+    "description": "Setup documentation sites (MkDocs).",
+    "size_kb": 0.3
+  },
+  "docker-expert": {
+    "description": "Docker containerization expert with deep knowledge of multi-stage builds, image optimization, container security, Docker Compose orchestration, and pr",
+    "size_kb": 14.1
+  },
+  "docker-wizard": {
+    "description": "Auto-generate Dockerfile & Compose configs.",
+    "size_kb": 0.3
+  },
+  "docs-architect": {
+    "description": "Creates comprehensive technical documentation from existing",
+    "size_kb": 4.2
+  },
+  "documentation-generation-doc-generate": {
+    "description": "You are a documentation expert specializing in creating comprehensive, maintainable documentation from code. Generate API docs, architecture diagrams,",
+    "size_kb": 1.9
+  },
+  "documentation-templates": {
+    "description": "Documentation templates and structure guidelines. README, API docs, code comments, and AI-friendly documentation.",
+    "size_kb": 3.4
+  },
+  "docusign-automation": {
+    "description": "Automate DocuSign tasks via Rube MCP (Composio): templates, envelopes, signatures, document management. Always search tools first for current schemas.",
+    "size_kb": 7.8
+  },
+  "docx-official": {
+    "description": "Comprehensive document creation, editing, and analysis with support for tracked changes, comments, formatting preservation, and text extraction. When ",
+    "size_kb": 10.1
+  },
+  "dotnet-architect": {
+    "description": "Expert .NET backend architect specializing in C#, ASP.NET Core,",
+    "size_kb": 7.3
+  },
+  "dotnet-backend": {
+    "description": "Build ASP.NET Core 8+ backend services with EF Core, auth, background jobs, and production API patterns.",
+    "size_kb": 7.8
+  },
+  "dotnet-backend-patterns": {
+    "description": "Master C#/.NET backend development patterns for building robust APIs, MCP servers, and enterprise applications. Covers async/await, dependency injecti",
+    "size_kb": 1.5
+  },
+  "dropbox-automation": {
+    "description": "Automate Dropbox file management, sharing, search, uploads, downloads, and folder operations via Rube MCP (Composio). Always search tools first for cu",
+    "size_kb": 12.2
+  },
+  "dx-optimizer": {
+    "description": "Developer Experience specialist. Improves tooling, setup, and",
+    "size_kb": 2.3
+  },
+  "e2e-testing-patterns": {
+    "description": "Master end-to-end testing with Playwright and Cypress to build reliable test suites that catch bugs, improve confidence, and enable fast deployment. U",
+    "size_kb": 1.4
+  },
+  "elixir-pro": {
+    "description": "Write idiomatic Elixir code with OTP patterns, supervision trees,",
+    "size_kb": 2.0
+  },
+  "email-sequence": {
+    "description": "When the user wants to create or optimize an email sequence, drip campaign, automated email flow, or lifecycle email program. Also use when the user m",
+    "size_kb": 23.4
+  },
+  "email-systems": {
+    "description": "Email has the highest ROI of any marketing channel. $36 for every $1 spent. Yet most startups treat it as an afterthought - bulk blasts, no personaliz",
+    "size_kb": 2.2
+  },
+  "embedding-strategies": {
+    "description": "Select and optimize embedding models for semantic search and RAG applications. Use when choosing embedding models, implementing chunking strategies, o",
+    "size_kb": 15.1
+  },
+  "employment-contract-templates": {
+    "description": "Create employment contracts, offer letters, and HR policy documents following legal best practices. Use when drafting employment agreements, creating ",
+    "size_kb": 1.4
+  },
+  "env-manager": {
+    "description": "Auto-generate .env.example from your codebase. Scans for environment variable usage and creates a safe template.",
+    "size_kb": 0.8
+  },
+  "environment-setup-guide": {
+    "description": "Guide developers through setting up development environments with proper tools, dependencies, and configurations",
+    "size_kb": 11.6
+  },
+  "error-debugging-error-analysis": {
+    "description": "You are an expert error analysis specialist with deep expertise in debugging distributed systems, analyzing production incidents, and implementing com",
+    "size_kb": 2.1
+  },
+  "error-debugging-error-trace": {
+    "description": "You are an error tracking and observability expert specializing in implementing comprehensive error monitoring solutions. Set up error tracking system",
+    "size_kb": 1.7
+  },
+  "error-debugging-multi-agent-review": {
+    "description": "Use when working with error debugging multi agent review",
+    "size_kb": 6.8
+  },
+  "error-detective": {
+    "description": "Search logs and codebases for error patterns, stack traces, and",
+    "size_kb": 1.8
+  },
+  "error-diagnostics-error-analysis": {
+    "description": "You are an expert error analysis specialist with deep expertise in debugging distributed systems, analyzing production incidents, and implementing com",
+    "size_kb": 2.1
+  },
+  "error-diagnostics-error-trace": {
+    "description": "You are an error tracking and observability expert specializing in implementing comprehensive error monitoring solutions. Set up error tracking system",
+    "size_kb": 2.1
+  },
+  "error-diagnostics-smart-debug": {
+    "description": "Use when working with error diagnostics smart debug",
+    "size_kb": 6.1
+  },
+  "error-handling-patterns": {
+    "description": "Master error handling patterns across languages including exceptions, Result types, error propagation, and graceful degradation to build resilient app",
+    "size_kb": 1.3
+  },
+  "ethical-hacking-methodology": {
+    "description": "This skill should be used when the user asks to \"learn ethical hacking\", \"understand penetration testing lifecycle\", \"perform reconnaissance\", \"conduc",
+    "size_kb": 11.1
+  },
+  "evaluation": {
+    "description": "Build evaluation frameworks for agent systems",
+    "size_kb": 10.6
+  },
+  "event-sourcing-architect": {
+    "description": "Expert in event sourcing, CQRS, and event-driven architecture patterns. Masters event store design, projection building, saga orchestration, and event",
+    "size_kb": 2.3
+  },
+  "event-store-design": {
+    "description": "Design and implement event stores for event-sourced systems. Use when building event sourcing infrastructure, choosing event store technologies, or im",
+    "size_kb": 16.0
+  },
+  "exa-search": {
+    "description": "Semantic search, similar content discovery, and structured research using Exa API",
+    "size_kb": 0.9
+  },
+  "executing-plans": {
+    "description": "Use when you have a written implementation plan to execute in a separate session with review checkpoints",
+    "size_kb": 2.2
+  },
+  "expo-deployment": {
+    "description": "Deploy Expo apps to production",
+    "size_kb": 2.1
+  },
+  "fal-audio": {
+    "description": "Text-to-speech and speech-to-text using fal.ai audio models",
+    "size_kb": 0.7
+  },
+  "fal-generate": {
+    "description": "Generate images and videos using fal.ai AI models",
+    "size_kb": 0.7
+  },
+  "fal-image-edit": {
+    "description": "AI-powered image editing with style transfer and object removal",
+    "size_kb": 0.7
+  },
+  "fal-platform": {
+    "description": "Platform APIs for model management, pricing, and usage tracking",
+    "size_kb": 0.7
+  },
+  "fal-upscale": {
+    "description": "Upscale and enhance image and video resolution using AI",
+    "size_kb": 0.7
+  },
+  "fal-workflow": {
+    "description": "Generate workflow JSON files for chaining AI models",
+    "size_kb": 0.7
+  },
+  "fastapi-pro": {
+    "description": "Build high-performance async APIs with FastAPI, SQLAlchemy 2.0, and",
+    "size_kb": 6.5
+  },
+  "fastapi-router-py": {
+    "description": "Create FastAPI routers with CRUD operations, authentication dependencies, and proper response models. Use when building REST API endpoints, creating n",
+    "size_kb": 1.6
+  },
+  "fastapi-templates": {
+    "description": "Create production-ready FastAPI projects with async patterns, dependency injection, and comprehensive error handling. Use when building new FastAPI ap",
+    "size_kb": 1.2
+  },
+  "ffuf-claude-skill": {
+    "description": "Web fuzzing with ffuf",
+    "size_kb": 0.5
+  },
+  "figma-automation": {
+    "description": "Automate Figma tasks via Rube MCP (Composio): files, components, design tokens, comments, exports. Always search tools first for current schemas.",
+    "size_kb": 6.9
+  },
+  "file-organizer": {
+    "description": "Intelligently organizes files and folders by understanding context, finding duplicates, and suggesting better organizational structures. Use when user",
+    "size_kb": 6.5
+  },
+  "file-path-traversal": {
+    "description": "This skill should be used when the user asks to \"test for directory traversal\", \"exploit path traversal vulnerabilities\", \"read arbitrary files throug",
+    "size_kb": 12.0
+  },
+  "file-uploads": {
+    "description": "Expert at handling file uploads and cloud storage. Covers S3, Cloudflare R2, presigned URLs, multipart uploads, and image optimization. Knows how to h",
+    "size_kb": 1.0
+  },
+  "find-bugs": {
+    "description": "Find bugs, security vulnerabilities, and code quality issues in local branch changes. Use when asked to review changes, find bugs, security review, or",
+    "size_kb": 3.1
+  },
+  "finishing-a-development-branch": {
+    "description": "Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by prese",
+    "size_kb": 4.3
+  },
+  "firebase": {
+    "description": "Firebase gives you a complete backend in minutes - auth, database, storage, functions, hosting. But the ease of setup hides real complexity. Security ",
+    "size_kb": 1.8
+  },
+  "firecrawl-scraper": {
+    "description": "Deep web scraping, screenshots, PDF parsing, and website crawling using Firecrawl API",
+    "size_kb": 1.0
+  },
+  "firmware-analyst": {
+    "description": "Expert firmware analyst specializing in embedded systems, IoT",
+    "size_kb": 8.2
+  },
+  "fix-review": {
+    "description": "Verify fix commits address audit findings without new bugs",
+    "size_kb": 1.8
+  },
+  "flutter-expert": {
+    "description": "Master Flutter development with Dart 3, advanced widgets, and",
+    "size_kb": 9.5
+  },
+  "form-cro": {
+    "description": ">",
+    "size_kb": 8.0
+  },
+  "fp-ts-errors": {
+    "description": "Handle errors as values using fp-ts Either and TaskEither for cleaner, more predictable TypeScript code. Use when implementing error handling patterns",
+    "size_kb": 22.7
+  },
+  "fp-ts-pragmatic": {
+    "description": "A practical, jargon-free guide to fp-ts functional programming - the 80/20 approach that gets results without the academic overhead. Use when writing ",
+    "size_kb": 16.1
+  },
+  "fp-ts-react": {
+    "description": "Practical patterns for using fp-ts with React - hooks, state, forms, data fetching. Use when building React apps with functional programming patterns.",
+    "size_kb": 19.2
+  },
+  "framework-migration-code-migrate": {
+    "description": "You are a code migration expert specializing in transitioning codebases between frameworks, languages, versions, and platforms. Generate comprehensive",
+    "size_kb": 2.2
+  },
+  "framework-migration-deps-upgrade": {
+    "description": "You are a dependency management expert specializing in safe, incremental upgrades of project dependencies. Plan and execute dependency updates with mi",
+    "size_kb": 2.1
+  },
+  "framework-migration-legacy-modernize": {
+    "description": "Orchestrate a comprehensive legacy system modernization using the strangler fig pattern, enabling gradual replacement of outdated components while mai",
+    "size_kb": 10.8
+  },
+  "free-tool-strategy": {
+    "description": "When the user wants to plan, evaluate, or build a free tool for marketing purposes — lead generation, SEO value, or brand awareness. Also use when the",
+    "size_kb": 11.6
+  },
+  "freshdesk-automation": {
+    "description": "Automate Freshdesk helpdesk operations including tickets, contacts, companies, notes, and replies via Rube MCP (Composio). Always search tools first f",
+    "size_kb": 11.3
+  },
+  "freshservice-automation": {
+    "description": "Automate Freshservice ITSM tasks via Rube MCP (Composio): create/update tickets, bulk operations, service requests, and outbound emails. Always search",
+    "size_kb": 8.3
+  },
+  "frontend-design": {
+    "description": "Create distinctive, production-grade frontend interfaces with intentional aesthetics, high craft, and non-generic visual identity. Use when building o",
+    "size_kb": 6.7
+  },
+  "frontend-dev-guidelines": {
+    "description": "Opinionated frontend development standards for modern React + TypeScript applications. Covers Suspense-first data fetching, lazy loading, feature-base",
+    "size_kb": 8.2
+  },
+  "frontend-developer": {
+    "description": "Build React components, implement responsive layouts, and handle",
+    "size_kb": 7.4
+  },
+  "frontend-mobile-development-component-scaffold": {
+    "description": "You are a React component architecture expert specializing in scaffolding production-ready, accessible, and performant components. Generate complete c",
+    "size_kb": 11.7
+  },
+  "frontend-mobile-security-xss-scan": {
+    "description": "You are a frontend security specialist focusing on Cross-Site Scripting (XSS) vulnerability detection and prevention. Analyze React, Vue, Angular, and",
+    "size_kb": 9.3
+  },
+  "frontend-security-coder": {
+    "description": "Expert in secure frontend coding practices specializing in XSS",
+    "size_kb": 11.4
+  },
+  "frontend-slides": {
+    "description": "Create stunning, animation-rich HTML presentations from scratch or by converting PowerPoint files. Use when the user wants to build a presentation, co",
+    "size_kb": 21.5
+  },
+  "frontend-ui-dark-ts": {
+    "description": "Build dark-themed React applications using Tailwind CSS with custom theming, glassmorphism effects, and Framer Motion animations. Use when creating da",
+    "size_kb": 14.9
+  },
+  "full-stack-orchestration-full-stack-feature": {
+    "description": "Use when working with full stack orchestration full stack feature",
+    "size_kb": 10.3
+  },
+  "game-development": {
+    "description": "Game development orchestrator. Routes to platform-specific skills based on project needs.",
+    "size_kb": 4.7
+  },
+  "gcp-cloud-run": {
+    "description": "Specialized skill for building production-ready serverless applications on GCP. Covers Cloud Run services (containerized), Cloud Run Functions (event-",
+    "size_kb": 7.1
+  },
+  "gdpr-data-handling": {
+    "description": "Implement GDPR-compliant data handling with consent management, data subject rights, and privacy by design. Use when building systems that process EU ",
+    "size_kb": 1.2
+  },
+  "gemini-api-dev": {
+    "description": "Use this skill when building applications with Gemini models, Gemini API, working with multimodal content (text, images, audio, video), implementing f",
+    "size_kb": 4.9
+  },
+  "geo-fundamentals": {
+    "description": "Generative Engine Optimization for AI search engines (ChatGPT, Claude, Perplexity).",
+    "size_kb": 3.5
+  },
+  "git-advanced-workflows": {
+    "description": "Master advanced Git workflows including rebasing, cherry-picking, bisect, worktrees, and reflog to maintain clean history and recover from any situati",
+    "size_kb": 9.8
+  },
+  "git-manager": {
+    "description": "Semantic Commits & Branch Strategy for Leader visibility.",
+    "size_kb": 0.5
+  },
+  "git-pr-workflows-git-workflow": {
+    "description": "Orchestrate a comprehensive git workflow from code review through PR creation, leveraging specialized agents for quality assurance, testing, and deplo",
+    "size_kb": 10.0
+  },
+  "git-pr-workflows-onboard": {
+    "description": "You are an **expert onboarding specialist and knowledge transfer architect** with deep experience in remote-first organizations, technical team integr",
+    "size_kb": 14.9
+  },
+  "git-pr-workflows-pr-enhance": {
+    "description": "You are a PR optimization expert specializing in creating high-quality pull requests that facilitate efficient code reviews. Generate comprehensive PR",
+    "size_kb": 2.1
+  },
+  "git-pushing": {
+    "description": "Stage, commit, and push git changes with conventional commit messages. Use when user wants to commit and push changes, mentions pushing to remote, or ",
+    "size_kb": 1.1
+  },
+  "github-actions-templates": {
+    "description": "Create production-ready GitHub Actions workflows for automated testing, building, and deploying applications. Use when setting up CI/CD with GitHub Ac",
+    "size_kb": 7.8
+  },
+  "github-automation": {
+    "description": "Automate GitHub repositories, issues, pull requests, branches, CI/CD, and permissions via Rube MCP (Composio). Manage code workflows, review PRs, sear",
+    "size_kb": 11.2
+  },
+  "github-issue-creator": {
+    "description": "Convert raw notes, error logs, voice dictation, or screenshots into crisp GitHub-flavored markdown issue reports. Use when the user pastes bug info, e",
+    "size_kb": 3.7
+  },
+  "github-workflow-automation": {
+    "description": "Automate GitHub workflows with AI assistance. Includes PR reviews, issue triage, CI/CD integration, and Git operations. Use when automating GitHub wor",
+    "size_kb": 22.0
+  },
+  "gitlab-automation": {
+    "description": "Automate GitLab project management, issues, merge requests, pipelines, branches, and user operations via Rube MCP (Composio). Always search tools firs",
+    "size_kb": 13.2
+  },
+  "gitlab-ci-patterns": {
+    "description": "Build GitLab CI/CD pipelines with multi-stage workflows, caching, and distributed runners for scalable automation. Use when implementing GitLab CI/CD,",
+    "size_kb": 6.1
+  },
+  "gitops-workflow": {
+    "description": "Implement GitOps workflows with ArgoCD and Flux for automated, declarative Kubernetes deployments with continuous reconciliation. Use when implementin",
+    "size_kb": 6.6
+  },
+  "gmail-automation": {
+    "description": "Automate Gmail tasks via Rube MCP (Composio): send/reply, search, labels, drafts, attachments. Always search tools first for current schemas.",
+    "size_kb": 10.5
+  },
+  "go-concurrency-patterns": {
+    "description": "Master Go concurrency with goroutines, channels, sync primitives, and context. Use when building concurrent Go applications, implementing worker pools",
+    "size_kb": 1.1
+  },
+  "go-playwright": {
+    "description": "Expert capability for robust, stealthy, and efficient browser automation using Playwright Go.",
+    "size_kb": 4.8
+  },
+  "go-rod-master": {
+    "description": "Comprehensive guide for browser automation and web scraping with go-rod (Chrome DevTools Protocol) including stealth anti-bot-detection patterns.",
+    "size_kb": 18.0
+  },
+  "godot-gdscript-patterns": {
+    "description": "Master Godot 4 GDScript patterns including signals, scenes, state machines, and optimization. Use when building Godot games, implementing game systems",
+    "size_kb": 1.1
+  },
+  "golang-pro": {
+    "description": "Master Go 1.21+ with modern patterns, advanced concurrency,",
+    "size_kb": 7.6
+  },
+  "google-analytics-automation": {
+    "description": "Automate Google Analytics tasks via Rube MCP (Composio): run reports, list accounts/properties, funnels, pivots, key events. Always search tools first",
+    "size_kb": 8.9
+  },
+  "google-calendar-automation": {
+    "description": "Automate Google Calendar events, scheduling, availability checks, and attendee management via Rube MCP (Composio). Create events, find free slots, man",
+    "size_kb": 9.1
+  },
+  "google-drive-automation": {
+    "description": "Automate Google Drive file operations (upload, download, search, share, organize) via Rube MCP (Composio). Upload/download files, manage folders, shar",
+    "size_kb": 9.9
+  },
+  "googlesheets-automation": {
+    "description": "Automate Google Sheets operations (read, write, format, filter, manage spreadsheets) via Rube MCP (Composio). Read/write data, manage tabs, apply form",
+    "size_kb": 9.8
+  },
+  "grafana-dashboards": {
+    "description": "Create and manage production Grafana dashboards for real-time visualization of system and application metrics. Use when building monitoring dashboards",
+    "size_kb": 8.9
+  },
+  "graphql": {
+    "description": "GraphQL gives clients exactly the data they need - no more, no less. One endpoint, typed schema, introspection. But the flexibility that makes it powe",
+    "size_kb": 2.5
+  },
+  "graphql-architect": {
+    "description": "Master modern GraphQL with federation, performance optimization,",
+    "size_kb": 7.4
+  },
+  "haskell-pro": {
+    "description": "Expert Haskell engineer specializing in advanced type systems, pure",
+    "size_kb": 2.3
+  },
+  "helm-chart-scaffolding": {
+    "description": "Design, organize, and manage Helm charts for templating and packaging Kubernetes applications with reusable configurations. Use when creating Helm cha",
+    "size_kb": 1.2
+  },
+  "helpdesk-automation": {
+    "description": "Automate HelpDesk tasks via Rube MCP (Composio): list tickets, manage views, use canned responses, and configure custom fields. Always search tools fi",
+    "size_kb": 5.9
+  },
+  "hosted-agents-v2-py": {
+    "description": "|",
+    "size_kb": 9.3
+  },
+  "hr-pro": {
+    "description": "Professional, ethical HR partner for hiring,",
+    "size_kb": 8.3
+  },
+  "html-injection-testing": {
+    "description": "This skill should be used when the user asks to \"test for HTML injection\", \"inject HTML into web pages\", \"perform HTML injection attacks\", \"deface web",
+    "size_kb": 13.2
+  },
+  "hubspot-automation": {
+    "description": "Automate HubSpot CRM operations (contacts, companies, deals, tickets, properties) via Rube MCP using Composio integration.",
+    "size_kb": 9.2
+  },
+  "hubspot-integration": {
+    "description": "Expert patterns for HubSpot CRM integration including OAuth authentication, CRM objects, associations, batch operations, webhooks, and custom objects.",
+    "size_kb": 1.1
+  },
+  "hugging-face-cli": {
+    "description": "Execute Hugging Face Hub operations using the `hf` CLI. Use when the user needs to download models/datasets/spaces, upload files to Hub repositories, ",
+    "size_kb": 7.8
+  },
+  "hugging-face-jobs": {
+    "description": "This skill should be used when users want to run any workload on Hugging Face Jobs infrastructure. Covers UV scripts, Docker-based jobs, hardware sele",
+    "size_kb": 31.2
+  },
+  "hybrid-cloud-architect": {
+    "description": "Expert hybrid cloud architect specializing in complex multi-cloud",
+    "size_kb": 9.9
+  },
+  "hybrid-cloud-networking": {
+    "description": "Configure secure, high-performance connectivity between on-premises infrastructure and cloud platforms using VPN and dedicated connections. Use when b",
+    "size_kb": 6.1
+  },
+  "hybrid-search-implementation": {
+    "description": "Combine vector and keyword search for improved retrieval. Use when implementing RAG systems, building search engines, or when neither approach alone p",
+    "size_kb": 1.1
+  },
+  "i18n-localization": {
+    "description": "Internationalization and localization patterns. Detecting hardcoded strings, managing translations, locale files, RTL support.",
+    "size_kb": 3.2
+  },
+  "i18n-manager": {
+    "description": "Extracts hardcoded strings from your code for internationalization. Generates translation files.",
+    "size_kb": 1.0
+  },
+  "idor-testing": {
+    "description": "This skill should be used when the user asks to \"test for insecure direct object references,\" \"find IDOR vulnerabilities,\" \"exploit broken access cont",
+    "size_kb": 12.7
+  },
+  "imagen": {
+    "description": "|",
+    "size_kb": 2.4
+  },
+  "incident-responder": {
+    "description": "Expert SRE incident responder specializing in rapid problem",
+    "size_kb": 10.4
+  },
+  "incident-response-incident-response": {
+    "description": "Use when working with incident response incident response",
+    "size_kb": 10.6
+  },
+  "incident-response-smart-fix": {
+    "description": "[Extended thinking: This workflow implements a sophisticated debugging and resolution pipeline that leverages AI-assisted debugging tools and observab",
+    "size_kb": 3.3
+  },
+  "incident-runbook-templates": {
+    "description": "Create structured incident response runbooks with step-by-step procedures, escalation paths, and recovery actions. Use when building runbooks, respond",
+    "size_kb": 11.1
+  },
+  "infinite-gratitude": {
+    "description": "Multi-agent research skill for parallel research execution (10 agents, battle-tested with real case studies).",
+    "size_kb": 1.0
+  },
+  "inngest": {
+    "description": "Inngest expert for serverless-first background jobs, event-driven workflows, and durable execution without managing queues or workers. Use when: innge",
+    "size_kb": 1.5
+  },
+  "instagram-automation": {
+    "description": "Automate Instagram tasks via Rube MCP (Composio): create posts, carousels, manage media, get insights, and publishing limits. Always search tools firs",
+    "size_kb": 7.8
+  },
+  "interactive-portfolio": {
+    "description": "Expert in building portfolios that actually land jobs and clients - not just showing work, but creating memorable experiences. Covers developer portfo",
+    "size_kb": 5.6
+  },
+  "intercom-automation": {
+    "description": "Automate Intercom tasks via Rube MCP (Composio): conversations, contacts, companies, segments, admins. Always search tools first for current schemas.",
+    "size_kb": 9.6
+  },
+  "internal-comms-anthropic": {
+    "description": "A set of resources to help me write all kinds of internal communications, using the formats that my company likes to use. Claude should use this skill",
+    "size_kb": 1.5
+  },
+  "internal-comms-community": {
+    "description": "A set of resources to help me write all kinds of internal communications, using the formats that my company likes to use. Claude should use this skill",
+    "size_kb": 1.5
+  },
+  "ios-developer": {
+    "description": "Develop native iOS applications with Swift/SwiftUI. Masters iOS 18,",
+    "size_kb": 9.3
+  },
+  "istio-traffic-management": {
+    "description": "Configure Istio traffic management including routing, load balancing, circuit breakers, and canary deployments. Use when implementing service mesh tra",
+    "size_kb": 7.6
+  },
+  "iterate-pr": {
+    "description": "Iterate on a PR until CI passes. Use when you need to fix CI failures, address review feedback, or continuously push fixes until all checks are green.",
+    "size_kb": 4.4
+  },
+  "java-pro": {
+    "description": "Master Java 21+ with modern features like virtual threads, pattern",
+    "size_kb": 8.3
+  },
+  "javascript-mastery": {
+    "description": "Comprehensive JavaScript reference covering 33+ essential concepts every developer should know. From fundamentals like primitives and closures to adva",
+    "size_kb": 13.2
+  },
+  "javascript-pro": {
+    "description": "Master modern JavaScript with ES6+, async patterns, and Node.js",
+    "size_kb": 1.8
+  },
+  "javascript-testing-patterns": {
+    "description": "Implement comprehensive testing strategies using Jest, Vitest, and Testing Library for unit tests, integration tests, and end-to-end testing with mock",
+    "size_kb": 1.4
+  },
+  "javascript-typescript-typescript-scaffold": {
+    "description": "You are a TypeScript project architecture expert specializing in scaffolding production-ready Node.js and frontend applications. Generate complete pro",
+    "size_kb": 8.8
+  },
+  "jira-automation": {
+    "description": "Automate Jira tasks via Rube MCP (Composio): issues, projects, sprints, boards, comments, users. Always search tools first for current schemas.",
+    "size_kb": 6.7
+  },
+  "journal-manager": {
+    "description": "2-tier knowledge journal — index + entries system for capturing lessons, bugs, and insights during development.",
+    "size_kb": 1.4
+  },
+  "julia-pro": {
+    "description": "Master Julia 1.10+ with modern features, performance optimization,",
+    "size_kb": 8.8
+  },
+  "k8s-manifest-generator": {
+    "description": "Create production-ready Kubernetes manifests for Deployments, Services, ConfigMaps, and Secrets following best practices and security standards. Use w",
+    "size_kb": 1.5
+  },
+  "k8s-security-policies": {
+    "description": "Implement Kubernetes security policies including NetworkPolicy, PodSecurityPolicy, and RBAC for production-grade security. Use when securing Kubernete",
+    "size_kb": 7.8
+  },
+  "kaizen": {
+    "description": "Guide for continuous improvement, error proofing, and standardization. Use this skill when the user wants to improve code quality, refactor, or discus",
+    "size_kb": 17.8
+  },
+  "klaviyo-automation": {
+    "description": "Automate Klaviyo tasks via Rube MCP (Composio): manage email/SMS campaigns, inspect campaign messages, track tags, and monitor send jobs. Always searc",
+    "size_kb": 7.3
+  },
+  "knowledge-guide": {
+    "description": "Code explainer and idea capturer. Helps users understand the codebase and logs improvement ideas for developers.",
+    "size_kb": 0.9
+  },
+  "kpi-dashboard-design": {
+    "description": "Design effective KPI dashboards with metrics selection, visualization best practices, and real-time monitoring patterns. Use when building business da",
+    "size_kb": 17.8
+  },
+  "kubernetes-architect": {
+    "description": "Expert Kubernetes architect specializing in cloud-native",
+    "size_kb": 10.1
+  },
+  "langchain-architecture": {
+    "description": "Design LLM applications using the LangChain framework with agents, memory, and tool integration patterns. Use when building LangChain applications, im",
+    "size_kb": 10.6
+  },
+  "langfuse": {
+    "description": "Expert in Langfuse - the open-source LLM observability platform. Covers tracing, prompt management, evaluation, datasets, and integration with LangCha",
+    "size_kb": 5.9
+  },
+  "langgraph": {
+    "description": "Expert in LangGraph - the production-grade framework for building stateful, multi-actor AI applications. Covers graph construction, state management, ",
+    "size_kb": 7.5
+  },
+  "laravel-expert": {
+    "description": "Senior Laravel Engineer role for production-grade, maintainable, and idiomatic Laravel solutions. Focuses on clean architecture, security, performance",
+    "size_kb": 3.9
+  },
+  "laravel-security-audit": {
+    "description": "Security auditor for Laravel applications. Analyzes code for vulnerabilities, misconfigurations, and insecure practices using OWASP standards and Lara",
+    "size_kb": 4.6
+  },
+  "last30days": {
+    "description": "Research a topic from the last 30 days on Reddit + X + Web, become an expert, and write copy-paste-ready prompts for the user's target tool.",
+    "size_kb": 14.9
+  },
+  "launch-strategy": {
+    "description": "When the user wants to plan a product launch, feature announcement, or release strategy. Also use when the user mentions 'launch,' 'Product Hunt,' 'fe",
+    "size_kb": 12.3
+  },
+  "legacy-modernizer": {
+    "description": "Refactor legacy codebases, migrate outdated frameworks, and",
+    "size_kb": 1.8
+  },
+  "legal-advisor": {
+    "description": "Draft privacy policies, terms of service, disclaimers, and legal",
+    "size_kb": 2.5
+  },
+  "linear-automation": {
+    "description": "Automate Linear tasks via Rube MCP (Composio): issues, projects, cycles, teams, labels. Always search tools first for current schemas.",
+    "size_kb": 6.0
+  },
+  "linear-claude-skill": {
+    "description": "Manage Linear issues, projects, and teams",
+    "size_kb": 14.7
+  },
+  "linkedin-automation": {
+    "description": "Automate LinkedIn tasks via Rube MCP (Composio): create posts, manage profile, company info, comments, and image uploads. Always search tools first fo",
+    "size_kb": 6.4
+  },
+  "linkerd-patterns": {
+    "description": "Implement Linkerd service mesh patterns for lightweight, security-focused service mesh deployments. Use when setting up Linkerd, configuring traffic p",
+    "size_kb": 8.5
+  },
+  "lint-and-validate": {
+    "description": "Automatic quality control, linting, and static analysis procedures. Use after every code modification to ensure syntax correctness and project standar",
+    "size_kb": 1.7
+  },
+  "linux-privilege-escalation": {
+    "description": "This skill should be used when the user asks to \"escalate privileges on Linux\", \"find privesc vectors on Linux systems\", \"exploit sudo misconfiguratio",
+    "size_kb": 11.9
+  },
+  "linux-shell-scripting": {
+    "description": "This skill should be used when the user asks to \"create bash scripts\", \"automate Linux tasks\", \"monitor system resources\", \"backup files\", \"manage use",
+    "size_kb": 12.6
+  },
+  "llm-app-patterns": {
+    "description": "Production-ready patterns for building LLM applications. Covers RAG pipelines, agent architectures, prompt IDEs, and LLMOps monitoring. Use when desig",
+    "size_kb": 21.9
+  },
+  "llm-application-dev-ai-assistant": {
+    "description": "You are an AI assistant development expert specializing in creating intelligent conversational interfaces, chatbots, and AI-powered applications. Desi",
+    "size_kb": 1.5
+  },
+  "llm-application-dev-langchain-agent": {
+    "description": "You are an expert LangChain agent developer specializing in production-grade AI systems using LangChain 0.1+ and LangGraph.",
+    "size_kb": 7.8
+  },
+  "llm-application-dev-prompt-optimize": {
+    "description": "You are an expert prompt engineer specializing in crafting effective prompts for LLMs through advanced techniques including constitutional AI, chain-o",
+    "size_kb": 1.4
+  },
+  "llm-evaluation": {
+    "description": "Implement comprehensive evaluation strategies for LLM applications using automated metrics, human feedback, and benchmarking. Use when testing LLM per",
+    "size_kb": 14.3
+  },
+  "loki-mode": {
+    "description": "Multi-agent autonomous startup system for Claude Code. Triggers on \"Loki Mode\". Orchestrates 100+ specialized agents across engineering, QA, DevOps, s",
+    "size_kb": 28.6
+  },
+  "m365-agents-dotnet": {
+    "description": "|",
+    "size_kb": 9.6
+  },
+  "m365-agents-py": {
+    "description": "|",
+    "size_kb": 12.3
+  },
+  "m365-agents-ts": {
+    "description": "|",
+    "size_kb": 6.5
+  },
+  "machine-learning-ops-ml-pipeline": {
+    "description": "Design and implement a complete ML pipeline for: $ARGUMENTS",
+    "size_kb": 10.5
+  },
+  "mailchimp-automation": {
+    "description": "Automate Mailchimp email marketing including campaigns, audiences, subscribers, segments, and analytics via Rube MCP (Composio). Always search tools f",
+    "size_kb": 12.3
+  },
+  "make-automation": {
+    "description": "Automate Make (Integromat) tasks via Rube MCP (Composio): operations, enums, language and timezone lookups. Always search tools first for current sche",
+    "size_kb": 7.3
+  },
+  "makepad-skills": {
+    "description": "Makepad UI development skills for Rust apps: setup, patterns, shaders, packaging, and troubleshooting.",
+    "size_kb": 0.8
+  },
+  "malware-analyst": {
+    "description": "Expert malware analyst specializing in defensive malware research,",
+    "size_kb": 6.7
+  },
+  "market-sizing-analysis": {
+    "description": "This skill should be used when the user asks to \"calculate TAM\",",
+    "size_kb": 12.9
+  },
+  "market-trend-analyst": {
+    "description": "Analyzes market trends, hot features, and user expectations.",
+    "size_kb": 1.7
+  },
+  "marketing-ideas": {
+    "description": "Provide proven marketing strategies and growth ideas for SaaS and software products, prioritized using a marketing feasibility scoring system.",
+    "size_kb": 5.3
+  },
+  "marketing-psychology": {
+    "description": "Apply behavioral science and mental models to marketing decisions, prioritized using a psychological leverage and feasibility scoring system.",
+    "size_kb": 6.2
+  },
+  "mcp-builder": {
+    "description": "Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. ",
+    "size_kb": 9.1
+  },
+  "mcp-builder-ms": {
+    "description": "Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. ",
+    "size_kb": 12.1
+  },
+  "memory-forensics": {
+    "description": "Master memory forensics techniques including memory acquisition, process analysis, and artifact extraction using Volatility and related tools. Use whe",
+    "size_kb": 11.3
+  },
+  "memory-safety-patterns": {
+    "description": "Implement memory-safe programming with RAII, ownership, smart pointers, and resource management across Rust, C++, and C. Use when writing safe systems",
+    "size_kb": 1.1
+  },
+  "memory-systems": {
+    "description": "Design short-term, long-term, and graph-based memory architectures",
+    "size_kb": 12.9
+  },
+  "mermaid-expert": {
+    "description": "Create Mermaid diagrams for flowcharts, sequences, ERDs, and",
+    "size_kb": 1.8
+  },
+  "meta-thinker": {
+    "description": "Creative idea advisor. Brainstorm frameworks, product archetypes, industry data, and monetization models. Zero-token data retrieval via script.",
+    "size_kb": 1.5
+  },
+  "metasploit-framework": {
+    "description": "This skill should be used when the user asks to \"use Metasploit for penetration testing\", \"exploit vulnerabilities with msfconsole\", \"create payloads ",
+    "size_kb": 13.4
+  },
+  "micro-saas-launcher": {
+    "description": "Expert in launching small, focused SaaS products fast - the indie hacker approach to building profitable software. Covers idea validation, MVP develop",
+    "size_kb": 5.4
+  },
+  "microservices-patterns": {
+    "description": "Design microservices architectures with service boundaries, event-driven communication, and resilience patterns. Use when building distributed systems",
+    "size_kb": 1.3
+  },
+  "microsoft-azure-webjobs-extensions-authentication-events-dotnet": {
+    "description": "|",
+    "size_kb": 15.1
+  },
+  "microsoft-teams-automation": {
+    "description": "Automate Microsoft Teams tasks via Rube MCP (Composio): send messages, manage channels, create meetings, handle chats, and search messages. Always sea",
+    "size_kb": 8.5
+  },
+  "minecraft-bukkit-pro": {
+    "description": "Master Minecraft server plugin development with Bukkit, Spigot, and",
+    "size_kb": 5.1
+  },
+  "miro-automation": {
+    "description": "Automate Miro tasks via Rube MCP (Composio): boards, items, sticky notes, frames, sharing, connectors. Always search tools first for current schemas.",
+    "size_kb": 7.7
+  },
+  "mixpanel-automation": {
+    "description": "Automate Mixpanel tasks via Rube MCP (Composio): events, segmentation, funnels, cohorts, user profiles, JQL queries. Always search tools first for cur",
+    "size_kb": 8.6
+  },
+  "ml-engineer": {
+    "description": "Build production ML systems with PyTorch 2.x, TensorFlow, and",
+    "size_kb": 9.3
+  },
+  "ml-pipeline-workflow": {
+    "description": "Build end-to-end MLOps pipelines from data preparation through model training, validation, and production deployment. Use when creating ML pipelines, ",
+    "size_kb": 7.5
+  },
+  "mlops-engineer": {
+    "description": "Build comprehensive ML pipelines, experiment tracking, and model",
+    "size_kb": 10.9
+  },
+  "mobile-design": {
+    "description": "Mobile-first design and engineering doctrine for iOS and Android apps. Covers touch interaction, performance, platform conventions, offline behavior, ",
+    "size_kb": 9.4
+  },
+  "mobile-developer": {
+    "description": "Develop React Native, Flutter, or native mobile apps with modern",
+    "size_kb": 8.7
+  },
+  "mobile-security-coder": {
+    "description": "Expert in secure mobile coding practices specializing in input",
+    "size_kb": 12.6
+  },
+  "mobile-wizard": {
+    "description": "Expo/Flutter Init & Scaffolding.",
+    "size_kb": 0.3
+  },
+  "modern-javascript-patterns": {
+    "description": "Master ES6+ features including async/await, destructuring, spread operators, arrow functions, promises, modules, iterators, generators, and functional",
+    "size_kb": 1.4
+  },
+  "monday-automation": {
+    "description": "Automate Monday.com work management including boards, items, columns, groups, subitems, and updates via Rube MCP (Composio). Always search tools first",
+    "size_kb": 12.0
+  },
+  "monorepo-architect": {
+    "description": "Expert in monorepo architecture, build systems, and dependency management at scale. Masters Nx, Turborepo, Bazel, and Lerna for efficient multi-projec",
+    "size_kb": 2.1
+  },
+  "monorepo-management": {
+    "description": "Master monorepo management with Turborepo, Nx, and pnpm workspaces to build efficient, scalable multi-package repositories with optimized builds and d",
+    "size_kb": 1.3
+  },
+  "moodle-external-api-development": {
+    "description": "Create custom external web service APIs for Moodle LMS. Use when implementing web services for course management, user tracking, quiz operations, or c",
+    "size_kb": 18.5
+  },
+  "mtls-configuration": {
+    "description": "Configure mutual TLS (mTLS) for zero-trust service-to-service communication. Use when implementing zero-trust networking, certificate management, or s",
+    "size_kb": 9.1
+  },
+  "multi-agent-brainstorming": {
+    "description": ">",
+    "size_kb": 5.5
+  },
+  "multi-agent-patterns": {
+    "description": "Master orchestrator, peer-to-peer, and hierarchical multi-agent architectures",
+    "size_kb": 14.7
+  },
+  "multi-cloud-architecture": {
+    "description": "Design multi-cloud architectures using a decision framework to select and integrate services across AWS, Azure, and GCP. Use when building multi-cloud",
+    "size_kb": 5.3
+  },
+  "multi-platform-apps-multi-platform": {
+    "description": "Build and deploy the same feature consistently across web, mobile, and desktop platforms using API-first architecture and parallel implementation stra",
+    "size_kb": 9.8
+  },
+  "n8n-code-javascript": {
+    "description": "Write JavaScript code in n8n Code nodes. Use when writing JavaScript in n8n, using $input/$json/$node syntax, making HTTP requests with $helpers, work",
+    "size_kb": 16.4
+  },
+  "n8n-code-python": {
+    "description": "Write Python code in n8n Code nodes. Use when writing Python in n8n, using _input/_json/_node syntax, working with standard library, or need to unders",
+    "size_kb": 18.4
+  },
+  "n8n-expression-syntax": {
+    "description": "Validate n8n expression syntax and fix common errors. Use when writing n8n expressions, using {{}} syntax, accessing $json/$node variables, troublesho",
+    "size_kb": 9.9
+  },
+  "n8n-mcp-tools-expert": {
+    "description": "Expert guide for using n8n-mcp MCP tools effectively. Use when searching for nodes, validating configurations, accessing templates, managing workflows",
+    "size_kb": 17.0
+  },
+  "n8n-node-configuration": {
+    "description": "Operation-aware node configuration guidance. Use when configuring nodes, understanding property dependencies, determining required fields, choosing be",
+    "size_kb": 18.1
+  },
+  "n8n-validation-expert": {
+    "description": "Interpret validation errors and guide fixing them. Use when encountering validation errors, validation warnings, false positives, operator structure i",
+    "size_kb": 16.4
+  },
+  "n8n-workflow-patterns": {
+    "description": "Proven workflow architectural patterns from real n8n workflows. Use when building new workflows, designing workflow structure, choosing workflow patte",
+    "size_kb": 11.7
+  },
+  "nanobanana-ppt-skills": {
+    "description": "AI-powered PPT generation with document analysis and styled images",
+    "size_kb": 0.7
+  },
+  "neon-postgres": {
+    "description": "Expert patterns for Neon serverless Postgres, branching, connection pooling, and Prisma/Drizzle integration Use when: neon database, serverless postgr",
+    "size_kb": 1.6
+  },
+  "nestjs-expert": {
+    "description": "Nest.js framework expert specializing in module architecture, dependency injection, middleware, guards, interceptors, testing with Jest/Supertest, Typ",
+    "size_kb": 21.5
+  },
+  "network-101": {
+    "description": "This skill should be used when the user asks to \"set up a web server\", \"configure HTTP or HTTPS\", \"perform SNMP enumeration\", \"configure SMB shares\", ",
+    "size_kb": 7.6
+  },
+  "network-engineer": {
+    "description": "Expert network engineer specializing in modern cloud networking,",
+    "size_kb": 9.8
+  },
+  "nextjs-app-router-patterns": {
+    "description": "Master Next.js 14+ App Router with Server Components, streaming, parallel routes, and advanced data fetching. Use when building Next.js applications, ",
+    "size_kb": 1.2
+  },
+  "nextjs-best-practices": {
+    "description": "Next.js App Router principles. Server Components, data fetching, routing patterns.",
+    "size_kb": 3.9
+  },
+  "nextjs-supabase-auth": {
+    "description": "Expert integration of Supabase Auth with Next.js App Router Use when: supabase auth next, authentication next.js, login supabase, auth middleware, pro",
+    "size_kb": 1.4
+  },
+  "nft-standards": {
+    "description": "Implement NFT standards (ERC-721, ERC-1155) with proper metadata handling, minting strategies, and marketplace integration. Use when creating NFT cont",
+    "size_kb": 11.6
+  },
+  "nocobase-plugin-developer": {
+    "description": "Guide for creating, structuring, and implementing NocoBase plugins (Server & Client).",
+    "size_kb": 39.2
+  },
+  "nodejs-backend-patterns": {
+    "description": "Build production-ready Node.js backend services with Express/Fastify, implementing middleware patterns, error handling, authentication, database integ",
+    "size_kb": 1.4
+  },
+  "nodejs-best-practices": {
+    "description": "Node.js development principles and decision-making. Framework selection, async patterns, security, and architecture. Teaches thinking, not copying.",
+    "size_kb": 8.4
+  },
+  "nosql-expert": {
+    "description": "Expert guidance for distributed NoSQL databases (Cassandra, DynamoDB). Focuses on mental models, query-first modeling, single-table design, and avoidi",
+    "size_kb": 5.9
+  },
+  "notebooklm": {
+    "description": "Use this skill to query your Google NotebookLM notebooks directly from Claude Code for source-grounded, citation-backed answers from Gemini. Browser a",
+    "size_kb": 9.5
+  },
+  "notion-automation": {
+    "description": "Automate Notion tasks via Rube MCP (Composio): pages, databases, blocks, comments, users. Always search tools first for current schemas.",
+    "size_kb": 8.6
+  },
+  "notion-template-business": {
+    "description": "Expert in building and selling Notion templates as a business - not just making templates, but building a sustainable digital product business. Covers",
+    "size_kb": 5.5
+  },
+  "nx-workspace-patterns": {
+    "description": "Configure and optimize Nx monorepo workspaces. Use when setting up Nx, configuring project boundaries, optimizing build caching, or implementing affec",
+    "size_kb": 11.4
+  },
+  "observability-engineer": {
+    "description": "Build production-ready monitoring, logging, and tracing systems.",
+    "size_kb": 13.0
+  },
+  "observability-monitoring-monitor-setup": {
+    "description": "You are a monitoring and observability expert specializing in implementing comprehensive monitoring solutions. Set up metrics collection, distributed ",
+    "size_kb": 2.2
+  },
+  "observability-monitoring-slo-implement": {
+    "description": "You are an SLO (Service Level Objective) expert specializing in implementing reliability standards and error budget-based practices. Design SLO framew",
+    "size_kb": 1.8
+  },
+  "observe-whatsapp": {
+    "description": "Observe and troubleshoot WhatsApp in Kapso: debug message delivery, inspect webhook deliveries/retries, triage API errors, and run health checks. Use ",
+    "size_kb": 3.4
+  },
+  "obsidian-clipper-template-creator": {
+    "description": "Guide for creating templates for the Obsidian Web Clipper. Use when you want to create a new clipping template, understand available variables, or for",
+    "size_kb": 3.2
+  },
+  "on-call-handoff-patterns": {
+    "description": "Master on-call shift handoffs with context transfer, escalation procedures, and documentation. Use when transitioning on-call responsibilities, docume",
+    "size_kb": 11.7
+  },
+  "onboarding-cro": {
+    "description": "When the user wants to optimize post-signup onboarding, user activation, first-run experience, or time-to-value. Also use when the user mentions \"onbo",
+    "size_kb": 11.4
+  },
+  "one-drive-automation": {
+    "description": "Automate OneDrive file management, search, uploads, downloads, sharing, permissions, and folder operations via Rube MCP (Composio). Always search tool",
+    "size_kb": 12.5
+  },
+  "openapi-spec-generation": {
+    "description": "Generate and maintain OpenAPI 3.1 specifications from code, design-first specs, and validation patterns. Use when creating API documentation, generati",
+    "size_kb": 1.2
+  },
+  "oss-hunter": {
+    "description": "Automatically hunt for high-impact OSS contribution opportunities in trending repositories.",
+    "size_kb": 2.6
+  },
+  "outlook-automation": {
+    "description": "Automate Outlook tasks via Rube MCP (Composio): emails, calendar, contacts, folders, attachments. Always search tools first for current schemas.",
+    "size_kb": 7.5
+  },
+  "outlook-calendar-automation": {
+    "description": "Automate Outlook Calendar tasks via Rube MCP (Composio): create events, manage attendees, find meeting times, and handle invitations. Always search to",
+    "size_kb": 9.6
+  },
+  "page-cro": {
+    "description": ">",
+    "size_kb": 7.3
+  },
+  "pagerduty-automation": {
+    "description": "Automate PagerDuty tasks via Rube MCP (Composio): manage incidents, services, schedules, escalation policies, and on-call rotations. Always search too",
+    "size_kb": 10.4
+  },
+  "paid-ads": {
+    "description": "When the user wants help with paid advertising campaigns on Google Ads, Meta (Facebook/Instagram), LinkedIn, Twitter/X, or other ad platforms. Also us",
+    "size_kb": 15.2
+  },
+  "parallel-agents": {
+    "description": "Multi-agent orchestration patterns. Use when multiple independent tasks can run with different domain expertise or when comprehensive analysis require",
+    "size_kb": 5.4
+  },
+  "payment-integration": {
+    "description": "Integrate Stripe, PayPal, and payment processors. Handles checkout",
+    "size_kb": 3.7
+  },
+  "paypal-integration": {
+    "description": "Integrate PayPal payment processing with support for express checkout, subscriptions, and refund management. Use when implementing PayPal payments, pr",
+    "size_kb": 14.1
+  },
+  "paywall-upgrade-cro": {
+    "description": "When the user wants to create or optimize in-app paywalls, upgrade screens, upsell modals, or feature gates. Also use when the user mentions \"paywall,",
+    "size_kb": 14.4
+  },
+  "pci-compliance": {
+    "description": "Implement PCI DSS compliance requirements for secure handling of payment card data and payment systems. Use when securing payment processing, achievin",
+    "size_kb": 14.0
+  },
+  "pdf-official": {
+    "description": "Comprehensive PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms. When Claude",
+    "size_kb": 7.2
+  },
+  "pentest-checklist": {
+    "description": "This skill should be used when the user asks to \"plan a penetration test\", \"create a security assessment checklist\", \"prepare for penetration testing\"",
+    "size_kb": 10.3
+  },
+  "pentest-commands": {
+    "description": "This skill should be used when the user asks to \"run pentest commands\", \"scan with nmap\", \"use metasploit exploits\", \"crack passwords with hydra or jo",
+    "size_kb": 9.6
+  },
+  "performance-engineer": {
+    "description": "Expert performance engineer specializing in modern observability,",
+    "size_kb": 11.1
+  },
+  "performance-profiling": {
+    "description": "Performance profiling principles. Measurement, analysis, and optimization techniques.",
+    "size_kb": 3.2
+  },
+  "performance-testing-review-ai-review": {
+    "description": "You are an expert AI-powered code review specialist combining automated static analysis, intelligent pattern recognition, and modern DevOps practices.",
+    "size_kb": 15.6
+  },
+  "performance-testing-review-multi-agent-review": {
+    "description": "Use when working with performance testing review multi agent review",
+    "size_kb": 6.8
+  },
+  "personal-tool-builder": {
+    "description": "Expert in building custom tools that solve your own problems first. The best products often start as personal tools - scratch your own itch, build for",
+    "size_kb": 7.2
+  },
+  "php-pro": {
+    "description": "Write idiomatic PHP code with generators, iterators, SPL data",
+    "size_kb": 2.6
+  },
+  "pipedrive-automation": {
+    "description": "Automate Pipedrive CRM operations including deals, contacts, organizations, activities, notes, and pipeline management via Rube MCP (Composio). Always",
+    "size_kb": 12.1
+  },
+  "plaid-fintech": {
+    "description": "Expert patterns for Plaid API integration including Link token flows, transactions sync, identity verification, Auth for ACH, balance checks, webhook ",
+    "size_kb": 1.5
+  },
+  "plan-writing": {
+    "description": "Structured task planning with clear breakdowns, dependencies, and verification criteria. Use when implementing features, refactoring, or any multi-ste",
+    "size_kb": 4.1
+  },
+  "planning-with-files": {
+    "description": "Implements Manus-style file-based planning for complex tasks. Creates task_plan.md, findings.md, and progress.md. Use when starting complex multi-step",
+    "size_kb": 6.7
+  },
+  "playwright-skill": {
+    "description": "Complete browser automation with Playwright. Auto-detects dev servers, writes clean test scripts to /tmp. Test pages, fill forms, take screenshots, ch",
+    "size_kb": 14.0
+  },
+  "podcast-generation": {
+    "description": "Generate AI-powered podcast-style audio narratives using Azure OpenAI's GPT Realtime Mini model via WebSocket. Use when building text-to-speech featur",
+    "size_kb": 3.8
+  },
+  "popup-cro": {
+    "description": "Create and optimize popups, modals, overlays, slide-ins, and banners to increase conversions without harming user experience or brand trust.",
+    "size_kb": 6.8
+  },
+  "posix-shell-pro": {
+    "description": "Expert in strict POSIX sh scripting for maximum portability across",
+    "size_kb": 15.1
+  },
+  "postgres-best-practices": {
+    "description": "Postgres performance optimization and best practices from Supabase. Use this skill when writing, reviewing, or optimizing Postgres queries, schema des",
+    "size_kb": 1.9
+  },
+  "postgresql": {
+    "description": "Design a PostgreSQL-specific schema. Covers best-practices, data types, indexing, constraints, performance patterns, and advanced features",
+    "size_kb": 16.7
+  },
+  "posthog-automation": {
+    "description": "Automate PostHog tasks via Rube MCP (Composio): events, feature flags, projects, user profiles, annotations. Always search tools first for current sch",
+    "size_kb": 8.0
+  },
+  "postmark-automation": {
+    "description": "Automate Postmark email delivery tasks via Rube MCP (Composio): send templated emails, manage templates, monitor delivery stats and bounces. Always se",
+    "size_kb": 7.9
+  },
+  "postmortem-writing": {
+    "description": "Write effective blameless postmortems with root cause analysis, timelines, and action items. Use when conducting incident reviews, writing postmortem ",
+    "size_kb": 12.6
+  },
+  "powershell-windows": {
+    "description": "PowerShell Windows patterns. Critical pitfalls, operator syntax, error handling.",
+    "size_kb": 3.6
+  },
+  "pptx-official": {
+    "description": "Presentation creation, editing, and analysis. When Claude needs to work with presentations (.pptx files) for: (1) Creating new presentations, (2) Modi",
+    "size_kb": 25.4
+  },
+  "pricing-strategy": {
+    "description": "Design pricing, packaging, and monetization strategies based on value, customer willingness to pay, and growth objectives.",
+    "size_kb": 7.1
+  },
+  "prisma-expert": {
+    "description": "Prisma ORM expert for schema design, migrations, query optimization, relations modeling, and database operations. Use PROACTIVELY for Prisma schema is",
+    "size_kb": 10.4
+  },
+  "privilege-escalation-methods": {
+    "description": "This skill should be used when the user asks to \"escalate privileges\", \"get root access\", \"become administrator\", \"privesc techniques\", \"abuse sudo\", ",
+    "size_kb": 8.2
+  },
+  "product-designer": {
+    "description": "Understand users, draw flows, check usability, and handoff to dev.",
+    "size_kb": 1.1
+  },
+  "product-manager-toolkit": {
+    "description": "Comprehensive toolkit for product managers including RICE prioritization, customer interview analysis, PRD templates, discovery frameworks, and go-to-",
+    "size_kb": 9.1
+  },
+  "production-code-audit": {
+    "description": "Autonomously deep-scan entire codebase line-by-line, understand architecture and patterns, then systematically transform it to production-grade, corpo",
+    "size_kb": 16.0
+  },
+  "programmatic-seo": {
+    "description": ">",
+    "size_kb": 7.6
+  },
+  "progress-tracker": {
+    "description": "Tracks project progress, creates status reports for Manager.",
+    "size_kb": 0.5
+  },
+  "project-management-assistant": {
+    "description": "Assists Planner in managing scope, risks, and milestone planning.",
+    "size_kb": 0.9
+  },
+  "project-scaffolder": {
+    "description": "Creates standard project structure with config files, linting, formatting.",
+    "size_kb": 0.8
+  },
+  "projection-patterns": {
+    "description": "Build read models and projections from event streams. Use when implementing CQRS read sides, building materialized views, or optimizing query performa",
+    "size_kb": 1.1
+  },
+  "prometheus-configuration": {
+    "description": "Set up Prometheus for comprehensive metric collection, storage, and monitoring of infrastructure and applications. Use when implementing metrics colle",
+    "size_kb": 10.8
+  },
+  "prompt-caching": {
+    "description": "Caching strategies for LLM prompts including Anthropic prompt caching, response caching, and CAG (Cache Augmented Generation) Use when: prompt caching",
+    "size_kb": 1.8
+  },
+  "prompt-engineer": {
+    "description": "Transforms user prompts into optimized prompts using frameworks (RTF, RISEN, Chain of Thought, RODES, Chain of Density, RACE, RISE, STAR, SOAP, CLEAR,",
+    "size_kb": 10.9
+  },
+  "prompt-engineering": {
+    "description": "Expert guide on prompt engineering patterns, best practices, and optimization techniques. Use when user wants to improve prompts, learn prompting stra",
+    "size_kb": 5.7
+  },
+  "prompt-engineering-patterns": {
+    "description": "Master advanced prompt engineering techniques to maximize LLM performance, reliability, and controllability in production. Use when optimizing prompts",
+    "size_kb": 7.4
+  },
+  "prompt-library": {
+    "description": "Curated collection of high-quality prompts for various use cases. Includes role-based prompts, task-specific templates, and prompt refinement techniqu",
+    "size_kb": 7.8
+  },
+  "protocol-reverse-engineering": {
+    "description": "Master network protocol reverse engineering including packet analysis, protocol dissection, and custom protocol documentation. Use when analyzing netw",
+    "size_kb": 1.1
+  },
+  "pydantic-models-py": {
+    "description": "Create Pydantic models following the multi-model pattern with Base, Create, Update, Response, and InDB variants. Use when defining API request/respons",
+    "size_kb": 1.7
+  },
+  "pypict-skill": {
+    "description": "Pairwise test generation",
+    "size_kb": 0.5
+  },
+  "python-development-python-scaffold": {
+    "description": "You are a Python project architecture expert specializing in scaffolding production-ready Python applications. Generate complete project structures wi",
+    "size_kb": 8.0
+  },
+  "python-packaging": {
+    "description": "Create distributable Python packages with proper project structure, setup.py/pyproject.toml, and publishing to PyPI. Use when packaging Python librari",
+    "size_kb": 1.3
+  },
+  "python-patterns": {
+    "description": "Python development principles and decision-making. Framework selection, async patterns, type hints, project structure. Teaches thinking, not copying.",
+    "size_kb": 9.7
+  },
+  "python-performance-optimization": {
+    "description": "Profile and optimize Python code using cProfile, memory profilers, and performance best practices. Use when debugging slow Python code, optimizing bot",
+    "size_kb": 1.4
+  },
+  "python-pro": {
+    "description": "Master Python 3.12+ with modern features, async programming,",
+    "size_kb": 7.3
+  },
+  "python-testing-patterns": {
+    "description": "Implement comprehensive testing strategies with pytest, fixtures, mocking, and test-driven development. Use when writing Python tests, setting up test",
+    "size_kb": 1.4
+  },
+  "quant-analyst": {
+    "description": "Build financial models, backtest trading strategies, and analyze",
+    "size_kb": 1.8
+  },
+  "radix-ui-design-system": {
+    "description": "Build accessible design systems with Radix UI primitives. Headless component customization, theming strategies, and compound component patterns for pr",
+    "size_kb": 22.0
+  },
+  "rag-engineer": {
+    "description": "Expert in building Retrieval-Augmented Generation systems. Masters embedding models, vector databases, chunking strategies, and retrieval optimization",
+    "size_kb": 2.9
+  },
+  "rag-implementation": {
+    "description": "Build Retrieval-Augmented Generation (RAG) systems for LLM applications with vector databases and semantic search. Use when implementing knowledge-gro",
+    "size_kb": 11.9
+  },
+  "react-best-practices": {
+    "description": "React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React",
+    "size_kb": 5.3
+  },
+  "react-flow-architect": {
+    "description": "Expert ReactFlow architect for building interactive graph applications with hierarchical node-edge systems, performance optimization, and auto-layout ",
+    "size_kb": 16.4
+  },
+  "react-flow-node-ts": {
+    "description": "Create React Flow node components with TypeScript types, handles, and Zustand integration. Use when building custom nodes for React Flow canvas, creat",
+    "size_kb": 2.0
+  },
+  "react-modernization": {
+    "description": "Upgrade React applications to latest versions, migrate from class components to hooks, and adopt concurrent features. Use when modernizing React codeb",
+    "size_kb": 1.3
+  },
+  "react-native-architecture": {
+    "description": "Build production React Native apps with Expo, navigation, native modules, offline sync, and cross-platform patterns. Use when developing mobile apps, ",
+    "size_kb": 1.2
+  },
+  "react-patterns": {
+    "description": "Modern React patterns and principles. Hooks, composition, performance, TypeScript best practices.",
+    "size_kb": 3.9
+  },
+  "react-state-management": {
+    "description": "Master modern React state management with Redux Toolkit, Zustand, Jotai, and React Query. Use when setting up global state, managing server state, or ",
+    "size_kb": 12.0
+  },
+  "react-ui-patterns": {
+    "description": "Modern React UI patterns for loading states, error handling, and data fetching. Use when building UI components, handling async data, or managing UI s",
+    "size_kb": 6.6
+  },
+  "readme": {
+    "description": "When the user wants to create or update a README.md file for a project. Also use when the user says 'write readme,' 'create readme,' 'document this pr",
+    "size_kb": 20.3
+  },
+  "readme-generator": {
+    "description": "Auto-generate README.md based on project state.",
+    "size_kb": 0.3
+  },
+  "receiving-code-review": {
+    "description": "Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires ",
+    "size_kb": 6.4
+  },
+  "red-team-tactics": {
+    "description": "Red team tactics principles based on MITRE ATT&CK. Attack phases, detection evasion, reporting.",
+    "size_kb": 4.5
+  },
+  "red-team-tools": {
+    "description": "This skill should be used when the user asks to \"follow red team methodology\", \"perform bug bounty hunting\", \"automate reconnaissance\", \"hunt for XSS ",
+    "size_kb": 7.9
+  },
+  "reddit-automation": {
+    "description": "Automate Reddit tasks via Rube MCP (Composio): search subreddits, create posts, manage comments, and browse top content. Always search tools first for",
+    "size_kb": 7.9
+  },
+  "reference-builder": {
+    "description": "Creates exhaustive technical references and API documentation.",
+    "size_kb": 5.4
+  },
+  "referral-program": {
+    "description": "When the user wants to create, optimize, or analyze a referral program, affiliate program, or word-of-mouth strategy. Also use when the user mentions ",
+    "size_kb": 17.0
+  },
+  "release-manager": {
+    "description": "Changelog generation, version bumping, and release automation.",
+    "size_kb": 0.9
+  },
+  "reliability-engineer": {
+    "description": "Observability, Incident Management & Performance Optimization (SRE).",
+    "size_kb": 0.9
+  },
+  "remotion-best-practices": {
+    "description": "Best practices for Remotion - Video creation in React",
+    "size_kb": 3.4
+  },
+  "render-automation": {
+    "description": "Automate Render tasks via Rube MCP (Composio): services, deployments, projects. Always search tools first for current schemas.",
+    "size_kb": 6.5
+  },
+  "requesting-code-review": {
+    "description": "Use when completing tasks, implementing major features, or before merging to verify work meets requirements",
+    "size_kb": 2.7
+  },
+  "research-engineer": {
+    "description": "An uncompromising Academic Research Engineer. Operates with absolute scientific rigor, objective criticism, and zero flair. Focuses on theoretical cor",
+    "size_kb": 6.5
+  },
+  "reverse-engineer": {
+    "description": "Expert reverse engineer specializing in binary analysis,",
+    "size_kb": 5.6
+  },
+  "risk-manager": {
+    "description": "Monitor portfolio risk, R-multiples, and position limits. Creates",
+    "size_kb": 1.9
+  },
+  "risk-metrics-calculation": {
+    "description": "Calculate portfolio risk metrics including VaR, CVaR, Sharpe, Sortino, and drawdown analysis. Use when measuring portfolio risk, implementing risk lim",
+    "size_kb": 1.1
+  },
+  "ruby-pro": {
+    "description": "Write idiomatic Ruby code with metaprogramming, Rails patterns, and",
+    "size_kb": 1.8
+  },
+  "rust-async-patterns": {
+    "description": "Master Rust async programming with Tokio, async traits, error handling, and concurrent patterns. Use when building async Rust applications, implementi",
+    "size_kb": 1.1
+  },
+  "rust-pro": {
+    "description": "Master Rust 1.75+ with modern async patterns, advanced type system",
+    "size_kb": 7.6
+  },
+  "saga-orchestration": {
+    "description": "Implement saga patterns for distributed transactions and cross-aggregate workflows. Use when coordinating multi-step business processes, handling comp",
+    "size_kb": 16.4
+  },
+  "sales-automator": {
+    "description": "Draft cold emails, follow-ups, and proposal templates. Creates",
+    "size_kb": 1.5
+  },
+  "salesforce-automation": {
+    "description": "Automate Salesforce tasks via Rube MCP (Composio): leads, contacts, accounts, opportunities, SOQL queries. Always search tools first for current schem",
+    "size_kb": 6.8
+  },
+  "salesforce-development": {
+    "description": "Expert patterns for Salesforce platform development including Lightning Web Components (LWC), Apex triggers and classes, REST/Bulk APIs, Connected App",
+    "size_kb": 1.5
+  },
+  "sast-configuration": {
+    "description": "Configure Static Application Security Testing (SAST) tools for automated vulnerability detection in application code. Use when setting up security sca",
+    "size_kb": 6.6
+  },
+  "scala-pro": {
+    "description": "Master enterprise-grade Scala development with functional",
+    "size_kb": 5.6
+  },
+  "scanning-tools": {
+    "description": "This skill should be used when the user asks to \"perform vulnerability scanning\", \"scan networks for open ports\", \"assess web application security\", \"",
+    "size_kb": 13.8
+  },
+  "schema-markup": {
+    "description": ">",
+    "size_kb": 7.5
+  },
+  "screen-reader-testing": {
+    "description": "Test web applications with screen readers including VoiceOver, NVDA, and JAWS. Use when validating screen reader compatibility, debugging accessibilit",
+    "size_kb": 1.1
+  },
+  "screenshots": {
+    "description": "Generate marketing screenshots of your app using Playwright. Use when the user wants to create screenshots for Product Hunt, social media, landing pag",
+    "size_kb": 12.9
+  },
+  "scroll-experience": {
+    "description": "Expert in building immersive scroll-driven experiences - parallax storytelling, scroll animations, interactive narratives, and cinematic web experienc",
+    "size_kb": 6.2
+  },
+  "search-specialist": {
+    "description": "Expert web researcher using advanced search techniques and",
+    "size_kb": 2.4
+  },
+  "secrets-management": {
+    "description": "Implement secure secrets management for CI/CD pipelines using Vault, AWS Secrets Manager, or native platform solutions. Use when handling sensitive cr",
+    "size_kb": 8.3
+  },
+  "security-auditor": {
+    "description": "Expert security auditor specializing in DevSecOps, comprehensive",
+    "size_kb": 10.3
+  },
+  "security-bluebook-builder": {
+    "description": "Build security Blue Books for sensitive apps",
+    "size_kb": 0.6
+  },
+  "security-compliance-compliance-check": {
+    "description": "You are a compliance expert specializing in regulatory requirements for software systems including GDPR, HIPAA, SOC2, PCI-DSS, and other industry stan",
+    "size_kb": 2.4
+  },
+  "security-requirement-extraction": {
+    "description": "Derive security requirements from threat models and business context. Use when translating threats into actionable requirements, creating security use",
+    "size_kb": 1.1
+  },
+  "security-scanner": {
+    "description": "Scan code for vulnerabilities (Regex SAST) & Generate Security Checklist.",
+    "size_kb": 0.5
+  },
+  "security-scanning-security-dependencies": {
+    "description": "You are a security expert specializing in dependency vulnerability analysis, SBOM generation, and supply chain security. Scan project dependencies acr",
+    "size_kb": 1.8
+  },
+  "security-scanning-security-hardening": {
+    "description": "Coordinate multi-layer security scanning and hardening across application, infrastructure, and compliance controls.",
+    "size_kb": 10.7
+  },
+  "security-scanning-security-sast": {
+    "description": "Static Application Security Testing (SAST) for code vulnerability",
+    "size_kb": 14.7
+  },
+  "segment-automation": {
+    "description": "Automate Segment tasks via Rube MCP (Composio): track events, identify users, manage groups, page views, aliases, batch operations. Always search tool",
+    "size_kb": 8.7
+  },
+  "segment-cdp": {
+    "description": "Expert patterns for Segment Customer Data Platform including Analytics.js, server-side tracking, tracking plans with Protocols, identity resolution, d",
+    "size_kb": 1.4
+  },
+  "sendgrid-automation": {
+    "description": "Automate SendGrid email operations including sending emails, managing contacts/lists, sender identities, templates, and analytics via Rube MCP (Compos",
+    "size_kb": 12.6
+  },
+  "senior-architect": {
+    "description": "Comprehensive software architecture skill for designing scalable, maintainable systems using ReactJS, NextJS, NodeJS, Express, React Native, Swift, Ko",
+    "size_kb": 4.7
+  },
+  "senior-fullstack": {
+    "description": "Comprehensive fullstack development skill for building complete web applications with React, Next.js, Node.js, GraphQL, and PostgreSQL. Includes proje",
+    "size_kb": 4.6
+  },
+  "sentry-automation": {
+    "description": "Automate Sentry tasks via Rube MCP (Composio): manage issues/events, configure alerts, track releases, monitor projects and teams. Always search tools",
+    "size_kb": 9.9
+  },
+  "seo-analyzer": {
+    "description": "Check SEO best practices (Meta tags, Alt text).",
+    "size_kb": 0.3
+  },
+  "seo-audit": {
+    "description": ">",
+    "size_kb": 12.3
+  },
+  "seo-authority-builder": {
+    "description": "Analyzes content for E-E-A-T signals and suggests improvements to",
+    "size_kb": 3.6
+  },
+  "seo-cannibalization-detector": {
+    "description": "Analyzes multiple provided pages to identify keyword overlap and",
+    "size_kb": 3.3
+  },
+  "seo-content-auditor": {
+    "description": "Analyzes provided content for quality, E-E-A-T signals, and SEO",
+    "size_kb": 2.6
+  },
+  "seo-content-planner": {
+    "description": "Creates comprehensive content outlines and topic clusters for SEO.",
+    "size_kb": 2.6
+  },
+  "seo-content-refresher": {
+    "description": "Identifies outdated elements in provided content and suggests",
+    "size_kb": 3.1
+  },
+  "seo-content-writer": {
+    "description": "Writes SEO-optimized content based on provided keywords and topic",
+    "size_kb": 2.6
+  },
+  "seo-fundamentals": {
+    "description": ">",
+    "size_kb": 5.9
+  },
+  "seo-keyword-strategist": {
+    "description": "Analyzes keyword usage in provided content, calculates density,",
+    "size_kb": 2.8
+  },
+  "seo-meta-optimizer": {
+    "description": "Creates optimized meta titles, descriptions, and URL suggestions",
+    "size_kb": 2.8
+  },
+  "seo-snippet-hunter": {
+    "description": "Formats content to be eligible for featured snippets and SERP",
+    "size_kb": 3.1
+  },
+  "seo-structure-architect": {
+    "description": "Analyzes and optimizes content structure including header",
+    "size_kb": 3.0
+  },
+  "server-management": {
+    "description": "Server management principles and decision-making. Process management, monitoring strategy, and scaling decisions. Teaches thinking, not commands.",
+    "size_kb": 3.8
+  },
+  "service-mesh-expert": {
+    "description": "Expert service mesh architect specializing in Istio, Linkerd, and cloud-native networking patterns. Masters traffic management, security policies, obs",
+    "size_kb": 2.4
+  },
+  "service-mesh-observability": {
+    "description": "Implement comprehensive observability for service meshes including distributed tracing, metrics, and visualization. Use when setting up mesh monitorin",
+    "size_kb": 11.0
+  },
+  "sharp-edges": {
+    "description": "Identify error-prone APIs and dangerous configurations",
+    "size_kb": 2.3
+  },
+  "shellcheck-configuration": {
+    "description": "Master ShellCheck static analysis configuration and usage for shell script quality. Use when setting up linting infrastructure, fixing code issues, or",
+    "size_kb": 10.1
+  },
+  "shodan-reconnaissance": {
+    "description": "This skill should be used when the user asks to \"search for exposed devices on the internet,\" \"perform Shodan reconnaissance,\" \"find vulnerable servic",
+    "size_kb": 14.0
+  },
+  "shopify-apps": {
+    "description": "Expert patterns for Shopify app development including Remix/React Router apps, embedded apps with App Bridge, webhook handling, GraphQL Admin API, Pol",
+    "size_kb": 1.3
+  },
+  "shopify-automation": {
+    "description": "Automate Shopify tasks via Rube MCP (Composio): products, orders, customers, inventory, collections. Always search tools first for current schemas.",
+    "size_kb": 5.9
+  },
+  "shopify-development": {
+    "description": "|",
+    "size_kb": 9.0
+  },
+  "signup-flow-cro": {
+    "description": "When the user wants to optimize signup, registration, account creation, or trial activation flows. Also use when the user mentions \"signup conversions",
+    "size_kb": 9.9
+  },
+  "similarity-search-patterns": {
+    "description": "Implement efficient similarity search with vector databases. Use when building semantic search, implementing nearest neighbor queries, or optimizing r",
+    "size_kb": 1.1
+  },
+  "skill-creator": {
+    "description": "This skill should be used when the user asks to create a new skill, build a skill, make a custom skill, develop a CLI skill, or wants to extend the CL",
+    "size_kb": 21.8
+  },
+  "skill-creator-ms": {
+    "description": "Guide for creating effective skills for AI coding agents working with Azure SDKs and Microsoft Foundry services. Use when creating new skills or updat",
+    "size_kb": 18.4
+  },
+  "skill-developer": {
+    "description": "Create and manage Claude Code skills following Anthropic best practices. Use when creating new skills, modifying skill-rules.json, understanding trigg",
+    "size_kb": 12.4
+  },
+  "skill-rails-upgrade": {
+    "description": "Analyze Rails apps and provide upgrade assessments",
+    "size_kb": 12.5
+  },
+  "skill-seekers": {
+    "description": "-Automatically convert documentation websites, GitHub repositories, and PDFs into Claude AI skills in minutes.",
+    "size_kb": 0.8
+  },
+  "slack-automation": {
+    "description": "Automate Slack messaging, channel management, search, reactions, and threads via Rube MCP (Composio). Send messages, search conversations, manage chan",
+    "size_kb": 9.5
+  },
+  "slack-bot-builder": {
+    "description": "Build Slack apps using the Bolt framework across Python, JavaScript, and Java. Covers Block Kit for rich UIs, interactive components, slash commands, ",
+    "size_kb": 8.8
+  },
+  "slack-gif-creator": {
+    "description": "Knowledge and utilities for creating animated GIFs optimized for Slack. Provides constraints, validation tools, and animation concepts. Use when users",
+    "size_kb": 7.9
+  },
+  "slo-implementation": {
+    "description": "Define and implement Service Level Indicators (SLIs) and Service Level Objectives (SLOs) with error budgets and alerting. Use when establishing reliab",
+    "size_kb": 9.1
+  },
+  "smtp-penetration-testing": {
+    "description": "This skill should be used when the user asks to \"perform SMTP penetration testing\", \"enumerate email users\", \"test for open mail relays\", \"grab SMTP b",
+    "size_kb": 12.4
+  },
+  "social-content": {
+    "description": "When the user wants help creating, scheduling, or optimizing social media content for LinkedIn, Twitter/X, Instagram, TikTok, Facebook, or other platf",
+    "size_kb": 21.3
+  },
+  "software-architecture": {
+    "description": "Guide for quality focused software architecture. This skill should be used when users want to write code, design architecture, analyze code, in any ca",
+    "size_kb": 3.5
+  },
+  "solidity-security": {
+    "description": "Master smart contract security best practices to prevent common vulnerabilities and implement secure Solidity patterns. Use when writing smart contrac",
+    "size_kb": 1.2
+  },
+  "spark-optimization": {
+    "description": "Optimize Apache Spark jobs with partitioning, caching, shuffle optimization, and memory tuning. Use when improving Spark performance, debugging slow j",
+    "size_kb": 13.4
+  },
+  "sql-injection-testing": {
+    "description": "This skill should be used when the user asks to \"test for SQL injection vulnerabilities\", \"perform SQLi attacks\", \"bypass authentication using SQL inj",
+    "size_kb": 11.6
+  },
+  "sql-optimization-patterns": {
+    "description": "Master SQL query optimization, indexing strategies, and EXPLAIN analysis to dramatically improve database performance and eliminate slow queries. Use ",
+    "size_kb": 1.3
+  },
+  "sql-pro": {
+    "description": "Master modern SQL with cloud-native databases, OLTP/OLAP",
+    "size_kb": 7.8
+  },
+  "sqlmap-database-pentesting": {
+    "description": "This skill should be used when the user asks to \"automate SQL injection testing,\" \"enumerate database structure,\" \"extract database credentials using ",
+    "size_kb": 12.1
+  },
+  "square-automation": {
+    "description": "Automate Square tasks via Rube MCP (Composio): payments, orders, invoices, locations. Always search tools first for current schemas.",
+    "size_kb": 6.5
+  },
+  "ssh-penetration-testing": {
+    "description": "This skill should be used when the user asks to \"pentest SSH services\", \"enumerate SSH configurations\", \"brute force SSH credentials\", \"exploit SSH vu",
+    "size_kb": 12.1
+  },
+  "startup-analyst": {
+    "description": "Expert startup business analyst specializing in market sizing,",
+    "size_kb": 11.7
+  },
+  "startup-business-analyst-business-case": {
+    "description": "Generate comprehensive investor-ready business case document with",
+    "size_kb": 11.9
+  },
+  "startup-business-analyst-financial-projections": {
+    "description": "Create detailed 3-5 year financial model with revenue, costs, cash",
+    "size_kb": 8.9
+  },
+  "startup-business-analyst-market-opportunity": {
+    "description": "Generate comprehensive market opportunity analysis with TAM/SAM/SOM",
+    "size_kb": 7.1
+  },
+  "startup-financial-modeling": {
+    "description": "This skill should be used when the user asks to \"create financial",
+    "size_kb": 11.7
+  },
+  "startup-metrics-framework": {
+    "description": "This skill should be used when the user asks about \"key startup",
+    "size_kb": 1.2
+  },
+  "stitch-ui-design": {
+    "description": "Expert guide for creating effective prompts for Google Stitch AI UI design tool. Use when user wants to design UI/UX in Stitch, create app interfaces,",
+    "size_kb": 11.0
+  },
+  "strategic-planning-advisor": {
+    "description": "Advises on system architecture, scalability, and long-term maintenance strategy.",
+    "size_kb": 0.6
+  },
+  "stride-analysis-patterns": {
+    "description": "Apply STRIDE methodology to systematically identify threats. Use when analyzing system security, conducting threat modeling sessions, or creating secu",
+    "size_kb": 1.1
+  },
+  "stripe-automation": {
+    "description": "Automate Stripe tasks via Rube MCP (Composio): customers, charges, subscriptions, invoices, products, refunds. Always search tools first for current s",
+    "size_kb": 7.3
+  },
+  "stripe-integration": {
+    "description": "Implement Stripe payment processing for robust, PCI-compliant payment flows including checkout, subscriptions, and webhooks. Use when integrating Stri",
+    "size_kb": 13.6
+  },
+  "subagent-driven-development": {
+    "description": "Use when executing implementation plans with independent tasks in the current session",
+    "size_kb": 9.8
+  },
+  "supabase-automation": {
+    "description": "Automate Supabase database queries, table management, project administration, storage, edge functions, and SQL execution via Rube MCP (Composio). Alwa",
+    "size_kb": 12.5
+  },
+  "supabase-postgres-best-practices": {
+    "description": "Postgres performance optimization and best practices from Supabase. Use this skill when writing, reviewing, or optimizing Postgres queries, schema des",
+    "size_kb": 1.9
+  },
+  "superpowers-lab": {
+    "description": "Lab environment for Claude superpowers",
+    "size_kb": 0.5
+  },
+  "swiftui-expert-skill": {
+    "description": "Write, review, or improve SwiftUI code following best practices for state management, view composition, performance, modern APIs, Swift concurrency, a",
+    "size_kb": 13.9
+  },
+  "system-diagrammer": {
+    "description": "Generates system architecture diagrams (C4, Sequence) using Mermaid.js.",
+    "size_kb": 0.9
+  },
+  "system-strategist": {
+    "description": "High-level decision maker for Trade-offs, Scalability & Migration Strategy.",
+    "size_kb": 1.2
+  },
+  "systematic-debugging": {
+    "description": "Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes",
+    "size_kb": 9.9
+  },
+  "systems-programming-rust-project": {
+    "description": "You are a Rust project architecture expert specializing in scaffolding production-ready Rust applications. Generate complete project structures with c",
+    "size_kb": 9.5
+  },
+  "tailwind-design-system": {
+    "description": "Build scalable design systems with Tailwind CSS, design tokens, component libraries, and responsive patterns. Use when creating component libraries, i",
+    "size_kb": 1.2
+  },
+  "tailwind-patterns": {
+    "description": "Tailwind CSS v4 principles. CSS-first configuration, container queries, modern patterns, design token architecture.",
+    "size_kb": 6.9
+  },
+  "task-estimator": {
+    "description": "Breaks down features into tasks, assigns roles, and estimates effort/timeline.",
+    "size_kb": 0.6
+  },
+  "tavily-web": {
+    "description": "Web search, content extraction, crawling, and research capabilities using Tavily API",
+    "size_kb": 0.9
+  },
+  "tdd-orchestrator": {
+    "description": "Master TDD orchestrator specializing in red-green-refactor",
+    "size_kb": 10.3
+  },
+  "tdd-workflow": {
+    "description": "Test-Driven Development workflow principles. RED-GREEN-REFACTOR cycle.",
+    "size_kb": 2.9
+  },
+  "tdd-workflows-tdd-cycle": {
+    "description": "Use when working with tdd workflows tdd cycle",
+    "size_kb": 8.6
+  },
+  "tdd-workflows-tdd-green": {
+    "description": "Implement the minimal code needed to make failing tests pass in the TDD green phase.",
+    "size_kb": 1.9
+  },
+  "tdd-workflows-tdd-red": {
+    "description": "Generate failing tests for the TDD red phase to define expected behavior and edge cases.",
+    "size_kb": 4.7
+  },
+  "tdd-workflows-tdd-refactor": {
+    "description": "Use when working with tdd workflows tdd refactor",
+    "size_kb": 6.0
+  },
+  "team-collaboration-issue": {
+    "description": "You are a GitHub issue resolution expert specializing in systematic bug investigation, feature implementation, and collaborative development workflows",
+    "size_kb": 1.7
+  },
+  "team-collaboration-standup-notes": {
+    "description": "You are an expert team communication specialist focused on async-first standup practices, AI-assisted note generation from commit history, and effecti",
+    "size_kb": 2.1
+  },
+  "team-composition-analysis": {
+    "description": "This skill should be used when the user asks to \"plan team",
+    "size_kb": 10.3
+  },
+  "tech-stack-advisor": {
+    "description": "Suggests suitable tech stack based on project requirements using local database.",
+    "size_kb": 2.2
+  },
+  "telegram-automation": {
+    "description": "Automate Telegram tasks via Rube MCP (Composio): send messages, manage chats, share photos/documents, and handle bot commands. Always search tools fir",
+    "size_kb": 8.1
+  },
+  "telegram-bot-builder": {
+    "description": "Expert in building Telegram bots that solve real problems - from simple automation to complex AI-powered bots. Covers bot architecture, the Telegram B",
+    "size_kb": 6.1
+  },
+  "telegram-mini-app": {
+    "description": "Expert in building Telegram Mini Apps (TWA) - web apps that run inside Telegram with native-like experience. Covers the TON ecosystem, Telegram Web Ap",
+    "size_kb": 6.3
+  },
+  "template-marketplace": {
+    "description": "Pre-built project templates for common app types. Scaffolds complete projects instantly.",
+    "size_kb": 1.7
+  },
+  "temporal-python-pro": {
+    "description": "Master Temporal workflow orchestration with Python SDK. Implements",
+    "size_kb": 10.8
+  },
+  "temporal-python-testing": {
+    "description": "Test Temporal workflows with pytest, time-skipping, and mocking strategies. Covers unit testing, integration testing, replay testing, and local develo",
+    "size_kb": 5.4
+  },
+  "terraform-module-library": {
+    "description": "Build reusable Terraform modules for AWS, Azure, and GCP infrastructure following infrastructure-as-code best practices. Use when creating infrastruct",
+    "size_kb": 6.2
+  },
+  "terraform-skill": {
+    "description": "Terraform infrastructure as code best practices",
+    "size_kb": 16.8
+  },
+  "terraform-specialist": {
+    "description": "Expert Terraform/OpenTofu specialist mastering advanced IaC",
+    "size_kb": 9.3
+  },
+  "test-automator": {
+    "description": "Master AI-powered test automation with modern frameworks,",
+    "size_kb": 11.1
+  },
+  "test-driven-development": {
+    "description": "Use when implementing any feature or bugfix, before writing implementation code",
+    "size_kb": 10.0
+  },
+  "test-fixing": {
+    "description": "Run tests and systematically fix all failing tests using smart error grouping. Use when user asks to fix failing tests, mentions test failures, runs t",
+    "size_kb": 3.0
+  },
+  "test-generator": {
+    "description": "Generate unit/integration tests (Zero Token Skeleton).",
+    "size_kb": 0.3
+  },
+  "testing-patterns": {
+    "description": "Jest testing patterns, factory functions, mocking strategies, and TDD workflow. Use when writing unit tests, creating test factories, or following TDD",
+    "size_kb": 6.0
+  },
+  "theme-factory": {
+    "description": "Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with",
+    "size_kb": 3.1
+  },
+  "threat-mitigation-mapping": {
+    "description": "Map identified threats to appropriate security controls and mitigations. Use when prioritizing security investments, creating remediation plans, or va",
+    "size_kb": 1.0
+  },
+  "threat-modeling-expert": {
+    "description": "Expert in threat modeling methodologies, security architecture review, and risk assessment. Masters STRIDE, PASTA, attack trees, and security requirem",
+    "size_kb": 2.0
+  },
+  "threejs-skills": {
+    "description": "Create 3D scenes, interactive experiences, and visual effects using Three.js. Use when user requests 3D graphics, WebGL experiences, 3D visualizations",
+    "size_kb": 17.3
+  },
+  "tiktok-automation": {
+    "description": "Automate TikTok tasks via Rube MCP (Composio): upload/publish videos, post photos, manage content, and view user profiles/stats. Always search tools f",
+    "size_kb": 6.7
+  },
+  "todoist-automation": {
+    "description": "Automate Todoist task management, projects, sections, filtering, and bulk operations via Rube MCP (Composio). Always search tools first for current sc",
+    "size_kb": 11.9
+  },
+  "tool-design": {
+    "description": "Build tools that agents can use effectively, including architectural reduction patterns",
+    "size_kb": 15.6
+  },
+  "top-web-vulnerabilities": {
+    "description": "This skill should be used when the user asks to \"identify web application vulnerabilities\", \"explain common security flaws\", \"understand vulnerability",
+    "size_kb": 24.2
+  },
+  "track-management": {
+    "description": "Use this skill when creating, managing, or working with Conductor",
+    "size_kb": 1.3
+  },
+  "trello-automation": {
+    "description": "Automate Trello boards, cards, and workflows via Rube MCP (Composio). Create cards, manage lists, assign members, and search across boards programmati",
+    "size_kb": 7.7
+  },
+  "trigger-dev": {
+    "description": "Trigger.dev expert for background jobs, AI workflows, and reliable async execution with excellent developer experience and TypeScript-first design. Us",
+    "size_kb": 2.4
+  },
+  "turborepo-caching": {
+    "description": "Configure Turborepo for efficient monorepo builds with local and remote caching. Use when setting up Turborepo, optimizing build pipelines, or impleme",
+    "size_kb": 9.0
+  },
+  "tutorial-engineer": {
+    "description": "Creates step-by-step tutorials and educational content from code.",
+    "size_kb": 4.9
+  },
+  "twilio-communications": {
+    "description": "Build communication features with Twilio: SMS messaging, voice calls, WhatsApp Business API, and user verification (2FA). Covers the full spectrum fro",
+    "size_kb": 9.1
+  },
+  "twitter-automation": {
+    "description": "Automate Twitter/X tasks via Rube MCP (Composio): posts, search, users, bookmarks, lists, media. Always search tools first for current schemas.",
+    "size_kb": 8.9
+  },
+  "typescript-advanced-types": {
+    "description": "Master TypeScript's advanced type system including generics, conditional types, mapped types, template literals, and utility types for building type-s",
+    "size_kb": 1.4
+  },
+  "typescript-expert": {
+    "description": ">-",
+    "size_kb": 14.7
+  },
+  "typescript-pro": {
+    "description": "Master TypeScript with advanced types, generics, and strict type",
+    "size_kb": 2.2
+  },
+  "ui-skills": {
+    "description": "Opinionated, evolving constraints to guide agents when building interfaces",
+    "size_kb": 0.7
+  },
+  "ui-ux-designer": {
+    "description": "Create interface designs, wireframes, and design systems. Masters",
+    "size_kb": 9.5
+  },
+  "ui-ux-pro-max": {
+    "description": "UI/UX design intelligence. 50 styles, 21 palettes, 50 font pairings, 20 charts, 9 stacks.",
+    "size_kb": 0.7
+  },
+  "ui-visual-validator": {
+    "description": "Rigorous visual validation expert specializing in UI testing,",
+    "size_kb": 10.0
+  },
+  "unit-testing-test-generate": {
+    "description": "Generate comprehensive, maintainable unit tests across languages with strong coverage and edge case focus.",
+    "size_kb": 10.8
+  },
+  "unity-developer": {
+    "description": "Build Unity games with optimized C# scripts, efficient rendering,",
+    "size_kb": 10.8
+  },
+  "unity-ecs-patterns": {
+    "description": "Master Unity ECS (Entity Component System) with DOTS, Jobs, and Burst for high-performance game development. Use when building data-oriented games, op",
+    "size_kb": 1.2
+  },
+  "unreal-engine-cpp-pro": {
+    "description": "Expert guide for Unreal Engine 5.x C++ development, covering UObject hygiene, performance patterns, and best practices.",
+    "size_kb": 4.5
+  },
+  "upgrading-expo": {
+    "description": "Upgrade Expo SDK versions",
+    "size_kb": 2.9
+  },
+  "upstash-qstash": {
+    "description": "Upstash QStash expert for serverless message queues, scheduled jobs, and reliable HTTP-based task delivery without managing infrastructure. Use when: ",
+    "size_kb": 2.4
+  },
+  "user-story-generator": {
+    "description": "Generates standard user stories with acceptance criteria from feature lists.",
+    "size_kb": 0.6
+  },
+  "using-git-worktrees": {
+    "description": "Use when starting feature work that needs isolation from current workspace or before executing implementation plans - creates isolated git worktrees w",
+    "size_kb": 5.7
+  },
+  "using-neon": {
+    "description": "Guides and best practices for working with Neon Serverless Postgres. Covers getting started, local development with Neon, choosing a connection method",
+    "size_kb": 4.7
+  },
+  "using-superpowers": {
+    "description": "Use when starting any conversation - establishes how to find and use skills, requiring Skill tool invocation before ANY response including clarifying ",
+    "size_kb": 3.8
+  },
+  "uv-package-manager": {
+    "description": "Master the uv package manager for fast Python dependency management, virtual environments, and modern Python project workflows. Use when setting up Py",
+    "size_kb": 1.4
+  },
+  "varlock-claude-skill": {
+    "description": "Secure environment variable management ensuring secrets are never exposed in Claude sessions, terminals, logs, or git commits",
+    "size_kb": 0.9
+  },
+  "vector-database-engineer": {
+    "description": "Expert in vector databases, embedding strategies, and semantic search implementation. Masters Pinecone, Weaviate, Qdrant, Milvus, and pgvector for RAG",
+    "size_kb": 2.3
+  },
+  "vector-index-tuning": {
+    "description": "Optimize vector index performance for latency, recall, and memory. Use when tuning HNSW parameters, selecting quantization strategies, or scaling vect",
+    "size_kb": 1.5
+  },
+  "vercel-automation": {
+    "description": "Automate Vercel tasks via Rube MCP (Composio): manage deployments, domains, DNS, env vars, projects, and teams. Always search tools first for current ",
+    "size_kb": 9.1
+  },
+  "vercel-deploy-claimable": {
+    "description": "Deploy applications and websites to Vercel. Use this skill when the user requests deployment actions such as 'Deploy my app', 'Deploy this to producti",
+    "size_kb": 3.5
+  },
+  "vercel-deployment": {
+    "description": "Expert knowledge for deploying to Vercel with Next.js Use when: vercel, deploy, deployment, hosting, production.",
+    "size_kb": 2.4
+  },
+  "verification-before-completion": {
+    "description": "Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming",
+    "size_kb": 4.2
+  },
+  "vexor": {
+    "description": "Vector-powered CLI for semantic file search with a Claude/Codex skill",
+    "size_kb": 0.6
+  },
+  "viral-generator-builder": {
+    "description": "Expert in building shareable generator tools that go viral - name generators, quiz makers, avatar creators, personality tests, and calculator tools. C",
+    "size_kb": 5.4
+  },
+  "voice-agents": {
+    "description": "Voice agents represent the frontier of AI interaction - humans speaking naturally with AI systems. The challenge isn't just speech recognition and syn",
+    "size_kb": 2.3
+  },
+  "voice-ai-development": {
+    "description": "Expert in building voice AI applications - from real-time voice agents to voice-enabled apps. Covers OpenAI Realtime API, Vapi for voice agents, Deepg",
+    "size_kb": 8.4
+  },
+  "voice-ai-engine-development": {
+    "description": "Build real-time conversational AI voice engines using async worker pipelines, streaming transcription, LLM agents, and TTS synthesis with interrupt ha",
+    "size_kb": 23.2
+  },
+  "vulnerability-scanner": {
+    "description": "Advanced vulnerability analysis principles. OWASP 2025, Supply Chain Security, attack surface mapping, risk prioritization.",
+    "size_kb": 7.7
+  },
+  "wcag-audit-patterns": {
+    "description": "Conduct WCAG 2.2 accessibility audits with automated testing, manual verification, and remediation guidance. Use when auditing websites for accessibil",
+    "size_kb": 1.5
+  },
+  "web-artifacts-builder": {
+    "description": "Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using modern frontend web technologies (React, Tailwind CSS, shadcn/ui",
+    "size_kb": 3.1
+  },
+  "web-design-guidelines": {
+    "description": "Review UI code for Web Interface Guidelines compliance. Use when asked to \"review my UI\", \"check accessibility\", \"audit design\", \"review UX\", or \"chec",
+    "size_kb": 1.2
+  },
+  "web-performance-optimization": {
+    "description": "Optimize website and web application performance including loading speed, Core Web Vitals, bundle size, caching strategies, and runtime performance",
+    "size_kb": 16.3
+  },
+  "web3-testing": {
+    "description": "Test smart contracts comprehensively using Hardhat and Foundry with unit tests, integration tests, and mainnet forking. Use when testing Solidity cont",
+    "size_kb": 11.3
+  },
+  "webapp-testing": {
+    "description": "Toolkit for interacting with and testing local web applications using Playwright. Supports verifying frontend functionality, debugging UI behavior, ca",
+    "size_kb": 3.9
+  },
+  "webflow-automation": {
+    "description": "Automate Webflow CMS collections, site publishing, page management, asset uploads, and ecommerce orders via Rube MCP (Composio). Always search tools f",
+    "size_kb": 11.1
+  },
+  "whatsapp-automation": {
+    "description": "Automate WhatsApp Business tasks via Rube MCP (Composio): send messages, manage templates, upload media, and handle contacts. Always search tools firs",
+    "size_kb": 8.2
+  },
+  "wiki-architect": {
+    "description": "Analyzes code repositories and generates hierarchical documentation structures with onboarding guides. Use when the user wants to create a wiki, gener",
+    "size_kb": 2.7
+  },
+  "wiki-changelog": {
+    "description": "Analyzes git commit history and generates structured changelogs categorized by change type. Use when the user asks about recent changes, wants a chang",
+    "size_kb": 1.0
+  },
+  "wiki-onboarding": {
+    "description": "Generates two complementary onboarding guides — a Principal-Level architectural deep-dive and a Zero-to-Hero contributor walkthrough. Use when the use",
+    "size_kb": 4.0
+  },
+  "wiki-page-writer": {
+    "description": "Generates rich technical documentation pages with dark-mode Mermaid diagrams, source code citations, and first-principles depth. Use when writing docu",
+    "size_kb": 2.8
+  },
+  "wiki-qa": {
+    "description": "Answers questions about a code repository using source file analysis. Use when the user asks a question about how something works, wants to understand",
+    "size_kb": 1.1
+  },
+  "wiki-researcher": {
+    "description": "Conducts multi-turn iterative deep research on specific topics within a codebase with zero tolerance for shallow analysis. Use when the user wants an ",
+    "size_kb": 3.2
+  },
+  "wiki-vitepress": {
+    "description": "Packages generated wiki Markdown into a VitePress static site with dark theme, dark-mode Mermaid diagrams with click-to-zoom, and production build out",
+    "size_kb": 4.5
+  },
+  "windows-privilege-escalation": {
+    "description": "This skill should be used when the user asks to \"escalate privileges on Windows,\" \"find Windows privesc vectors,\" \"enumerate Windows for privilege esc",
+    "size_kb": 14.5
+  },
+  "wireshark-analysis": {
+    "description": "This skill should be used when the user asks to \"analyze network traffic with Wireshark\", \"capture packets for troubleshooting\", \"filter PCAP files\", ",
+    "size_kb": 12.4
+  },
+  "wordpress-penetration-testing": {
+    "description": "This skill should be used when the user asks to \"pentest WordPress sites\", \"scan WordPress for vulnerabilities\", \"enumerate WordPress users, themes, o",
+    "size_kb": 12.4
+  },
+  "workflow-automation": {
+    "description": "Workflow automation is the infrastructure that makes AI agents reliable. Without durable execution, a network hiccup during a 10-step payment flow mea",
+    "size_kb": 2.4
+  },
+  "workflow-orchestration-patterns": {
+    "description": "Design durable workflows with Temporal for distributed systems. Covers workflow vs activity separation, saga patterns, state management, and determini",
+    "size_kb": 9.8
+  },
+  "workflow-patterns": {
+    "description": "Use this skill when implementing tasks according to Conductor's TDD",
+    "size_kb": 1.2
+  },
+  "wrike-automation": {
+    "description": "Automate Wrike project management via Rube MCP (Composio): create tasks/folders, manage projects, assign work, and track progress. Always search tools",
+    "size_kb": 9.3
+  },
+  "writing-plans": {
+    "description": "Use when you have a spec or requirements for a multi-step task, before touching code",
+    "size_kb": 3.3
+  },
+  "writing-skills": {
+    "description": "Use when creating, updating, or improving agent skills.",
+    "size_kb": 4.2
+  },
+  "x-article-publisher-skill": {
+    "description": "Publish articles to X/Twitter",
+    "size_kb": 0.5
+  },
+  "xlsx-official": {
+    "description": "Comprehensive spreadsheet creation, editing, and analysis with support for formulas, formatting, data analysis, and visualization. When Claude needs t",
+    "size_kb": 10.7
+  },
+  "xss-html-injection": {
+    "description": "This skill should be used when the user asks to \"test for XSS vulnerabilities\", \"perform cross-site scripting attacks\", \"identify HTML injection flaws",
+    "size_kb": 13.4
+  },
+  "youtube-automation": {
+    "description": "Automate YouTube tasks via Rube MCP (Composio): upload videos, manage playlists, search content, get analytics, and handle comments. Always search too",
+    "size_kb": 8.8
+  },
+  "youtube-summarizer": {
+    "description": "Extract transcripts from YouTube videos and generate comprehensive, detailed summaries using intelligent analysis frameworks",
+    "size_kb": 12.4
+  },
+  "zapier-make-patterns": {
+    "description": "No-code automation democratizes workflow building. Zapier and Make (formerly Integromat) let non-developers automate business processes without writin",
+    "size_kb": 2.2
+  },
+  "zendesk-automation": {
+    "description": "Automate Zendesk tasks via Rube MCP (Composio): tickets, users, organizations, replies. Always search tools first for current schemas.",
+    "size_kb": 8.1
+  },
+  "zoho-crm-automation": {
+    "description": "Automate Zoho CRM tasks via Rube MCP (Composio): create/update records, search contacts, manage leads, and convert leads. Always search tools first fo",
+    "size_kb": 7.6
+  },
+  "zoom-automation": {
+    "description": "Automate Zoom meeting creation, management, recordings, webinars, and participant tracking via Rube MCP (Composio). Always search tools first for curr",
+    "size_kb": 10.7
+  },
+  "zustand-store-ts": {
+    "description": "Create Zustand stores with TypeScript, subscribeWithSelector middleware, and proper state/action separation. Use when building React state management,",
+    "size_kb": 1.7
+  }
+}

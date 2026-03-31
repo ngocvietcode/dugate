@@ -1,0 +1,38 @@
+{
+    "project": {
+        "name": "",
+        "description": "",
+        "tech_stack": [],
+        "repo_url": "",
+        "created_at": ""
+    },
+    "architecture": {
+        "pattern": "",
+        "database": "",
+        "api_style": "",
+        "auth_method": "",
+        "hosting": "",
+        "notes": []
+    },
+    "decisions": [],
+    "conventions": {
+        "naming": "",
+        "file_structure": "",
+        "git_branch_strategy": "",
+        "commit_format": "",
+        "code_style": ""
+    },
+    "known_issues": [],
+    "current_sprint": {
+        "goal": "",
+        "status": "",
+        "tasks": []
+    },
+    "requirement_analysis": {
+        "enabled": true,
+        "auto_detect": true,
+        "complexity_threshold": "standard",
+        "output_dir": "brain/requirements",
+        "_comment": "Toggle requirement analysis on/off. auto_detect skips trivial tasks. Threshold: trivial|standard|complex|enterprise"
+    }
+}

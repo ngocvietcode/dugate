@@ -1,35 +1,32 @@
 // app/api/v1/fact-check/route.ts
-// POST /api/v1/fact-check — Recipe: Fact-check & cross-reference document content
-// Maps to pipeline: [{ processor: "prebuilt-fact-check", variables: { reference_text, check_prompt } }]
+// POST /api/v1/fact-check — Recipe: 2-step Fact-check pipeline
 
-import { NextRequest, NextResponse } from 'next/server';
-import { submitPipelineJob } from '@/lib/pipelines/submit';
-import { formatOperationResponse } from '@/lib/pipelines/format';
-import { resolveRecipeOverride } from '@/lib/recipes/override';
+import { NextRequest } from 'next/server';
+import { runEndpoint } from '@/lib/endpoints/runner';
 
 /**
  * @swagger
  * /api/v1/fact-check:
  *   post:
- *     summary: Fact-check and cross-reference document against reference data
+ *     summary: Kiểm tra và đối chiếu tài liệu với dữ liệu tham chiếu (2 bước)
  *     description: |
- *       Recipe shortcut for the `prebuilt-fact-check` processor.
- *       Verifies and cross-references content in a document (PDF/DOCX) against
- *       a provided reference dataset (text or JSON) following custom business rules.
+ *       Pipeline 2 bước:
+ *       1. **Trích xuất (claim-extract)**: Đọc tài liệu PDF/DOCX và trích xuất các điểm dữ liệu (claims) cần kiểm tra.
+ *       2. **Đối chiếu (fact-verify)**: So sánh claims với `reference_data` theo `business_rules` đã được admin cấu hình per API key.
  *
- *       **Returns a structured JSON report with:**
- *       - Overall verdict: `PASS | FAIL | WARNING | INCONCLUSIVE`
- *       - Compliance score (0-100)
- *       - Per-rule check results with `PASS | FAIL | WARNING | NOT_APPLICABLE` status
- *       - Document value vs. reference value comparison for each rule
- *       - List of all discrepancies found
+ *       **Trả về JSON report:**
+ *       - `verdict`: `PASS | FAIL | WARNING | INCONCLUSIVE`
+ *       - `score`: Tỉ lệ compliance (0–100)
+ *       - `results[]`: Kết quả từng field với `document_value` vs `reference_value`
+ *       - `discrepancies[]`: Danh sách điểm sai lệch
+ *
+ *       **Lưu ý bảo mật:** `business_rules` được admin cấu hình cố định theo API key profile.
+ *       Client KHÔNG được gửi `business_rules` — request sẽ bị từ chối 400.
  *
  *       **Use cases:**
- *       - Verify invoice amounts match purchase orders
- *       - Check contract terms against standard clause library
- *       - Validate KYC documents against customer records
- *       - Confirm report figures match source data
- *       - Compliance audit against regulatory requirements
+ *       - Xác minh hóa đơn khớp với đơn đặt hàng
+ *       - Kiểm tra điều khoản hợp đồng với thư viện mẫu
+ *       - Validate hồ sơ KYC với dữ liệu khách hàng
  *     tags: [Analyze]
  *     security:
  *       - ApiKeyAuth: []
@@ -39,33 +36,31 @@ import { resolveRecipeOverride } from '@/lib/recipes/override';
  *         multipart/form-data:
  *           schema:
  *             type: object
- *             required: [file, reference_text, check_prompt]
+ *             required: [file, reference_data]
  *             properties:
  *               file:
  *                 type: string
  *                 format: binary
- *                 description: Document to fact-check — PDF or DOCX
- *               reference_text:
+ *                 description: Tài liệu cần kiểm tra — PDF hoặc DOCX
+ *               reference_data:
  *                 type: string
  *                 description: |
- *                   Reference data to compare the document against.
- *                   Accepts plain text or a JSON object (as string).
- *                   Examples: customer record JSON, purchase order text, regulation excerpt.
- *               check_prompt:
+ *                   Dữ liệu tham chiếu để đối chiếu (JSON string hoặc văn bản thuần).
+ *                   Ví dụ: JSON object từ ERP, nội dung đơn đặt hàng, dữ liệu khách hàng.
+ *               extract_fields:
  *                 type: string
  *                 description: |
- *                   Business rules or specific criteria to check.
- *                   Describe WHAT to verify and HOW to interpret discrepancies.
- *                   Example: "Check that: 1) Invoice total matches PO amount exactly,
- *                   2) VAT rate is 10%, 3) Delivery date is within 30 days of invoice date."
+ *                   (Tùy chọn) Danh sách trường cần trích xuất, mô tả bằng ngôn ngữ tự nhiên.
+ *                   Nếu không gửi, sẽ dùng danh sách mặc định trong profile của API key.
+ *                   Ví dụ: "tên người mua, ngày hóa đơn, tổng tiền, mã số thuế người bán"
  *               webhook_url:
  *                 type: string
- *                 description: Optional URL for async completion notification
+ *                 description: URL nhận thông báo khi xử lý xong (async)
  *     responses:
  *       202:
  *         description: |
- *           Operation created. Poll GET /api/v1/operations/{id} for result.
- *           When done, result.extracted_data contains the full check report.
+ *           Operation đã tạo. Poll GET /api/v1/operations/{id} để lấy kết quả.
+ *           Khi done=true, `result.extracted_data` chứa full check report.
  *         content:
  *           application/json:
  *             schema:
@@ -79,87 +74,8 @@ import { resolveRecipeOverride } from '@/lib/recipes/override';
  *                     state: { type: string, enum: [RUNNING, SUCCEEDED, FAILED, CANCELLED] }
  *                     progress_percent: { type: integer }
  *       400:
- *         description: Missing required fields (file, reference_text, or check_prompt)
+ *         description: Thiếu file, reference_data, hoặc client cố gắng gửi business_rules
  */
 export async function POST(req: NextRequest) {
-  try {
-    const form = await req.formData();
-    const apiKeyId = req.headers.get('x-api-key-id') ?? undefined;
-
-    // ── Validate required fields ─────────────────────────────────────────────
-    const referenceText = form.get('reference_text') as string | null;
-    if (!referenceText?.trim()) {
-      return NextResponse.json(
-        {
-          type: 'https://dugate.vn/errors/missing-parameter',
-          title: 'Missing Parameter',
-          status: 400,
-          detail: 'The "reference_text" field is required. Provide the reference data (text or JSON string) to compare the document against.',
-        },
-        { status: 400 },
-      );
-    }
-
-    const checkPrompt = form.get('check_prompt') as string | null;
-    if (!checkPrompt?.trim()) {
-      return NextResponse.json(
-        {
-          type: 'https://dugate.vn/errors/missing-parameter',
-          title: 'Missing Parameter',
-          status: 400,
-          detail: 'The "check_prompt" field is required. Describe the business rules or criteria to verify.',
-        },
-        { status: 400 },
-      );
-    }
-
-    // ── Recipe-level Override (Scope B) ──────────────────────────────────────
-    let finalCheckPrompt = checkPrompt.trim();
-    let pipelineVariables: Record<string, unknown> = {};
-
-    if (apiKeyId) {
-      const recipeOverride = await resolveRecipeOverride('recipe-fact-check', apiKeyId);
-      if (recipeOverride) {
-        // Merge extra variables from override
-        pipelineVariables = { ...recipeOverride.extraVariables };
-        // Append systemPromptAddon to check_prompt (client-specific rules appended)
-        if (recipeOverride.systemPromptAddon) {
-          finalCheckPrompt = `${finalCheckPrompt}\n\n---\n\n**Additional Client Rules:**\n${recipeOverride.systemPromptAddon}`;
-        }
-      }
-    }
-
-    // ── Submit pipeline ───────────────────────────────────────────────────────
-    const result = await submitPipelineJob({
-      pipeline: [{
-        processor: 'prebuilt-fact-check',
-        variables: {
-          reference_text: referenceText.trim(),
-          check_prompt:   finalCheckPrompt,
-          ...pipelineVariables,
-        },
-      }],
-      file:         form.get('file') as File | null,
-      outputFormat: 'json',
-      webhookUrl:   form.get('webhook_url') as string | null,
-      idempotencyKey: req.headers.get('idempotency-key') ?? undefined,
-      apiKeyId,
-    });
-
-    if (!result.ok) return result.errorResponse;
-
-    return NextResponse.json(formatOperationResponse(result.operation), {
-      status: result.isIdempotent ? 200 : 202,
-      headers: result.isIdempotent
-        ? {}
-        : { 'Operation-Location': `/api/v1/operations/${result.operation.id}` },
-    });
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.error('[POST /api/v1/fact-check] Error:', msg);
-    return NextResponse.json(
-      { type: 'https://dugate.vn/errors/internal', title: 'Internal Error', status: 500, detail: msg },
-      { status: 500 },
-    );
-  }
+  return runEndpoint('fact-check', req);
 }

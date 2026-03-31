@@ -2,10 +2,8 @@
 // POST /api/v1/compare — Recipe: Semantic diff between 2 documents
 // Shortcut for pipeline: [{ processor: "prebuilt-compare" }]
 
-import { NextRequest, NextResponse } from 'next/server';
-import { submitPipelineJob } from '@/lib/pipelines/submit';
-import { formatOperationResponse } from '@/lib/pipelines/format';
-import { resolveRecipeOverride } from '@/lib/recipes/override';
+import { NextRequest } from 'next/server';
+import { runEndpoint } from '@/lib/endpoints/runner';
 
 /**
  * @swagger
@@ -45,47 +43,5 @@ import { resolveRecipeOverride } from '@/lib/recipes/override';
  *         description: Missing source_file or target_file
  */
 export async function POST(req: NextRequest) {
-  try {
-    const form = await req.formData();
-    const apiKeyId = req.headers.get('x-api-key-id') ?? undefined;
-
-    // ── Recipe-level Override (Scope B) ────────────────────────────────────
-    let pipelineVariables: Record<string, unknown> = {};
-
-    if (apiKeyId) {
-      const recipeOverride = await resolveRecipeOverride('recipe-compare', apiKeyId);
-      if (recipeOverride) {
-        pipelineVariables = { ...recipeOverride.extraVariables };
-        if (recipeOverride.systemPromptAddon) {
-          pipelineVariables['__system_prompt_addon'] = recipeOverride.systemPromptAddon;
-        }
-      }
-    }
-
-    const result = await submitPipelineJob({
-      pipeline:   [{ processor: 'prebuilt-compare', variables: pipelineVariables }],
-      sourceFile: form.get('source_file') as File | null,
-      targetFile: form.get('target_file') as File | null,
-      outputFormat: 'json',
-      webhookUrl: form.get('webhook_url') as string | null,
-      idempotencyKey: req.headers.get('idempotency-key') ?? undefined,
-      apiKeyId,
-    });
-
-    if (!result.ok) return result.errorResponse;
-
-    return NextResponse.json(formatOperationResponse(result.operation), {
-      status: result.isIdempotent ? 200 : 202,
-      headers: result.isIdempotent
-        ? {}
-        : { 'Operation-Location': `/api/v1/operations/${result.operation.id}` },
-    });
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.error('[POST /api/v1/compare] Error:', msg);
-    return NextResponse.json(
-      { type: 'https://dugate.vn/errors/internal', title: 'Internal Error', status: 500, detail: msg },
-      { status: 500 },
-    );
-  }
+  return runEndpoint('compare', req);
 }
