@@ -31,7 +31,10 @@ export async function GET(
   if (op.outputContent) {
     const ext = op.outputFormat === 'html' ? 'html' : op.outputFormat === 'json' ? 'json' : 'md';
     const contentType = ext === 'html' ? 'text/html' : ext === 'json' ? 'application/json' : 'text/markdown';
-    const baseName = op.fileName ? path.basename(op.fileName, path.extname(op.fileName)) : 'output';
+    // Derive base name from first uploaded file in filesJson
+    const filesData: Array<{ name: string }> = op.filesJson ? JSON.parse(op.filesJson) : [];
+    const firstName = filesData[0]?.name ?? 'output';
+    const baseName = path.basename(firstName, path.extname(firstName));
 
     return new NextResponse(op.outputContent, {
       headers: {

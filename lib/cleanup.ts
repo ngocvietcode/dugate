@@ -40,9 +40,7 @@ export async function cleanupExpiredFiles(): Promise<{ deleted: number; freedMB:
     },
     select: {
       id: true,
-      inputPath: true,
-      sourceFilePath: true,
-      targetFilePath: true,
+      filesJson: true,
     },
   });
 
@@ -56,15 +54,17 @@ export async function cleanupExpiredFiles(): Promise<{ deleted: number; freedMB:
       freed += await getDirSize(convOutputDir);
       await fs.rm(convOutputDir, { recursive: true, force: true });
 
-      // Delete input file
-      const filesToDelete = [conv.inputPath, conv.sourceFilePath, conv.targetFilePath];
-      for (const filePath of filesToDelete) {
-        if (filePath) {
+      // Delete all uploaded files from filesJson
+      const filesData: Array<{ name: string; path: string }> = conv.filesJson
+        ? JSON.parse(conv.filesJson)
+        : [];
+      for (const f of filesData) {
+        if (f.path) {
           try {
-            const stat = await fs.stat(filePath);
+            const stat = await fs.stat(f.path);
             freed += stat.size;
           } catch { /* file already deleted */ }
-          await fs.rm(filePath, { force: true });
+          await fs.rm(f.path, { force: true });
         }
       }
 
