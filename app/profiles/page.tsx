@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Loader2, CheckCircle, Plus, Copy,
-  Settings, Save, Key, ChevronRight, ChevronDown, FileText, PlugZap, Trash2
+  Settings, Save, Key, ChevronRight, ChevronDown, FileText, PlugZap, Trash2, Code
 } from 'lucide-react';
 
 interface ApiKey {
@@ -361,6 +361,7 @@ function ProfileEndpointCard({
   const [activeTab, setActiveTab] = useState<'form' | 'json'>('form');
   const [isParamsOpen, setIsParamsOpen] = useState(false);
   const [isProcessorsOpen, setIsProcessorsOpen] = useState(false);
+  const [isCurlOpen, setIsCurlOpen] = useState(false);
 
   // JSON string state (for raw editor)
   const [defaultParamsStr, setDefaultParamsStr] = useState(
@@ -397,7 +398,47 @@ function ProfileEndpointCard({
     setIsEditing(false);
     setIsParamsOpen(false);
     setIsProcessorsOpen(false);
+    setIsCurlOpen(false);
   }, [apiKeyId]);
+
+  // Generate cURL preview
+  const generateCurl = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://api.dugate.vn';
+    const [method, routePath] = (endpoint.route || 'POST /api/v1/extract').split(' ');
+    const host = origin.includes('localhost') ? 'http://localhost:3000' : 'https://api.dugate.vn';
+    const fullUrl = `${host}${routePath}`;
+
+    let curlLines = [
+      `curl -X ${method} "${fullUrl}" \\`,
+      `  -H "x-api-key: YOUR_API_KEY" \\`
+    ];
+
+    if (routePath.includes('compare')) {
+       curlLines.push(`  -F "source_file=@/path/to/source.pdf" \\`);
+       curlLines.push(`  -F "target_file=@/path/to/target.pdf" \\`);
+    } else {
+       curlLines.push(`  -F "file=@/path/to/document.pdf" \\`);
+    }
+
+    if (endpoint.discriminatorName && endpoint.discriminatorValue && endpoint.discriminatorValue !== '_default') {
+      curlLines.push(`  -F "${endpoint.discriminatorName}=${endpoint.discriminatorValue}" \\`);
+    }
+
+    if (endpoint.clientParams && Object.keys(endpoint.clientParams).length > 0) {
+      Object.entries(endpoint.clientParams).forEach(([key, schema]: [string, any]) => {
+         let exVal = `{${schema.type}}`;
+         if (schema.options) exVal = schema.options[0];
+         if (schema.default) exVal = schema.default;
+         curlLines.push(`  -F "${key}=${exVal}" \\`);
+      });
+    }
+
+    const lastLine = curlLines[curlLines.length - 1];
+    if (lastLine.endsWith(' \\')) {
+      curlLines[curlLines.length - 1] = lastLine.slice(0, -2);
+    }
+    return curlLines.join('\n');
+  };
 
   // Sync Form -> JSON when switching tabs
   const handleTabSwitch = (tab: 'form' | 'json') => {
@@ -591,6 +632,37 @@ function ProfileEndpointCard({
       {(isActive || isEditing) && isEditing && (
         <div className="px-4 pb-4 border-t border-border bg-card/50 rounded-b-xl animate-in fade-in fill-mode-forwards">
           <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+            {/* CURL PREVIEW SECTION */}
+            <div className="sm:col-span-2">
+               <div 
+                 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2 cursor-pointer hover:bg-muted/50 w-fit p-1.5 -ml-1.5 rounded transition-colors select-none"
+                 onClick={() => setIsCurlOpen(!isCurlOpen)}
+               >
+                  <ChevronDown className={`w-4 h-4 transition-transform ${isCurlOpen ? '' : '-rotate-90'}`} />
+                  <Code className="w-4 h-4" /> API Integration (cURL)
+               </div>
+               
+               {isCurlOpen && (
+                 <div className="relative animate-in fade-in mt-2 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+                   <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-2 flex items-center justify-between">
+                     <span className="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400">cURL Example (multipart/form-data)</span>
+                     <button 
+                       onClick={() => {
+                         navigator.clipboard.writeText(generateCurl());
+                         alert('Copied cURL!');
+                       }}
+                       className="text-xs flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 px-2 py-1 rounded"
+                     >
+                       <Copy className="w-3 h-3" /> Copy
+                     </button>
+                   </div>
+                   <pre className="p-4 text-xs font-mono bg-white dark:bg-[#0d1117] text-slate-800 dark:text-slate-200 overflow-x-auto m-0 leading-relaxed">
+                     {generateCurl()}
+                   </pre>
+                 </div>
+               )}
+            </div>
             
             {/* CORE SETTINGS HEADER */}
             <div 
