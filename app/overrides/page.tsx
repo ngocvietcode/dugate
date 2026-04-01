@@ -297,14 +297,21 @@ function ProfileEndpointCard({
 }) {
   const [isActive, setIsActive] = useState(endpoint.enabled);
   const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'form' | 'json'>('form');
+
+  // JSON string state (for raw editor)
   const [defaultParamsStr, setDefaultParamsStr] = useState(
     endpoint.defaultParams ? JSON.stringify(endpoint.defaultParams, null, 2) : ''
   );
   const [profileParamsStr, setProfileParamsStr] = useState(
     endpoint.profileParams ? JSON.stringify(endpoint.profileParams, null, 2) : ''
   );
-  
-  // Trạng thái giữ override của từng processor trong chuỗi pipeline
+
+  // Object state (for form builder)
+  const [defaultObj, setDefaultObj] = useState<Record<string, any>>(endpoint.defaultParams || {});
+  const [profileObj, setProfileObj] = useState<Record<string, any>>(endpoint.profileParams || {});
+
+  // Processor overrides
   const [extOverridesState, setExtOverridesState] = useState<Record<string, string | null>>({});
   const [saving, setSaving] = useState(false);
 
@@ -312,9 +319,10 @@ function ProfileEndpointCard({
     setIsActive(endpoint.enabled);
     setDefaultParamsStr(endpoint.defaultParams ? JSON.stringify(endpoint.defaultParams, null, 2) : '');
     setProfileParamsStr(endpoint.profileParams ? JSON.stringify(endpoint.profileParams, null, 2) : '');
+    setDefaultObj(endpoint.defaultParams || {});
+    setProfileObj(endpoint.profileParams || {});
     setIsEditing(false);
 
-    // Load initial overrides for processors
     const initialOverrides: Record<string, string | null> = {};
     endpoint.extConnections?.forEach((conn: any) => {
       initialOverrides[conn.connectionId] = conn.promptOverride ?? null;
@@ -322,24 +330,42 @@ function ProfileEndpointCard({
     setExtOverridesState(initialOverrides);
   }, [endpoint, apiKeyId]);
 
+  // Sync Form -> JSON when switching tabs
+  const handleTabSwitch = (tab: 'form' | 'json') => {
+    if (tab === 'json') {
+      // Sync from object to string
+      setDefaultParamsStr(Object.keys(defaultObj).length ? JSON.stringify(defaultObj, null, 2) : '');
+      setProfileParamsStr(Object.keys(profileObj).length ? JSON.stringify(profileObj, null, 2) : '');
+    } else {
+      // Sync from string to object
+      try {
+        setDefaultObj(defaultParamsStr.trim() ? JSON.parse(defaultParamsStr) : {});
+        setProfileObj(profileParamsStr.trim() ? JSON.parse(profileParamsStr) : {});
+      } catch (e) {
+        alert('Cú pháp JSON không hợp lệ, không thể chuyển sang Form Editor!');
+        return;
+      }
+    }
+    setActiveTab(tab);
+  };
+
   const handleToggle = async (checked: boolean) => {
     setIsActive(checked);
-    await saveSettings(checked, defaultParamsStr, profileParamsStr, extOverridesState);
+    await saveSettings(checked);
     if (checked) setIsEditing(true);
   };
 
-  const saveSettings = async (
-    enabledState: boolean, 
-    dParams: string, 
-    pParams: string, 
-    overridesState: Record<string, string | null>
-  ) => {
+  const saveSettings = async (enabledState: boolean = isActive) => {
     setSaving(true);
     try {
-      let defaultObj = null;
-      if (dParams.trim()) defaultObj = JSON.parse(dParams);
-      let profileObj = null;
-      if (pParams.trim()) profileObj = JSON.parse(pParams);
+      // Determine final payloads based on active tab
+      let finalDefaultObj = defaultObj;
+      let finalProfileObj = profileObj;
+
+      if (activeTab === 'json') {
+        finalDefaultObj = defaultParamsStr.trim() ? JSON.parse(defaultParamsStr) : null;
+        finalProfileObj = profileParamsStr.trim() ? JSON.parse(profileParamsStr) : null;
+      }
 
       // Save Profile Endpoint params
       const endpointPromise = fetch('/api/internal/profile-endpoints', {
@@ -349,14 +375,14 @@ function ProfileEndpointCard({
           apiKeyId,
           endpointSlug: endpoint.slug,
           enabled: enabledState,
-          defaultParams: defaultObj,
-          profileParams: profileObj,
+          defaultParams: Object.keys(finalDefaultObj || {}).length ? finalDefaultObj : null,
+          profileParams: Object.keys(finalProfileObj || {}).length ? finalProfileObj : null,
         }),
       });
 
       // Save all processor overrides
       const overridePromises = endpoint.extConnections?.map((conn: any) => {
-        const val = overridesState[conn.connectionId];
+        const val = extOverridesState[conn.connectionId];
         const hasOverride = val !== null;
         return fetch('/api/internal/ext-overrides', {
           method: 'POST',
@@ -371,13 +397,66 @@ function ProfileEndpointCard({
       }) || [];
 
       await Promise.all([endpointPromise, ...overridePromises]);
+      
+      // Update local state without closing editor if manually saved
+      setDefaultObj(finalDefaultObj || {});
+      setProfileObj(finalProfileObj || {});
       onUpdated();
-      setIsEditing(false); // Close the inline editor
     } catch {
       alert('Lỗi khi lưu thiết lập, vui lòng kiểm tra định dạng JSON.');
     } finally {
       setSaving(false);
     }
+  };
+
+  // Render a dynamic input based on schema
+  const renderSchemaInput = (
+    key: string, 
+    schema: any, 
+    val: any, 
+    onChange: (v: any) => void
+  ) => {
+    return (
+      <div key={key} className="flex flex-col mb-4 bg-background p-3 rounded-lg border border-border shadow-sm">
+        <label className="text-sm font-semibold flex items-center justify-between">
+          <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded text-foreground">{key}</span>
+          <span className="text-[10px] uppercase text-muted-foreground">{schema.type}</span>
+        </label>
+        <p className="text-xs text-muted-foreground mt-1 mb-2 leading-relaxed">{schema.description}</p>
+        
+        {schema.options ? (
+          <select 
+            value={val || ''}
+            onChange={e => onChange(e.target.value)}
+            className="input-field text-sm font-mono py-1.5"
+          >
+            <option value="">-- Không đè (Để trống) --</option>
+            {schema.options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
+        ) : schema.type === 'number' ? (
+          <input 
+            type="number" 
+            value={val || ''}
+            onChange={e => onChange(Number(e.target.value))}
+            className="input-field py-1.5 text-sm font-mono"
+            placeholder={schema.default ? `Mặc định: ${schema.default}` : 'Nhập số...'}
+          />
+        ) : schema.type === 'boolean' ? (
+           <label className="flex items-center gap-2 text-sm mt-1 cursor-pointer">
+              <input type="checkbox" checked={val || false} onChange={e => onChange(e.target.checked)} className="w-4 h-4 rounded border-border" />
+              <span>Bật / Tắt</span>
+           </label>
+        ) : (
+          <input 
+            type="text" 
+            value={val || ''}
+            onChange={e => onChange(e.target.value)}
+            className="input-field py-1.5 text-sm font-mono"
+            placeholder={schema.default ? `Mặc định: ${schema.default}` : 'Nhập giá trị...'}
+          />
+        )}
+      </div>
+    );
   };
 
   return (
@@ -398,7 +477,7 @@ function ProfileEndpointCard({
           </div>
           <p className="text-sm text-muted-foreground leading-snug select-none">
             {endpoint.description} <br/>
-            (Mode: <strong>{endpoint.inputMode}</strong>, Client Params: {endpoint.clientParams?.join(', ') || 'None'})
+            (Subcase: <strong>{endpoint.discriminatorValue || '_default'}</strong>)
           </p>
         </div>
 
@@ -436,37 +515,106 @@ function ProfileEndpointCard({
 
       {(isActive || isEditing) && isEditing && (
         <div className="px-4 pb-4 border-t border-border bg-card/50 rounded-b-xl animate-in fade-in fill-mode-forwards">
-          <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
             
-            {/* CORE SETTINGS */}
-            <div className="sm:col-span-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-               ▼ Core Settings
+            {/* CORE SETTINGS HEADER */}
+            <div className="sm:col-span-2 flex items-center justify-between border-b border-border pb-2">
+               <div className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  ▼ Parameters Configuration
+               </div>
+               <div className="flex bg-muted p-1 rounded-lg">
+                 <button 
+                   onClick={() => handleTabSwitch('form')}
+                   className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${activeTab === 'form' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                 >
+                   UI Form
+                 </button>
+                 <button 
+                   onClick={() => handleTabSwitch('json')}
+                   className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${activeTab === 'json' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                 >
+                   Raw JSON
+                 </button>
+               </div>
             </div>
             
-            <div>
-               <label className="text-sm font-bold text-foreground flex items-center gap-2 mb-2">
-                 <FileText className="w-4 h-4 text-indigo-500" /> Default Params (JSON)
-               </label>
-               <textarea
-                 value={defaultParamsStr}
-                 onChange={e => setDefaultParamsStr(e.target.value)}
-                 className="w-full bg-background border border-border rounded-lg p-3 font-mono text-xs sm:text-sm leading-relaxed min-h-[120px] focus:ring-2 focus:ring-indigo-500/30"
-                 placeholder={'{\\n  "max_words": 500\\n}'}
-               />
-               <p className="text-xs text-muted-foreground mt-1">Giá trị mặc định nếu client gửi trống.</p>
-            </div>
-            <div>
-               <label className="text-sm font-bold text-foreground flex items-center gap-2 mb-2">
-                 <Settings className="w-4 h-4 text-amber-500" /> Profile Params (JSON)
-               </label>
-               <textarea
-                 value={profileParamsStr}
-                 onChange={e => setProfileParamsStr(e.target.value)}
-                 className="w-full bg-background border border-border rounded-lg p-3 font-mono text-xs sm:text-sm leading-relaxed min-h-[120px] focus:ring-2 focus:ring-amber-500/30"
-                 placeholder={'{\\n  "business_rules": "1. Rule A..."\\n}'}
-               />
-               <p className="text-xs text-muted-foreground mt-1">Khóa cứng các field của Profile: {endpoint.profileOnlyParams?.join(', ') || 'N/A'}</p>
-            </div>
+            {activeTab === 'json' ? (
+              <>
+                <div className="animate-in fade-in">
+                  <label className="text-sm font-bold text-foreground flex items-center gap-2 mb-2">
+                    <FileText className="w-4 h-4 text-indigo-500" /> Default Params (JSON)
+                  </label>
+                  <textarea
+                    value={defaultParamsStr}
+                    onChange={e => setDefaultParamsStr(e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg p-3 font-mono text-xs sm:text-sm leading-relaxed min-h-[160px] focus:ring-2 focus:ring-indigo-500/30"
+                    placeholder={'{\n  "max_words": 500\n}'}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">Được phép truyền: {Object.keys(endpoint.clientParamsSchema || {}).join(', ')}</p>
+                </div>
+                <div className="animate-in fade-in">
+                  <label className="text-sm font-bold text-foreground flex items-center gap-2 mb-2">
+                    <Settings className="w-4 h-4 text-amber-500" /> Profile Params (JSON)
+                  </label>
+                  <textarea
+                    value={profileParamsStr}
+                    onChange={e => setProfileParamsStr(e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg p-3 font-mono text-xs sm:text-sm leading-relaxed min-h-[160px] focus:ring-2 focus:ring-amber-500/30"
+                    placeholder={'{\n  "business_rules": "1. Rule A..."\n}'}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">Dành cho Admin: {Object.keys(endpoint.profileOnlyParamsSchema || {}).join(', ')}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Form Builder View */}
+                <div className="animate-in fade-in">
+                  <label className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
+                    <FileText className="w-4 h-4 text-indigo-500" /> Default Params
+                  </label>
+                  <p className="text-xs text-muted-foreground mb-4">Giá trị mặc định của API. Client có thể gửi data đè giá trị này.</p>
+                  <div className="space-y-1">
+                    {Object.entries(endpoint.clientParamsSchema || {}).length === 0 && (
+                       <div className="text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded-lg border border-dashed">Không có tham số nào được hỗ trợ.</div>
+                    )}
+                    {Object.entries(endpoint.clientParamsSchema || {}).map(([key, schema]) => 
+                      renderSchemaInput(key, schema, defaultObj[key], (v) => {
+                        setDefaultObj(prev => {
+                          const newer = { ...prev };
+                          if (v === '' || v === undefined) delete newer[key];
+                          else newer[key] = v;
+                          return newer;
+                        });
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <div className="animate-in fade-in sm:border-l border-border sm:pl-6">
+                  <label className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
+                    <Settings className="w-4 h-4 text-amber-500" /> Profile Params
+                  </label>
+                  <p className="text-xs text-amber-600 dark:text-amber-500/80 mb-4 bg-amber-50 dark:bg-amber-950/20 p-2 rounded border border-amber-200 dark:border-amber-900/50">
+                    Client <strong>KHÔNG</strong> được phép thay đổi. Giá trị này ghi đè hoàn toàn input của client.
+                  </p>
+                  <div className="space-y-1">
+                    {Object.entries(endpoint.profileOnlyParamsSchema || {}).length === 0 && (
+                       <div className="text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded-lg border border-dashed">Không có tham số Admin-only nào.</div>
+                    )}
+                    {Object.entries(endpoint.profileOnlyParamsSchema || {}).map(([key, schema]) => 
+                      renderSchemaInput(key, schema, profileObj[key], (v) => {
+                        setProfileObj(prev => {
+                          const newer = { ...prev };
+                          if (v === '' || v === undefined) delete newer[key];
+                          else newer[key] = v;
+                          return newer;
+                        });
+                      })
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* PIPELINE PROCESSORS */}
             <div className="sm:col-span-2 mt-4 pt-4 border-t border-border/50">
@@ -563,7 +711,7 @@ function ProfileEndpointCard({
                 Đóng
               </button>
               <button
-                onClick={() => saveSettings(isActive, defaultParamsStr, profileParamsStr, extOverridesState)}
+                onClick={() => saveSettings()}
                 disabled={saving}
                 className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg flex items-center gap-2 shadow-sm transition-transform active:scale-95"
               >

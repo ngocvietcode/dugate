@@ -76,7 +76,7 @@ export async function runEndpoint(
     }
 
     // ── 4. Block profileOnlyParams from client ───────────────────────────────
-    for (const p of subCase.profileOnlyParams) {
+    for (const p of Object.keys(subCase.profileOnlyParams)) {
       if (form.has(p)) {
         return apiError(
           400,
@@ -124,7 +124,7 @@ export async function runEndpoint(
 
     // Collect allowed client params
     const clientParams: Record<string, unknown> = {};
-    for (const p of subCase.clientParams) {
+    for (const p of Object.keys(subCase.clientParams)) {
       if (form.has(p)) {
         clientParams[p] = form.get(p) as string;
       }
