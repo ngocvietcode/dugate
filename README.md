@@ -12,13 +12,13 @@ Whether you need to extract data from invoices, compliance-check a contract, or 
 
 ## ✨ Key Features
 
-- **6 Core Endpoints** — Replaces dozens of messy endpoints with a clean, unified structure (`ingest`, `extract`, `analyze`, `transform`, `generate`, `compare`).
-- **Profile-Driven Architecture** — Admins can enforce business rules, switch LLM models, or inject system prompts invisibly per API Key. Clients never have to change their code!
-- **Asynchronous Pipeline Engine** — Handles large documents seamlessly via a `202 Accepted` + Polling (or Webhook) pattern.
-- **Multiple AI Backends** — Natively routes to Google Gemini, OpenAI (GPT-4o), Anthropic (Claude), or even custom external APIs.
-- **Built-in Mock Services** — Develop and run E2E tests against a dedicated mock HTTP service without burning real AI tokens.
-- **Visual Gateway UI** — Included web dashboards to intuitively test endpoints, manage API profiles, and audit processing logs.
-
+- **6 Core API Endpoints** — Replaces dozens of messy endpoints with a clean, unified structure (`ingest`, `extract`, `analyze`, `transform`, `generate`, `compare`).
+- **Deep Profile-Driven Override Routing** — Admins can enforce specific internal LLM models, system context, or overwrite specific connection setups entirely *per API Key*. Client applications never have to change their calling code!
+- **Visual Pipeline Chain Builder** — An intuitive **Visual UI in the Profiles Dashboard** allowing Admins to stack, re-order, and inject *Custom Prompts* using variable mapping (`{{input_content}}`) dynamically across executing connectors.
+- **Asynchronous Pipeline Engine** — Handles large documents seamlessly via a generic asynchronous task runner (`202 Accepted` + Polling/Webhook pattern).
+- **Multiple AI Backends** — Natively routes downward into Google Gemini, OpenAI (GPT-4o), Anthropic (Claude), or modular external APIs.
+- **Standalone Mock Service Engine** — Safely develop and run high-volume E2E tests against a dedicated internal HTTP Mock Service locally without burning expensive real AI tokens.
+- **Diagnostic Logging** — Includes complete cURL reconstruction and dynamic log extraction for tracing integration bugs.
 ---
 
 ## 🚀 The 6 Core APIs
@@ -74,10 +74,11 @@ npm run dev
 
 ## 📖 Documentation & Architecture
 
-Dive deeper into the design philosophy and client integration instructions:
+Dive deeper into the design philosophy, client integration, and the powerful admin configuration interfaces:
 
+- **[Admin Multi-Connector Guide](docs/admin-multi-connector-guide.md)** — Guide on routing overrides, visual dynamic pipeline chain building, and connector mapping (ex: output mapping into subsequent prompts).
 - **[API Design Proposal](docs/API_DESIGN_PROPOSAL.md)** — Architectural overview, endpoint philosophy, and request/response lifecycles.
-- **[Integration & Admin Guide](docs/DU_INTEGRATION_GUIDE.md)** — Comprehensive guide on API parameter usage, Async polling patterns, and Profile configuration for Admins.
+- **[Integration & Admin Guide](docs/DU_INTEGRATION_GUIDE.md)** — Comprehensive guide on API parameter usage, Async polling patterns, and basic Profile configuration.
 
 ---
 
