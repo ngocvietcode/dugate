@@ -9,6 +9,8 @@ import { submitPipelineJob } from '@/lib/pipelines/submit';
 import { formatOperationResponse } from '@/lib/pipelines/format';
 import { SERVICE_REGISTRY } from './registry';
 import { EXTRACT_PRESETS } from './presets';
+import { Logger } from '@/lib/logger';
+import crypto from 'crypto';
 
 // ─── Error helper ────────────────────────────────────────────────────────────
 
@@ -44,6 +46,10 @@ export async function runEndpoint(
   serviceSlug: string,
   req: NextRequest,
 ): Promise<NextResponse> {
+  const correlationId = req.headers.get('x-correlation-id') || crypto.randomUUID();
+  const logger = new Logger({ correlationId, service: serviceSlug });
+  logger.info(`[API_REQUEST_STARTED] Incoming request to /v1/${serviceSlug}`);
+
   try {
     // ── 1. Lookup service definition ────────────────────────────────────────
     const service = SERVICE_REGISTRY[serviceSlug];
@@ -173,13 +179,17 @@ export async function runEndpoint(
       idempotencyKey,
       apiKeyId,
       executeSync,
+      correlationId,
     });
 
     if (!result.ok) {
+      logger.warn(`Pipeline submission rejected: ${JSON.stringify(result.errorResponse)}`);
       return result.errorResponse;
     }
 
     const isSyncOrIdempotent = result.isIdempotent || executeSync;
+    
+    logger.info(`[API_REQUEST_COMPLETED] Endpoint completed successfully`);
 
     return NextResponse.json(formatOperationResponse(result.operation), {
       status: isSyncOrIdempotent ? 200 : 202,
@@ -191,7 +201,7 @@ export async function runEndpoint(
 
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`[runEndpoint:${serviceSlug}]`, msg);
+    logger.error(`[runEndpoint:${serviceSlug}] failed`, undefined, error);
     return apiError(500, 'Internal Error', msg, 'https://dugate.vn/errors/internal');
   }
 }

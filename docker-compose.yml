@@ -36,7 +36,19 @@ services:
       retries: 5
     restart: unless-stopped
 
+  mock-service:
+    build: ./mock-service
+    ports:
+      - "3099:3099"
+    environment:
+      MOCK_PORT: 3099
+      MOCK_API_KEY: DUMMY_SECRET_KEY
+      MOCK_DELAY_MS: 300
+
+    restart: unless-stopped
+
 volumes:
   pgdata:
   uploads:
   outputs:
+

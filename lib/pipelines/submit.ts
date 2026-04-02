@@ -18,6 +18,7 @@ export interface SubmitPipelineParams {
   idempotencyKey?: string;
   apiKeyId?: string;
   executeSync?: boolean;
+  correlationId?: string;
 }
 
 export type SubmitPipelineResult =
@@ -38,6 +39,7 @@ export async function submitPipelineJob(
     idempotencyKey,
     apiKeyId,
     executeSync = false,
+    correlationId,
   } = params;
 
   // ── 1. Basic pipeline validation ─────────────────────────────────────────
@@ -142,12 +144,12 @@ export async function submitPipelineJob(
 
   // ── 7. Execute (Sync or Async) ──────────────────────────────────────────────
   if (executeSync) {
-    await runPipeline(operationId);
+    await runPipeline(operationId, correlationId);
     // Reload operation to get latest state after completion
     operation = (await prisma.operation.findUnique({ where: { id: operationId } }))!;
   } else {
     // Fire-and-forget
-    runPipeline(operationId).catch((err) => {
+    runPipeline(operationId, correlationId).catch((err) => {
       console.error(`[submitPipelineJob] Pipeline error for ${operationId}:`, err);
     });
   }

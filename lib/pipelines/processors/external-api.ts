@@ -5,6 +5,7 @@
 import fs from 'fs/promises';
 import type { ProcessorContext, ProcessorResult } from '@/lib/pipelines/engine';
 import type { ExternalApiConnection, ExternalApiOverride } from '@prisma/client';
+import type { Logger } from '@/lib/logger';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,34 @@ function interpolateVariables(template: string, variables: Record<string, unknow
   return result;
 }
 
+function logCurlCommand(url: string, method: string, headers: Record<string, string>, formData: FormData, logger: Logger) {
+  let curl = `curl -X ${method} "${url}" \\\n`;
+  for (const [k, v] of Object.entries(headers)) {
+    // Hide auth secrets in logs to be safe, but keep the header
+    const val = k.toLowerCase().includes('auth') || k.toLowerCase().includes('key') ? '***HIDDEN***' : v;
+    curl += `  -H "${k}: ${val}" \\\n`;
+  }
+  
+  // Try to iterate over FormData if supported
+  try {
+    for (const [key, value] of (formData as any).entries()) {
+      if (typeof value === 'object' && value !== null && 'size' in value) {
+        curl += `  -F "${key}=@/path/to/file" \\\n`;
+      } else {
+        const cleanVal = String(value).replace(/"/g, '\\"').replace(/\n/g, ' ');
+        // Truncate long strings for clean logs
+        const displayVal = cleanVal.length > 200 ? cleanVal.substring(0, 200) + '...' : cleanVal;
+        curl += `  -F "${key}=${displayVal}" \\\n`;
+      }
+    }
+  } catch(e) {}
+  
+  // Trim last backslash
+  curl = curl.trim().replace(/\\$/, '');
+  logger.debug(`[cURL COMMAND]\n${curl}`);
+}
+
+
 // ─── Core Processor ───────────────────────────────────────────────────────────
 
 /**
@@ -58,7 +87,7 @@ export async function runExternalApiProcessor(
   // Interpolate {{variable}} từ pipeline variables
   const resolvedPrompt = interpolateVariables(rawPrompt, ctx.variables);
 
-  console.log(`[ExtAPI] ${connection.slug} | step ${ctx.stepIndex + 1}/${ctx.totalSteps} | prompt: ${resolvedPrompt.length} chars`);
+  ctx.logger.info(`Formatting prompt for ${connection.slug}`, { promptLength: resolvedPrompt.length });
 
   // ── 2. Build multipart/form-data ───────────────────────────────────────────
   const formData = new FormData();
@@ -74,7 +103,7 @@ export async function runExternalApiProcessor(
         formData.append(field.key, field.value);
       }
     } catch {
-      console.warn(`[ExtAPI] staticFormFields JSON invalid for '${connection.slug}', skipping`);
+      ctx.logger.warn(`staticFormFields JSON invalid for '${connection.slug}', skipping`);
     }
   }
 
@@ -87,9 +116,9 @@ export async function runExternalApiProcessor(
         const fileBuffer = await fs.readFile(filePath);
         const blob = new Blob([fileBuffer]);
         formData.append(connection.fileFieldName, blob, fileName);
-        console.log(`[ExtAPI] Attaching file[${i}]: ${fileName} (${fileBuffer.length} bytes)`);
+        ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBuffer.length} bytes)`);
       } catch (e) {
-        console.warn(`[ExtAPI] Could not read file '${filePath}':`, e);
+        ctx.logger.warn(`Could not read file '${filePath}'`, undefined, e);
       }
     }
   } else if (ctx.inputText) {
@@ -113,7 +142,7 @@ export async function runExternalApiProcessor(
       const extra = JSON.parse(connection.extraHeaders) as Record<string, string>;
       Object.assign(headers, extra);
     } catch {
-      console.warn(`[ExtAPI] extraHeaders JSON invalid for '${connection.slug}', skipping`);
+      ctx.logger.warn(`extraHeaders JSON invalid for '${connection.slug}', skipping`);
     }
   }
 
@@ -124,7 +153,8 @@ export async function runExternalApiProcessor(
 
   let responseJson: unknown;
   try {
-    console.log(`[ExtAPI] POST → ${connection.endpointUrl}`);
+    logCurlCommand(connection.endpointUrl, connection.httpMethod, headers, formData, ctx.logger);
+    ctx.logger.info(`POST → ${connection.endpointUrl}`);
     const response = await fetch(connection.endpointUrl, {
       method: connection.httpMethod,
       headers,
@@ -134,6 +164,7 @@ export async function runExternalApiProcessor(
 
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '(no body)');
+      ctx.logger.error(`HTTP ${response.status} Error Response: ${errorBody.substring(0, 1000)}`);
       throw new Error(`External API returned HTTP ${response.status}: ${errorBody.substring(0, 500)}`);
     }
 
@@ -142,7 +173,10 @@ export async function runExternalApiProcessor(
     if (err instanceof Error && err.name === 'AbortError') {
       throw new Error(`External API timeout after ${connection.timeoutSec}s (${connection.slug})`);
     }
-    throw err;
+    const msg = err instanceof Error ? err.message : String(err);
+    ctx.logger.error(`Network/Fetch Error for '${connection.slug}' (URL: ${connection.endpointUrl})`, undefined, err);
+    // Rethrow a more descriptive error so it gets logged in pipeline engine
+    throw new Error(`Connection Error to ${connection.slug}: ${msg}`);
   } finally {
     clearTimeout(timeoutHandle);
   }
@@ -157,12 +191,12 @@ export async function runExternalApiProcessor(
   } else if (rawContent !== null && rawContent !== undefined) {
     content = JSON.stringify(rawContent);
   } else {
-    console.warn(`[ExtAPI] Path '${contentPath}' not found in response for '${connection.slug}'. Returning full JSON.`);
+    ctx.logger.warn(`Path '${contentPath}' not found in response for '${connection.slug}'. Returning full JSON.`);
     content = JSON.stringify(responseJson);
   }
 
   const latencyMs = Date.now() - startedAt;
-  console.log(`[ExtAPI] ✅ ${connection.slug} done in ${latencyMs}ms, output: ${content.length} chars`);
+  ctx.logger.info(`Successfully completed API call to ${connection.slug}`, { latencyMs, outputChars: content.length });
 
   return {
     content,

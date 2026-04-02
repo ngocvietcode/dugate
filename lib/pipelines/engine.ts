@@ -4,6 +4,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { runExternalApiProcessor } from '@/lib/pipelines/processors/external-api';
+import { Logger } from '@/lib/logger';
 
 export interface PipelineStep {
   processor: string;  // ExternalApiConnection slug
@@ -23,6 +24,9 @@ export interface ProcessorContext {
   processorSlug: string;
   variables: Record<string, unknown>;
   outputFormat: string;
+  // Logging
+  correlationId?: string;
+  logger: Logger;
 }
 
 export interface ProcessorResult {
@@ -39,10 +43,12 @@ export interface ProcessorResult {
 /**
  * Main pipeline runner. Called async after Operation is created.
  */
-export async function runPipeline(operationId: string): Promise<void> {
+export async function runPipeline(operationId: string, correlationId?: string): Promise<void> {
+  const logger = new Logger({ correlationId, operationId });
+
   const operation = await prisma.operation.findUnique({ where: { id: operationId } });
   if (!operation) {
-    console.error(`[Pipeline] Operation ${operationId} not found`);
+    logger.error(`Operation ${operationId} not found`);
     return;
   }
 
@@ -120,7 +126,7 @@ export async function runPipeline(operationId: string): Promise<void> {
         : null;
 
       if (extOverride) {
-        console.log(`[Pipeline] Applied ExtApiOverride for '${connection.slug}' (key: ${operation.apiKeyId})`);
+        logger.info(`Applied ExtApiOverride for '${connection.slug}' (key: ${operation.apiKeyId})`);
       }
 
       const ctx: ProcessorContext = {
@@ -133,9 +139,16 @@ export async function runPipeline(operationId: string): Promise<void> {
         processorSlug: connection.slug,
         variables,
         outputFormat: operation.outputFormat,
+        correlationId,
+        logger,
       };
 
+      logger.info(`[STEP_STARTED] Starting processor ${connection.slug}`);
       const result = await runExternalApiProcessor(ctx, connection, extOverride);
+      logger.info(`[STEP_COMPLETED] Processor ${connection.slug} done in ${result.costUsd > 0 ? result.costUsd + '$' : ''}`, {
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+      });
 
       // Record step result
       stepsResult.push({
@@ -204,15 +217,20 @@ export async function runPipeline(operationId: string): Promise<void> {
           data: { webhookSentAt: new Date() },
         });
       } catch (e) {
-        console.error(`[Pipeline] Webhook failed for ${operationId}:`, e);
+        logger.warn(`Webhook failed for ${operationId}`, undefined, e);
       }
     }
 
-    console.log(`[Pipeline] ✅ Operation ${operationId} completed.`);
+    logger.info(`[PIPELINE_COMPLETED] Operation ${operationId} completed.`, {
+      pagesProcessed: totalPages,
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+      costUsd: totalCost,
+    });
 
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`[Pipeline] ❌ Operation ${operationId} failed at step ${stepsResult.length}:`, msg);
+    logger.error(`[PIPELINE_FAILED] Operation ${operationId} failed at step ${stepsResult.length}`, undefined, error);
 
     await prisma.operation.update({
       where: { id: operationId },

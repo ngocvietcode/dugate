@@ -343,20 +343,10 @@ async function main() {
     await prisma.externalApiConnection.upsert({
       where: { slug: conn.slug },
       update: {
+        // Bỏ việc ghi đè (overwrite) endpointUrl, authKey, defaultPrompt, v.v.
+        // để Admin config không bị mất mỗi khi Docker restart/build lại.
         name: conn.name,
         description: conn.description,
-        endpointUrl: conn.endpointUrl,
-        httpMethod: conn.httpMethod,
-        promptFieldName: conn.promptFieldName,
-        fileFieldName: conn.fileFieldName,
-        authType: conn.authType,
-        authKeyHeader: conn.authKeyHeader,
-        authSecret: conn.authSecret,
-        timeoutSec: conn.timeoutSec,
-        state: conn.state,
-        staticFormFields: conn.staticFormFields ?? null,
-        responseContentPath: conn.responseContentPath,
-        defaultPrompt: conn.defaultPrompt,
       },
       create: conn,
     });
