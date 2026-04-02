@@ -539,20 +539,19 @@ function ProfileEndpointCard({
       });
 
       // Save all processor overrides
-      const overridePromises = endpoint.extConnections?.map((conn: any) => {
-        const val = extOverridesState[conn.connectionId];
-        const hasOverride = val !== null;
+      const overridePromises = Object.entries(extOverridesState).map(([connId, val]) => {
+        const hasOverride = val !== null && val !== undefined;
         return fetch('/api/internal/ext-overrides', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            connectionId: conn.connectionId,
+            connectionId: connId,
             apiKeyId,
             isActive: hasOverride,
             promptOverride: hasOverride ? val : null,
           }),
         });
-      }) || [];
+      });
       const responses = await Promise.all([endpointPromise, ...overridePromises]);
       
       for (const res of responses) {
