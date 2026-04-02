@@ -62,7 +62,7 @@ function logCurlCommand(url: string, method: string, headers: Record<string, str
   
   // Trim last backslash
   curl = curl.trim().replace(/\\$/, '');
-  logger.debug(`[cURL COMMAND]\n${curl}`);
+  logger.info(`[cURL COMMAND]\n${curl}`);
 }
 
 
