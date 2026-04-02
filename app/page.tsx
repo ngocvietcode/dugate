@@ -2,6 +2,7 @@
 // Trang chủ DUGate — thiết kế lại theo DU Integration Guide
 
 import Link from 'next/link';
+import ChatConsultant from '@/components/ChatConsultant';
 import {
   FileText, GitCompareArrows, ArrowRight, Sparkles, ShieldCheck,
   ScanText, BrainCircuit, Repeat2, Layers, Zap, Clock,
@@ -233,17 +234,7 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 max-w-2xl mx-auto">
-          {STATS.map((s) => (
-            <div key={s.label} className="modern-card p-4 text-center">
-              <p className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#00B74F] to-sky-500">
-                {s.value}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1 font-medium">{s.label}</p>
-            </div>
-          ))}
-        </div>
+
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════════
@@ -348,108 +339,10 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          REAL-WORLD USE CASES
+          CHAT CONSULTANT API SECTION
       ══════════════════════════════════════════════════════════════════════ */}
-      <section className="relative max-w-6xl mx-auto px-6 pb-24">
-        <div className="text-center mb-12">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#00B74F] mb-2 block">Kịch bản thực tế</span>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Ứng Dụng Thực Tiễn</h2>
-          <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
-            Kết hợp đa endpoint với Admin Override để giải quyết các bài toán nghiệp vụ phức tạp.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {USE_CASES.map((uc, idx) => (
-            <div
-              key={idx}
-              className={`modern-card p-7 bg-gradient-to-br ${uc.gradient} border ${uc.border} hover:scale-[1.02] transition-all duration-300`}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`px-3 py-1 rounded-full text-xs font-bold ${uc.badgeColor}`}>
-                  {uc.tag}
-                </div>
-              </div>
-              <uc.icon className="w-8 h-8 text-foreground/60 mb-4" />
-              <h3 className="text-lg font-bold text-foreground mb-3 leading-tight">{uc.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-5">{uc.desc}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {uc.endpoints.map((ep) => (
-                  <span key={ep} className="px-2 py-0.5 text-xs font-mono font-bold bg-card border border-border rounded-md text-foreground/80">
-                    {ep}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          ADMIN CONTROL PANEL (Feature Highlight)
-      ══════════════════════════════════════════════════════════════════════ */}
-      <section className="relative max-w-6xl mx-auto px-6 pb-24">
-        <div className="modern-card overflow-hidden">
-          <div className="flex flex-col lg:flex-row">
-            {/* Left: Text */}
-            <div className="lg:w-2/5 p-10 lg:p-12 flex flex-col justify-center">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#00B74F] mb-3 block">Dành cho Admin</span>
-              <h2 className="text-3xl font-bold text-foreground mb-4 leading-tight">
-                Kiểm soát toàn diện qua Admin Dashboard
-              </h2>
-              <p className="text-muted-foreground mb-8 leading-relaxed">
-                Profile-Endpoint Configuration cho phép Admin cài cắm quy tắc nghiệp vụ ẩn, kiểm soát LLM model, bôi đen dữ liệu nhạy cảm và kết nối AI ngoại vi — tất cả <strong className="text-foreground">hoàn toàn ẩn với Client</strong>.
-              </p>
-              <Link href="/profiles" className="modern-button bg-[#00B74F] text-white hover:bg-[#009940] px-6 font-bold shadow-lg shadow-[#00B74F]/25 w-fit">
-                Quản lý Profiles
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </div>
-
-            {/* Right: Feature Grid */}
-            <div className="lg:w-3/5 bg-muted/30 p-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {ADMIN_FEATURES.map((f, idx) => (
-                <div key={idx} className="bg-card rounded-2xl border border-border p-5 hover:border-[#00B74F]/30 hover:shadow-md transition-all duration-200">
-                  <div className="w-9 h-9 rounded-xl bg-[#00B74F]/10 flex items-center justify-center mb-3">
-                    <f.icon className="w-5 h-5 text-[#00B74F]" />
-                  </div>
-                  <h4 className="font-bold text-foreground text-sm mb-1">{f.title}</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          CTA FOOTER SECTION
-      ══════════════════════════════════════════════════════════════════════ */}
-      <section className="relative max-w-4xl mx-auto px-6 pb-28 text-center">
-        <div className="modern-card p-12 overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#00B74F]/8 via-transparent to-sky-500/8 pointer-events-none" />
-          <div className="relative">
-            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#00B74F] to-emerald-600 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-[#00B74F]/30">
-              <Zap className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-4">
-              Bắt đầu tích hợp ngay hôm nay
-            </h2>
-            <p className="text-muted-foreground mb-8 max-w-lg mx-auto leading-relaxed">
-              Một API Key, sáu endpoint, vô hạn khả năng. Kết nối DUGate vào hệ thống của bạn trong vài phút.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/settings" className="modern-button bg-[#00B74F] text-white hover:bg-[#009940] px-8 font-bold shadow-lg shadow-[#00B74F]/30 text-base">
-                <KeyRound className="w-4 h-4 mr-2" />
-                Lấy API Key
-              </Link>
-              <Link href="/api-connections" className="modern-button btn-outline px-8 font-bold text-base">
-                <Globe2 className="w-4 h-4 mr-2 text-muted-foreground" />
-                API Connections
-              </Link>
-            </div>
-          </div>
-        </div>
+      <section className="relative w-full max-w-7xl mx-auto px-6 pb-24 mt-12">
+        <ChatConsultant />
       </section>
 
     </main>

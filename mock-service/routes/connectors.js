@@ -28,6 +28,7 @@ const CONNECTOR_MODULES = {
   'ext-content-gen':   require('../responses/ext-content-gen'),
   'ext-qa-engine':     require('../responses/ext-qa-engine'),
   'ext-comparator':    require('../responses/ext-comparator'),
+  'sys-assistant':     require('../responses/sys-assistant'),
 };
 
 const DEFAULT_DELAY_MS = parseInt(process.env.MOCK_DELAY_MS || '300', 10);
