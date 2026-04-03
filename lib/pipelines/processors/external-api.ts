@@ -188,11 +188,16 @@ export async function runExternalApiProcessor(
   const timeoutMs = connection.timeoutSec * 1000;
   const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
 
+  let targetUrl = connection.endpointUrl;
+  if (process.env.UPLOAD_DIR === '/app/uploads' && targetUrl.includes('localhost')) {
+    targetUrl = targetUrl.replace('localhost', 'host.docker.internal');
+  }
+
   let responseJson: unknown;
   try {
-    logCurlCommand(connection.endpointUrl, connection.httpMethod, headers, formData, ctx.logger);
-    ctx.logger.info(`POST → ${connection.endpointUrl}`);
-    const response = await fetch(connection.endpointUrl, {
+    logCurlCommand(targetUrl, connection.httpMethod, headers, formData, ctx.logger);
+    ctx.logger.info(`POST → ${targetUrl}`);
+    const response = await fetch(targetUrl, {
       method: connection.httpMethod,
       headers,
       body: formData,
@@ -211,7 +216,7 @@ export async function runExternalApiProcessor(
       throw new Error(`External API timeout after ${connection.timeoutSec}s (${connection.slug})`);
     }
     const msg = err instanceof Error ? err.message : String(err);
-    ctx.logger.error(`Network/Fetch Error for '${connection.slug}' (URL: ${connection.endpointUrl})`, undefined, err);
+    ctx.logger.error(`Network/Fetch Error for '${connection.slug}' (URL: ${targetUrl})`, undefined, err);
     // Rethrow a more descriptive error so it gets logged in pipeline engine
     throw new Error(`Connection Error to ${connection.slug}: ${msg}`);
   } finally {

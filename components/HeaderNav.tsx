@@ -40,6 +40,9 @@ export default function HeaderNav() {
           <span className="text-xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
             dugate
           </span>
+          <span className="text-[10px] uppercase font-mono tracking-wider font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded ml-1 border border-border">
+            v{process.env.NEXT_PUBLIC_APP_VERSION || '1.1.0'}
+          </span>
         </Link>
 
         {/* Nav items */}

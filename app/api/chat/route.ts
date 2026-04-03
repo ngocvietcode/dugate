@@ -28,23 +28,30 @@ export async function POST(request: Request) {
     prompt = prompt.replace('{{available_routes_json}}', registryInfo);
     prompt = prompt.replace('{{user_chat_message}}', message);
 
-    // Call Mock-service
-    // Handle the docker bridged network vs local execution seamlessly
     let endpointUrl = connection.endpointUrl;
-    if (endpointUrl.includes('8000/v1') || endpointUrl.includes('localhost')) {
-      // process.env.UPLOAD_DIR indicates we are running inside the du-app Docker container
-      const isDocker = process.env.UPLOAD_DIR === '/app/uploads';
-      const host = isDocker ? 'mock-service' : 'localhost';
-      endpointUrl = `http://${host}:3099/ext/sys-assistant`;
-    } else {
-      // Replace localhost with mock-service hostname if in docker
-      if (process.env.UPLOAD_DIR === '/app/uploads') {
-        endpointUrl = endpointUrl.replace('localhost', 'mock-service');
+    // Map localhost to host.docker.internal inside Docker
+    if (process.env.UPLOAD_DIR === '/app/uploads' && endpointUrl.includes('localhost')) {
+      endpointUrl = endpointUrl.replace('localhost', 'host.docker.internal');
+    }
+
+    const formData = new FormData();
+    formData.append(connection.promptFieldName || 'query', prompt);
+    // Include user_id as some external services require it
+    formData.append('user_id', 'sys-assistant');
+
+    if (connection.staticFormFields) {
+      try {
+        const staticFields = JSON.parse(connection.staticFormFields) as Array<{ key: string; value: string }>;
+        for (const field of staticFields) {
+          formData.append(field.key, field.value);
+        }
+      } catch (e) {
+        console.warn('Invalid staticFormFields', e);
       }
     }
 
     const fetchHeaders: Record<string, string> = {
-      "Content-Type": "application/json"
+      "accept": "application/json",
     };
 
     if (connection.authType === 'API_KEY_HEADER' && connection.authKeyHeader) {
@@ -54,17 +61,15 @@ export async function POST(request: Request) {
     }
 
     const response = await fetch(endpointUrl, {
-      method: "POST",
+      method: connection.httpMethod || "POST",
       headers: fetchHeaders,
-      body: JSON.stringify({
-        query: prompt
-      })
+      body: formData
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("[Chat API] Mock service error:", errText);
-      throw new Error(`Failed to fetch from mock-service: ${response.status}`);
+      console.error("[Chat API] External service error:", errText);
+      throw new Error(`Failed to fetch from external service: ${response.status}`);
     }
 
     const data = await response.json();

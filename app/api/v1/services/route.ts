@@ -49,11 +49,18 @@ export async function GET(req: NextRequest) {
         };
       }
 
+      const clientSafeParams: Record<string, any> = {};
+      for (const [k, v] of Object.entries(ep.parametersSchema || {})) {
+         if (!(v as any).defaultLocked) {
+           clientSafeParams[k] = v;
+         }
+      }
+
       activeServices[ep.serviceSlug].subCases.push({
         id: ep.discriminatorValue || '_default',
         displayName: ep.displayName,
         description: ep.description,
-        clientParameters: ep.clientParamsSchema, 
+        clientParameters: clientSafeParams, 
       });
     }
 

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Send, Bot, User, Sparkles } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function ChatConsultant() {
   const [messages, setMessages] = useState([
@@ -37,16 +39,18 @@ export default function ChatConsultant() {
   };
 
   return (
-    <div className="modern-card max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-xl border border-border">
-      <div className="bg-gradient-to-r from-[#00B74F] to-emerald-600 p-6 flex flex-col items-center justify-center text-center">
-        <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center mb-3 shadow-inner">
-          <Sparkles className="w-6 h-6 text-white" />
+    <div className="modern-card max-w-7xl mx-auto rounded-3xl overflow-hidden shadow-xl border border-border">
+      <div className="bg-gradient-to-r from-[#00B74F] to-emerald-600 p-4 flex items-center gap-4">
+        <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shadow-inner flex-shrink-0">
+          <Sparkles className="w-5 h-5 text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-1">Trợ lý Tích hợp DUGate</h2>
-        <p className="text-emerald-100 text-sm">Trò chuyện để tôi tự động định tuyến nhu cầu của bạn vào tính năng phù hợp nhất.</p>
+        <div className="flex-1 text-left">
+          <h2 className="text-lg font-bold text-white leading-tight">Trợ lý Tích hợp DUGate</h2>
+          <p className="text-emerald-100 text-xs mt-0.5">Trò chuyện để tôi tự động định tuyến nhu cầu của bạn vào tính năng phù hợp nhất.</p>
+        </div>
       </div>
 
-      <div className="bg-muted/30 p-6 h-[400px] overflow-y-auto flex flex-col gap-4">
+      <div className="bg-muted/30 p-6 h-[600px] overflow-y-auto flex flex-col gap-4">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-[#00B74F] text-white' : 'bg-transparent border border-border'}`}>
@@ -57,13 +61,11 @@ export default function ChatConsultant() {
                 ? 'bg-[#00B74F] text-white rounded-tr-sm shadow-md shadow-[#00B74F]/20' 
                 : 'bg-card text-foreground border border-border rounded-tl-sm shadow-sm'
             }`}>
-              {/* Basic markdown bold parsing for **text** */}
-              {msg.content.split(/(\*\*.*?\*\*)/).map((part, i) => {
-                if (part.startsWith('**') && part.endsWith('**')) {
-                  return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
-                }
-                return part;
-              })}
+              <div className={`prose prose-sm max-w-none ${msg.role === 'user' ? 'text-white prose-invert' : 'dark:prose-invert text-foreground'} [&>*:first-child]:mt-0 [&>*:last-child]:mb-0`}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {msg.content}
+                </ReactMarkdown>
+              </div>
             </div>
           </div>
         ))}
@@ -82,6 +84,18 @@ export default function ChatConsultant() {
       </div>
 
       <div className="p-4 bg-card border-t border-border">
+        <div className="flex flex-wrap gap-2 mb-3">
+          {["Trích xuất bảng biểu từ Báo cáo tài chính?", "So sánh hai phiên bản Hợp đồng?", "Phân loại tự động Hồ sơ vay vốn?"].map((suggestion, idx) => (
+            <button
+              key={idx}
+              onClick={() => setInput(suggestion)}
+              type="button"
+              className="text-xs bg-muted hover:bg-muted/80 text-foreground px-3 py-1.5 rounded-full border border-border transition-colors cursor-pointer"
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
         <form onSubmit={sendMessage} className="relative flex items-center">
           <input
             type="text"
@@ -99,6 +113,9 @@ export default function ChatConsultant() {
             <Send className="w-4 h-4 text-white -mt-0.5 ml-0.5" />
           </button>
         </form>
+        <p className="text-center text-xs text-muted-foreground mt-3 italic">
+          Lưu ý: Đây là phản hồi do AI tạo ra, không phải quyết định kỹ thuật chính thức.
+        </p>
       </div>
     </div>
   );

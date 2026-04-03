@@ -128,9 +128,9 @@ export async function submitPipelineJob(
   let operation = await prisma.operation.create({
     data: {
       id:              operationId,
-      apiKeyId:        apiKeyId ?? null,
-      idempotencyKey:  idempotencyKey ?? null,
-      endpointSlug:    endpointSlug ?? null,
+      apiKeyId:        apiKeyId || null,
+      idempotencyKey:  idempotencyKey || null,
+      endpointSlug:    endpointSlug || null,
       pipelineJson:    JSON.stringify(pipeline),
       filesJson:       JSON.stringify(filesData),
       outputFormat,

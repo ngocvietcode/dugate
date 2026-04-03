@@ -18,6 +18,9 @@ const BYPASS_PREFIXES = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Log mọi request ra terminal để user dễ debug
+  console.log(`[Request] ${request.method} ${pathname}`);
+
   // --- Bypass paths ---
   if (BYPASS_PREFIXES.some(p => pathname.startsWith(p))) {
     return NextResponse.next();
@@ -46,6 +49,8 @@ export async function middleware(request: NextRequest) {
       const requestHeaders = new Headers(request.headers);
       if (data.apiKeyId) {
         requestHeaders.set('x-api-key-id', data.apiKeyId);
+      } else {
+        requestHeaders.delete('x-api-key-id');
       }
       return NextResponse.next({
         request: { headers: requestHeaders },

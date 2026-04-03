@@ -41,7 +41,8 @@ export async function GET() {
                    },
                    // Merge all possible client params for documentation purposes
                    ...routeEndpoints.reduce((acc, ep) => {
-                      Object.entries(ep.clientParamsSchema || {}).forEach(([key, val]: [string, any]) => {
+                      Object.entries(ep.parametersSchema || {}).forEach(([key, val]: [string, any]) => {
+                         if (val.defaultLocked) return; // Hide locked fields from Swagger client docs
                          acc[key] = {
                             type: val.type,
                             description: val.description,

@@ -28,8 +28,7 @@ async function main() {
       apiKeyId: apiKey.id,
       endpointSlug: ep.slug,
       enabled: true,
-      defaultParams: null,
-      profileParams: null
+      parameters: null,
     }));
 
     const result = await prisma.profileEndpoint.createMany({

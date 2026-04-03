@@ -358,22 +358,14 @@ function ProfileEndpointCard({
 }) {
   const [isActive, setIsActive] = useState(endpoint.enabled);
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'form' | 'json'>('form');
   const [isParamsOpen, setIsParamsOpen] = useState(false);
   const [isProcessorsOpen, setIsProcessorsOpen] = useState(false);
   const [isCurlOpen, setIsCurlOpen] = useState(false);
 
-  // JSON string state (for raw editor)
-  const [defaultParamsStr, setDefaultParamsStr] = useState(
-    endpoint.defaultParams ? JSON.stringify(endpoint.defaultParams, null, 2) : ''
-  );
-  const [profileParamsStr, setProfileParamsStr] = useState(
-    endpoint.profileParams ? JSON.stringify(endpoint.profileParams, null, 2) : ''
-  );
-
-  // Object state (for form builder)
-  const [defaultObj, setDefaultObj] = useState<Record<string, any>>(endpoint.defaultParams || {});
-  const [profileObj, setProfileObj] = useState<Record<string, any>>(endpoint.profileParams || {});
+  // Unified Param state
+  const [paramsObj, setParamsObj] = useState<Record<string, { value: any, isLocked: boolean }>>(endpoint.parameters || {});
+  const [showRaw, setShowRaw] = useState(false);
+  const [addKey, setAddKey] = useState('');
 
   // Processor overrides
   const [extOverridesState, setExtOverridesState] = useState<Record<string, string | null>>({});
@@ -391,10 +383,7 @@ function ProfileEndpointCard({
 
   useEffect(() => {
     setIsActive(endpoint.enabled);
-    setDefaultParamsStr(endpoint.defaultParams ? JSON.stringify(endpoint.defaultParams, null, 2) : '');
-    setProfileParamsStr(endpoint.profileParams ? JSON.stringify(endpoint.profileParams, null, 2) : '');
-    setDefaultObj(endpoint.defaultParams || {});
-    setProfileObj(endpoint.profileParams || {});
+    setParamsObj(endpoint.parameters || {});
 
     const initialOverrides: Record<string, string | null> = {};
     endpoint.extConnections?.forEach((conn: any) => {
@@ -446,6 +435,8 @@ function ProfileEndpointCard({
     setShowTestModal(false);
     setTestResult(null);
     setTestFiles([]);
+    setShowRaw(false);
+    setAddKey('');
   }, [apiKeyId]);
 
   // Generate cURL preview
@@ -471,8 +462,12 @@ function ProfileEndpointCard({
       curlLines.push(`  -F "${endpoint.discriminatorName}=${endpoint.discriminatorValue}" \\`);
     }
 
-    if (endpoint.clientParams && Object.keys(endpoint.clientParams).length > 0) {
-      Object.entries(endpoint.clientParams).forEach(([key, schema]: [string, any]) => {
+    if (endpoint.parametersSchema && Object.keys(endpoint.parametersSchema).length > 0) {
+      Object.entries(endpoint.parametersSchema).forEach(([key, schema]: [string, any]) => {
+         // Chặn các biến bị khóa khỏi đoạn script curl gửi mẫu cho client
+         const isLocked = paramsObj[key]?.isLocked ?? schema.defaultLocked ?? false;
+         if (isLocked) return;
+
          let exVal = `{${schema.type}}`;
          if (schema.options) exVal = schema.options[0];
          if (schema.default) exVal = schema.default;
@@ -487,24 +482,7 @@ function ProfileEndpointCard({
     return curlLines.join('\n');
   };
 
-  // Sync Form -> JSON when switching tabs
-  const handleTabSwitch = (tab: 'form' | 'json') => {
-    if (tab === 'json') {
-      // Sync from object to string
-      setDefaultParamsStr(Object.keys(defaultObj).length ? JSON.stringify(defaultObj, null, 2) : '');
-      setProfileParamsStr(Object.keys(profileObj).length ? JSON.stringify(profileObj, null, 2) : '');
-    } else {
-      // Sync from string to object
-      try {
-        setDefaultObj(defaultParamsStr.trim() ? JSON.parse(defaultParamsStr) : {});
-        setProfileObj(profileParamsStr.trim() ? JSON.parse(profileParamsStr) : {});
-      } catch (e) {
-        alert('Cú pháp JSON không hợp lệ, không thể chuyển sang Form Editor!');
-        return;
-      }
-    }
-    setActiveTab(tab);
-  };
+  // handleTabSwitch removed — replaced by unified key-value editor
 
   const handleToggle = async (checked: boolean) => {
     setIsActive(checked);
@@ -515,14 +493,7 @@ function ProfileEndpointCard({
   const saveSettings = async (enabledState: boolean = isActive) => {
     setSaving(true);
     try {
-      // Determine final payloads based on active tab
-      let finalDefaultObj = defaultObj;
-      let finalProfileObj = profileObj;
-
-      if (activeTab === 'json') {
-        finalDefaultObj = defaultParamsStr.trim() ? JSON.parse(defaultParamsStr) : null;
-        finalProfileObj = profileParamsStr.trim() ? JSON.parse(profileParamsStr) : null;
-      }
+      const finalParamsObj = Object.keys(paramsObj).length ? paramsObj : null;
 
       // Save Profile Endpoint params (including connectionsOverride)
       const endpointPromise = fetch('/api/internal/profile-endpoints', {
@@ -532,8 +503,7 @@ function ProfileEndpointCard({
           apiKeyId,
           endpointSlug: endpoint.slug,
           enabled: enabledState,
-          defaultParams: Object.keys(finalDefaultObj || {}).length ? finalDefaultObj : null,
-          profileParams: Object.keys(finalProfileObj || {}).length ? finalProfileObj : null,
+          parameters: finalParamsObj,
           connectionsOverride: connectionsOverride && connectionsOverride.length > 0 ? connectionsOverride : null,
         }),
       });
@@ -562,8 +532,7 @@ function ProfileEndpointCard({
       }
       
       // Update local state without closing editor if manually saved
-      setDefaultObj(finalDefaultObj || {});
-      setProfileObj(finalProfileObj || {});
+      setParamsObj(finalParamsObj || {});
       onUpdated();
     } catch (err: any) {
       alert(`Lỗi khi lưu thiết lập: ${err.message}`);
@@ -607,14 +576,35 @@ function ProfileEndpointCard({
   const renderSchemaInput = (
     key: string, 
     schema: any, 
-    val: any, 
-    onChange: (v: any) => void
+    val: any,
+    isLocked: boolean,
+    onToggleLock: (locked: boolean) => void,
+    onChange: (v: any) => void,
+    onDelete: () => void
   ) => {
     return (
-      <div key={key} className="flex flex-col mb-4 bg-background p-3 rounded-lg border border-border shadow-sm">
+      <div key={key} className={`flex flex-col mb-4 bg-background p-3 rounded-lg border shadow-sm transition-colors ${isLocked ? 'border-amber-500/50 bg-amber-500/5' : 'border-border'}`}>
         <label className="text-sm font-semibold flex items-center justify-between">
-          <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded text-foreground">{key}</span>
-          <span className="text-[10px] uppercase text-muted-foreground">{schema.type}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded text-foreground">{key}</span>
+            <button 
+               onClick={() => onToggleLock(!isLocked)}
+               title={isLocked ? "Hủy khóa tham số này" : "Khóa cứng tham số (Client không đè được)"}
+               className={`px-1.5 py-0.5 font-bold rounded text-[10px] uppercase transition-colors hover:bg-muted border ${isLocked ? 'text-amber-600 border-amber-500/30 bg-amber-50 dark:bg-amber-950/30' : 'text-indigo-600 border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950/30'}`}
+            >
+               {isLocked ? '🔒 KHÓA (CHỈ GHI LÊN)' : '✏️ CHO PHÉP CLIENT GHI ĐÈ'}
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] uppercase text-muted-foreground">{schema.type}</span>
+            <button 
+              onClick={onDelete} 
+              className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded shrink-0 transition-colors"
+              title="Xóa tham số này"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </label>
         <p className="text-xs text-muted-foreground mt-1 mb-2 leading-relaxed">{schema.description}</p>
         
@@ -886,109 +876,117 @@ function ProfileEndpointCard({
             </div>
             
             {/* CORE SETTINGS HEADER */}
-            <div 
-              className="sm:col-span-2 flex items-center justify-between border-b border-border pb-2 cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 transition-colors"
+            <div
+              className="sm:col-span-2 flex items-center gap-2 border-b border-border pb-2 cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 transition-colors select-none"
               onClick={() => setIsParamsOpen(!isParamsOpen)}
             >
-               <div className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 select-none">
-                  <ChevronDown className={`w-4 h-4 transition-transform ${isParamsOpen ? '' : '-rotate-90'}`} />
-                  Parameters Configuration
-               </div>
-               {isParamsOpen && (
-                 <div className="flex bg-muted p-1 rounded-lg" onClick={e => e.stopPropagation()}>
-                   <button 
-                     onClick={() => handleTabSwitch('form')}
-                     className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${activeTab === 'form' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                   >
-                     UI Form
-                   </button>
-                   <button 
-                     onClick={() => handleTabSwitch('json')}
-                     className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${activeTab === 'json' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                   >
-                     Raw JSON
-                   </button>
-                 </div>
-               )}
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isParamsOpen ? '' : '-rotate-90'}`} />
+              <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Parameters Configuration</span>
+              {Object.keys(paramsObj).length > 0 && (
+                <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 px-2 py-0.5 rounded-full font-semibold">
+                  {Object.keys(paramsObj).length} tham số
+                </span>
+              )}
             </div>
-            
-            {isParamsOpen && (activeTab === 'json' ? (
-              <>
-                <div className="animate-in fade-in">
-                  <label className="text-sm font-bold text-foreground flex items-center gap-2 mb-2">
-                    <FileText className="w-4 h-4 text-indigo-500" /> Default Params (JSON)
-                  </label>
-                  <textarea
-                    value={defaultParamsStr}
-                    onChange={e => setDefaultParamsStr(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg p-3 font-mono text-xs sm:text-sm leading-relaxed min-h-[160px] focus:ring-2 focus:ring-indigo-500/30"
-                    placeholder={'{\n  "max_words": 500\n}'}
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">Được phép truyền: {Object.keys(endpoint.clientParams || {}).join(', ')}</p>
-                </div>
-                <div className="animate-in fade-in">
-                  <label className="text-sm font-bold text-foreground flex items-center gap-2 mb-2">
-                    <Settings className="w-4 h-4 text-amber-500" /> Profile Params (JSON)
-                  </label>
-                  <textarea
-                    value={profileParamsStr}
-                    onChange={e => setProfileParamsStr(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg p-3 font-mono text-xs sm:text-sm leading-relaxed min-h-[160px] focus:ring-2 focus:ring-amber-500/30"
-                    placeholder={'{\n  "business_rules": "1. Rule A..."\n}'}
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">Dành cho Admin: {Object.keys(endpoint.profileOnlyParams || {}).join(', ')}</p>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Form Builder View */}
-                <div className="animate-in fade-in">
-                  <label className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
-                    <FileText className="w-4 h-4 text-indigo-500" /> Default Params
-                  </label>
-                  <p className="text-xs text-muted-foreground mb-4">Giá trị mặc định của API. Client có thể gửi data đè giá trị này.</p>
-                  <div className="space-y-1">
-                    {Object.entries(endpoint.clientParams || {}).length === 0 && (
-                       <div className="text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded-lg border border-dashed">Không có tham số nào được hỗ trợ.</div>
-                    )}
-                    {Object.entries(endpoint.clientParams || {}).map(([key, schema]) => 
-                      renderSchemaInput(key, schema, defaultObj[key], (v) => {
-                        setDefaultObj(prev => {
-                          const newer = { ...prev };
-                          if (v === '' || v === undefined) delete newer[key];
-                          else newer[key] = v;
-                          return newer;
-                        });
-                      })
-                    )}
-                  </div>
-                </div>
 
-                <div className="animate-in fade-in sm:border-l border-border sm:pl-6">
-                  <label className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
-                    <Settings className="w-4 h-4 text-amber-500" /> Profile Params
-                  </label>
-                  <p className="text-xs text-amber-600 dark:text-amber-500/80 mb-4 bg-amber-50 dark:bg-amber-950/20 p-2 rounded border border-amber-200 dark:border-amber-900/50">
-                    Client <strong>KHÔNG</strong> được phép thay đổi. Giá trị này ghi đè hoàn toàn input của client.
-                  </p>
-                  <div className="space-y-1">
-                    {Object.entries(endpoint.profileOnlyParams || {}).length === 0 && (
-                       <div className="text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded-lg border border-dashed">Không có tham số Admin-only nào.</div>
-                    )}
-                    {Object.entries(endpoint.profileOnlyParams || {}).map(([key, schema]) => 
-                      renderSchemaInput(key, schema, profileObj[key], (v) => {
-                        setProfileObj(prev => {
-                          const newer = { ...prev };
-                          if (v === '' || v === undefined) delete newer[key];
-                          else newer[key] = v;
-                          return newer;
-                        });
-                      })
-                    )}
+            {isParamsOpen && (
+              <div className="sm:col-span-2">
+                <div className="animate-in fade-in">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-indigo-500" /> 🎯 Tham số Cấu hình (Params)
+                      </label>
+                      <p className="text-xs text-muted-foreground mt-0.5">Giá trị khởi tạo khi Pipeline chạy. Bật khóa 🔒 để cấm Client ghi đè.</p>
+                    </div>
+                    <button onClick={() => setShowRaw(!showRaw)} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded border border-border hover:bg-muted transition-colors">
+                      <Code className="w-3 h-3" /> {showRaw ? 'Form' : 'Raw JSON'}
+                    </button>
                   </div>
+                  {showRaw ? (
+                    <textarea
+                      value={Object.keys(paramsObj).length ? JSON.stringify(paramsObj, null, 2) : ''}
+                      onChange={e => { try { setParamsObj(e.target.value.trim() ? JSON.parse(e.target.value) : {}); } catch {} }}
+                      className="w-full bg-background border border-border rounded-lg p-3 font-mono text-xs leading-relaxed min-h-[140px] focus:ring-2 focus:ring-indigo-500/30"
+                      placeholder={'{\n  "output_format": { "value": "json", "isLocked": false }\n}'}
+                    />
+                  ) : (
+                    <div className="space-y-2">
+                      {Object.keys(paramsObj).map(key => {
+                        const schema = (endpoint.parametersSchema as any)?.[key];
+                        const paramConfig = paramsObj[key];
+                        if (schema) {
+                          return renderSchemaInput(
+                            key, 
+                            schema, 
+                            paramConfig.value, 
+                            paramConfig.isLocked,
+                            (locked) => setParamsObj(prev => ({ ...prev, [key]: { ...prev[key], isLocked: locked } })),
+                            (v) => {
+                              setParamsObj(prev => { 
+                                const n = {...prev}; 
+                                if (v === '' || v === undefined) {
+                                  delete n[key]; 
+                                } else {
+                                  n[key] = { value: v, isLocked: n[key]?.isLocked ?? schema.defaultLocked ?? false }; 
+                                }
+                                return n; 
+                              });
+                            },
+                            () => setParamsObj(prev => { const n = {...prev}; delete n[key]; return n; })
+                          );
+                        }
+                        return (
+                          <div key={key} className={`flex items-center gap-2 bg-background p-2.5 rounded-lg border border-dashed transition-colors ${paramConfig.isLocked ? 'border-amber-300' : 'border-indigo-200 dark:border-indigo-900/40'}`}>
+                            <span className="font-mono text-[11px] bg-muted text-foreground px-1.5 py-0.5 rounded shrink-0">{key}</span>
+                            <button 
+                               onClick={() => setParamsObj(prev => ({ ...prev, [key]: { ...prev[key], isLocked: !prev[key].isLocked } }))}
+                               className={`px-1.5 py-0.5 font-bold rounded text-[10px] uppercase transition-colors shrink-0 ${paramConfig.isLocked ? 'text-amber-600 bg-amber-50 dark:bg-amber-950/30' : 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/30'}`}
+                            >
+                               {paramConfig.isLocked ? '🔒 KHÓA' : '✏️ MỞ'}
+                            </button>
+                            <input type="text" value={String(paramConfig.value ?? '')} onChange={e => setParamsObj(prev => ({...prev, [key]: { ...prev[key], value: e.target.value }}))} className="input-field py-1 text-xs font-mono flex-1 min-w-0" />
+                            <button onClick={() => setParamsObj(prev => { const n={...prev}; delete n[key]; return n; })} className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded shrink-0"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                        );
+                      })}
+                      {Object.keys(paramsObj).length === 0 && (
+                        <div className="text-xs text-muted-foreground py-3 text-center bg-muted/30 rounded-lg border border-dashed">Chưa cấu hình tham số nào.</div>
+                      )}
+                      <div className="flex items-center gap-2 pt-1 mt-4">
+                        <input
+                          list={`keys-${endpoint.slug}`}
+                          value={addKey}
+                          onChange={e => setAddKey(e.target.value)}
+                          onKeyDown={e => { 
+                             if (e.key === 'Enter' && addKey.trim()) { 
+                               const schema = (endpoint.parametersSchema as any)?.[addKey.trim()];
+                               setParamsObj(prev => ({...prev, [addKey.trim()]: { value: '', isLocked: schema?.defaultLocked ?? false }})); 
+                               setAddKey(''); 
+                             } 
+                          }}
+                          placeholder="+ Thêm tham số... (Enter để thêm)"
+                          className="input-field py-1.5 text-xs font-mono flex-1 min-w-0"
+                        />
+                        <datalist id={`keys-${endpoint.slug}`}>
+                          {Object.keys(endpoint.parametersSchema || {}).filter(k => paramsObj[k] === undefined).map(k => <option key={k} value={k} />)}
+                        </datalist>
+                        <button
+                          onClick={() => { 
+                            if (addKey.trim()) { 
+                              const schema = (endpoint.parametersSchema as any)?.[addKey.trim()];
+                              setParamsObj(prev => ({...prev, [addKey.trim()]: { value: '', isLocked: schema?.defaultLocked ?? false }})); 
+                              setAddKey(''); 
+                            } 
+                          }}
+                          className="px-3 py-1.5 text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 transition-colors shrink-0"
+                        >+ Thêm</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </>
-            ))}
+              </div>
+            )}
 
             {/* PIPELINE PROCESSORS + CONNECTION ROUTING */}
             <div className="sm:col-span-2 mt-4 pt-4 border-t border-border/50">

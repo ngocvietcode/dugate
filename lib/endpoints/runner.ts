@@ -81,16 +81,7 @@ export async function runEndpoint(
       return apiError(400, 'Missing File', "At least one file is required. Use 'file' or 'files[]'.");
     }
 
-    // ── 4. Block profileOnlyParams from client ───────────────────────────────
-    for (const p of Object.keys(subCase.profileOnlyParams)) {
-      if (form.has(p)) {
-        return apiError(
-          400,
-          'Forbidden Field',
-          `The '${p}' field cannot be set by the client. It is configured per API key by the administrator.`,
-        );
-      }
-    }
+    // ── 4. (Deprecated) Block profileOnlyParams - moved to step 7 ────────────
 
     // ── 5. Build compound endpoint slug: "service:subcase" ──────────────────
     const endpointSlug = discriminatorValue && discriminatorValue !== '_default'
@@ -120,28 +111,38 @@ export async function runEndpoint(
       }
     }
 
-    // ── 7. Merge params: default < client < profile ──────────────────────────
-    const defaultParams: Record<string, unknown> = profileEndpoint?.defaultParams
-      ? JSON.parse(profileEndpoint.defaultParams)
-      : {};
-    const profileParams: Record<string, unknown> = profileEndpoint?.profileParams
-      ? JSON.parse(profileEndpoint.profileParams)
-      : {};
-
-    // Collect allowed client params
-    const clientParams: Record<string, unknown> = {};
-    for (const p of Object.keys(subCase.clientParams)) {
-      if (form.has(p)) {
-        clientParams[p] = form.get(p) as string;
+    // ── 7. Merge params & Check locks ────────────────────────────────────────
+    let dbParams: Record<string, { value: any, isLocked?: boolean }> = {};
+    if (profileEndpoint?.parameters) {
+      try {
+        dbParams = JSON.parse(profileEndpoint.parameters);
+      } catch (e) {
+        // skip
       }
     }
 
-    // Start with defaults, override with client, then force profile
-    const mergedVars: Record<string, unknown> = {
-      ...defaultParams,
-      ...clientParams,
-      ...profileParams,
-    };
+    const mergedVars: Record<string, unknown> = {};
+
+    // Load defaults from DB
+    for (const [key, config] of Object.entries(dbParams)) {
+      mergedVars[key] = config.value;
+    }
+
+    // Read client form input against registry parameters
+    for (const [key, schema] of Object.entries(subCase.parameters)) {
+      const isLocked = dbParams[key]?.isLocked ?? schema.defaultLocked ?? false;
+
+      if (form.has(key)) {
+         if (isLocked) {
+            return apiError(
+              400,
+              'Forbidden Field',
+              `The '${key}' field cannot be set by the client. It is locked by the administrator.`
+            );
+         }
+         mergedVars[key] = form.get(key) as string;
+      }
+    }
 
     // ── 8. Inject preset fields for extract service ──────────────────────────
     if (serviceSlug === 'extract' && discriminatorValue) {

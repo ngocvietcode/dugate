@@ -47,8 +47,7 @@ export async function GET(req: NextRequest) {
       return {
         ...endpointDef,
         enabled: dbRecord ? dbRecord.enabled : true,
-        defaultParams: dbRecord?.defaultParams ? JSON.parse(dbRecord.defaultParams as string) : null,
-        profileParams: dbRecord?.profileParams ? JSON.parse(dbRecord.profileParams as string) : null,
+        parameters: dbRecord?.parameters ? JSON.parse(dbRecord.parameters as string) : null,
         connectionsOverride: dbRecord?.connectionsOverride ? JSON.parse(dbRecord.connectionsOverride as string) : null,
         id: dbRecord?.id ?? null,
         extConnections,
@@ -66,7 +65,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { apiKeyId, endpointSlug, enabled, defaultParams, profileParams, connectionsOverride } = body;
+    const { apiKeyId, endpointSlug, enabled, parameters, connectionsOverride } = body;
 
     if (!apiKeyId || !endpointSlug) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -84,8 +83,7 @@ export async function POST(req: NextRequest) {
 
     const payload = {
       enabled: typeof enabled === 'boolean' ? enabled : true,
-      defaultParams: defaultParams ? JSON.stringify(defaultParams) : null,
-      profileParams: profileParams ? JSON.stringify(profileParams) : null,
+      parameters: parameters ? JSON.stringify(parameters) : null,
       connectionsOverride: connectionsOverride ? JSON.stringify(connectionsOverride) : null,
     };
 

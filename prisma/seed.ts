@@ -138,7 +138,7 @@ Execute mapping against the provided Output Schema strictly.
 
 Fields to extract: {{fields}}
 Output schema: {{schema}}
-Business rules: {{business_rules}}
+
 
 Read the document and return ONLY a valid JSON object matching the requested schema. Ensure all fields are present. Fill with null/NOT_FOUND if missing.`,
   },
@@ -173,7 +173,7 @@ Categorize the document into exactly ONE category from the permitted list.
 </anti_hallucination_rules>
 
 Categories allowed: {{categories}}
-Business rules: {{business_rules}}
+
 
 Return JSON:
 { 
@@ -246,7 +246,7 @@ You evaluate whether a document passes or fails against distinct, rigid criteria
 </anti_hallucination_rules>
 
 Criteria to check: {{criteria}}
-Business rules: {{business_rules}}
+
 
 Return JSON:
 { 
@@ -283,7 +283,7 @@ You are an Infallible Fact Reconciliator. Your job is cross-referencing extracte
 
 Extracted claims/data from document: {{input_content}}
 Reference Source of Truth: {{reference_data}}
-Business rules: {{business_rules}}
+
 
 Compare the document claims against the reference data. 
 Return JSON:
@@ -321,7 +321,7 @@ You are a Document Quality Assurance and Corporate Risk Evaluator.
 </anti_hallucination_rules>
 
 Evaluation criteria: {{criteria}}
-Business rules: {{business_rules}}
+
 
 Return JSON:
 { 
@@ -531,7 +531,7 @@ You are a Semantic and Lexical Version Diff Engine.
 
 Mode: {{mode}}
 Focus areas: {{focus}}
-Business rules: {{business_rules}}
+
 Output format: {{output_format}}
 
 Compare the documents comprehensively.

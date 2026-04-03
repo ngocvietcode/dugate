@@ -15,60 +15,60 @@ datasource db {
 // Operation — Long-Running Operation (AIP-151)
 // ═══════════════════════════════════════════════
 model Operation {
-  id              String   @id @default(uuid())
-  apiKeyId        String?                       // null = internal (frontend) call
-  idempotencyKey  String?  @unique              // AIP-155
+  id             String  @id @default(uuid())
+  apiKeyId       String? // null = internal (frontend) call
+  idempotencyKey String? @unique // AIP-155
 
   // State
-  done            Boolean  @default(false)
-  state           String   @default("RUNNING")  // RUNNING | SUCCEEDED | FAILED | CANCELLED
-  progressPercent Int      @default(0)
+  done            Boolean @default(false)
+  state           String  @default("RUNNING") // RUNNING | SUCCEEDED | FAILED | CANCELLED
+  progressPercent Int     @default(0)
   progressMessage String?
 
   // Routing
-  endpointSlug    String?                       // e.g. "extract:invoice", "analyze:fact-check"
+  endpointSlug String? // e.g. "extract:invoice", "analyze:fact-check"
 
   // Pipeline definition
-  pipelineJson    String   @db.Text             // JSON array: [{ processor, variables }]
-  currentStep     Int      @default(0)
-  failedAtStep    Int?
+  pipelineJson String @db.Text // JSON array: [{ processor, variables }]
+  currentStep  Int    @default(0)
+  failedAtStep Int?
 
   // Input — universal multi-file support
   // JSON array: [{name, path, mime, size}, ...]
-  filesJson       String?  @db.Text
+  filesJson String? @db.Text
 
   // Output — final result
-  outputFormat    String   @default("json")
-  outputContent   String?  @db.Text
-  outputFilePath  String?
-  extractedData   String?  @db.Text
+  outputFormat   String  @default("json")
+  outputContent  String? @db.Text
+  outputFilePath String?
+  extractedData  String? @db.Text
 
   // Pipeline intermediate results
-  stepsResultJson String?  @db.Text             // JSON array of per-step outputs
+  stepsResultJson String? @db.Text // JSON array of per-step outputs
 
   // Usage & Cost
-  totalInputTokens  Int    @default(0)
-  totalOutputTokens Int    @default(0)
-  pagesProcessed    Int    @default(0)
+  totalInputTokens  Int     @default(0)
+  totalOutputTokens Int     @default(0)
+  pagesProcessed    Int     @default(0)
   modelUsed         String?
-  totalCostUsd      Float  @default(0.0)
+  totalCostUsd      Float   @default(0.0)
   usageBreakdown    String? @db.Text
 
   // Webhook
-  webhookUrl      String?
-  webhookSentAt   DateTime?
+  webhookUrl    String?
+  webhookSentAt DateTime?
 
   // Error
-  errorCode       String?
-  errorMessage    String?  @db.Text
+  errorCode    String?
+  errorMessage String? @db.Text
 
   // Lifecycle
-  filesDeleted    Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  deletedAt       DateTime?
+  filesDeleted Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
 
-  apiKey          ApiKey?  @relation(fields: [apiKeyId], references: [id])
+  apiKey ApiKey? @relation(fields: [apiKeyId], references: [id])
 
   @@index([state])
   @@index([apiKeyId, createdAt(sort: Desc)])
@@ -81,20 +81,20 @@ model Operation {
 // API Key & Auth
 // ═══════════════════════════════════════════════
 model ApiKey {
-  id            String      @id @default(uuid())
+  id            String   @id @default(uuid())
   name          String
-  keyHash       String      @unique
+  keyHash       String   @unique
   prefix        String
-  role          String      @default("STANDARD") // "STANDARD" | "ADMIN"
-  spendingLimit Float       @default(0.0)
-  totalUsed     Float       @default(0.0)
-  status        String      @default("active")
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  role          String   @default("STANDARD") // "STANDARD" | "ADMIN"
+  spendingLimit Float    @default(0.0)
+  totalUsed     Float    @default(0.0)
+  status        String   @default("active")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  operations          Operation[]
+  operations           Operation[]
   externalApiOverrides ExternalApiOverride[]
-  profileEndpoints    ProfileEndpoint[]
+  profileEndpoints     ProfileEndpoint[]
 
   @@index([status])
 }
@@ -103,47 +103,47 @@ model ApiKey {
 // External AI Service — API Connection Registry
 // ═══════════════════════════════════════════════
 model ExternalApiConnection {
-  id              String   @id @default(uuid())
-  name            String                        // "VPBank ADK Invoice Extractor"
-  slug            String   @unique              // "ext-data-extractor"
-  description     String?  @db.Text
+  id          String  @id @default(uuid())
+  name        String // "VPBank ADK Invoice Extractor"
+  slug        String  @unique // "ext-data-extractor"
+  description String? @db.Text
 
   // Endpoint
-  endpointUrl     String   @db.Text             // Full URL (kèm query string nếu cần)
-  httpMethod      String   @default("POST")     // POST | PUT
+  endpointUrl String @db.Text // Full URL (kèm query string nếu cần)
+  httpMethod  String @default("POST") // POST | PUT
 
   // Authentication — Server-side only, NEVER expose to client
-  authType        String   @default("API_KEY_HEADER") // API_KEY_HEADER | BEARER | NONE
-  authKeyHeader   String   @default("x-api-key")     // Tên header xác thực
-  authSecret      String   @db.Text             // Plaintext secret
+  authType      String @default("API_KEY_HEADER") // API_KEY_HEADER | BEARER | NONE
+  authKeyHeader String @default("x-api-key") // Tên header xác thực
+  authSecret    String @db.Text // Plaintext secret
 
   // Request format: multipart/form-data
-  promptFieldName String   @default("query")   // Tên field chứa prompt
-  fileFieldName   String   @default("files")   // Tên field chứa file upload
+  promptFieldName String @default("query") // Tên field chứa prompt
+  fileFieldName   String @default("files") // Tên field chứa file upload
 
   // Default prompt — client chỉ được override trường này
-  defaultPrompt   String   @db.Text
+  defaultPrompt String @db.Text
 
   // Static form fields — cố định, client KHÔNG thể thay đổi
   // JSON array: [{"key": "user_id", "value": "tritm13"}, ...]
-  staticFormFields String?  @db.Text
+  staticFormFields String? @db.Text
 
   // Extra request headers (ngoài auth header)
   // JSON object: {"accept": "application/json"}
-  extraHeaders    String?  @db.Text
+  extraHeaders String? @db.Text
 
   // Dot-path để lấy text content từ response JSON
   // VD: "data.response", "choices.0.message.content"
-  responseContentPath String?  @default("content")
+  responseContentPath String? @default("content")
 
   // Settings
-  timeoutSec      Int      @default(60)
-  state           String   @default("ENABLED") // ENABLED | DISABLED
+  timeoutSec Int    @default(60)
+  state      String @default("ENABLED") // ENABLED | DISABLED
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  overrides       ExternalApiOverride[]
+  overrides ExternalApiOverride[]
 
   @@index([slug])
   @@index([state])
@@ -153,19 +153,19 @@ model ExternalApiConnection {
 // External API Override — Per-client Prompt Override
 // ═══════════════════════════════════════════════
 model ExternalApiOverride {
-  id              String   @id @default(uuid())
-  connectionId    String
-  apiKeyId        String
+  id           String @id @default(uuid())
+  connectionId String
+  apiKeyId     String
 
   // Client chỉ được override prompt
   // null = dùng defaultPrompt của connection
-  promptOverride  String?  @db.Text
+  promptOverride String? @db.Text
 
-  connection      ExternalApiConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  apiKey          ApiKey                @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  connection ExternalApiConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  apiKey     ApiKey                @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([connectionId, apiKeyId])
   @@index([apiKeyId])
@@ -176,27 +176,24 @@ model ExternalApiOverride {
 // Profile Endpoint — Per-client Endpoint Configuration
 // ═══════════════════════════════════════════════
 model ProfileEndpoint {
-  id            String   @id @default(uuid())
-  apiKeyId      String
-  endpointSlug  String   // e.g. "extract:invoice", "analyze:fact-check", "compare:semantic"
+  id           String @id @default(uuid())
+  apiKeyId     String
+  endpointSlug String // e.g. "extract:invoice", "analyze:fact-check", "compare:semantic"
 
-  enabled       Boolean  @default(true)
+  enabled Boolean @default(true)
 
-  // Tham số mặc định, client có thể override khi gửi request
-  defaultParams String?  @db.Text
-
-  // Tham số riêng của Profile (Nghiệp vụ), block nếu client cố tình gửi
-  profileParams String?  @db.Text
+  // Configuration (Unified JSON with values + isLocked per parameter)
+  parameters String? @db.Text
 
   // Ghi đè danh sách connector cho profile này (Per-profile Connection Routing)
   // null = dùng connections mặc định từ SERVICE_REGISTRY (backward compatible)
   // JSON array: ["ext-ocr-premium"] hoặc ["ext-ocr-v2", "ext-fact-verifier"]
   connectionsOverride String? @db.Text
 
-  apiKey        ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([apiKeyId, endpointSlug])
   @@index([apiKeyId])
@@ -218,7 +215,7 @@ model AppSetting {
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
-  password  String   // Hashed via bcrypt
+  password  String // Hashed via bcrypt
   role      String   @default("USER") // ADMIN | USER
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
