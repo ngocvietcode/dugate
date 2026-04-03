@@ -11,11 +11,40 @@ export async function GET(req: NextRequest) {
         name: true,
         status: true,
         keyHash: true,
+        note: true,
       }
     });
     return NextResponse.json({ success: true, apiKeys });
   } catch (error: any) {
     console.error('[ApiKey API - GET Error]', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// Cập nhật ApiKey (Note) hoặc Rotate Key
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { id, note, action } = body;
+    
+    if (!id) return NextResponse.json({ success: false, error: 'Thiếu ID' }, { status: 400 });
+
+    if (action === 'rotate') {
+      const rawKey = 'dg_' + crypto.randomBytes(32).toString('base64url');
+      const updatedKey = await prisma.apiKey.update({
+        where: { id },
+        data: { keyHash: rawKey }, // Cập nhật plain keyHash
+      });
+      return NextResponse.json({ success: true, apiKey: updatedKey, rawKey });
+    } else {
+      const updatedKey = await prisma.apiKey.update({
+        where: { id },
+        data: { note },
+      });
+      return NextResponse.json({ success: true, apiKey: updatedKey });
+    }
+  } catch (error: any) {
+    console.error('[ApiKey API - PUT Error]', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
@@ -62,6 +91,12 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ success: false, error: 'Thiếu ID' }, { status: 400 });
+
+    const key = await prisma.apiKey.findUnique({ where: { id } });
+    if (!key) return NextResponse.json({ success: false, error: 'Không tìm thấy Profile' }, { status: 404 });
+    if (key.name === 'Global Profile') {
+      return NextResponse.json({ success: false, error: 'Global Profile không được phép xóa' }, { status: 403 });
+    }
 
     await prisma.apiKey.delete({
       where: { id }

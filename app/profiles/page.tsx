@@ -6,12 +6,14 @@ import {
   Loader2, CheckCircle, Plus, Copy,
   Settings, Save, Key, ChevronRight, ChevronDown, FileText, PlugZap, Trash2, Code, FlaskConical, Zap, XCircle, GripVertical, X
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ApiKey {
   id: string;
   name: string;
   status: string;
   keyHash?: string;
+  note?: string;
 }
 
 export default function OverridesPage() {
@@ -39,6 +41,126 @@ function OverridesContent() {
   const [showAddClient, setShowAddClient] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [createdRawKey, setCreatedRawKey] = useState<{ name: string; key: string } | null>(null);
+
+  // Profile Details State
+  const selectedClient = apiKeys.find(k => k.id === selectedClientId);
+  const [profileNote, setProfileNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [savingBulk, setSavingBulk] = useState(false);
+  
+  // Custom Confirm Dialog State
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+    confirmText?: string;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  const confirmAction = (title: string, message: string, onConfirm: () => void, isDestructive = false, confirmText = 'Xác nhận') => {
+    setConfirmState({ isOpen: true, title, message, onConfirm, isDestructive, confirmText });
+  };
+
+  useEffect(() => {
+    if (selectedClient) {
+      setProfileNote(selectedClient.note || '');
+    }
+  }, [selectedClient]);
+
+  const handleSaveNote = async () => {
+    if (!selectedClientId) return;
+    setSavingNote(true);
+    try {
+      const res = await fetch('/api/internal/apikeys', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: selectedClientId, note: profileNote, action: 'update' })
+      });
+      if (res.ok) {
+        setApiKeys(prev => prev.map(k => k.id === selectedClientId ? { ...k, note: profileNote } : k));
+        toast.success('Đã lưu ghi chú!');
+      } else {
+        const body = await res.json();
+        toast.error(body.error || 'Lỗi khi lưu');
+      }
+    } catch {
+      toast.error('Lỗi kết nối');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const handleRotateKey = async () => {
+    if (!selectedClientId) return;
+    confirmAction(
+      'Cấp phát Key mới',
+      'Bạn có chắc chắn muốn rotate key? Profile sẽ nhận Key mới lập tức và có thể làm thiết bị phía client đang dùng key cũ mất kết nối.',
+      async () => {
+        try {
+          const res = await fetch('/api/internal/apikeys', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: selectedClientId, action: 'rotate' })
+          });
+          const data = await res.json();
+          if (data.success) {
+            setApiKeys(prev => prev.map(k => k.id === selectedClientId ? { ...k, keyHash: data.apiKey.keyHash } : k));
+            setCreatedRawKey({ name: data.apiKey.name, key: data.rawKey });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            toast.success('Đã cấp phát Key mới!');
+          } else {
+            toast.error(data.error);
+          }
+        } catch {
+          toast.error('Lỗi kết nối');
+        }
+      },
+      true, // Destructive meaning warning
+      'Rotate Key'
+    );
+  };
+
+  const handleBulkToggle = async (enabled: boolean) => {
+    if (!selectedClientId) return;
+    confirmAction(
+      enabled ? 'Bật tất cả Endpoints' : 'Tắt tất cả Endpoints',
+      `Bạn có chắc chắn muốn ${enabled ? 'Bật' : 'Tắt'} TẤT CẢ các Endpoints cho Profile này? Mọi lưu lượng kết nối sẽ ảnh hưởng theo hành động này.`,
+      async () => {
+        setSavingBulk(true);
+        try {
+          const promises = profileEndpoints.map(ep => fetch('/api/internal/profile-endpoints', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              apiKeyId: selectedClientId,
+              endpointSlug: ep.slug,
+              enabled,
+              parameters: ep.parameters,
+              connectionsOverride: ep.connectionsOverride,
+            }),
+          }));
+          await Promise.all(promises);
+          await fetchProfileEndpoints(selectedClientId);
+          toast.success(`Đã ${enabled ? 'bật' : 'tắt'} tất cả Endpoints!`);
+        } catch {
+          toast.error("Cập nhật hàng loạt thất bại.");
+        } finally {
+          setSavingBulk(false);
+        }
+      },
+      !enabled, // Destructive only if disabling
+      enabled ? 'Bật tất cả' : 'Tắt tất cả'
+    );
+  };
+
+  // Group endpoints
+  const groupedEndpoints = profileEndpoints.reduce((acc: Record<string, any[]>, ep: any) => {
+    const slug = ep.serviceSlug || 'extract';
+    if (!acc[slug]) acc[slug] = [];
+    acc[slug].push(ep);
+    return acc;
+  }, {});
 
   // Fetch initial data
   const fetchData = async () => {
@@ -97,36 +219,43 @@ function OverridesContent() {
         setCreatedRawKey({ name: data.apiKey.name, key: data.rawKey });
         setShowAddClient(false);
         setNewClientName('');
-        setSelectedClientId(data.apiKey.id);
+        toast.success('Đã tạo API Key thành công!');
       } else {
-        alert(data.error);
+        toast.error(data.error);
       }
     } catch (e) {
-      alert('Error creating API Key');
+      toast.error('Lỗi khi tạo API Key');
     }
   };
 
   // Handle Delete Client
   const handleDeleteClient = async (id: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa vĩnh viễn Profile này và toàn bộ thiết lập liên quan?')) return;
-    
-    try {
-      const res = await fetch(`/api/internal/apikeys?id=${id}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        setApiKeys(apiKeys.filter(k => k.id !== id));
-        if (selectedClientId === id) {
-          setSelectedClientId('');
-          router.replace('/profiles', { scroll: false });
+    confirmAction(
+      'Xóa Profile vĩnh viễn',
+      'Bạn có chắc chắn muốn xóa vĩnh viễn Profile này? Dữ liệu và chìa khóa xác thực sẽ bị xóa không thể khôi phục.',
+      async () => {
+        try {
+          const res = await fetch(`/api/internal/apikeys?id=${id}`, {
+            method: 'DELETE',
+          });
+          if (res.ok) {
+            setApiKeys(prev => prev.filter(k => k.id !== id));
+            if (selectedClientId === id) {
+              setSelectedClientId('');
+              router.replace('/profiles', { scroll: false });
+            }
+            toast.success('Đã xoá Profile');
+          } else {
+            const data = await res.json();
+            toast.error(data.error || 'Failed to delete Profile');
+          }
+        } catch (e) {
+          toast.error('Error deleting Profile');
         }
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to delete Profile');
-      }
-    } catch (e) {
-      alert('Error deleting Profile');
-    }
+      },
+      true,
+      'Xóa Profile'
+    );
   };
 
   if (loading) {
@@ -264,7 +393,7 @@ function OverridesContent() {
                     <button 
                       onClick={() => {
                         navigator.clipboard.writeText(createdRawKey.key);
-                        alert('Đã copy!');
+                        toast.success('Đã copy vào clipboard!');
                       }}
                       className="p-2.5 bg-green-200/50 hover:bg-green-300/50 dark:bg-green-900/50 text-green-700 dark:text-green-200 rounded-lg transition-colors shrink-0"
                       title="Copy Header Key"
@@ -278,52 +407,115 @@ function OverridesContent() {
           )}
 
           {/* Main Workspace */}
-          {selectedClientId && apiKeys.length > 0 && (
+          {selectedClientId && apiKeys.length > 0 && selectedClient && (
             <div className="space-y-4 animate-in fade-in duration-300">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold flex items-center gap-2">Endpoints Hierarchy</h2>
-                <button 
-                  onClick={() => handleDeleteClient(selectedClientId)}
-                  className="px-3 py-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 border border-red-200 dark:border-red-900/50 shadow-sm"
-                  title="Xoá vĩnh viễn Client này"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Xóa Profile
-                </button>
+              
+              {/* Profile Overview Card */}
+              <div className="modern-card p-6 bg-gradient-to-r from-background to-muted/30 border border-border shadow-sm">
+                <div className="flex flex-col gap-6">
+                  {/* Top: API Key */}
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
+                        {selectedClient.name}
+                        {selectedClient.name === 'Global Profile' && (
+                          <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider">Default</span>
+                        )}
+                      </h2>
+                      <p className="text-sm text-muted-foreground mt-1">Thông tin chi tiết và Access Key của Profile.</p>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Static API Key</label>
+                      <div className="flex items-center gap-2">
+                        <code className="bg-muted px-4 py-2 rounded-lg text-sm font-mono border border-border flex-1 max-w-sm">
+                          {selectedClient.keyHash?.substring(0, 15)}...{selectedClient.keyHash?.substring(selectedClient.keyHash.length - 8)}
+                        </code>
+                        <button 
+                          onClick={handleRotateKey}
+                          className="px-4 py-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
+                        >
+                          <Zap className="w-4 h-4" />
+                          Rotate Key
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom: Note */}
+                  <div className="flex-1 flex flex-col">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Ghi chú (Admin Note)</label>
+                    <textarea 
+                      value={profileNote}
+                      onChange={e => setProfileNote(e.target.value)}
+                      placeholder="Ghi chú thêm về Profile này (vd: Khách hàng nào, ứng dụng nào...)"
+                      className="input-field min-h-[80px] text-sm resize-none"
+                    ></textarea>
+                    <div className="mt-2 flex justify-end">
+                      <button 
+                        onClick={handleSaveNote}
+                        disabled={savingNote}
+                        className="px-4 py-1.5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black rounded-md text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        {savingNote ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
+                        Lưu Ghi Chú
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-8 mb-4 border-b border-border pb-4">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-xl font-bold flex items-center gap-2">Endpoints Hierarchy</h2>
+                  <p className="text-sm text-muted-foreground">Toàn bộ endpoints trong hệ thống của Profile này.</p>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  {profileEndpoints.length > 0 && (
+                    <div className="flex items-center space-x-2 bg-muted/40 p-1 rounded-lg border border-border mr-2">
+                      <button 
+                        onClick={() => handleBulkToggle(true)}
+                        disabled={savingBulk}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-md bg-green-50/50 dark:bg-green-950/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 border border-transparent hover:border-green-200 dark:hover:border-green-800 transition-all flex items-center gap-1"
+                      >
+                        {savingBulk && <Loader2 className="w-3 h-3 animate-spin" />} Bật tất cả
+                      </button>
+                      <button 
+                        onClick={() => handleBulkToggle(false)}
+                        disabled={savingBulk}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-md bg-red-50/50 dark:bg-red-950/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 border border-transparent hover:border-red-200 dark:hover:border-red-800 transition-all flex items-center gap-1"
+                      >
+                        {savingBulk && <Loader2 className="w-3 h-3 animate-spin" />} Tắt tất cả
+                      </button>
+                    </div>
+                  )}
+
+                  {selectedClient.name !== 'Global Profile' && (
+                    <button 
+                      onClick={() => handleDeleteClient(selectedClientId)}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 border border-red-200 dark:border-red-900/50 shadow-sm shrink-0"
+                      title="Xoá vĩnh viễn Client này"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Xóa Profile
+                    </button>
+                  )}
+                </div>
               </div>
 
               {profileEndpoints.length > 0 ? (
-                <>
-                  {/* TABS NAVIGATION */}
-                  <div className="flex gap-2 border-b border-border mb-4 overflow-x-auto scroolbar-hide">
-                    {Array.from(new Set(profileEndpoints.map(ep => ep.serviceSlug))).map(serviceSlug => (
-                      <button
-                        key={serviceSlug as string}
-                        onClick={() => setActiveServiceTab(serviceSlug as string)}
-                        className={`px-5 py-2.5 font-bold text-sm rounded-t-xl transition-all capitalize flex whitespace-nowrap ${
-                          (activeServiceTab === serviceSlug || (!activeServiceTab && serviceSlug === 'extract'))
-                            ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-500 shadow-sm'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }`}
-                      >
-                        {serviceSlug as string}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4">
-                    {profileEndpoints
-                      .filter(ep => ep.serviceSlug === activeServiceTab || (!activeServiceTab && ep.serviceSlug === 'extract'))
-                      .map(ep => (
-                      <ProfileEndpointCard
-                        key={ep.slug}
-                        endpoint={ep}
-                        apiKeyId={selectedClientId}
-                        onUpdated={() => fetchProfileEndpoints(selectedClientId)}
-                      />
-                    ))}
-                  </div>
-                </>
+                <div className="space-y-2">
+                  {Object.entries(groupedEndpoints).map(([slug, eps]) => (
+                    <EndpointGroup
+                      key={slug}
+                      slug={slug}
+                      eps={eps as any[]}
+                      apiKeyId={selectedClientId}
+                      onUpdated={() => fetchProfileEndpoints(selectedClientId)}
+                    />
+                  ))}
+                </div>
               ) : (
                  <div className="p-8 text-center border-dashed border-2 rounded-xl text-muted-foreground flex flex-col items-center">
                    <Settings className="w-8 h-8 opacity-20 mb-2" />
@@ -341,7 +533,84 @@ function OverridesContent() {
           )}
         </div>
       </div>
+
+      {/* Custom Confirm Modal */}
+      {confirmState.isOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-background border border-border shadow-2xl rounded-2xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200">
+            <h3 className={`text-xl font-bold mb-2 flex items-center gap-2 ${confirmState.isDestructive ? 'text-red-500' : 'text-foreground'}`}>
+              {confirmState.isDestructive ? <Trash2 className="w-5 h-5"/> : <Zap className="w-5 h-5"/>}
+              {confirmState.title}
+            </h3>
+            <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
+              {confirmState.message}
+            </p>
+            <div className="flex items-center justify-end gap-3 font-medium">
+              <button 
+                onClick={() => setConfirmState({ ...confirmState, isOpen: false })}
+                className="px-5 py-2 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors border border-transparent hover:border-border"
+              >
+                Hủy
+              </button>
+              <button 
+                onClick={() => {
+                  confirmState.onConfirm();
+                  setConfirmState({ ...confirmState, isOpen: false });
+                }}
+                className={`px-5 py-2 rounded-lg text-white shadow-sm transition-colors ${
+                  confirmState.isDestructive 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
+              >
+                {confirmState.confirmText || 'Xác nhận'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
+  );
+}
+
+// ─── EndpointGroup ─────────────────────────────────────────────────────────────
+
+function EndpointGroup({ slug, eps, apiKeyId, onUpdated }: { slug: string, eps: any[], apiKeyId: string, onUpdated: () => void }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const enabledCount = eps.filter(ep => ep.enabled).length;
+
+  return (
+    <div className={`mb-4 modern-card border transition-all duration-300 ${isExpanded ? 'border-indigo-200 dark:border-indigo-800 bg-indigo-50/10 dark:bg-indigo-900/10 shadow-sm' : 'border-border bg-background'}`}>
+      <div 
+        className="flex items-center justify-between p-4 cursor-pointer group"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <h3 className="text-sm font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 px-2 border-l-4 border-indigo-500 flex items-center gap-2">
+          <span>{slug} Endpoints</span>
+          <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-[10px] px-2 py-0.5 rounded-full font-bold tracking-normal">
+            {enabledCount}/{eps.length} BẬT
+          </span>
+        </h3>
+        <button className={`p-1.5 rounded-lg transition-all duration-200 ${isExpanded ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' : 'hover:bg-muted text-muted-foreground group-hover:text-foreground'}`}>
+          <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
+        </button>
+      </div>
+      
+      {isExpanded && (
+        <div className="p-4 pt-0">
+          <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            {eps.map((ep: any) => (
+              <ProfileEndpointCard
+                key={ep.slug}
+                endpoint={ep}
+                apiKeyId={apiKeyId}
+                onUpdated={onUpdated}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -535,7 +804,7 @@ function ProfileEndpointCard({
       setParamsObj(finalParamsObj || {});
       onUpdated();
     } catch (err: any) {
-      alert(`Lỗi khi lưu thiết lập: ${err.message}`);
+      toast.error(`Lỗi khi lưu thiết lập: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -543,7 +812,7 @@ function ProfileEndpointCard({
 
   const handleTestEndpoint = async () => {
     if (testFiles.length === 0) {
-      alert("Vui lòng đính kèm ít nhất 1 file để test!");
+      toast.error("Vui lòng đính kèm ít nhất 1 file để test!");
       return;
     }
     setTesting(true);

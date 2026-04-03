@@ -10,6 +10,7 @@ const BYPASS_PREFIXES = [
   '/login',
   '/api/auth',     // NextAuth endpoints
   '/api/health',
+  '/api/chat',     // Public chat for homepage
   '/api/internal', // Called by middleware itself — must not loop
   '/_next',
   '/favicon.ico',
@@ -22,7 +23,7 @@ export async function middleware(request: NextRequest) {
   console.log(`[Request] ${request.method} ${pathname}`);
 
   // --- Bypass paths ---
-  if (BYPASS_PREFIXES.some(p => pathname.startsWith(p))) {
+  if (pathname === '/' || BYPASS_PREFIXES.some(p => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 

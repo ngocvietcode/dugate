@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { Home, Clock, Settings, FileText, SlidersHorizontal, PlugZap, User, LogOut, Users, ChevronDown } from 'lucide-react';
+import { Home, Clock, Settings, FileText, SlidersHorizontal, PlugZap, User, LogOut, Users, ChevronDown, LogIn } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
 export default function HeaderNav() {
@@ -13,8 +13,6 @@ export default function HeaderNav() {
   const { data: session } = useSession();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  if (pathname === '/login' || pathname === '/setup') return null;
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -26,6 +24,8 @@ export default function HeaderNav() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  if (pathname === '/login' || pathname === '/setup') return null;
 
   const isAdmin = session?.user?.role === 'ADMIN';
 
@@ -98,8 +98,8 @@ export default function HeaderNav() {
           
           <ThemeToggle />
 
-          {/* User Profile Dropdown */}
-          {session?.user && (
+          {/* User Profile Dropdown or Login Button */}
+          {session?.user ? (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
@@ -136,10 +136,10 @@ export default function HeaderNav() {
                         Quản lý người dùng
                       </Link>
                     )}
-                    <button
-                      onClick={() => signOut({ callbackUrl: '/login' })}
-                      className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-destructive rounded-xl hover:bg-destructive/10 transition-colors w-full text-left"
-                    >
+                      <button
+                        onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
+                        className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-destructive rounded-xl hover:bg-destructive/10 transition-colors w-full text-left"
+                      >
                       <LogOut className="w-4 h-4" />
                       Đăng xuất
                     </button>
@@ -147,6 +147,14 @@ export default function HeaderNav() {
                 </div>
               )}
             </div>
+          ) : (
+            <Link
+              href="/login"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm ml-2"
+            >
+              <LogIn className="w-4 h-4" />
+              Đăng nhập
+            </Link>
           )}
         </div>
       </nav>

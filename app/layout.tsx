@@ -6,6 +6,7 @@ import HeaderNav from "@/components/HeaderNav";
 import PageWrapper from "@/components/PageWrapper";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+import { Toaster } from 'sonner';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <HeaderNav />
             <PageWrapper>{children}</PageWrapper>
+            <Toaster position="top-center" richColors />
           </ThemeProvider>
         </SessionProviderWrapper>
       </body>

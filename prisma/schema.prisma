@@ -86,6 +86,7 @@ model ApiKey {
   keyHash       String   @unique
   prefix        String
   role          String   @default("STANDARD") // "STANDARD" | "ADMIN"
+  note          String?  @db.Text
   spendingLimit Float    @default(0.0)
   totalUsed     Float    @default(0.0)
   status        String   @default("active")
