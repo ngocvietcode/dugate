@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* Brand Colors (VPBank) */
+    /* Brand Colors (DUGate Default) */
     --primary: 0 183 79;      /* #00B74F */
     --primary-foreground: 255 255 255;
     
@@ -49,6 +49,68 @@
     
     --accent: 39 39 42; /* zinc-800 */
     --accent-foreground: 244 244 245; /* zinc-50 */
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     VPB THEME — Light (inspired by vpbank.com.vn)
+     Primary: #009A49 (VPBank Green)
+     Text:    #003057 (Navy Blue)
+     Accent:  #E41F26 (VPBank Red)
+  ═══════════════════════════════════════════════════════════════════ */
+  .vpb {
+    --primary: 0 154 73;           /* #009A49 — VPBank Green */
+    --primary-foreground: 255 255 255;
+
+    --destructive: 228 31 38;      /* #E41F26 — VPBank Red */
+    --destructive-foreground: 255 255 255;
+
+    --background: 244 247 249;     /* #F4F7F9 — soft grey-blue */
+    --foreground: 0 48 87;         /* #003057 — Navy Blue */
+
+    --card: 255 255 255;
+    --card-foreground: 0 48 87;
+
+    --popover: 255 255 255;
+    --popover-foreground: 0 48 87;
+
+    --border: 214 224 235;         /* #D6E0EB — softer blue-grey */
+    --input: 214 224 235;
+
+    --muted: 232 238 244;          /* #E8EEF4 */
+    --muted-foreground: 74 104 138; /* #4A688A — muted navy */
+
+    --accent: 232 244 238;         /* #E8F4EE — green tint */
+    --accent-foreground: 0 48 87;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     VPB THEME — Dark
+     Navy-dominant dark mode with green accents
+  ═══════════════════════════════════════════════════════════════════ */
+  .vpb-dark {
+    --primary: 0 178 90;           /* brighter green for dark bg */
+    --primary-foreground: 255 255 255;
+
+    --destructive: 239 68 68;      /* red-500 */
+    --destructive-foreground: 255 255 255;
+
+    --background: 0 28 52;         /* #001C34 — deep navy */
+    --foreground: 224 235 245;     /* #E0EBF5 — light blue-white */
+
+    --card: 0 40 72;               /* #002848 — card navy */
+    --card-foreground: 224 235 245;
+
+    --popover: 0 40 72;
+    --popover-foreground: 224 235 245;
+
+    --border: 0 60 100;            /* #003C64 — border navy */
+    --input: 0 60 100;
+
+    --muted: 0 52 88;              /* #003458 */
+    --muted-foreground: 140 170 200; /* #8CAAC8 */
+
+    --accent: 0 60 100;            /* #003C64 */
+    --accent-foreground: 224 235 245;
   }
 
   body {
@@ -113,4 +175,91 @@
   .glow-red {
     @apply absolute w-[400px] h-[400px] bg-[#E00500]/10 rounded-full blur-[120px] opacity-40 dark:opacity-30 mix-blend-screen pointer-events-none;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   VPB Theme Overrides — Glassmorphic & Pill-shape enhancements
+═══════════════════════════════════════════════════════════════════ */
+
+/* VPB Light — softer shadows, glassmorphic header */
+.vpb .glass-header {
+  background: rgba(244, 247, 249, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 154, 73, 0.1);
+  box-shadow: 0 1px 8px rgba(0, 48, 87, 0.04);
+}
+
+.vpb .modern-card {
+  box-shadow: 0 4px 20px rgba(0, 48, 87, 0.04);
+  border-color: rgba(214, 224, 235, 0.8);
+}
+.vpb .modern-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 154, 73, 0.08);
+  border-color: rgba(0, 154, 73, 0.2);
+}
+
+.vpb .pill-nav-active {
+  background: rgb(0, 48, 87);
+  color: white;
+  box-shadow: 0 2px 12px rgba(0, 48, 87, 0.2);
+}
+
+.vpb .btn-primary {
+  box-shadow: 0 4px 14px rgba(0, 154, 73, 0.25);
+}
+.vpb .btn-primary:hover {
+  box-shadow: 0 6px 20px rgba(0, 154, 73, 0.35);
+}
+
+.vpb .text-gradient {
+  background-image: linear-gradient(135deg, #003057, #009A49);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* VPB Dark — navy glows */
+.vpb-dark .glass-header {
+  background: rgba(0, 28, 52, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 178, 90, 0.12);
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.3);
+}
+
+.vpb-dark .modern-card {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border-color: rgba(0, 60, 100, 0.6);
+}
+.vpb-dark .modern-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 178, 90, 0.12);
+  border-color: rgba(0, 178, 90, 0.25);
+}
+
+.vpb-dark .pill-nav-active {
+  background: rgb(0, 178, 90);
+  color: white;
+  box-shadow: 0 2px 16px rgba(0, 178, 90, 0.3);
+}
+
+.vpb-dark .btn-primary {
+  box-shadow: 0 4px 14px rgba(0, 178, 90, 0.3);
+}
+.vpb-dark .btn-primary:hover {
+  box-shadow: 0 0 24px rgba(0, 178, 90, 0.5);
+}
+
+.vpb-dark .text-gradient {
+  background-image: linear-gradient(135deg, #60b5ff, #00B25A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.vpb-dark .glow-emerald {
+  background: rgba(0, 178, 90, 0.12);
+}
+.vpb-dark .glow-red {
+  background: rgba(96, 181, 255, 0.08);
 }

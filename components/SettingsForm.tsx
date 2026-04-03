@@ -186,7 +186,7 @@ export default function SettingsForm() {
             <label className="block text-sm font-bold text-foreground mb-3">
               Chế độ hiển thị
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <button
                 type="button"
                 onClick={() => setTheme('light')}
@@ -196,7 +196,7 @@ export default function SettingsForm() {
                     : 'border-border text-muted-foreground hover:border-primary/50'
                 }`}
               >
-                Sáng (Light)
+                Sáng
               </button>
               <button
                 type="button"
@@ -207,7 +207,7 @@ export default function SettingsForm() {
                     : 'border-border text-muted-foreground hover:border-primary/50'
                 }`}
               >
-                Tối (Dark)
+                Tối
               </button>
               <button
                 type="button"
@@ -218,7 +218,29 @@ export default function SettingsForm() {
                     : 'border-border text-muted-foreground hover:border-primary/50'
                 }`}
               >
-                Bám hệ thống
+                Hệ thống
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('vpb')}
+                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-medium transition-all ${
+                  theme === 'vpb'
+                    ? 'border-[#009A49] bg-[#009A49]/10 text-[#009A49]'
+                    : 'border-border text-muted-foreground hover:border-[#009A49]/50'
+                }`}
+              >
+                VPB Sáng
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('vpb-dark')}
+                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-medium transition-all ${
+                  theme === 'vpb-dark'
+                    ? 'border-[#00B25A] bg-[#00B25A]/10 text-[#00B25A]'
+                    : 'border-border text-muted-foreground hover:border-[#00B25A]/50'
+                }`}
+              >
+                VPB Tối
               </button>
             </div>
           </div>
