@@ -669,7 +669,7 @@ export default function ApiConnectionsPage() {
                 <div>
                   <label className="form-label">Default Prompt *</label>
                   <textarea
-                    className="input-field font-mono text-xs leading-relaxed min-h-[100px]"
+                    className="input-field font-mono text-xs leading-relaxed min-h-[200px] max-h-[500px] overflow-y-auto"
                     value={form.defaultPrompt}
                     onChange={e => updateForm('defaultPrompt', e.target.value)}
                     placeholder={`VD: "Trích xuất nội dung từ các file sau thành định dạng markdown như hướng dẫn."`}
@@ -837,7 +837,7 @@ export default function ApiConnectionsPage() {
                   <div>
                     <label className="form-label">Prompt thử nghiệm</label>
                     <textarea
-                      className="input-field font-mono text-xs min-h-[80px]"
+                      className="input-field font-mono text-xs min-h-[80px] max-h-[300px] overflow-y-auto"
                       value={testPrompt}
                       onChange={e => setTestPrompt(e.target.value)}
                       placeholder={form.defaultPrompt || 'Để trống = dùng default prompt'}
@@ -891,7 +891,7 @@ export default function ApiConnectionsPage() {
                       {testResult.curlCmd && (
                         <div>
                           <p className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-1">CURL Request:</p>
-                          <pre className="bg-zinc-900 text-zinc-100 dark:bg-black/50 border border-zinc-700 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap break-words">
+                          <pre className="bg-zinc-900 text-zinc-100 dark:bg-black/50 border border-zinc-700 rounded-lg p-3 text-xs whitespace-pre-wrap break-all max-h-64 overflow-y-auto">
                             {testResult.curlCmd}
                           </pre>
                         </div>
@@ -900,7 +900,7 @@ export default function ApiConnectionsPage() {
                       {testResult.errorStack && (
                         <div>
                           <p className="font-semibold text-xs uppercase tracking-wide text-red-600 dark:text-red-400 mb-1">Exception Stacktrace:</p>
-                          <pre className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap break-words text-red-800 dark:text-red-300 max-h-48">
+                          <pre className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg p-3 text-xs overflow-y-auto whitespace-pre-wrap break-words text-red-800 dark:text-red-300 max-h-48">
                             {testResult.errorStack}
                           </pre>
                         </div>
@@ -911,7 +911,7 @@ export default function ApiConnectionsPage() {
                           <p className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-1">
                             Nội dung trích xuất ({form.responseContentPath}):
                           </p>
-                          <pre className="bg-background/70 border border-border rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap break-words max-h-96">
+                          <pre className="bg-background/70 border border-border rounded-lg p-3 text-xs overflow-y-auto whitespace-pre-wrap break-words max-h-96">
                             {String(testResult.mappedContent)}
                           </pre>
                         </div>
@@ -920,7 +920,7 @@ export default function ApiConnectionsPage() {
                       {testResult.responsePreview && (
                         <div>
                           <p className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-1">Response Raw (preview):</p>
-                          <pre className="bg-background/70 border border-border rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap break-words max-h-96 opacity-70">
+                          <pre className="bg-background/70 border border-border rounded-lg p-3 text-xs overflow-y-auto whitespace-pre-wrap break-words max-h-96 opacity-70">
                             {testResult.responsePreview}
                           </pre>
                         </div>
