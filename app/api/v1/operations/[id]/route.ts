@@ -6,16 +6,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { formatOperationResponse } from '@/lib/pipelines/format';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  console.log(`[API_OPERATIONS] GET /operations/${id} called`);
   const op = await prisma.operation.findUnique({ where: { id } });
 
   if (!op || op.deletedAt) {
     return NextResponse.json(
-      { type: 'https://dugate.vn/errors/not-found', title: 'Operation Not Found', status: 404, detail: `Operation '${id}' not found.` },
+      { type: 'https://dugate.vn/errors/not-found', title: 'Operation Not Found', status: 404, detail: `Operation '${id}' not found.`, requested_id: id },
       { status: 404 }
     );
   }
