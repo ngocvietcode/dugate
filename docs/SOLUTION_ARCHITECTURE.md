@@ -507,21 +507,32 @@ sequenceDiagram
 
 ## 9. Deployment Architecture — Docker & Kubernetes
 
-### 9.1 Docker Compose — Development / Staging
+### 9.1 Tổng quan triển khai
+
+Hệ thống được đóng gói hoàn toàn bằng **Docker** với multi-stage build (giảm image từ ~1.2GB → ~350MB), triển khai trên **Kubernetes** cho môi trường production. Môi trường dev/staging sử dụng Docker Compose.
+
+| Thành phần | Image | Port | Vai trò |
+|------------|-------|------|---------|
+| **dugate-app** | `node:20-slim` (multi-stage) | 2023 | API Gateway + Admin UI + Pipeline Engine |
+| **dugate-db** | `postgres:16-alpine` | 5432 | Operation state, API Key, Connection registry |
+| **mock-service** | `node:20-alpine` | 3099 | 15 fake AI connectors (chỉ dùng cho dev/test) |
+| **nginx-ingress** | `nginx:alpine` | 80/443 | TLS termination, rate-limit, upload cap 300MB |
+
+### 9.2 Docker Compose — Development / Staging
 
 ```mermaid
 graph TB
     subgraph "Docker Compose Stack"
         subgraph "Network: dugate-net (bridge)"
-            APP["📦 app (dugate)<br/>node:20-slim<br/>Port: 2023<br/>Multi-stage build<br/>depends_on: db (healthy)"]
-            DB["🗄️ db<br/>postgres:16-alpine<br/>Port: 5432<br/>Volume: pgdata<br/>Healthcheck: pg_isready"]
-            MOCK["🧪 mock-service<br/>node:20-alpine<br/>Port: 3099<br/>15 fake connectors"]
+            APP["📦 app (dugate)<br/>node:20-slim<br/>Port: 2023"]
+            DB["🗄️ db<br/>postgres:16-alpine<br/>Port: 5432"]
+            MOCK["🧪 mock-service<br/>Port: 3099"]
         end
 
         subgraph "Persistent Volumes"
-            V1[("📁 pgdata")]
-            V2[("📁 uploads")]
-            V3[("📁 outputs")]
+            V1[("pgdata")]
+            V2[("uploads")]
+            V3[("outputs")]
         end
 
         APP --> DB
@@ -532,338 +543,66 @@ graph TB
     end
 
     CLIENT[Client] -->|:2023| APP
-    ADMIN[Admin] -->|:2023| APP
 ```
 
-**Docker Compose Configuration hiện tại:**
-
-```yaml
-services:
-  app:
-    build: .                    # Multi-stage Dockerfile
-    ports: ["2023:2023"]
-    environment:
-      DATABASE_URL: postgresql://dugate:${DB_PASSWORD}@db:5432/dugate
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-    volumes:
-      - uploads:/app/uploads
-      - outputs:/app/outputs
-    depends_on:
-      db:
-        condition: service_healthy
-
-  db:
-    image: postgres:16-alpine
-    volumes: [pgdata:/var/lib/postgresql/data]
-    healthcheck:
-      test: pg_isready -U dugate
-      interval: 5s
-
-  mock-service:               # DEV/TEST only — NOT in production
-    build: ./mock-service
-    ports: ["3099:3099"]
-```
-
-### 9.2 Multi-Stage Dockerfile Architecture
-
-```mermaid
-graph LR
-    subgraph "Stage 1: deps"
-        D1[node:20-slim<br/>npm install]
-    end
-
-    subgraph "Stage 2: builder"
-        D2[COPY node_modules<br/>COPY source<br/>prisma generate<br/>next build]
-    end
-
-    subgraph "Stage 3: runner (Production)"
-        D3[node:20-slim<br/>openssl only<br/>.next/standalone<br/>prisma client<br/>CMD: db push → seed → server.js]
-    end
-
-    D1 -->|node_modules| D2
-    D2 -->|.next/standalone + prisma| D3
-
-    style D3 fill:#51cf66,stroke:#333,stroke-width:2px
-```
-
-**Design Decision**: Multi-stage build giảm image size từ ~1.2GB → ~350MB bằng cách chỉ copy `.next/standalone` output và Prisma client vào runner stage. Runtime không cần devDependencies.
-
-### 9.3 Kubernetes Deployment — Production
+### 9.3 Kubernetes — Production Topology
 
 ```mermaid
 graph TB
     subgraph "Kubernetes Cluster"
         subgraph "Namespace: dugate-prod"
-            ING[☁️ Ingress Controller<br/>nginx-ingress<br/>TLS: cert-manager<br/>client_max_body_size: 300M]
+            ING[☁️ Ingress Controller<br/>TLS + cert-manager<br/>300M upload limit]
 
-            subgraph "Deployment: dugate-app"
-                POD1["Pod 1<br/>dugate:latest"]
-                POD2["Pod 2<br/>dugate:latest"]
-                POD3["Pod 3<br/>dugate:latest"]
+            subgraph "Deployment: dugate-app (3 replicas)"
+                POD1["Pod 1"]
+                POD2["Pod 2"]
+                POD3["Pod 3"]
             end
 
             SVC_APP[Service: dugate-app<br/>ClusterIP:2023]
 
             subgraph "StatefulSet: dugate-db"
-                DB_POD["Pod: postgres:16-alpine<br/>PVC: 50Gi"]
+                DB_POD["Pod: postgres:16<br/>PVC: 50Gi"]
             end
 
             SVC_DB[Service: dugate-db<br/>ClusterIP:5432]
-
-            subgraph "Storage"
-                PVC_DB[("PVC: dugate-pgdata<br/>50Gi, ReadWriteOnce")]
-                PVC_UPLOAD[("PVC: dugate-uploads<br/>100Gi, ReadWriteMany")]
-                PVC_OUTPUT[("PVC: dugate-outputs<br/>50Gi, ReadWriteMany")]
-            end
-
-            CM[ConfigMap: dugate-config<br/>NEXTAUTH_URL, LOG_LEVEL]
-            SEC[Secret: dugate-secrets<br/>DB_PASSWORD, NEXTAUTH_SECRET,<br/>ENCRYPTION_KEY, AI_API_KEYS]
-
-            HPA[HPA: dugate-app<br/>min: 2, max: 10<br/>CPU target: 70%]
+            HPA[HPA: min 2 → max 10<br/>CPU target: 70%]
         end
     end
 
     INTERNET[🌐 Internet] -->|HTTPS| ING
-    ING -->|HTTP| SVC_APP
+    ING --> SVC_APP
     SVC_APP --> POD1
     SVC_APP --> POD2
     SVC_APP --> POD3
     POD1 --> SVC_DB
-    POD2 --> SVC_DB
-    POD3 --> SVC_DB
     SVC_DB --> DB_POD
-    DB_POD --> PVC_DB
-    POD1 --> PVC_UPLOAD
-    POD2 --> PVC_UPLOAD
-    POD1 --> PVC_OUTPUT
-
     HPA -.->|Auto-scale| POD1
-    CM -.->|env| POD1
-    SEC -.->|env| POD1
 ```
 
-### 9.4 Kubernetes Manifest Specifications
+**Đặc điểm triển khai chính:**
 
-#### Deployment — dugate-app
+| Khía cạnh | Cấu hình |
+|-----------|----------|
+| **Deployment strategy** | RollingUpdate — `maxSurge: 1`, `maxUnavailable: 0` (zero-downtime) |
+| **Auto-scaling** | HPA: 2 → 10 pods, trigger tại CPU 70% hoặc Memory 80% |
+| **Health check** | Liveness + Readiness probe qua `GET /api/health` |
+| **Secrets** | K8s Secret: `DB_PASSWORD`, `NEXTAUTH_SECRET`, `ENCRYPTION_KEY` |
+| **Storage** | PVC ReadWriteMany cho `uploads/` và `outputs/` |
+| **Database** | StatefulSet + PVC 50Gi ReadWriteOnce |
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: dugate-app
-  namespace: dugate-prod
-  labels:
-    app: dugate
-    component: gateway
-spec:
-  replicas: 3
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0    # Zero-downtime deployment
-  selector:
-    matchLabels:
-      app: dugate
-  template:
-    metadata:
-      labels:
-        app: dugate
-        component: gateway
-    spec:
-      containers:
-        - name: dugate
-          image: registry.internal/dugate:latest
-          ports:
-            - containerPort: 2023
-          env:
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: dugate-secrets
-                  key: DATABASE_URL
-            - name: NEXTAUTH_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: dugate-secrets
-                  key: NEXTAUTH_SECRET
-            - name: ENCRYPTION_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: dugate-secrets
-                  key: ENCRYPTION_KEY
-            - name: UPLOAD_DIR
-              value: /app/uploads
-            - name: OUTPUT_DIR
-              value: /app/outputs
-            - name: NODE_ENV
-              value: production
-            - name: LOG_FORMAT
-              value: json
-          volumeMounts:
-            - name: uploads
-              mountPath: /app/uploads
-            - name: outputs
-              mountPath: /app/outputs
-          resources:
-            requests:
-              cpu: "250m"
-              memory: "512Mi"
-            limits:
-              cpu: "1000m"
-              memory: "2Gi"
-          livenessProbe:
-            httpGet:
-              path: /api/health
-              port: 2023
-            initialDelaySeconds: 30
-            periodSeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /api/health
-              port: 2023
-            initialDelaySeconds: 10
-            periodSeconds: 10
-      volumes:
-        - name: uploads
-          persistentVolumeClaim:
-            claimName: dugate-uploads
-        - name: outputs
-          persistentVolumeClaim:
-            claimName: dugate-outputs
-```
-
-#### StatefulSet — PostgreSQL
-
-```yaml
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: dugate-db
-  namespace: dugate-prod
-spec:
-  serviceName: dugate-db
-  replicas: 1
-  selector:
-    matchLabels:
-      app: dugate-db
-  template:
-    spec:
-      containers:
-        - name: postgres
-          image: postgres:16-alpine
-          ports:
-            - containerPort: 5432
-          env:
-            - name: POSTGRES_USER
-              value: dugate
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: dugate-secrets
-                  key: DB_PASSWORD
-            - name: POSTGRES_DB
-              value: dugate
-          volumeMounts:
-            - name: pgdata
-              mountPath: /var/lib/postgresql/data
-          resources:
-            requests:
-              cpu: "250m"
-              memory: "512Mi"
-            limits:
-              cpu: "500m"
-              memory: "1Gi"
-          livenessProbe:
-            exec:
-              command: ["pg_isready", "-U", "dugate"]
-            periodSeconds: 15
-  volumeClaimTemplates:
-    - metadata:
-        name: pgdata
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 50Gi
-```
-
-#### HorizontalPodAutoscaler
-
-```yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: dugate-app-hpa
-  namespace: dugate-prod
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: dugate-app
-  minReplicas: 2
-  maxReplicas: 10
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 70
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: 80
-```
-
-#### Ingress
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: dugate-ingress
-  namespace: dugate-prod
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/proxy-body-size: "300m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - dugate.internal.bank.vn
-      secretName: dugate-tls
-  rules:
-    - host: dugate.internal.bank.vn
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: dugate-app
-                port:
-                  number: 2023
-```
-
-### 9.5 CI/CD Pipeline
+### 9.4 CI/CD Pipeline
 
 ```mermaid
 graph LR
     subgraph "CI/CD Pipeline"
-        A[Git Push<br/>main branch] --> B[GitHub Actions<br/>Trigger]
-        B --> C[Build & Test<br/>npm ci, lint, jest]
-        C --> D[Docker Build<br/>Multi-stage]
-        D --> E[Push to Registry<br/>registry.internal]
-        E --> F[kubectl rollout<br/>RollingUpdate]
-        F --> G{Health Check<br/>Passed?}
-        G -->|Yes| H[✅ Deploy Complete]
-        G -->|No| I[🔄 Auto Rollback<br/>kubectl rollout undo]
+        A[Git Push<br/>main branch] --> B[Build & Test<br/>npm ci, lint, jest]
+        B --> C[Docker Build<br/>Multi-stage]
+        C --> D[Push to Registry]
+        D --> E[kubectl rollout<br/>RollingUpdate]
+        E --> F{Health Check?}
+        F -->|Pass| G[✅ Deploy Complete]
+        F -->|Fail| H[🔄 Auto Rollback]
     end
 ```
 
