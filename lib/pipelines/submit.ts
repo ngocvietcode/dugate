@@ -17,6 +17,7 @@ export interface SubmitPipelineParams {
   webhookUrl?: string | null;
   idempotencyKey?: string;
   apiKeyId?: string;
+  userId?: string;
   executeSync?: boolean;
   correlationId?: string;
 }
@@ -38,6 +39,7 @@ export async function submitPipelineJob(
     webhookUrl,
     idempotencyKey,
     apiKeyId,
+    userId,
     executeSync = false,
     correlationId,
   } = params;
@@ -129,6 +131,7 @@ export async function submitPipelineJob(
     data: {
       id:              operationId,
       apiKeyId:        apiKeyId || null,
+      createdByUserId: userId || null,
       idempotencyKey:  idempotencyKey || null,
       endpointSlug:    endpointSlug || null,
       pipelineJson:    JSON.stringify(pipeline),

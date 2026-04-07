@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 const defaultEndpointUrl = 'http://localhost:8000/v1/completions';
 
-// ─── 16 External API Connectors ──────────────────────────────────────────────
+// ─── External API Connectors ──────────────────────────────────────────────────
 const CONNECTORS = [
   // ── Ingest ──────────────────────────────────────────────────────────────
   {
@@ -236,7 +236,7 @@ You are a Strict Legal and Regulatory Auditing AI.
 </role>
 
 <core_directive>
-You evaluate whether a document passes or fails against distinct, rigid criteria criteria.
+You evaluate whether a document passes or fails against distinct, rigid criteria.
 </core_directive>
 
 <anti_hallucination_rules>
@@ -591,35 +591,61 @@ Respond conversationally advising the user on which feature(s) they should use i
   },
 ];
 
-// ─── Endpoint slugs from SERVICE_REGISTRY for ProfileEndpoint seeding ─────────
+// ─── Endpoint slugs — khớp chính xác với SERVICE_REGISTRY ────────────────────
+// Tổng 31 endpoints: ingest(4) + extract(6) + analyze(7) + transform(5) + generate(6) + compare(3)
 const ALL_ENDPOINT_SLUGS = [
-  // ingest
-  'ingest:parse', 'ingest:ocr', 'ingest:digitize', 'ingest:split',
-  // extract
-  'extract', 'extract:invoice', 'extract:contract', 'extract:id-card', 'extract:receipt', 'extract:po', 'extract:payslip',
-  // analyze
-  'analyze:classify', 'analyze:sentiment', 'analyze:compliance', 'analyze:fact-check',
-  'analyze:quality', 'analyze:risk', 'analyze:summarize-eval',
-  // transform
-  'transform:convert', 'transform:translate', 'transform:rewrite', 'transform:redact', 'transform:template',
-  // generate
-  'generate:summary', 'generate:outline', 'generate:report', 'generate:email', 'generate:minutes', 'generate:qa',
-  // compare
-  'compare:diff', 'compare:semantic', 'compare:version',
+  // ── ingest (4) ────────────────────────────────────────────────────────────
+  'ingest:parse',
+  'ingest:ocr',
+  'ingest:digitize',
+  'ingest:split',
+  // ── extract (6) ───────────────────────────────────────────────────────────
+  'extract:invoice',
+  'extract:contract',
+  'extract:id-card',
+  'extract:receipt',
+  'extract:table',
+  'extract:custom',
+  // ── analyze (7) ───────────────────────────────────────────────────────────
+  'analyze:classify',
+  'analyze:sentiment',
+  'analyze:compliance',
+  'analyze:fact-check',
+  'analyze:quality',
+  'analyze:risk',
+  'analyze:summarize-eval',
+  // ── transform (5) ─────────────────────────────────────────────────────────
+  'transform:convert',
+  'transform:translate',
+  'transform:rewrite',
+  'transform:redact',
+  'transform:template',
+  // ── generate (6) ──────────────────────────────────────────────────────────
+  'generate:summary',
+  'generate:outline',
+  'generate:report',
+  'generate:email',
+  'generate:minutes',
+  'generate:qa',
+  // ── compare (3) ───────────────────────────────────────────────────────────
+  'compare:diff',
+  'compare:semantic',
+  'compare:version',
 ];
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('🌱 Starting Master Data Seed for Dugate Document AI v2...');
+  console.log(`   Seeding ${CONNECTORS.length} connectors, ${ALL_ENDPOINT_SLUGS.length} endpoint slugs.`);
 
-  // 1. Seed 16 External API Connectors
-  console.log('\n[1/3] Seeding 16 External API Connectors...');
+  // 1. Seed External API Connectors
+  console.log(`\n[1/3] Seeding ${CONNECTORS.length} External API Connectors...`);
   for (const conn of CONNECTORS) {
     await prisma.externalApiConnection.upsert({
       where: { slug: conn.slug },
       update: {
-        // Bỏ việc ghi đè (overwrite) endpointUrl, authKey, defaultPrompt, v.v.
-        // để Admin config không bị mất mỗi khi Docker restart/build lại.
+        // Chỉ update metadata — KHÔNG overwrite endpointUrl/authSecret/defaultPrompt
+        // để tránh mất cấu hình Admin đã chỉnh.
         name: conn.name,
         description: conn.description,
       },
@@ -628,7 +654,7 @@ async function main() {
     console.log(`  ✅ ${conn.slug}`);
   }
 
-  // 2. Setup Default Admin API Key
+  // 2. Setup Default Admin API Key & ProfileEndpoints
   console.log('\n[2/3] Ensuring Default Admin API Key...');
   const rawAdminKey = 'sk-admin-default-secret-key';
   const hashedKey = crypto.createHash('sha256').update(rawAdminKey).digest('hex');
@@ -648,7 +674,7 @@ async function main() {
   });
   console.log(`  🔑 Admin API Key: ${rawAdminKey} (ID: ${adminKey.id})`);
 
-  // Enable all endpoints for admin
+  // Enroll admin key to all 31 endpoints
   for (const slug of ALL_ENDPOINT_SLUGS) {
     await prisma.profileEndpoint.upsert({
       where: { apiKeyId_endpointSlug: { apiKeyId: adminKey.id, endpointSlug: slug } },
@@ -671,6 +697,9 @@ async function main() {
   console.log(`  👤 Admin User: ${adminUser.username} / ${defaultPassword}`);
 
   console.log('\n🎉 Seeding completed successfully!');
+  console.log(`\n📊 Summary:`);
+  console.log(`   Connectors : ${CONNECTORS.length}`);
+  console.log(`   Endpoints  : ${ALL_ENDPOINT_SLUGS.length}`);
 }
 
 main()

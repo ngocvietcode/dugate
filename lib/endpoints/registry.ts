@@ -391,6 +391,7 @@ export function getAllEndpointSlugs() {
       displayName: sub.displayName,
       serviceName: svc.displayName,
       serviceSlug: svcSlug,
+      route: svc.route,
       discriminatorName: svc.discriminatorName,
       discriminatorValue: caseKey !== '_default' ? caseKey : null,
       description: sub.description,

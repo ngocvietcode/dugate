@@ -31,8 +31,13 @@ export async function GET(req: NextRequest) {
   const pageToken = params.get('page_token');
   const filter = params.get('filter');
 
+  const apiKeyId = req.headers.get('x-api-key-id');
+  
   // Build where clause
-  const where: Record<string, unknown> = { deletedAt: null };
+  const where: Record<string, unknown> = {
+    deletedAt: null,
+    ...(apiKeyId ? { apiKeyId } : {})
+  };
 
   if (filter) {
     const parts = filter.split(',');

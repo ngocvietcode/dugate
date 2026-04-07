@@ -20,6 +20,14 @@ export async function GET(
     );
   }
 
+  const apiKeyId = req.headers.get('x-api-key-id');
+  if (apiKeyId && op.apiKeyId !== apiKeyId) {
+    return NextResponse.json(
+      { type: 'https://dugate.vn/errors/forbidden', title: 'Forbidden', status: 403, detail: `Access denied.` },
+      { status: 403 }
+    );
+  }
+
   if (!op.done || op.state !== 'SUCCEEDED') {
     return NextResponse.json(
       { type: 'https://dugate.vn/errors/not-ready', title: 'Not Ready', status: 409, detail: 'Operation has not completed successfully.' },

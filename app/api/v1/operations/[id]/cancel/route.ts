@@ -19,6 +19,14 @@ export async function POST(
     );
   }
 
+  const apiKeyId = req.headers.get('x-api-key-id');
+  if (apiKeyId && op.apiKeyId !== apiKeyId) {
+    return NextResponse.json(
+      { type: 'https://dugate.vn/errors/forbidden', title: 'Forbidden', status: 403, detail: `Access denied.` },
+      { status: 403 }
+    );
+  }
+
   if (op.done) {
     return NextResponse.json(
       { type: 'https://dugate.vn/errors/already-done', title: 'Already Completed', status: 409, detail: 'Cannot cancel a completed operation.' },

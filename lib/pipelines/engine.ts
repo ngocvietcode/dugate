@@ -113,13 +113,14 @@ export async function runPipeline(operationId: string, correlationId?: string): 
         throw new Error(`ExternalApiConnection '${connection.slug}' is DISABLED.`);
       }
 
-      // Load per-client prompt override
-      const extOverride = operation.apiKeyId
+      // Load per-client, per-endpoint prompt override
+      const extOverride = operation.apiKeyId && operation.endpointSlug
         ? await prisma.externalApiOverride.findUnique({
             where: {
-              connectionId_apiKeyId: {
+              connectionId_apiKeyId_endpointSlug: {
                 connectionId: connection.id,
                 apiKeyId: operation.apiKeyId,
+                endpointSlug: operation.endpointSlug,
               },
             },
           })

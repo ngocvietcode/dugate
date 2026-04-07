@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,8 +12,21 @@ export default function ChatConsultant() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea: min 2 rows, max 5 rows
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const lineHeight = 24; // px, matches leading-6
+    const minHeight = lineHeight * 2 + 32; // 2 rows + padding
+    const maxHeight = lineHeight * 5 + 32; // 5 rows + padding
+    el.style.height = Math.min(Math.max(el.scrollHeight, minHeight), maxHeight) + 'px';
+    el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }, [input]);
+
+  const handleSubmit = async () => {
     if (!input.trim() || isLoading) return;
 
     const userMessage = input.trim();
@@ -28,7 +41,7 @@ export default function ChatConsultant() {
         body: JSON.stringify({ message: userMessage }),
       });
       const data = await res.json();
-      
+
       let reply = data.response || "Xin lỗi, hiện tại tôi không thể kết nối tới server. Vui lòng thử lại sau.";
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (error) {
@@ -36,6 +49,20 @@ export default function ChatConsultant() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const sendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmit();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Shift+Enter hoặc Ctrl+Enter → gửi message
+    if (e.key === 'Enter' && (e.shiftKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSubmit();
+    }
+    // Enter đơn → xuống hàng (mặc định của textarea, không cần xử lý)
   };
 
   return (
@@ -96,21 +123,24 @@ export default function ChatConsultant() {
             </button>
           ))}
         </div>
-        <form onSubmit={sendMessage} className="relative flex items-center">
-          <input
-            type="text"
-            className="w-full bg-muted border border-border rounded-full pl-6 pr-14 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#00B74F]/50 transition-all font-medium"
-            placeholder="Bạn cần giải quyết bài toán tài liệu gì?"
+        <form onSubmit={sendMessage} className="relative flex items-end gap-2">
+          <textarea
+            ref={textareaRef}
+            rows={2}
+            className="flex-1 bg-muted border border-border rounded-2xl pl-4 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#00B74F]/50 transition-all font-medium resize-none leading-6"
+            placeholder="Bạn cần giải quyết bài toán tài liệu gì? (Shift+Enter để gửi)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
             disabled={isLoading}
+            style={{ minHeight: '80px', maxHeight: '152px' }}
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={!input.trim() || isLoading}
-            className="absolute right-2 w-10 h-10 rounded-full bg-[#00B74F] hover:bg-[#009940] flex items-center justify-center shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex-shrink-0 w-10 h-10 rounded-full bg-[#00B74F] hover:bg-[#009940] flex items-center justify-center shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-0.5"
           >
-            <Send className="w-4 h-4 text-white -mt-0.5 ml-0.5" />
+            <Send className="w-4 h-4 text-white" />
           </button>
         </form>
         <p className="text-center text-xs text-muted-foreground mt-3 italic">

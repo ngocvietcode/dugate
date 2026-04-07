@@ -23,6 +23,14 @@ export async function GET(
     );
   }
 
+  const apiKeyId = req.headers.get('x-api-key-id');
+  if (apiKeyId && op.apiKeyId !== apiKeyId) {
+    return NextResponse.json(
+      { type: 'https://dugate.vn/errors/forbidden', title: 'Forbidden', status: 403, detail: `Access denied.` },
+      { status: 403 }
+    );
+  }
+
   return NextResponse.json(formatOperationResponse(op));
 }
 
@@ -37,6 +45,14 @@ export async function DELETE(
     return NextResponse.json(
       { type: 'https://dugate.vn/errors/not-found', title: 'Not Found', status: 404 },
       { status: 404 }
+    );
+  }
+
+  const apiKeyId = req.headers.get('x-api-key-id');
+  if (apiKeyId && op.apiKeyId !== apiKeyId) {
+    return NextResponse.json(
+      { type: 'https://dugate.vn/errors/forbidden', title: 'Forbidden', status: 403, detail: `Access denied.` },
+      { status: 403 }
     );
   }
 

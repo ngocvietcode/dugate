@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       const extConnections = activeConnections.map((connSlug: string) => {
         const conn = allExtConnections.find((c) => c.slug === connSlug);
         if (!conn) return null;
-        const override = allExtOverrides.find((o) => o.connectionId === conn.id);
+        const override = allExtOverrides.find((o) => o.connectionId === conn.id && o.endpointSlug === endpointDef.slug);
         return {
           connectionId: conn.id,
           slug: conn.slug,

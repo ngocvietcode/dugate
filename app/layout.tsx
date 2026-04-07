@@ -44,7 +44,7 @@ ensureCleanupScheduled();
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi" className={`${jakarta.variable} ${dmSans.variable} ${beVietnam.variable} ${inter.variable}`} suppressHydrationWarning>
-      <body className="font-sans bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary transition-colors duration-300">
+      <body className={`${beVietnam.className} bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary transition-colors duration-300`}>
         <SessionProviderWrapper>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <HeaderNav />

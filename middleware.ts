@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
   console.log(`[Request] ${request.method} ${pathname}`);
 
   // --- Bypass paths ---
-  if (pathname === '/' || BYPASS_PREFIXES.some(p => pathname.startsWith(p))) {
+  if (BYPASS_PREFIXES.some(p => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
@@ -32,10 +32,13 @@ export async function middleware(request: NextRequest) {
     const passedKey = request.headers.get('x-api-key') || '';
 
     try {
-      const authUrl = new URL('/api/internal/auth-key', request.url);
+      // Use INTERNAL_API_URL if UAT host isn't resolvable inside the container, fallback to request.url
+      const baseUrl = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_APP_URL || request.url;
+      const authUrl = new URL('/api/internal/auth-key', baseUrl);
+      
       const res = await fetch(authUrl, {
         method: 'GET',
-        headers: { 'x-api-key': passedKey },
+        headers: { 'x-api-key': passedKey, 'Host': request.headers.get('host') || '' },
         cache: 'no-store',
       });
       const data = await res.json();
@@ -56,8 +59,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next({
         request: { headers: requestHeaders },
       });
-    } catch {
-      return NextResponse.json({ error: 'Internal Auth Service Error' }, { status: 500 });
+    } catch (e: any) {
+      console.error('[Middleware] Internal Auth Check error:', e);
+      return NextResponse.json(
+        { error: 'Internal Auth Service Error', details: e?.message || String(e) },
+        { status: 500 }
+      );
     }
   }
 

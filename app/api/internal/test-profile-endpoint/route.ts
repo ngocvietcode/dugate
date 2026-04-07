@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
     // Inject the apiKeyId so the runner knows which Profile to load overrides for
     const headers = new Headers(req.headers);
     if (apiKeyId) headers.set('x-api-key-id', apiKeyId);
+    if (session.user.id) headers.set('x-user-id', session.user.id);
     
     // Remove content-type and content-length because the new FormData body 
     // will generate its own boundary and length.

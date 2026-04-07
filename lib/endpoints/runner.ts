@@ -59,6 +59,7 @@ export async function runEndpoint(
 
     const form = await req.formData();
     const apiKeyId = req.headers.get('x-api-key-id') ?? undefined;
+    const userId = req.headers.get('x-user-id') ?? undefined;
 
     // ── 2. Resolve sub-case via discriminator ────────────────────────────────
     const discriminatorValue = (form.get(service.discriminatorName) as string | null)?.trim();
@@ -194,6 +195,7 @@ export async function runEndpoint(
       webhookUrl,
       idempotencyKey,
       apiKeyId,
+      userId,
       executeSync,
       correlationId,
     });

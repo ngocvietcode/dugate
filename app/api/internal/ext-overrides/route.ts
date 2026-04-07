@@ -36,11 +36,11 @@ export async function GET(req: NextRequest) {
 // ─── POST: Upsert (create or update) override ──────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { connectionId, apiKeyId, promptOverride, isActive } = await req.json();
+    const { connectionId, apiKeyId, endpointSlug, promptOverride, isActive } = await req.json();
 
-    if (!connectionId || !apiKeyId) {
+    if (!connectionId || !apiKeyId || !endpointSlug) {
       return NextResponse.json(
-        { success: false, error: 'connectionId và apiKeyId là bắt buộc' },
+        { success: false, error: 'connectionId, apiKeyId và endpointSlug là bắt buộc' },
         { status: 400 },
       );
     }
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     // isActive = false → xóa override (về default)
     if (isActive === false) {
       await prisma.externalApiOverride.deleteMany({
-        where: { connectionId, apiKeyId },
+        where: { connectionId, apiKeyId, endpointSlug },
       });
       return NextResponse.json({ success: true, deleted: true });
     }
@@ -69,11 +69,12 @@ export async function POST(req: NextRequest) {
     // Upsert override
     const override = await prisma.externalApiOverride.upsert({
       where: {
-        connectionId_apiKeyId: { connectionId, apiKeyId },
+        connectionId_apiKeyId_endpointSlug: { connectionId, apiKeyId, endpointSlug },
       },
       create: {
         connectionId,
         apiKeyId,
+        endpointSlug,
         promptOverride: promptOverride?.trim() ?? null,
       },
       update: {

@@ -39,8 +39,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-dm-sans)", "var(--font-be-vietnam)", "sans-serif"],
-        heading: ["var(--font-jakarta)", "var(--font-dm-sans)", "sans-serif"],
+        sans: ["var(--font-be-vietnam, 'Be Vietnam Pro', sans-serif)", "var(--font-inter, 'Inter', sans-serif)", "sans-serif"],
+        heading: ["var(--font-jakarta, 'Plus Jakarta Sans', sans-serif)", "sans-serif"],
       },
       borderRadius: {
         DEFAULT: "8px",
