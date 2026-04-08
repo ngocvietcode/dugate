@@ -182,7 +182,7 @@ export async function runEndpoint(
     const webhookUrl = form.get('webhook_url') as string | null;
     const idempotencyKey = req.headers.get('idempotency-key') ?? undefined;
 
-    const executeSync = req.nextUrl.searchParams.get('sync') === 'true';
+    const executeSync = new URL(req.url).searchParams.get('sync') === 'true';
 
     const result = await submitPipelineJob({
       pipeline,

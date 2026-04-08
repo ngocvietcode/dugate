@@ -116,6 +116,9 @@ export async function submitPipelineJob(
   }
 
   // ── 6. Create Operation in DB ─────────────────────────────────────────────
+  // When DISABLE_HISTORY=true, soft-delete immediately so it won't appear in history queries
+  const disableHistory = process.env.DISABLE_HISTORY === 'true';
+
   let operation = await prisma.operation.create({
     data: {
       id:              operationId,
@@ -131,6 +134,7 @@ export async function submitPipelineJob(
       done:            false,
       progressPercent: 0,
       progressMessage: 'Initializing pipeline...',
+      deletedAt:       disableHistory ? new Date() : null,
     },
   });
 
