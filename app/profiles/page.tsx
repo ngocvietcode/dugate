@@ -163,6 +163,16 @@ function OverridesContent() {
     return acc;
   }, {});
 
+  // Filter: chỉ hiện enabled
+  const [showOnlyEnabled, setShowOnlyEnabled] = useState(false);
+  const filteredGroupedEndpoints = showOnlyEnabled
+    ? Object.fromEntries(
+        Object.entries(groupedEndpoints)
+          .map(([slug, eps]) => [slug, (eps as any[]).filter((ep: any) => ep.enabled)])
+          .filter(([, eps]) => (eps as any[]).length > 0)
+      )
+    : groupedEndpoints;
+
   // Fetch initial data
   const fetchData = async () => {
     try {
@@ -318,8 +328,8 @@ function OverridesContent() {
                         setCreatedRawKey(null); // Clear new key alert if they switch
                       }}
                       className={`w-full text-left px-3 py-3 rounded-lg flex items-center justify-between transition-all ${isSelected
-                          ? 'bg-primary text-primary-foreground shadow-md'
-                          : 'hover:bg-muted text-foreground'
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'hover:bg-muted text-foreground'
                         }`}
                     >
                       <div className="flex flex-col truncate pr-2">
@@ -472,6 +482,20 @@ function OverridesContent() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                  {/* Filter toggle */}
+                  <button
+                    onClick={() => setShowOnlyEnabled(v => !v)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                      showOnlyEnabled
+                        ? 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-300 dark:border-green-800'
+                        : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted'
+                    }`}
+                    title="Lọc chỉ hiện Enabled"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    {showOnlyEnabled ? 'Enabled only' : 'Tất cả'}
+                  </button>
+
                   {profileEndpoints.length > 0 && (
                     <div className="flex items-center space-x-2 bg-muted/40 p-1 rounded-lg border border-border mr-2">
                       <button
@@ -506,7 +530,7 @@ function OverridesContent() {
 
               {profileEndpoints.length > 0 ? (
                 <div className="space-y-2">
-                  {Object.entries(groupedEndpoints).map(([slug, eps]) => (
+                  {Object.entries(filteredGroupedEndpoints).map(([slug, eps]) => (
                     <EndpointGroup
                       key={slug}
                       slug={slug}
@@ -515,6 +539,11 @@ function OverridesContent() {
                       onUpdated={() => fetchProfileEndpoints(selectedClientId)}
                     />
                   ))}
+                  {showOnlyEnabled && Object.keys(filteredGroupedEndpoints).length === 0 && (
+                    <div className="p-8 text-center border-dashed border-2 rounded-xl text-muted-foreground">
+                      Không có endpoint nào đang Enabled.
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="p-8 text-center border-dashed border-2 rounded-xl text-muted-foreground flex flex-col items-center">
@@ -558,8 +587,8 @@ function OverridesContent() {
                   setConfirmState({ ...confirmState, isOpen: false });
                 }}
                 className={`px-5 py-2 rounded-lg text-white shadow-sm transition-colors ${confirmState.isDestructive
-                    ? 'bg-red-600 hover:bg-red-700'
-                    : 'bg-indigo-600 hover:bg-indigo-700'
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
                   }`}
               >
                 {confirmState.confirmText || 'Xác nhận'}
@@ -999,8 +1028,8 @@ function ProfileEndpointCard({
 
   return (
     <div className={`modern-card flex flex-col border transition-colors relative ${showTestModal ? 'z-[100]' : isEditing ? 'z-50' : 'z-10'} ${isActive
-        ? 'bg-indigo-50/10 dark:bg-indigo-950/10 border-indigo-200 dark:border-indigo-900/50 ring-1 ring-indigo-500/20 shadow-md'
-        : 'border-border opacity-70'
+      ? 'bg-indigo-50/10 dark:bg-indigo-950/10 border-indigo-200 dark:border-indigo-900/50 ring-1 ring-indigo-500/20 shadow-md'
+      : 'border-border opacity-70'
       }`}>
       <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex-1 cursor-pointer" onClick={() => setIsEditing(!isEditing)}>
@@ -1074,8 +1103,8 @@ function ProfileEndpointCard({
             <button
               onClick={() => setIsEditing(!isEditing)}
               className={`p-1.5 rounded-lg transition-colors border ${isEditing
-                  ? 'bg-indigo-50 dark:bg-indigo-950 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400'
-                  : 'bg-transparent border-transparent text-slate-400 hover:text-foreground hover:bg-muted'
+                ? 'bg-indigo-50 dark:bg-indigo-950 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400'
+                : 'bg-transparent border-transparent text-slate-400 hover:text-foreground hover:bg-muted'
                 }`}
             >
               <ChevronDown className={`w-5 h-5 transition-transform ${isEditing ? 'rotate-180' : ''}`} />
@@ -1188,13 +1217,13 @@ function ProfileEndpointCard({
               {/* Result Panel */}
               {testResult && (
                 <div className={`rounded-xl border text-sm space-y-4 overflow-hidden ${testResult.status === 200
-                    ? 'border-green-300 dark:border-green-800'
-                    : 'border-red-300 dark:border-red-800'
+                  ? 'border-green-300 dark:border-green-800'
+                  : 'border-red-300 dark:border-red-800'
                   }`}>
                   {/* Status Bar */}
                   <div className={`px-4 py-3 flex items-center gap-2 font-semibold ${testResult.status === 200
-                      ? 'bg-green-100 dark:bg-green-950/50 text-green-800 dark:text-green-300'
-                      : 'bg-red-100 dark:bg-red-950/50 text-red-800 dark:text-red-300'
+                    ? 'bg-green-100 dark:bg-green-950/50 text-green-800 dark:text-green-300'
+                    : 'bg-red-100 dark:bg-red-950/50 text-red-800 dark:text-red-300'
                     }`}>
                     {testResult.status === 200
                       ? <><CheckCircle className="w-4 h-4" /> Thành công (HTTP 200)</>
@@ -1285,7 +1314,7 @@ function ProfileEndpointCard({
         </div>,
         document.body
       )}
-      
+
       {(isActive || isEditing) && isEditing && (
         <div className="px-4 pb-4 border-t border-border bg-card/50 rounded-b-xl animate-in fade-in fill-mode-forwards">
           <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -1523,8 +1552,8 @@ function ProfileEndpointCard({
                                     }));
                                   }}
                                   className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors shrink-0 ${isOverridden
-                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/70'
-                                      : 'bg-background border border-border text-foreground hover:bg-muted font-medium'
+                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/70'
+                                    : 'bg-background border border-border text-foreground hover:bg-muted font-medium'
                                     }`}
                                 >
                                   {isOverridden ? 'Bỏ Custom Prompt' : 'Tùy chỉnh Prompt'}
