@@ -63,7 +63,16 @@ export async function runEndpoint(
 ): Promise<NextResponse> {
   const correlationId = req.headers.get('x-correlation-id') || crypto.randomUUID();
   const logger = new Logger({ correlationId, service: serviceSlug });
-  logger.info(`[API_REQUEST_STARTED] Incoming request to /v1/${serviceSlug}`);
+  const startedAt = Date.now();
+  logger.info(`[REQUEST] Incoming /v1/${serviceSlug}`, {
+    method: req.method,
+    url: req.url,
+    apiKeyId: req.headers.get('x-api-key-id') ?? undefined,
+    userId: req.headers.get('x-user-id') ?? undefined,
+    userAgent: req.headers.get('user-agent') ?? undefined,
+    idempotencyKey: req.headers.get('idempotency-key') ?? undefined,
+    sync: new URL(req.url).searchParams.get('sync') === 'true',
+  });
 
   try {
     // ── 1. Lookup service definition ────────────────────────────────────────
@@ -93,6 +102,16 @@ export async function runEndpoint(
 
     // ── 3. Normalize files (optional — endpoints may work without files) ─────
     const files = normalizeFiles(form);
+
+    // ── 3b. Log request details after parsing form ───────────────────────────
+    logger.info(`[REQUEST_PARSED] ${service.displayName} / ${subCase.displayName}`, {
+      endpointSlug: discriminatorValue && discriminatorValue !== '_default'
+        ? `${serviceSlug}:${discriminatorValue}`
+        : serviceSlug,
+      fileCount: files.length,
+      fileNames: files.map(f => `${f.name} (${(f.size / 1024).toFixed(1)} KB)`),
+      formKeys: Array.from(form.keys()).filter(k => !['files[]', 'file', 'source_file', 'target_file'].includes(k)),
+    });
 
     // ── 4. (Deprecated) Block profileOnlyParams - moved to step 7 ────────────
 
@@ -230,16 +249,31 @@ export async function runEndpoint(
     });
 
     if (!result.ok) {
-      logger.warn(`Pipeline submission rejected: ${JSON.stringify(result.errorResponse)}`);
+      const latencyMs = Date.now() - startedAt;
+      logger.warn(`[RESPONSE] Pipeline rejected`, {
+        latencyMs,
+        error: JSON.stringify(result.errorResponse),
+      });
       return result.errorResponse;
     }
 
     const isSyncOrIdempotent = result.isIdempotent || executeSync;
-    
-    logger.info(`[API_REQUEST_COMPLETED] Endpoint completed successfully`);
+    const httpStatus = isSyncOrIdempotent ? 200 : 202;
+    const latencyMs = Date.now() - startedAt;
+
+    logger.info(`[RESPONSE] ${httpStatus} ${isSyncOrIdempotent ? (result.isIdempotent ? 'IDEMPOTENT_HIT' : 'SYNC') : 'ASYNC'}`, {
+      operationId: result.operation.id,
+      httpStatus,
+      latencyMs,
+      fileCount: files.length,
+      pipelineSteps: pipeline.length,
+      outputFormat,
+      isIdempotent: result.isIdempotent,
+      executeSync,
+    });
 
     return NextResponse.json(formatOperationResponse(result.operation), {
-      status: isSyncOrIdempotent ? 200 : 202,
+      status: httpStatus,
       headers: isSyncOrIdempotent
         ? {}
         : { 'Operation-Location': `/api/v1/operations/${result.operation.id}` },
@@ -247,8 +281,9 @@ export async function runEndpoint(
 
 
   } catch (error: unknown) {
+    const latencyMs = Date.now() - startedAt;
     const msg = error instanceof Error ? error.message : String(error);
-    logger.error(`[runEndpoint:${serviceSlug}] failed`, undefined, error);
+    logger.error(`[RESPONSE] 500 Internal Error`, { latencyMs }, error);
     return apiError(500, 'Internal Error', msg, 'https://dugate.vn/errors/internal');
   }
 }
