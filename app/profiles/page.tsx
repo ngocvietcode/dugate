@@ -32,6 +32,7 @@ function OverridesContent() {
 
   // Data State
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [allConnectors, setAllConnectors] = useState<{ id: string; slug: string; name: string; defaultPrompt?: string }[]>([]);
 
   // Selection State
   const [selectedClientId, setSelectedClientId] = useState<string>('');
@@ -195,6 +196,11 @@ function OverridesContent() {
 
   useEffect(() => {
     fetchData();
+    // Fetch connectors once at page level — shared by all ProfileEndpointCard children
+    fetch('/api/internal/ext-connections')
+      .then(r => r.json())
+      .then(data => { if (data.connections) setAllConnectors(data.connections); })
+      .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchProfileEndpoints = async (clientId: string) => {
@@ -536,6 +542,7 @@ function OverridesContent() {
                       slug={slug}
                       eps={eps as any[]}
                       apiKeyId={selectedClientId}
+                      allConnectors={allConnectors}
                       onUpdated={() => fetchProfileEndpoints(selectedClientId)}
                     />
                   ))}
@@ -603,7 +610,13 @@ function OverridesContent() {
 
 // ─── EndpointGroup ─────────────────────────────────────────────────────────────
 
-function EndpointGroup({ slug, eps, apiKeyId, onUpdated }: { slug: string, eps: any[], apiKeyId: string, onUpdated: () => void }) {
+function EndpointGroup({ slug, eps, apiKeyId, allConnectors, onUpdated }: {
+  slug: string;
+  eps: any[];
+  apiKeyId: string;
+  allConnectors: { id: string; slug: string; name: string; defaultPrompt?: string }[];
+  onUpdated: () => void;
+}) {
   const [isExpanded, setIsExpanded] = useState(true);
   const enabledCount = eps.filter(ep => ep.enabled).length;
 
@@ -632,6 +645,7 @@ function EndpointGroup({ slug, eps, apiKeyId, onUpdated }: { slug: string, eps: 
                 key={ep.slug}
                 endpoint={ep}
                 apiKeyId={apiKeyId}
+                allConnectors={allConnectors}
                 onUpdated={onUpdated}
               />
             ))}
@@ -647,10 +661,12 @@ function EndpointGroup({ slug, eps, apiKeyId, onUpdated }: { slug: string, eps: 
 function ProfileEndpointCard({
   endpoint,
   apiKeyId,
+  allConnectors,
   onUpdated,
 }: {
   endpoint: any;
   apiKeyId: string;
+  allConnectors: { id: string; slug: string; name: string; defaultPrompt?: string }[];
   onUpdated: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
@@ -686,8 +702,6 @@ function ProfileEndpointCard({
     }
     return ensureStepIds(raw as ConnStep[]);
   });
-  const [allConnectors, setAllConnectors] = useState<{ id: string; slug: string; name: string; defaultPrompt?: string }[]>([]);
-
   // Test Endpoint Modal State
   const [showTestModal, setShowTestModal] = useState(false);
   const [testFiles, setTestFiles] = useState<File[]>([]);
@@ -715,16 +729,6 @@ function ProfileEndpointCard({
       setConnectionsOverride(ensureStepIds(rawOver as ConnStep[]));
     }
   }, [endpoint, apiKeyId]);
-
-  // Fetch all available connectors for the override dropdown
-  useEffect(() => {
-    fetch('/api/internal/ext-connections')
-      .then(r => r.json())
-      .then(data => {
-        if (data.connections) setAllConnectors(data.connections);
-      })
-      .catch(() => { });
-  }, []);
 
   const moveConnection = (idx: number, dir: 1 | -1) => {
     const defaults = (endpoint.connections || []).map((s: string) => ({ slug: s }));
