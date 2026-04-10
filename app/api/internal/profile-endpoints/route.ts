@@ -27,10 +27,21 @@ export async function GET(req: NextRequest) {
     const enrichedEndpoints = getAllEndpointSlugs().map((endpointDef) => {
       const dbRecord = profileEndpoints.find((p) => p.endpointSlug === endpointDef.slug);
 
-      const dbConnectionsOverride = dbRecord?.connectionsOverride ? JSON.parse(dbRecord.connectionsOverride as string) : null;
-      const activeConnections = (dbConnectionsOverride && dbConnectionsOverride.length > 0) ? dbConnectionsOverride : endpointDef.connections;
+      const dbConnectionsOverride = dbRecord?.connectionsOverride
+        ? JSON.parse(dbRecord.connectionsOverride as string)
+        : null;
+
+      // Normalize override: support cả format cũ (string[]) và format mới (ConnStep[])
+      // Mỗi phần tử có thể là string hoặc { slug: string, captureSession?, injectSession? }
+      const toSlug = (item: string | { slug: string }) =>
+        typeof item === 'string' ? item : item.slug;
+
+      const activeSlugs: string[] =
+        dbConnectionsOverride && dbConnectionsOverride.length > 0
+          ? (dbConnectionsOverride as Array<string | { slug: string }>).map(toSlug)
+          : endpointDef.connections;
       
-      const extConnections = activeConnections.map((connSlug: string) => {
+      const extConnections = activeSlugs.map((connSlug: string) => {
         const conn = allExtConnections.find((c) => c.slug === connSlug);
         if (!conn) return null;
         const override = allExtOverrides.find((o) => o.connectionId === conn.id && o.endpointSlug === endpointDef.slug);
