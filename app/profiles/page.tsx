@@ -742,8 +742,11 @@ function ProfileEndpointCard({
   };
 
   const updateStepSession = (idx: number, field: 'captureSession' | 'injectSession', value: string) => {
-    if (!connectionsOverride) return;
-    setConnectionsOverride(prev => prev!.map((s, i) =>
+    // Nếu chưa có override, tự động khởi tạo từ default connections
+    // Việc sửa session field sẽ tự động promote thành override mode
+    const defaults = (endpoint.connections || []).map((s: string) => ({ slug: s }));
+    const baseList = connectionsOverride ?? defaults;
+    setConnectionsOverride(baseList.map((s: ConnStep, i: number) =>
       i === idx ? { ...s, [field]: value || null } : s
     ));
   };
