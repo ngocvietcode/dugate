@@ -686,6 +686,11 @@ function ProfileEndpointCard({
   const [extOverridesState, setExtOverridesState] = useState<Record<string, string | null>>({});
   const [saving, setSaving] = useState(false);
 
+  // Job Priority
+  const [jobPriority, setJobPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>(
+    endpoint.jobPriority ?? 'MEDIUM'
+  );
+
   // Connection Routing Override — format mới: ConnectionStep[]
   interface ConnStep { slug: string; stepId?: string; captureSession?: string | null; injectSession?: string | null; }
 
@@ -778,6 +783,7 @@ function ProfileEndpointCard({
     setTestParams({});
     setShowRaw(false);
     setAddKey('');
+    setJobPriority(endpoint.jobPriority ?? 'MEDIUM');
   }, [apiKeyId]);
 
   // Generate cURL preview
@@ -898,6 +904,7 @@ function ProfileEndpointCard({
           enabled: enabledState,
           parameters: finalParamsObj,
           connectionsOverride: connectionsOverride && connectionsOverride.length > 0 ? connectionsOverride : null,
+          jobPriority,
         }),
       });
 
@@ -1340,6 +1347,34 @@ function ProfileEndpointCard({
       {(isActive || isEditing) && isEditing && (
         <div className="px-4 pb-4 border-t border-border bg-card/50 rounded-b-xl animate-in fade-in fill-mode-forwards">
           <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+            {/* PRIORITY SELECTOR */}
+            <div className="sm:col-span-2 flex items-center justify-between py-3 px-4 bg-muted/30 border border-border rounded-xl mb-2">
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-foreground">Job Priority</span>
+                <span className="text-xs text-muted-foreground mt-0.5">Độ ưu tiên trong BullMQ queue khi endpoint này được gọi</span>
+              </div>
+              <div className="flex gap-1 bg-background p-0.5 rounded-lg border border-border shadow-sm">
+                {(['LOW', 'MEDIUM', 'HIGH'] as const).map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setJobPriority(level)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                      jobPriority === level
+                        ? level === 'HIGH'
+                          ? 'bg-green-500 text-white shadow-sm'
+                          : level === 'LOW'
+                            ? 'bg-slate-400 text-white shadow-sm'
+                            : 'bg-indigo-500 text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {level === 'HIGH' ? '⚡ High' : level === 'LOW' ? '🐢 Low' : '— Medium'}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* CURL PREVIEW SECTION */}
             <div className="sm:col-span-2">

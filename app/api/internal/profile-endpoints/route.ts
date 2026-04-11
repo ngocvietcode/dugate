@@ -69,6 +69,8 @@ export async function GET(req: NextRequest) {
         enabled: dbRecord ? dbRecord.enabled : true,
         parameters: dbRecord?.parameters ? JSON.parse(dbRecord.parameters as string) : null,
         connectionsOverride: dbRecord?.connectionsOverride ? JSON.parse(dbRecord.connectionsOverride as string) : null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        jobPriority: (dbRecord as any)?.jobPriority ?? 'MEDIUM',
         id: dbRecord?.id ?? null,
         extConnections,
       };
@@ -85,7 +87,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { apiKeyId, endpointSlug, enabled, parameters, connectionsOverride } = body;
+    const { apiKeyId, endpointSlug, enabled, parameters, connectionsOverride, jobPriority } = body;
 
     if (!apiKeyId || !endpointSlug) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -101,10 +103,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const VALID_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'];
     const payload = {
       enabled: typeof enabled === 'boolean' ? enabled : true,
       parameters: parameters ? JSON.stringify(parameters) : null,
       connectionsOverride: connectionsOverride ? JSON.stringify(connectionsOverride) : null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(VALID_PRIORITIES.includes(jobPriority) ? { jobPriority } as any : {}),
     };
 
     const record = await prisma.profileEndpoint.upsert({

@@ -1,15 +1,32 @@
 // lib/pipelines/submit.ts
-// Core submit logic: validate connectors, save files, create Operation, fire pipeline async.
+// Core submit logic: validate connectors, save files, create Operation,
+// then enqueue job to BullMQ Worker (async) or wait for result (sync).
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { runPipeline, type PipelineStep } from '@/lib/pipelines/engine';
+import { type PipelineStep } from '@/lib/pipelines/engine';
 import { saveUploadedFile } from '@/lib/upload-helper';
 import { Logger } from '@/lib/logger';
+import {
+  getPipelineQueue,
+  getPipelineQueueEvents,
+  SYNC_TIMEOUT_MS,
+  type PipelineJobData,
+} from '@/lib/queue/pipeline-queue';
 
 const logger = new Logger({ service: 'submit-pipeline' });
 
+// ─── Priority helpers ─────────────────────────────────────────────────────────
+
+/** Map ProfileEndpoint.jobPriority string → BullMQ priority number (lower = higher priority) */
+function resolveBullPriority(jobPriority?: string | null): number {
+  switch (jobPriority) {
+    case 'HIGH':   return 1;
+    case 'LOW':    return 20;
+    default:       return 10; // MEDIUM or undefined
+  }
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -105,6 +122,18 @@ export async function submitPipelineJob(
     }
   }
 
+  // ── 4. Resolve BullMQ job priority from ProfileEndpoint ──────────────────
+  let bullPriority = 10; // default MEDIUM
+  if (apiKeyId && endpointSlug) {
+    const profileEndpoint = await prisma.profileEndpoint.findUnique({
+      where: { apiKeyId_endpointSlug: { apiKeyId, endpointSlug } },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      select: { jobPriority: true } as any,
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    bullPriority = resolveBullPriority((profileEndpoint as any)?.jobPriority);
+  }
+
   // ── 4. Save uploaded files to disk (skip if no files) ──────────────────
   const operationId = crypto.randomUUID();
   const filesData: Array<{ name: string; path: string; mime: string; size: number }> = [];
@@ -142,18 +171,31 @@ export async function submitPipelineJob(
     },
   });
 
-  // ── 7. Execute (Sync or Async) ──────────────────────────────────────────────
+  // ── 7. Enqueue to BullMQ Worker ────────────────────────────────────────────
+  const queue = getPipelineQueue();
+  const jobName = `pipeline:${endpointSlug ?? 'unknown'}`;
+  const jobData: PipelineJobData = { operationId, correlationId };
+
   if (executeSync) {
-    await runPipeline(operationId, correlationId);
-    // Reload operation to get latest state after completion
+    // ── SYNC MODE: enqueue then wait for Worker to finish ──
+    // Does NOT run pipeline in Next.js process — Worker process handles it.
+    // Uses Redis pub/sub via QueueEvents so Next.js event loop is NOT blocked.
+    const job = await queue.add(jobName, jobData, { priority: bullPriority });
+    const queueEvents = getPipelineQueueEvents();
+
+    try {
+      await job.waitUntilFinished(queueEvents, SYNC_TIMEOUT_MS);
+    } catch {
+      // Timeout or job failed — Worker has already updated operation state in DB
+      logger.warn(`[submitPipelineJob] Sync wait timed out or failed for ${operationId}`);
+    }
+
+    // Reload to get the latest state written by Worker
     operation = (await prisma.operation.findUnique({ where: { id: operationId } }))!;
+
   } else {
-    // Fire-and-forget
-    runPipeline(operationId, correlationId).catch((err) => {
-      // Fire-and-forget error: log but do not propagate — caller already received 202
-      // Use console.error here since Logger is not available in this module-level scope
-      logger.error(`[submitPipelineJob] Pipeline fire-and-forget error`, { operationId }, err);
-    });
+    // ── ASYNC MODE: enqueue and return 202 immediately ──
+    await queue.add(jobName, jobData, { priority: bullPriority });
   }
 
   return { ok: true, operation, isIdempotent: false };

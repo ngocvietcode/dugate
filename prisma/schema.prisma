@@ -214,6 +214,10 @@ model ProfileEndpoint {
   // JSON array: ["ext-ocr-premium"] hoặc ["ext-ocr-v2", "ext-fact-verifier"]
   connectionsOverride String? @db.Text
 
+  // BullMQ job priority cho endpoint này (LOW | MEDIUM | HIGH)
+  // Map sang số: HIGH=1, MEDIUM=10, LOW=20
+  jobPriority String @default("MEDIUM")
+
   apiKey ApiKey @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())

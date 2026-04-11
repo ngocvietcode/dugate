@@ -5,6 +5,7 @@
 import { prisma } from '@/lib/prisma';
 import { runExternalApiProcessor } from '@/lib/pipelines/processors/external-api';
 import { Logger } from '@/lib/logger';
+import type { Job } from 'bullmq';
 
 export interface PipelineStep {
   processor: string;  // ExternalApiConnection slug
@@ -57,8 +58,8 @@ export interface ProcessorResult {
 /**
  * Main pipeline runner. Called async after Operation is created.
  */
-export async function runPipeline(operationId: string, correlationId?: string): Promise<void> {
-  const logger = new Logger({ correlationId, operationId });
+export async function runPipeline(operationId: string, correlationId?: string, job?: Job<any>): Promise<void> {
+  const logger = new Logger({ correlationId, operationId }, job);
 
   const operation = await prisma.operation.findUnique({ where: { id: operationId } });
   if (!operation) {
@@ -80,11 +81,39 @@ export async function runPipeline(operationId: string, correlationId?: string): 
     output_format: string;
     content_preview?: string | null;
     extracted_data?: unknown;
+    pipeline_state_snapshot?: Record<string, string>;
   }> = [];
 
   let currentText: string | undefined;
   // Shared mutable state — sống trong 1 pipeline run, truyền session_id giữa các step
   const pipelineState: Record<string, string> = {};
+
+  // ─── Checkpoint/Resume ───────────────────────────────────────────────────────
+  // Nếu đây là BullMQ retry, currentStep trong DB sẽ > 0 → resume từ đó
+  // tránh gọi lại external API đã thành công ở lần chạy trước (tiết kiệm chi phí)
+  const resumeFromStep = operation.currentStep ?? 0;
+
+  if (resumeFromStep > 0 && operation.stepsResultJson) {
+    try {
+      const completedSteps = JSON.parse(operation.stepsResultJson) as typeof stepsResult;
+      // Pre-populate stepsResult với các step đã hoàn thành
+      stepsResult.push(...completedSteps.slice(0, resumeFromStep));
+      // Restore chained text từ output của step cuối đã hoàn thành
+      const lastCompleted = completedSteps[resumeFromStep - 1];
+      if (lastCompleted?.content_preview) {
+        currentText = lastCompleted.content_preview;
+      }
+      // Restore pipelineState (session tokens) từ snapshot
+      if (lastCompleted?.pipeline_state_snapshot) {
+        Object.assign(pipelineState, lastCompleted.pipeline_state_snapshot);
+      }
+      logger.info(`[CHECKPOINT] Resuming from step ${resumeFromStep}/${pipeline.length} (skipping ${resumeFromStep} completed steps)`);
+    } catch {
+      logger.warn(`[CHECKPOINT] Failed to parse stepsResultJson, restarting from step 0`);
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
+
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
   let totalCost = 0;
@@ -98,18 +127,26 @@ export async function runPipeline(operationId: string, correlationId?: string): 
   }> = [];
 
   try {
-    for (let i = 0; i < pipeline.length; i++) {
+    for (let i = resumeFromStep; i < pipeline.length; i++) {
       const step = pipeline[i];
 
-      // Update progress
+      const progressPercent = Math.round((i / pipeline.length) * 100);
+      const progressMessage = `Đang xử lý bước ${i + 1}/${pipeline.length}: ${step.processor}...`;
+
+      // Update progress in DB
       await prisma.operation.update({
         where: { id: operationId },
         data: {
           currentStep: i,
-          progressPercent: Math.round((i / pipeline.length) * 100),
-          progressMessage: `Đang xử lý bước ${i + 1}/${pipeline.length}: ${step.processor}...`,
+          progressPercent,
+          progressMessage,
         },
       });
+
+      // Update progress in BullMQ
+      if (job) {
+        await job.updateProgress(progressPercent);
+      }
 
       const variables = step.variables ?? {};
 
@@ -173,13 +210,14 @@ export async function runPipeline(operationId: string, correlationId?: string): 
         outputTokens: result.outputTokens,
       });
 
-      // Record step result
+      // Record step result (include pipeline_state_snapshot để restore khi retry)
       stepsResult.push({
         step: i,
         processor: ctx.processorSlug,
         output_format: operation.outputFormat,
         content_preview: result.content ? result.content.substring(0, 2000) : null,
         extracted_data: result.extractedData,
+        pipeline_state_snapshot: Object.keys(pipelineState).length > 0 ? { ...pipelineState } : undefined,
       });
 
       // Track usage
@@ -226,6 +264,10 @@ export async function runPipeline(operationId: string, correlationId?: string): 
         usageBreakdown: JSON.stringify(usageBreakdown),
       },
     });
+
+    if (job) {
+      await job.updateProgress(100);
+    }
 
     // Webhook notification
     if (operation.webhookUrl) {
