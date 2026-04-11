@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 2023",
+    "worker:dev": "npx tsx worker.ts",
     "build": "next build",
     "start": "next start -p 2025",
     "lint": "next lint",
@@ -12,11 +13,18 @@
     "test:e2e": "jest --config jest.e2e.config.js"
   },
   "dependencies": {
+    "@bull-board/api": "^6.21.0",
+    "@bull-board/express": "^6.21.0",
+    "@bull-board/hono": "^6.21.0",
     "@google/generative-ai": "^0.24.1",
+    "@hono/node-server": "^1.19.13",
     "@prisma/client": "^5.22.0",
     "@tailwindcss/typography": "^0.5.19",
     "archiver": "^7.0.1",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.73.4",
+    "hono": "^4.12.12",
+    "ioredis": "^5.10.1",
     "lucide-react": "^1.6.0",
     "mammoth": "^1.12.0",
     "multer": "^2.1.1",

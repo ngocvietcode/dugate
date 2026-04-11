@@ -12,11 +12,14 @@ services:
       UPLOAD_DIR: /app/uploads
       OUTPUT_DIR: /app/outputs
       MIGRATION: ${MIGRATION:-true}
+      REDIS_URL: redis://redis:6379
     volumes:
       - uploads:/app/uploads
       - outputs:/app/outputs
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
 
@@ -45,7 +48,38 @@ services:
       MOCK_PORT: 3099
       MOCK_API_KEY: DUMMY_SECRET_KEY
       MOCK_DELAY_MS: 300
+    restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    # Dev: in-memory mode (no persistence). Production: add --appendonly yes + volume
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  worker:
+    build: .                             # Reuse same Dockerfile as Next.js app
+    command: ["npx", "tsx", "worker.ts"] # Override CMD — skips Next.js server
+    environment:
+      DATABASE_URL: postgresql://dugate:${DB_PASSWORD}@db:5432/dugate
+      REDIS_URL: redis://redis:6379
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      UPLOAD_DIR: /app/uploads
+      OUTPUT_DIR: /app/outputs
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+    volumes:
+      - uploads:/app/uploads
+      - outputs:/app/outputs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

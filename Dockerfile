@@ -44,6 +44,12 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
+# BullMQ Worker dependencies — copy full node_modules and tsconfig to resolve aliases natively
+COPY --from=builder /app/worker.ts ./worker.ts
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/lib ./lib
+COPY --from=builder /app/node_modules ./node_modules
+
 RUN mkdir -p uploads outputs
 
 EXPOSE 2023

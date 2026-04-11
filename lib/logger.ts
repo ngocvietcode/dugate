@@ -2,6 +2,8 @@
 // Enterprise structured logger for high-audit banking environments.
 // Outputs JSON logs or formatted text depending on environment.
 
+import type { Job } from 'bullmq';
+
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
 export interface LogContext {
@@ -14,6 +16,7 @@ export interface LogContext {
 
 export class Logger {
   private baseContext: LogContext;
+  private job?: Job<any, any, any>;
   private minLevel: LogLevel;
   private isJson: boolean;
 
@@ -27,8 +30,9 @@ export class Logger {
   /**
    * Initializes a logger with a given base context.
    */
-  constructor(context: LogContext = {}) {
+  constructor(context: LogContext = {}, job?: Job<any, any, any>) {
     this.baseContext = context;
+    this.job = job;
     
     // Set min level from env, default to INFO
     const envLevel = (process.env.LOG_LEVEL || 'INFO').toUpperCase() as LogLevel;
@@ -42,7 +46,7 @@ export class Logger {
    * Creates a child logger inheriting current context.
    */
   public child(extraContext: LogContext): Logger {
-    return new Logger({ ...this.baseContext, ...extraContext });
+    return new Logger({ ...this.baseContext, ...extraContext }, this.job);
   }
 
   private shouldLog(level: LogLevel): boolean {
@@ -98,6 +102,16 @@ export class Logger {
       } else {
         console.log(output);
       }
+    }
+
+    // Forward to BullMQ job dashboard if available
+    if (this.job) {
+      // Create a clean readable log string for the dashboard
+      const dashboardStr = meta || error 
+        ? `${message} | ${JSON.stringify({ ...meta, error: error ? String(error) : undefined })}`
+        : message;
+      // Fire and forget
+      this.job.log(`[${level}] ${dashboardStr}`).catch(() => {});
     }
   }
 
