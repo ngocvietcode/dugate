@@ -11,7 +11,9 @@ import {
   type WorkflowContext,
   enqueueSubStep,
   updateProgress,
+  pauseWorkflow,
   completeWorkflow,
+  parseDeep,
   prisma,
 } from '@/lib/pipelines/workflow-engine';
 
@@ -47,39 +49,7 @@ function stepProgress(stepIdx: number, phase: 'start' | 'end'): number {
   return phase === 'start' ? range[0] : range[1];
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const parseDeep = (val: any): any => {
-  if (typeof val === 'string') {
-    const trimmed = val.trim();
-    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        return parseDeep(parsed); // Recursive call to unpack multiple layers
-      } catch (e) {
-        return val;
-      }
-    }
-    return val;
-  }
-  
-  if (val && typeof val === 'object') {
-    if (Array.isArray(val)) {
-      return val.map(parseDeep);
-    }
-    const out: any = {};
-    for (const key in val) {
-      out[key] = parseDeep(val[key]);
-    }
-    return out;
-  }
-  
-  return val;
-};
-
 // ─── Main Workflow ────────────────────────────────────────────────────────────
-
-import { pauseWorkflow } from '@/lib/pipelines/workflow-engine';
 
 export async function runDisbursement(ctx: WorkflowContext): Promise<void> {
   const { logger, filesData, pipelineVars } = ctx;
@@ -232,11 +202,7 @@ export async function runDisbursement(ctx: WorkflowContext): Promise<void> {
 
     let crosscheckData: CrosscheckResult = {};
     if (step3.content) {
-      try {
-        crosscheckData = JSON.parse(step3.content) as CrosscheckResult;
-      } catch (err) {
-        logger.warn(`[WORKFLOW] Failed to parse crosscheck result JSON`, undefined, err);
-      }
+      crosscheckData = parseDeep(step3.content) as CrosscheckResult;
     }
 
     ctx.stepsResult.push({
@@ -258,12 +224,8 @@ export async function runDisbursement(ctx: WorkflowContext): Promise<void> {
     logger.info(`[WORKFLOW] Step 4/${TOTAL_STEPS}: Generate report`);
     await updateProgress(ctx, stepProgress(3, 'start'), `Bước 4/${TOTAL_STEPS}: Đang soạn Tờ trình...`);
 
-    // Load crosscheck data from stepsResult if we resumed at step 3 directly (edge case)
-    if (resumeFromStep === 3) {
-       finalCrosscheckData = (ctx.stepsResult.find(s => s.step === 2)?.extracted_data as CrosscheckResult) || {};
-    } else {
-       finalCrosscheckData = (ctx.stepsResult[ctx.stepsResult.length - 1]?.extracted_data as CrosscheckResult) || {};
-    }
+    // Always load crosscheck data from its specific step index for safety.
+    finalCrosscheckData = (ctx.stepsResult.find(s => s.step === 2)?.extracted_data as CrosscheckResult) || {};
 
     const step4 = await enqueueSubStep(ctx, 'ext-content-gen', buildReportPrompt(mergedClassifyData, extractionResults, finalCrosscheckData, ctx.promptOverrides.report), null);
 

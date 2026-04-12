@@ -32,9 +32,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: `Operation is in state ${operation.state}, cannot resume. Must be WAITING_USER_INPUT.` }, { status: 400 });
     }
 
-    // Update stepsResult if human edit data is provided
+    // Update stepsResult if human edit data is provided.
+    // Note: Check body.step !== undefined (not just `body.step`) to handle step index 0 correctly.
     let stepsResult = operation.stepsResultJson ? JSON.parse(operation.stepsResultJson) : [];
-    if (body.step && body.extracted_data !== undefined) {
+    if (body.step !== undefined && body.step !== null && 'extracted_data' in body) {
       // Find the specific step to update
       const stepIndex = stepsResult.findIndex((s: any) => s.step === body.step);
       if (stepIndex >= 0) {

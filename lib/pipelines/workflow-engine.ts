@@ -24,7 +24,7 @@ export interface WorkflowStepResult {
   stepName: string;
   processor: string;
   sub_operation_id?: string;
-  content_preview?: string | null;
+  content_preview?: unknown;    // Can be string, object, or null
   extracted_data?: unknown;
   sub_results?: unknown[];
 }
@@ -58,6 +58,42 @@ export interface WorkflowContext {
 }
 
 // ─── Helpers (exported for workflow files) ─────────────────────────────────────
+
+/**
+ * Recursively parse all nested JSON strings in a value into native objects.
+ * Eliminates the "double-escaped JSON" problem from AI connector responses.
+ * Safe to use on strings, objects, and arrays.
+ */
+export const parseDeep = (val: unknown): unknown => {
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (
+      (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))
+    ) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return parseDeep(parsed); // Recursive call to unpack multiple layers
+      } catch {
+        return val;
+      }
+    }
+    return val;
+  }
+
+  if (val && typeof val === 'object') {
+    if (Array.isArray(val)) {
+      return val.map(parseDeep);
+    }
+    const out: Record<string, unknown> = {};
+    for (const key in val as Record<string, unknown>) {
+      out[key] = parseDeep((val as Record<string, unknown>)[key]);
+    }
+    return out;
+  }
+
+  return val;
+};
 
 /**
  * Enqueue a sub-step as a proper BullMQ job.
@@ -222,7 +258,7 @@ async function sendWebhook(ctx: WorkflowContext, state: 'SUCCEEDED' | 'FAILED', 
   const payload: Record<string, unknown> = {
     operation_id: ctx.operationId,
     state,
-    done: true,
+    done: state === 'SUCCEEDED' || state === 'FAILED', // PAUSED is not done
   };
   if (errorMessage) payload.error = errorMessage;
 
