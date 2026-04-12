@@ -42,7 +42,7 @@ export function ParallelFileGrid({ filesProgress }: ParallelFileGridProps) {
             {fp.output && (
               <div className="px-4 py-3 bg-black/5 dark:bg-white/5 max-h-[200px] overflow-y-auto">
                 <pre className="text-xs font-mono leading-relaxed text-foreground/80 whitespace-pre-wrap break-all">
-                  {fp.output}
+                  {typeof fp.output === 'object' ? JSON.stringify(fp.output, null, 2) : fp.output}
                 </pre>
               </div>
             )}

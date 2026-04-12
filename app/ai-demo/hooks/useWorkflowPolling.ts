@@ -9,6 +9,7 @@ interface UseWorkflowPollingOptions {
   onComplete: () => void;
   onError: (stepIdx: number, message: string) => void;
   onProgress: (stepIdx: number, percent: number) => void;
+  onWaitingForInput?: (stepIdx: number, stepData?: any) => void;
 }
 
 export function useWorkflowPolling(options: UseWorkflowPollingOptions) {
@@ -66,8 +67,14 @@ export function useWorkflowPolling(options: UseWorkflowPollingOptions) {
     const opId = data.name?.replace('operations/', '') || data.id;
     if (!opId) throw new Error('No operation ID returned');
 
+    startPolling(opId);
+    return opId;
+  }, [options, stopPolling]);
+
+  const startPolling = useCallback((opId: string) => {
     setOperationId(opId);
     setIsPolling(true);
+    stopPolling();
 
     // Start polling
     pollIntervalRef.current = setInterval(async () => {
@@ -79,6 +86,7 @@ export function useWorkflowPolling(options: UseWorkflowPollingOptions) {
         const stepsRes: any[] = opData.metadata?.pipeline_steps || opData.result?.pipeline_steps || [];
         const isDone = opData.done === true;
         const hasFailed = opData.metadata?.state === 'FAILED';
+        const isWaiting = opData.metadata?.state === 'WAITING_USER_INPUT';
 
         // Reveal new steps as they come in
         if (stepsRes.length > revealedCountRef.current) {
@@ -90,12 +98,12 @@ export function useWorkflowPolling(options: UseWorkflowPollingOptions) {
         }
 
         // Update progress for currently running step
-        if (!isDone && !hasFailed && revealedCountRef.current < 4) {
+        if (!isDone && !hasFailed && !isWaiting && revealedCountRef.current < 4) {
           const pct = Math.max(15, (opData.metadata?.progress_percent ?? 0) - revealedCountRef.current * 25);
           options.onProgress(revealedCountRef.current, pct);
         }
 
-        if (isDone || hasFailed) {
+        if (isDone || hasFailed || isWaiting) {
           stopPolling();
 
           if (hasFailed) {
@@ -103,6 +111,10 @@ export function useWorkflowPolling(options: UseWorkflowPollingOptions) {
             const errorMsg = opData.error?.message || 'Pipeline failed';
             options.onError(failedIdx, errorMsg);
             setApiError(errorMsg);
+          } else if (isWaiting) {
+            // Signal UI to show Editor form
+            const currentStepData = stepsRes[revealedCountRef.current - 1];
+            options.onWaitingForInput?.(revealedCountRef.current - 1, currentStepData);
           } else {
             options.onComplete();
           }
@@ -111,8 +123,6 @@ export function useWorkflowPolling(options: UseWorkflowPollingOptions) {
         console.error('Polling error:', pollErr);
       }
     }, 1500);
-
-    return opId;
   }, [options, stopPolling]);
 
   return {
@@ -120,6 +130,7 @@ export function useWorkflowPolling(options: UseWorkflowPollingOptions) {
     isPolling,
     apiError,
     submitWorkflow,
+    startPolling,
     stopPolling,
     clearError: () => setApiError(null),
   };

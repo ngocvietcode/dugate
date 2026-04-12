@@ -53,6 +53,8 @@ export interface WorkflowContext {
   apiKeyId: string | null;
   /** Per-step prompt overrides loaded from ProfileEndpoint (key = step name, value = prompt text) */
   promptOverrides: Record<string, string>;
+  /** Checkpoint: current step index (used for resume) */
+  currentStep: number;
 }
 
 // ─── Helpers (exported for workflow files) ─────────────────────────────────────
@@ -163,6 +165,30 @@ export async function completeWorkflow(ctx: WorkflowContext, outputContent: stri
 
   // Send webhook notification (parity with engine.ts)
   await sendWebhook(ctx, 'SUCCEEDED');
+}
+
+/** Mark parent operation as WAITING_USER_INPUT (Paused for Human-in-the-Loop) */
+export async function pauseWorkflow(ctx: WorkflowContext, message: string, currentStep: number) {
+  await prisma.operation.update({
+    where: { id: ctx.operationId },
+    data: {
+      done: false,
+      state: 'WAITING_USER_INPUT',
+      progressMessage: message,
+      currentStep, // Save Checkpoint index to resume from there
+      stepsResultJson: JSON.stringify(ctx.stepsResult),
+      
+      // Track usage accumulated so far
+      totalInputTokens: ctx.totalInputTokens,
+      totalOutputTokens: ctx.totalOutputTokens,
+      totalCostUsd: ctx.totalCost,
+    },
+  });
+  // Note: We don't set progressPercent to 100 here since it's waiting
+  ctx.logger.info(`[WORKFLOW] Paused at step ${currentStep} for ${ctx.operationId}: ${message}`);
+
+  // Send a webhook indicating PAUSED state if configured
+  await sendWebhook(ctx, 'PAUSED' as any, message);
 }
 
 /** Mark parent operation as FAILED + send webhook if configured */
@@ -284,13 +310,14 @@ export async function createWorkflowContext(
     filesJson: operation.filesJson,
     filesData,
     pipelineVars,
-    stepsResult: [],
-    totalInputTokens: 0,
-    totalOutputTokens: 0,
-    totalCost: 0,
+    stepsResult: operation.stepsResultJson ? JSON.parse(operation.stepsResultJson) : [],
+    totalInputTokens: operation.totalInputTokens || 0,
+    totalOutputTokens: operation.totalOutputTokens || 0,
+    totalCost: operation.totalCostUsd || 0,
     webhookUrl: operation.webhookUrl,
     apiKeyId: operation.apiKeyId,
     promptOverrides,
+    currentStep: operation.currentStep,
   };
 }
 

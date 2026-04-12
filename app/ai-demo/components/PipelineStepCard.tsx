@@ -171,7 +171,7 @@ export const PipelineStepCard = React.forwardRef<HTMLDivElement, PipelineStepCar
                   </div>
                 ) : (
                   <pre className="text-xs font-mono leading-relaxed text-foreground whitespace-pre-wrap break-all">
-                    {step.output}
+                    {typeof step.output === 'object' ? JSON.stringify(step.output, null, 2) : step.output}
                   </pre>
                 )}
               </div>
