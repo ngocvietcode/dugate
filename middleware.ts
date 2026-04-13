@@ -97,10 +97,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next({
         request: { headers: requestHeaders },
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('[Middleware] Internal Auth Check error:', e);
       return NextResponse.json(
-        { error: 'Internal Auth Service Error', details: e?.message || String(e) },
+        { error: 'Internal Auth Service Error' },
         { status: 500 }
       );
     }

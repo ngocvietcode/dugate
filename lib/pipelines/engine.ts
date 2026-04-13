@@ -67,11 +67,38 @@ export async function runPipeline(operationId: string, correlationId?: string, j
     return;
   }
 
-  const pipeline: PipelineStep[] = JSON.parse(operation.pipelineJson);
+  let pipeline: PipelineStep[] = [];
+  let filesData: Array<{ name: string; path: string; mime: string; size: number }> = [];
+  try {
+    const parsedPipeline = JSON.parse(operation.pipelineJson) as unknown;
+    if (!Array.isArray(parsedPipeline)) {
+      throw new Error('pipelineJson is not an array');
+    }
+    pipeline = parsedPipeline as PipelineStep[];
+
+    const parsedFiles = operation.filesJson ? JSON.parse(operation.filesJson) as unknown : [];
+    if (!Array.isArray(parsedFiles)) {
+      throw new Error('filesJson is not an array');
+    }
+    filesData = parsedFiles as Array<{ name: string; path: string; mime: string; size: number }>;
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    logger.error(`[PIPELINE_FAILED] Invalid operation JSON for ${operationId}: ${msg}`, undefined, error);
+    await prisma.operation.update({
+      where: { id: operationId },
+      data: {
+        done: true,
+        state: 'FAILED',
+        failedAtStep: 0,
+        errorCode: 'PIPELINE_INVALID_JSON',
+        errorMessage: `Invalid pipeline payload: ${msg}`,
+        stepsResultJson: JSON.stringify([]),
+      },
+    });
+    return;
+  }
 
   // Parse filesJson → filePaths / fileNames
-  const filesData: Array<{ name: string; path: string; mime: string; size: number }> =
-    operation.filesJson ? JSON.parse(operation.filesJson) : [];
   const filePaths = filesData.map((f) => f.path?.replace(/\\/g, '/'));
   const fileNames = filesData.map((f) => f.name);
 

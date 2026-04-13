@@ -81,13 +81,23 @@ export async function runExternalApiProcessor(
   }
 
   if (ctx.filePaths.length > 0) {
+    const openAsBlob = (fs as unknown as {
+      openAsBlob?: (path: string, options?: { type?: string }) => Promise<Blob>;
+    }).openAsBlob;
+
     for (let i = 0; i < ctx.filePaths.length; i++) {
       const filePath = ctx.filePaths[i];
       const fileName = ctx.fileNames[i] ?? `file_${i}`;
       try {
-        const fileBuffer = await fs.readFile(filePath);
-        formData.append(connection.fileFieldName, new Blob([fileBuffer]), fileName);
-        ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBuffer.length} bytes)`);
+        if (openAsBlob) {
+          const fileBlob = await openAsBlob(filePath);
+          formData.append(connection.fileFieldName, fileBlob, fileName);
+          ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBlob.size} bytes)`);
+        } else {
+          const fileBuffer = await fs.readFile(filePath);
+          formData.append(connection.fileFieldName, new Blob([fileBuffer]), fileName);
+          ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBuffer.length} bytes)`);
+        }
       } catch (e) {
         ctx.logger.warn(`Could not read file '${filePath}'`, undefined, e);
       }
