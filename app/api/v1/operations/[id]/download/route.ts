@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import path from 'path';
 import fs from 'fs/promises';
+import { createReadStream } from 'fs';
+import { Readable } from 'stream';
 
 export async function GET(
   req: NextRequest,
@@ -55,14 +57,26 @@ export async function GET(
   // If we have an output file path, stream it
   if (op.outputFilePath) {
     try {
-      const buffer = await fs.readFile(op.outputFilePath);
-      const ext = path.extname(op.outputFilePath).slice(1);
-      const contentType = ext === 'html' ? 'text/html' : ext === 'json' ? 'application/json' : 'text/markdown';
+      const outputBaseDir = path.resolve(process.env.OUTPUT_DIR ?? './outputs');
+      const resolvedOutputPath = path.resolve(op.outputFilePath);
+      const relativePath = path.relative(outputBaseDir, resolvedOutputPath);
+      if (relativePath === '' || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+        return NextResponse.json(
+          { type: 'https://dugate.vn/errors/forbidden', title: 'Forbidden', status: 403, detail: 'Invalid output file path.' },
+          { status: 403 }
+        );
+      }
 
-      return new NextResponse(buffer, {
+      const stat = await fs.stat(resolvedOutputPath);
+      const ext = path.extname(resolvedOutputPath).slice(1);
+      const contentType = ext === 'html' ? 'text/html' : ext === 'json' ? 'application/json' : 'text/markdown';
+      const stream = Readable.toWeb(createReadStream(resolvedOutputPath)) as ReadableStream<Uint8Array>;
+
+      return new NextResponse(stream, {
         headers: {
           'Content-Type': `${contentType}; charset=utf-8`,
-          'Content-Disposition': `attachment; filename="${path.basename(op.outputFilePath)}"`,
+          'Content-Length': String(stat.size),
+          'Content-Disposition': `attachment; filename="${path.basename(resolvedOutputPath)}"`,
         },
       });
     } catch {

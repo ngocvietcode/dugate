@@ -3,9 +3,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { formatOperationResponse } from '@/lib/pipelines/format';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { extractPipelineProcessors } from '@/lib/pipelines/validate';
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -34,9 +34,36 @@ export async function GET(req: NextRequest) {
     where,
     orderBy: { createdAt: 'desc' },
     take: pageSize,
+    select: {
+      id: true,
+      done: true,
+      state: true,
+      currentStep: true,
+      progressPercent: true,
+      progressMessage: true,
+      createdAt: true,
+      updatedAt: true,
+      pipelineJson: true,
+    },
   });
 
   return NextResponse.json({
-    operations: operations.map(formatOperationResponse),
+    operations: operations.map((op) => {
+      const pipeline = extractPipelineProcessors(op.pipelineJson);
+
+      return {
+        name: `operations/${op.id}`,
+        done: op.done,
+        metadata: {
+          state: op.state,
+          pipeline,
+          current_step: op.currentStep,
+          progress_percent: op.progressPercent,
+          progress_message: op.progressMessage,
+          create_time: op.createdAt,
+          update_time: op.updatedAt,
+        },
+      };
+    }),
   });
 }

@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { type PipelineStep } from '@/lib/pipelines/engine';
 import { saveUploadedFile } from '@/lib/upload-helper';
+import { downloadAllFileUrls, type FileUrlEntry, type FileUrlAuthConfig } from '@/lib/file-url-downloader';
 import { Logger } from '@/lib/logger';
 import {
   getPipelineQueue,
@@ -33,6 +34,9 @@ function resolveBullPriority(jobPriority?: string | null): number {
 export interface SubmitPipelineParams {
   pipeline: PipelineStep[];
   files?: File[];             // Optional: 1 or many files (some endpoints work text-only)
+  fileUrls?: FileUrlEntry[];  // Optional: remote file URLs to download and process
+  fileUrlAuthConfig?: FileUrlAuthConfig; // Optional: auth config for downloading file URLs
+  allowedFileExtensions?: string; // Optional: overridden allowed file extensions from profile
   endpointSlug?: string;      // "extract:invoice", "analyze:fact-check", etc.
   outputFormat?: string;
   webhookUrl?: string | null;
@@ -57,6 +61,9 @@ export async function submitPipelineJob(
   const {
     pipeline,
     files,
+    fileUrls,
+    fileUrlAuthConfig,
+    allowedFileExtensions,
     endpointSlug,
     outputFormat = 'json',
     webhookUrl,
@@ -163,7 +170,7 @@ export async function submitPipelineJob(
   const filesData: Array<{ name: string; path: string; mime: string; size: number }> = [];
 
   for (const file of (files ?? [])) {
-    const saved = await saveUploadedFile(file, operationId);
+    const saved = await saveUploadedFile(file, operationId, undefined, allowedFileExtensions);
     filesData.push({
       name: file.name,
       path: saved.path,
@@ -172,28 +179,67 @@ export async function submitPipelineJob(
     });
   }
 
+  // ── 4b. Download file_urls ──────────────────────────────────────────────
+  // In sync mode: download now (client is waiting anyway).
+  // In async mode: defer downloads to the worker (return 202 immediately).
+  const hasPendingFileUrls = fileUrls && fileUrls.length > 0;
+  if (hasPendingFileUrls && executeSync) {
+    try {
+      const downloaded = await downloadAllFileUrls(fileUrls, operationId, fileUrlAuthConfig, allowedFileExtensions);
+      filesData.push(...downloaded);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        ok: false,
+        errorResponse: NextResponse.json(
+          { type: 'https://dugate.vn/errors/file-url-download-failed', title: 'File URL Download Failed', status: 422, detail: msg },
+          { status: 422 },
+        ),
+      };
+    }
+  }
+
   // ── 6. Create Operation in DB ─────────────────────────────────────────────
   // When DISABLE_HISTORY=true, soft-delete immediately so it won't appear in history queries
   const disableHistory = params.disableHistory ?? (process.env.DISABLE_HISTORY === 'true');
 
-  let operation = await prisma.operation.create({
-    data: {
-      id:              operationId,
-      apiKeyId:        apiKeyId || null,
-      createdByUserId: userId || null,
-      idempotencyKey:  idempotencyKey || null,
-      endpointSlug:    endpointSlug || null,
-      pipelineJson:    JSON.stringify(pipeline),
-      filesJson:       filesData.length > 0 ? JSON.stringify(filesData) : null,
-      outputFormat,
-      webhookUrl:      webhookUrl ?? null,
-      state:           'RUNNING',
-      done:            false,
-      progressPercent: 0,
-      progressMessage: 'Initializing pipeline...',
-      deletedAt:       disableHistory ? new Date() : null,
-    },
-  });
+  let operation: any;
+  try {
+    operation = await prisma.operation.create({
+      data: {
+        id:              operationId,
+        apiKeyId:        apiKeyId || null,
+        createdByUserId: userId || null,
+        idempotencyKey:  idempotencyKey || null,
+        endpointSlug:    endpointSlug || null,
+        pipelineJson:    JSON.stringify(pipeline),
+        filesJson:       filesData.length > 0 ? JSON.stringify(filesData) : null,
+        outputFormat,
+        webhookUrl:      webhookUrl ?? null,
+        state:           'RUNNING',
+        done:            false,
+        progressPercent: 0,
+        progressMessage: 'Initializing pipeline...',
+        deletedAt:       disableHistory ? new Date() : null,
+      },
+    });
+  } catch (createErr: unknown) {
+    // Handle idempotency race: two concurrent requests with the same key may both pass the
+    // findUnique check above, but the DB unique constraint ensures only one succeeds.
+    // The loser gets a unique constraint violation — resolve it by returning the winner's record.
+    const isUniqueViolation =
+      createErr instanceof Error &&
+      'code' in createErr &&
+      (createErr as { code?: string }).code === 'P2002';
+
+    if (isUniqueViolation && idempotencyKey) {
+      const existing = await prisma.operation.findUnique({ where: { idempotencyKey } });
+      if (existing) {
+        return { ok: true, operation: existing, isIdempotent: true };
+      }
+    }
+    throw createErr;
+  }
 
   // ── 7. Enqueue to BullMQ Worker ────────────────────────────────────────────
   const queue = getPipelineQueue();
@@ -203,6 +249,12 @@ export async function submitPipelineJob(
     operationId,
     correlationId,
     type: isWorkflowJob ? 'workflow' : 'pipeline',
+    // Deferred file_urls for async mode — worker will download before running pipeline
+    ...(hasPendingFileUrls && !executeSync ? {
+      pendingFileUrls: fileUrls,
+      pendingFileUrlAuthConfig: fileUrlAuthConfig,
+      pendingAllowedFileExtensions: allowedFileExtensions,
+    } : {}),
   };
 
   // Backpressure: reject new jobs when queue is too deep to avoid unbounded growth

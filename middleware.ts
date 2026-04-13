@@ -4,7 +4,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { checkRateLimit, RATE_LIMIT_API_KEY, RATE_LIMIT_IP } from '@/lib/rate-limit';
 
 // Paths that bypass ALL middleware checks (no auth required)
 const BYPASS_PREFIXES = [
@@ -49,25 +48,8 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Rate limit by API key (if provided) or by IP (unauthenticated)
+    // Retrieve IP for rate limiting on the internal auth backend
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
-    const rateLimitKey = passedKey
-      ? `ratelimit:apikey:${passedKey.slice(0, 16)}`
-      : `ratelimit:ip:${ip}`;
-    const rateLimitMax = passedKey ? RATE_LIMIT_API_KEY : RATE_LIMIT_IP;
-    const rl = await checkRateLimit(rateLimitKey, rateLimitMax);
-    if (!rl.allowed) {
-      return NextResponse.json(
-        { error: 'Too Many Requests' },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(rl.retryAfter),
-            'X-RateLimit-Remaining': '0',
-          },
-        },
-      );
-    }
 
     try {
       // Use INTERNAL_API_URL if UAT host isn't resolvable inside the container, fallback to request.url
@@ -76,9 +58,26 @@ export async function middleware(request: NextRequest) {
       
       const res = await fetch(authUrl, {
         method: 'GET',
-        headers: { 'x-api-key': passedKey, 'Host': request.headers.get('host') || '' },
+        headers: { 
+          'x-api-key': passedKey,
+          'x-forwarded-for': ip,
+          'Host': request.headers.get('host') || '' 
+        },
         cache: 'no-store',
       });
+
+      if (res.status === 429) {
+        return NextResponse.json(
+          { error: 'Too Many Requests' },
+          {
+            status: 429,
+            headers: {
+              'Retry-After': res.headers.get('Retry-After') || '60',
+              'X-RateLimit-Remaining': '0',
+            },
+          },
+        );
+      }
       const data = await res.json();
 
       if (!res.ok || !data.valid) {
@@ -97,10 +96,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next({
         request: { headers: requestHeaders },
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('[Middleware] Internal Auth Check error:', e);
       return NextResponse.json(
-        { error: 'Internal Auth Service Error', details: e?.message || String(e) },
+        { error: 'Internal Auth Service Error' },
         { status: 500 }
       );
     }

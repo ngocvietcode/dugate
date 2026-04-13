@@ -2,7 +2,8 @@
 // External API Processor — forwards files to an external AI service via multipart/form-data.
 // Delegates to: prompt-resolver, http-client, response-parser.
 
-import fs from 'fs/promises';
+import { openAsBlob } from 'fs';
+import fsPromises from 'fs/promises';
 import path from 'path';
 import type { ProcessorContext, ProcessorResult } from '@/lib/pipelines/engine';
 import { ParserFactory } from '@/lib/parsers/factory';
@@ -41,7 +42,7 @@ export async function runExternalApiProcessor(
     if (parser) {
       try {
         ctx.logger.info(`[InternalParser] Attempting to parse natively: ${fileName}`);
-        const fileBuffer = await fs.readFile(filePath);
+        const fileBuffer = await fsPromises.readFile(filePath);
         const result = await parser.parse(fileBuffer, fileName);
         ctx.logger.info(`[InternalParser] Successfully parsed ${fileName} natively.`);
         return {
@@ -81,15 +82,20 @@ export async function runExternalApiProcessor(
   }
 
   if (ctx.filePaths.length > 0) {
+    if (typeof openAsBlob !== 'function') {
+      throw new Error('File upload requires a runtime with fs.openAsBlob support. Please upgrade Node.js.');
+    }
+
     for (let i = 0; i < ctx.filePaths.length; i++) {
       const filePath = ctx.filePaths[i];
       const fileName = ctx.fileNames[i] ?? `file_${i}`;
       try {
-        const fileBuffer = await fs.readFile(filePath);
-        formData.append(connection.fileFieldName, new Blob([fileBuffer]), fileName);
-        ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBuffer.length} bytes)`);
+        const fileBlob = await openAsBlob(filePath);
+        formData.append(connection.fileFieldName, fileBlob, fileName);
+        ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBlob.size} bytes)`);
       } catch (e) {
-        ctx.logger.warn(`Could not read file '${filePath}'`, undefined, e);
+        ctx.logger.error(`Could not read file '${filePath}'`, undefined, e);
+        throw new Error(`Failed to attach file '${fileName}': file not found or unreadable`);
       }
     }
   } else if (ctx.inputText) {

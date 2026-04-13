@@ -8,7 +8,8 @@ import { formatOperationResponse } from '@/lib/pipelines/format';
 import { SERVICE_REGISTRY } from './registry';
 import { EXTRACT_PRESETS } from './presets';
 import { Logger } from '@/lib/logger';
-import { loadProfileEndpoint, mergeParameters, parseConnectionSteps } from './profile-resolver';
+import { loadProfileEndpoint, mergeParameters, parseConnectionSteps, getFileUrlAuthConfig } from './profile-resolver';
+import { type FileUrlEntry, MAX_FILE_URL_ENTRIES } from '@/lib/file-url-downloader';
 import crypto from 'crypto';
 
 // ─── Error helper ─────────────────────────────────────────────────────────────
@@ -95,14 +96,45 @@ export async function runEndpoint(serviceSlug: string, req: NextRequest): Promis
     // ── 3. Normalize files ──────────────────────────────────────────────────
     const files = normalizeFiles(form);
 
+    // ── 3b. Parse file_urls ─────────────────────────────────────────────────
+    const fileUrlsRaw = form.get('file_urls') as string | null;
+    let fileUrls: FileUrlEntry[] | undefined;
+    if (fileUrlsRaw) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(fileUrlsRaw);
+      } catch {
+        return apiError(400, 'Invalid Parameter', 'file_urls must be a valid JSON array.');
+      }
+      if (!Array.isArray(parsed)) {
+        return apiError(400, 'Invalid Parameter', 'file_urls must be a JSON array.');
+      }
+      if (parsed.length > MAX_FILE_URL_ENTRIES) {
+        return apiError(400, 'Invalid Parameter', `file_urls has ${parsed.length} entries. Maximum is ${MAX_FILE_URL_ENTRIES}.`);
+      }
+      for (let i = 0; i < parsed.length; i++) {
+        const entry = parsed[i];
+        if (!entry || typeof entry.url !== 'string' || !entry.url.trim()) {
+          return apiError(400, 'Invalid Parameter', `file_urls[${i}]: each entry must have a non-empty "url" string field.`);
+        }
+        try {
+          new URL(entry.url);
+        } catch {
+          return apiError(400, 'Invalid Parameter', `file_urls[${i}]: "${entry.url}" is not a valid URL format.`);
+        }
+      }
+      fileUrls = parsed as FileUrlEntry[];
+    }
+
     logger.info(`[REQUEST_PARSED] ${service.displayName} / ${subCase.displayName}`, {
       endpointSlug: discriminatorValue && discriminatorValue !== '_default'
         ? `${serviceSlug}:${discriminatorValue}`
         : serviceSlug,
       fileCount: files.length,
+      fileUrlCount: fileUrls?.length ?? 0,
       fileNames: files.map((f) => `${f.name} (${(f.size / 1024).toFixed(1)} KB)`),
       formKeys: Array.from(form.keys()).filter(
-        (k) => !['files[]', 'file', 'source_file', 'target_file'].includes(k),
+        (k) => !['files[]', 'file', 'source_file', 'target_file', 'file_urls'].includes(k),
       ),
     });
 
@@ -167,9 +199,15 @@ export async function runEndpoint(serviceSlug: string, req: NextRequest): Promis
     const idempotencyKey = req.headers.get('idempotency-key') ?? undefined;
     const executeSync = new URL(req.url).searchParams.get('sync') === 'true';
 
+    const fileUrlAuthConfig = getFileUrlAuthConfig(profileEndpoint);
+    const allowedFileExtensions = (profileEndpoint as any)?.allowedFileExtensions ?? undefined;
+
     const result = await submitPipelineJob({
       pipeline,
       files,
+      fileUrls,
+      fileUrlAuthConfig,
+      allowedFileExtensions,
       endpointSlug,
       outputFormat,
       webhookUrl,
@@ -195,6 +233,7 @@ export async function runEndpoint(serviceSlug: string, req: NextRequest): Promis
       httpStatus,
       latencyMs,
       fileCount: files.length,
+      fileUrlCount: fileUrls?.length ?? 0,
       pipelineSteps: pipeline.length,
       outputFormat,
       isIdempotent: result.isIdempotent,

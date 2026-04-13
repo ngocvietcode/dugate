@@ -1,41 +1,24 @@
 #!/bin/sh
 set -e
 
-# Run ONLY the latest migration SQL when MIGRATION=true
+# Run migrations safely when MIGRATION=true
 if [ "$MIGRATION" = "true" ]; then
-  MIGRATION_FILE="./prisma/migrations/20260410_add_step_id_to_override/migration.sql"
-
-  if [ -f "$MIGRATION_FILE" ]; then
-    echo "[entrypoint] MIGRATION=true → Running: $MIGRATION_FILE"
-    node -e "
-      const { PrismaClient } = require('@prisma/client');
-      const fs = require('fs');
-      const prisma = new PrismaClient();
-      (async () => {
-        const sql = fs.readFileSync('$MIGRATION_FILE', 'utf8');
-        const statements = sql.split(';').map(s => s.trim()).filter(Boolean);
-        for (const stmt of statements) {
-          try {
-            await prisma.\$executeRawUnsafe(stmt);
-            console.log('[migration] OK:', stmt.substring(0, 80) + '...');
-          } catch (e) {
-            // Skip if already applied (column/constraint already exists)
-            if (e.message && (e.message.includes('already exists') || e.message.includes('does not exist'))) {
-              console.log('[migration] SKIP (already applied):', stmt.substring(0, 80) + '...');
-            } else {
-              throw e;
-            }
-          }
-        }
-        await prisma.\$disconnect();
-        console.log('[migration] Done.');
-      })();
-    "
-  else
-    echo "[entrypoint] Migration file not found: $MIGRATION_FILE — skipping."
-  fi
+  echo "[entrypoint] MIGRATION=true → Running prisma migrate deploy"
+  npx prisma migrate deploy
+  echo "[entrypoint] Migration complete."
 else
-  echo "[entrypoint] MIGRATION not set → Skipping migration."
+  echo "[entrypoint] MIGRATION not set to true → Skipping migration."
+fi
+
+# Run seeding when SEED=true
+if [ "$SEED" = "true" ]; then
+  echo "[entrypoint] SEED=true → Running database seeder"
+  if [ -f "./prisma/seed.js" ]; then
+    node ./prisma/seed.js || echo "[entrypoint] Seed command exited with non-zero code. (Check if SEED_ADMIN_KEY is missing)"
+  else
+    npx tsx prisma/seed.ts || echo "[entrypoint] Seed command failed."
+  fi
+  echo "[entrypoint] Seeder complete."
 fi
 
 echo "[entrypoint] Starting server..."

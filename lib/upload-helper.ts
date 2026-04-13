@@ -3,6 +3,7 @@
 
 import path from 'path';
 import fs from 'fs/promises';
+import { validateFile } from '@/lib/upload';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? './uploads';
 
@@ -10,7 +11,14 @@ export async function saveUploadedFile(
   file: File,
   operationId: string,
   prefix?: string,
+  allowedExtsStr?: string
 ): Promise<{ path: string; size: number }> {
+  // Validate file type, MIME, and size before saving anything to disk
+  const validation = validateFile(file, allowedExtsStr);
+  if (!validation.valid) {
+    throw new Error(`File validation failed: ${validation.error}`);
+  }
+
   const dir = path.join(UPLOAD_DIR, operationId);
   await fs.mkdir(dir, { recursive: true });
 

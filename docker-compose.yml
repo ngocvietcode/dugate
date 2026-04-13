@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    image: dugate:latest
     ports:
       - "2023:2023"
     environment:
@@ -14,6 +15,9 @@ services:
       MIGRATION: ${MIGRATION:-true}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       MOCK_SERVICE_URL: ${MOCK_SERVICE_URL:-http://mock-service:3099}
+      SEED: true
+      SEED_ADMIN_KEY: ${SEED_ADMIN_KEY}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
     volumes:
       - ./uploads:/app/uploads
       - ./outputs:/app/outputs
@@ -65,6 +69,7 @@ services:
 
   worker:
     build: . # Reuse same Dockerfile as Next.js app
+    image: dugate:latest
     command: ["node", "worker.js"] # Pre-compiled bundle — no tsx needed at runtime
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://dugate:${DB_PASSWORD}@db:5432/dugate}

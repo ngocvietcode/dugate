@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { runExternalApiProcessor } from '@/lib/pipelines/processors/external-api';
 import { Logger } from '@/lib/logger';
 import type { Job } from 'bullmq';
+import { isPipelineStep } from '@/lib/pipelines/validate';
 
 export interface PipelineStep {
   processor: string;  // ExternalApiConnection slug
@@ -56,6 +57,31 @@ export interface ProcessorResult {
 }
 
 /**
+ * Send a webhook notification with up to 3 attempts (exponential backoff).
+ * Returns true if delivered, false if all attempts failed.
+ */
+async function sendWebhook(url: string, payload: object, logger: Logger): Promise<boolean> {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok) return true;
+      logger.warn(`Webhook attempt ${attempt}/3 returned HTTP ${res.status} for ${url}`);
+    } catch (e) {
+      logger.warn(`Webhook attempt ${attempt}/3 failed for ${url}`, undefined, e);
+    }
+    if (attempt < 3) {
+      await new Promise((r) => setTimeout(r, attempt * 1000));
+    }
+  }
+  return false;
+}
+
+/**
  * Main pipeline runner. Called async after Operation is created.
  */
 export async function runPipeline(operationId: string, correlationId?: string, job?: Job<any>): Promise<void> {
@@ -67,11 +93,87 @@ export async function runPipeline(operationId: string, correlationId?: string, j
     return;
   }
 
-  const pipeline: PipelineStep[] = JSON.parse(operation.pipelineJson);
+  let pipeline: PipelineStep[] = [];
+  let filesData: Array<{ name: string; path: string; mime: string; size: number }> = [];
+  try {
+    const parsedPipeline = JSON.parse(operation.pipelineJson) as unknown;
+    if (!Array.isArray(parsedPipeline)) {
+      throw new Error('INVALID_PIPELINE_STRUCTURE');
+    }
+    if (!parsedPipeline.every(isPipelineStep)) {
+      throw new Error('INVALID_PIPELINE_STRUCTURE');
+    }
+    pipeline = parsedPipeline as PipelineStep[];
+
+    const parsedFiles = operation.filesJson ? JSON.parse(operation.filesJson) as unknown : [];
+    if (!Array.isArray(parsedFiles)) {
+      throw new Error('INVALID_FILES_STRUCTURE');
+    }
+    filesData = parsedFiles as Array<{ name: string; path: string; mime: string; size: number }>;
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : '';
+    const clientErrorMessage =
+      msg === 'INVALID_PIPELINE_STRUCTURE'
+        ? 'Invalid pipeline structure.'
+        : msg === 'INVALID_FILES_STRUCTURE'
+          ? 'Invalid files structure.'
+          : 'Invalid pipeline payload.';
+    logger.error(`[PIPELINE_FAILED] Invalid operation JSON for ${operationId}: ${msg}`, undefined, error);
+    await prisma.operation.update({
+      where: { id: operationId },
+      data: {
+        done: true,
+        state: 'FAILED',
+        failedAtStep: 0,
+        errorCode: 'PIPELINE_INVALID_JSON',
+        errorMessage: clientErrorMessage,
+        stepsResultJson: JSON.stringify([]),
+      },
+    });
+    return;
+  }
+
+  // ── Download pending file_urls (deferred from async submit) ──────────────
+  const jobData = job?.data as import('@/lib/queue/pipeline-queue').PipelineJobData | undefined;
+  if (jobData?.pendingFileUrls && jobData.pendingFileUrls.length > 0) {
+    try {
+      const { downloadAllFileUrls } = await import('@/lib/file-url-downloader');
+      logger.info(`[PIPELINE] Downloading ${jobData.pendingFileUrls.length} pending file URLs`);
+      await prisma.operation.update({
+        where: { id: operationId },
+        data: { progressMessage: `Downloading ${jobData.pendingFileUrls.length} file(s) from URLs...` },
+      });
+      const downloaded = await downloadAllFileUrls(
+        jobData.pendingFileUrls,
+        operationId,
+        jobData.pendingFileUrlAuthConfig,
+        jobData.pendingAllowedFileExtensions,
+      );
+      filesData.push(...downloaded);
+      // Persist updated filesJson so checkpoint/resume picks them up
+      await prisma.operation.update({
+        where: { id: operationId },
+        data: { filesJson: JSON.stringify(filesData) },
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[PIPELINE_FAILED] File URL download failed: ${msg}`, undefined, err);
+      await prisma.operation.update({
+        where: { id: operationId },
+        data: {
+          done: true,
+          state: 'FAILED',
+          failedAtStep: 0,
+          errorCode: 'FILE_URL_DOWNLOAD_FAILED',
+          errorMessage: msg,
+          stepsResultJson: JSON.stringify([]),
+        },
+      });
+      return;
+    }
+  }
 
   // Parse filesJson → filePaths / fileNames
-  const filesData: Array<{ name: string; path: string; mime: string; size: number }> =
-    operation.filesJson ? JSON.parse(operation.filesJson) : [];
   const filePaths = filesData.map((f) => f.path?.replace(/\\/g, '/'));
   const fileNames = filesData.map((f) => f.name);
 
@@ -126,6 +228,25 @@ export async function runPipeline(operationId: string, correlationId?: string, j
     cost_usd: number;
   }> = [];
 
+  // ── Pre-load all connections & overrides (avoid N+1 queries in the loop) ────
+  const processorSlugs = pipeline.map((s) => s.processor);
+  const allConnections = await prisma.externalApiConnection.findMany({
+    where: { slug: { in: processorSlugs } },
+  });
+  const connectionMap = new Map(allConnections.map((c) => [c.slug, c]));
+
+  const allOverrides = operation.apiKeyId && operation.endpointSlug
+    ? await prisma.externalApiOverride.findMany({
+        where: {
+          apiKeyId: operation.apiKeyId,
+          endpointSlug: operation.endpointSlug,
+        },
+      })
+    : [];
+  // Key: `${connectionId}:${stepId}`
+  const overrideMap = new Map(allOverrides.map((o) => [`${o.connectionId}:${o.stepId}`, o]));
+  // ─────────────────────────────────────────────────────────────────────────────
+
   try {
     for (let i = resumeFromStep; i < pipeline.length; i++) {
       const step = pipeline[i];
@@ -155,10 +276,8 @@ export async function runPipeline(operationId: string, correlationId?: string, j
         variables['input_content'] = currentText;
       }
 
-      // Load ExternalApiConnection
-      const connection = await prisma.externalApiConnection.findUnique({
-        where: { slug: step.processor },
-      });
+      // Look up pre-loaded ExternalApiConnection
+      const connection = connectionMap.get(step.processor);
       if (!connection) {
         throw new Error(`ExternalApiConnection '${step.processor}' not found in database.`);
       }
@@ -166,20 +285,9 @@ export async function runPipeline(operationId: string, correlationId?: string, j
         throw new Error(`ExternalApiConnection '${connection.slug}' is DISABLED.`);
       }
 
-      // Load per-client, per-endpoint, per-step prompt override
+      // Look up pre-loaded per-client, per-endpoint, per-step prompt override
       const resolvedStepId = step.stepId ?? '_default';
-      const extOverride = operation.apiKeyId && operation.endpointSlug
-        ? await prisma.externalApiOverride.findUnique({
-            where: {
-              connectionId_apiKeyId_endpointSlug_stepId: {
-                connectionId: connection.id,
-                apiKeyId: operation.apiKeyId,
-                endpointSlug: operation.endpointSlug,
-                stepId: resolvedStepId,
-              },
-            },
-          })
-        : null;
+      const extOverride = overrideMap.get(`${connection.id}:${resolvedStepId}`) ?? null;
 
       if (extOverride) {
         logger.info(`Applied ExtApiOverride for '${connection.slug}' step='${resolvedStepId}' (key: ${operation.apiKeyId})`);
@@ -277,20 +385,20 @@ export async function runPipeline(operationId: string, correlationId?: string, j
       await job.updateProgress(100);
     }
 
-    // Webhook notification
+    // Webhook notification (with retry)
     if (operation.webhookUrl) {
-      try {
-        await fetch(operation.webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ operation_id: operationId, state: 'SUCCEEDED', done: true }),
-        });
+      const delivered = await sendWebhook(
+        operation.webhookUrl,
+        { operation_id: operationId, state: 'SUCCEEDED', done: true },
+        logger,
+      );
+      if (delivered) {
         await prisma.operation.update({
           where: { id: operationId },
           data: { webhookSentAt: new Date() },
         });
-      } catch (e) {
-        logger.warn(`Webhook failed for ${operationId}`, undefined, e);
+      } else {
+        logger.error(`Webhook delivery failed after 3 attempts for ${operationId}`);
       }
     }
 
@@ -322,18 +430,18 @@ export async function runPipeline(operationId: string, correlationId?: string, j
     });
 
     if (operation.webhookUrl) {
-      try {
-        await fetch(operation.webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ operation_id: operationId, state: 'FAILED', error: msg }),
-        });
+      const delivered = await sendWebhook(
+        operation.webhookUrl,
+        { operation_id: operationId, state: 'FAILED', error: msg },
+        logger,
+      );
+      if (delivered) {
         await prisma.operation.update({
           where: { id: operationId },
           data: { webhookSentAt: new Date() },
         });
-      } catch (webhookErr) {
-        logger.error(`Failure webhook failed for ${operationId}`, undefined, webhookErr);
+      } else {
+        logger.error(`Failure webhook delivery failed after 3 attempts for ${operationId}`);
       }
     }
   }
