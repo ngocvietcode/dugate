@@ -10,13 +10,36 @@ function buildResponse(fields, files, filename) {
   const audience = fields.audience || 'Chung';
   const tone = fields.tone || 'formal';
   
-  // Note: Since we don't have the task explicitly in discriminator for generate,
-  // we return a generic markdown response that covers most of the content generation needs.
-  // In a real mock, we might inspect `prompt` to guess the task.
+  const promptStr = String(fields.query || fields.prompt || fields._prompt || fields.task || '');
+  const isDisbursementReport = promptStr.includes('Tờ trình') || promptStr.includes('giải ngân');
 
   let content = '';
 
-  if (format === 'bullets') {
+  if (isDisbursementReport) {
+    content = `# TỜ TRÌNH THẨM ĐỊNH HỒ SƠ GIẢI NGÂN
+**Kính gửi:** Ban Giám đốc / Hội đồng Thẩm định
+
+**1. TỔNG QUAN HỒ SƠ**
+- **Trạng thái phân loại:** Hoàn thành (Phát hiện Hợp đồng tín dụng, Hóa đơn GTGT, Đề nghị giải ngân).
+- **Tổng số tài liệu:** Kiểm tra thành công dựa trên các file đã tải lên.
+
+**2. KẾT QUẢ ĐỐI CHIẾU TỰ ĐỘNG (CROSS-CHECK)**
+- **Kết luận:** **PASS** (Hồ sơ hợp lệ).
+- **Điểm đánh giá hệ thống:** 95/100.
+- **Chi tiết kiểm tra:**
+    - [x] **Số tiền giải ngân:** Khớp với hạn mức trên Nghị quyết phê duyệt.
+    - [x] **Lãi suất:** Áp dụng đúng 8.5%/năm theo quy định hiện hành.
+    - [x] **Bên vay:** Thông tin nhất quán trên tất cả các chứng từ pháp lý.
+    - [x] **Mục đích sử dụng vốn:** Phù hợp với phương án kinh doanh đã duyệt.
+
+**3. ĐỀ XUẤT CỦA BỘ PHẬN NGHIỆP VỤ**
+Căn cứ trên kết quả thẩm định tự động từ hệ thống AI, bộ phận nghiệp vụ đánh giá hồ sơ của khách hàng là **HỢP LỆ, MINH BẠCH VÀ ĐẦY ĐỦ ĐIỀU KIỆN**.
+
+Hệ thống đề xuất Ban Giám đốc **PHÊ DUYỆT** giải ngân cho hồ sơ này.
+
+---
+*Báo cáo được tạo tự động bởi Hệ thống AI Document Intelligence - DU Gate.*`;
+  } else if (format === 'bullets') {
     content = `# Tóm Tắt (Dạng Bullets)
 
 > **Thông tin:** Dành cho: ${audience} | Giọng điệu: ${tone} | File: \`${filename}\`

@@ -61,7 +61,7 @@ export interface ExtractFileResult {
   logical_docs: string[];
   status: 'success';
   sub_operation_id: string;
-  content: string | null;
+  content: any;
   extracted_data: unknown;
 }
 
@@ -352,7 +352,7 @@ export function buildReportPrompt(
   }
 
   return {
-    _prompt: `Soạn Tờ trình đề nghị giải ngân cho Ban Giám đốc.
+    _prompt: `Soạn Tờ trình thẩm định hồ sơ giải ngân cho Ban Giám đốc.
 
 Kết quả phân loại:
 - ${classifySummary}

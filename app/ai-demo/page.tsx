@@ -16,6 +16,7 @@ import { getInitialSteps } from './lib/mock-data';
 import { UploadZone } from './components/UploadZone';
 import { PipelineStepCard } from './components/PipelineStepCard';
 import { CompletionBanner } from './components/CompletionBanner';
+import { JsonEditor } from './components/JsonEditor';
 import { SpinnerIcon, CheckIcon } from './components/Icons';
 import { useMockPipeline } from './hooks/useMockPipeline';
 import { useWorkflowPolling } from './hooks/useWorkflowPolling';
@@ -34,6 +35,9 @@ export default function AiDemoPage() {
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [steps, setSteps] = useState<PipelineStep[]>(getInitialSteps());
+  
+  // -- HitL State --
+  const [waitingHitl, setWaitingHitl] = useState<{ stepIdx: number; data: any; jsonStr: string } | null>(null);
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const currentRunningStep = useMemo(
@@ -131,9 +135,47 @@ export default function AiDemoPage() {
           : s
       ));
     },
+    onWaitingForInput: (stepIdx, data) => {
+      setWaitingHitl({
+        stepIdx,
+        data,
+        jsonStr: JSON.stringify(data?.extracted_data || {}, null, 2)
+      });
+      setIsProcessing(false);
+      setSteps(prev => prev.map((s, idx) =>
+        idx === stepIdx ? { ...s, status: 'done', progress: 100 } : s
+      ));
+    }
   });
 
-  // ── File handling ──────────────────────────────────────────────────────────
+  // ── File handling & Resume ──────────────────────────────────────────────────────────
+  const handleResumePipeline = useCallback(async () => {
+    if (!waitingHitl || !polling.operationId) return;
+    try {
+      setIsProcessing(true);
+      const parsedData = JSON.parse(waitingHitl.jsonStr);
+      
+      const res = await fetch(`/api/v1/operations/${polling.operationId}/resume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          step: waitingHitl.stepIdx,
+          extracted_data: parsedData
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
+      setWaitingHitl(null);
+      polling.startPolling(polling.operationId);
+    } catch(err) {
+      alert('Lỗi JSON hoặc Lỗi Mạng: ' + (err instanceof Error ? err.message : String(err)));
+      setIsProcessing(false);
+    }
+  }, [waitingHitl, polling]);
+
   const handleFilesAdded = useCallback((uploadedFiles: UploadedFile[], fileObjects?: File[]) => {
     if (fileObjects && fileObjects.length > 0) {
       setRealFiles(prev => [...prev, ...fileObjects]);
@@ -160,6 +202,7 @@ export default function AiDemoPage() {
     if (files.length === 0 || isProcessing) return;
     setIsProcessing(true);
     setPipelineError(null);
+    setWaitingHitl(null);
     resetPipeline();
 
     // Mark step 1 as running for immediate UX feedback
@@ -355,22 +398,50 @@ export default function AiDemoPage() {
 
         {/* ─── Pipeline Steps ──────────────────────────────────────────── */}
         {files.length > 0 && (
-          <div className="space-y-0">
+          <div className="space-y-0 relative">
+            {/* Vertical timeline line (extended) */}
+            <div className="absolute left-[27px] top-[40px] bottom-[40px] w-px bg-gradient-to-b from-primary/30 via-primary/10 to-transparent z-0" />
+
             {steps.map((step, i) => (
-              <PipelineStepCard
-                key={step.id}
-                ref={el => { stepRefs.current[i] = el; }}
-                step={step}
-                stepIndex={i}
-                totalSteps={steps.length}
-                isProcessing={isProcessing}
-                onRetry={retryStep}
-                onToggleCollapse={toggleCollapse}
-                isLastStep={i === steps.length - 1}
-              />
+              <React.Fragment key={step.id}>
+                <PipelineStepCard
+                  ref={el => { stepRefs.current[i] = el; }}
+                  step={step}
+                  stepIndex={i}
+                  totalSteps={steps.length}
+                  isProcessing={isProcessing}
+                  onRetry={retryStep}
+                  onToggleCollapse={toggleCollapse}
+                  isLastStep={i === steps.length - 1}
+                />
+
+                {/* HITL Block Inserted AFTER Step 2 (Index 1) */}
+                {i === 1 && waitingHitl && (
+                  <div className="ml-0 md:ml-14 mb-10 mt-4 relative z-10 animate-in slide-in-from-top-4 duration-500">
+                    <JsonEditor
+                      value={waitingHitl.jsonStr}
+                      onChange={val => setWaitingHitl({ ...waitingHitl, jsonStr: val })}
+                    />
+                    <div className="mt-6 flex justify-end">
+                      <button
+                        onClick={handleResumePipeline}
+                        disabled={isProcessing}
+                        className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-500 transition-all focus:ring-4 focus:ring-emerald-500/20 active:scale-95 flex items-center gap-2.5 shadow-xl shadow-emerald-900/20 disabled:opacity-50"
+                      >
+                        {isProcessing ? <SpinnerIcon className="w-5 h-5 text-white" /> : (
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        )}
+                        Lưu & Tiếp tục Pipeline
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
             ))}
           </div>
         )}
+
+
 
         {/* ─── Completion Banner ───────────────────────────────────────── */}
         {pipelineComplete && (

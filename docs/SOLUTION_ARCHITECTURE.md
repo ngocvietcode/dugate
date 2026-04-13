@@ -1,10 +1,10 @@
-# DUGate — Solution Architecture Document
+# AISkillHub — Solution Architecture Document
 
-> **Document ID**: SA-DUGATE-2026-001  
-> **Version**: 2.0  
-> **Classification**: INTERNAL — FOR APPROVAL  
-> **Author**: Solution Architecture Team  
-> **Date**: 2026-04-04  
+> **Document ID**: SA-AISkillHub-2026-002
+> **Version**: 2.1
+> **Classification**: INTERNAL — FOR APPROVAL
+> **Author**: Solution Architecture Team
+> **Date**: 2026-04-13
 > **Status**: APPROVED
 
 ---
@@ -29,34 +29,45 @@
 
 ## 1. Executive Summary
 
-**DUGate** (Document Understanding API Gateway) là một giải pháp kiến trúc cổng trung gian API nội bộ, chuyên biệt xử lý các bài toán **Phân tích Tài liệu** (Document Understanding) cho môi trường doanh nghiệp — đặc biệt phù hợp với ngành Tài chính & Ngân hàng.
+**AISkillHub** (Document Understanding API Gateway) là giải pháp kiến trúc cổng trung gian API nội bộ, chuyên xử lý các bài toán **Phân tích Tài liệu** (Document Understanding) cho môi trường doanh nghiệp — đặc biệt phù hợp với ngành Tài chính & Ngân hàng.
 
-Thay vì mỗi nghiệp vụ tự tích hợp riêng lẻ đến hàng chục dịch vụ AI thông qua LLMs Hub nội bộ, DUGate **quy chuẩn hóa** toàn bộ lớp truy cập thành **6 API Endpoint duy nhất**, vận hành trên kiến trúc **Pipeline Engine bất đồng bộ** với khả năng **định tuyến theo Profile**, đảm bảo:
+Thay vì mỗi nghiệp vụ tự tích hợp riêng lẻ đến hàng chục dịch vụ AI, AISkillHub **quy chuẩn hóa** toàn bộ lớp truy cập thành **6 API Endpoint + Workflow API**, vận hành trên kiến trúc **BullMQ Async Worker** với khả năng **Human-in-the-Loop (HITL)** và **Code-Driven Workflow Orchestration**, đảm bảo:
 
 - **Zero-coupling** giữa ứng dụng nghiệp vụ và AI backend
-- **Multi-tenant isolation** qua API Key + Profile-based routing với cấu hình tham số thống nhất (Unified Parameter Schema)
+- **Multi-tenant isolation** qua API Key + Profile-based routing + 3-tier Prompt Override
+- **Human-in-the-Loop**: Tạm dừng pipeline để con người duyệt, chỉnh sửa, rồi resume
 - **Audit-grade traceability** với structured logging & cURL reconstruction
-- **Enterprise-grade deployment** trên Docker & Kubernetes
+- **Enterprise-grade deployment** trên Docker & Kubernetes với BullMQ job dashboard
+
+### Thay đổi chính từ v2.0 → v2.1
+
+| # | Thay đổi | Mô tả |
+|---|---------|-------|
+| 1 | **BullMQ Worker** | Tách Worker thành container độc lập; pipeline jobs chạy qua Redis queue thay vì fire-and-forget trong Next.js process |
+| 2 | **Workflow Engine** | Bổ sung `workflow-engine.ts` — lớp orchestration code-driven song song với Standard Pipeline Engine |
+| 3 | **HITL Pause/Resume** | Workflow có thể tạm dừng (`WAITING_USER_INPUT`), nhận dữ liệu chỉnh sửa từ con người, rồi tiếp tục từ đúng checkpoint |
+| 4 | **3-tier Prompt System** | Code Prompt > Profile Override (UI) > DB Connector Default — được resolve qua `_workflowPrompts` param |
+| 5 | **Mock Service Container** | Container `mock-service` phục vụ dev/staging mô phỏng External AI connectors |
+| 6 | **parseDeep Utility** | Shared utility xử lý nested JSON từ AI response, export từ `workflow-engine.ts` |
 
 ---
 
 ## 2. Business Context & Problem Statement
 
-Trong bối cảnh chuyển đổi số, nhu cầu xử lý tài liệu bằng AI (OCR, trích xuất, phân loại, đối soát, v.v.) ngày càng tăng nhanh trên nhiều đơn vị nghiệp vụ. Các mô hình LLM hiện được cung cấp tập trung qua **LLMs Hub** nội bộ. Tuy nhiên, cần **quy hoạch các dịch vụ về Document Understanding** thành một lớp cổng trung gian chuẩn hóa để giải quyết các vấn đề phát sinh khi mỗi ứng dụng tự tích hợp riêng lẻ:
+Trong bối cảnh chuyển đổi số, nhu cầu xử lý tài liệu bằng AI (OCR, trích xuất, phân loại, đối soát, v.v.) ngày càng tăng nhanh trên nhiều đơn vị nghiệp vụ. Các mô hình LLM được cung cấp tập trung qua **LLMs Hub** nội bộ. Tuy nhiên, cần **quy hoạch lại** thành một lớp cổng trung gian chuẩn hóa:
 
 | # | Vấn đề | Ảnh hưởng |
 |---|--------|-----------|
-| P1 | Mỗi app tự tích hợp riêng lẻ → N×M integrations | Chi phí bảo trì tăng tuyến tính, logic bị phân mảnh |
-| P2 | Không kiểm soát prompt/model tập trung | Rủi ro prompt injection, output inconsistency giữa các đơn vị |
-| P3 | Không có audit trail trên API gọi AI | Vi phạm compliance nội bộ, khó truy vết sự cố |
+| P1 | Mỗi app tự tích hợp riêng lẻ → N×M integrations | Chi phí bảo trì tăng tuyến tính |
+| P2 | Không kiểm soát prompt/model tập trung | Rủi ro prompt injection, output inconsistency |
+| P3 | Không có audit trail trên API gọi AI | Vi phạm compliance nội bộ |
 | P4 | Không có spending limit per-team | Token usage vượt tầm kiểm soát |
-| P5 | Thiếu cơ chế pipeline chain | Không thể ghép nối nhiều bước xử lý (OCR → Extract → Validate) |
-
-**DUGate giải quyết** bằng cách đóng vai trò lớp Gateway giữa ứng dụng nghiệp vụ và LLMs Hub — chuẩn hóa toàn bộ thành 6 API duy nhất:
+| P5 | Thiếu cơ chế pipeline chain | Không thể ghép nối OCR → Extract → Validate |
+| P6 | Thiếu cơ chế Human Review | Không thể dừng workflow để con người phê duyệt trước khi tiếp tục |
 
 ```mermaid
 graph LR
-    A1[App Nghiệp vụ A] -->|x-api-key| GW[🏗️ DUGate Gateway]
+    A1[App Nghiệp vụ A] -->|x-api-key| GW[🏗️ AISkillHub Gateway]
     A2[App Nghiệp vụ B] -->|x-api-key| GW
     A3[App Nghiệp vụ C] -->|x-api-key| GW
     GW -->|Profile routing| HUB[🔗 LLMs Hub]
@@ -74,32 +85,61 @@ graph LR
 
 ## 3. Solution Overview
 
-### 3.1 Kiến trúc Logic — 6 Unified Endpoints
+### 3.1 Hai loại Pipeline
 
-DUGate quy chuẩn hóa toàn bộ bài toán Document Understanding thành **6 hành động ngữ nghĩa** (semantic actions):
+AISkillHub hỗ trợ **2 loại pipeline** với mục đích khác nhau:
 
-| # | Endpoint | Chức năng | Sub-cases |
-|---|----------|-----------|-----------|
-| 1 | `/api/v1/ingest` | Đọc, OCR, số hóa tài liệu | `parse`, `ocr`, `digitize`, `split` |
-| 2 | `/api/v1/extract` | Trích xuất dữ liệu có cấu trúc | `invoice`, `contract`, `id-card`, `receipt`, `table`, `custom` |
-| 3 | `/api/v1/analyze` | Đánh giá, phân loại, fact-check | `classify`, `sentiment`, `compliance`, `fact-check`, `quality`, `risk`, `summarize-eval` |
-| 4 | `/api/v1/transform` | Chuyển đổi, dịch thuật, mã hóa PII | `convert`, `translate`, `rewrite`, `redact`, `template` |
-| 5 | `/api/v1/generate` | Sinh nội dung mới (tóm tắt, QA) | `summary`, `qa`, `outline`, `report`, `email`, `minutes` |
-| 6 | `/api/v1/compare` | So sánh ngữ nghĩa/text diff | `diff`, `semantic`, `version` |
-
-### 3.2 Core Architecture Pattern
+#### A. Standard Pipeline Engine (Data Flow — Cấu hình UI)
+Chuỗi connector tuần tự được cấu hình qua Admin UI. Phù hợp cho nghiệp vụ đơn luồng, không cần logic phức tạp.
 
 ```
-Client Request → Middleware (Auth) → Endpoint Runner (Routing & Param Guard) → Pipeline Submit → Pipeline Engine → External API Processor → LLMs Hub / AI Backend
-       ↑                                                                                                                                           ↓
-       └──────────────────── Operation Polling / Webhook ←─────────────────── PostgreSQL (State Machine) ←─────────────────────────────────────────┘
+Request → Endpoint Runner → Submit → BullMQ Queue
+                                           ↓
+                                 Worker: engine.ts
+                                    Step 1 → Step 2 → Step N
+                                    (chained input_content)
 ```
 
-### 3.3 Chat Assistant Capability
+#### B. Workflow Engine (Process Orchestration — Code-Driven)
+Orchestration logic được viết bằng TypeScript, hỗ trợ song song, HITL, checkpoint. Phù hợp cho nghiệp vụ phức tạp như giải ngân, thẩm định tài sản.
 
-Ngoài 6 Endpoint chính chuyên phục vụ kết nối dữ liệu máy-máy (M2M), DUGate cung cấp thêm lớp tiện ích **Chat Assistant** (`/api/chat`).
-- **Mục đích**: Giao diện tương tác trò chuyện quản trị cấu hình AI cho Admin.
-- **Cơ chế**: Proxy tới LLMs Hub thông qua external connection `sys-assistant`. Hệ thống tự động nội suy và context hóa các tham số (ví dụ: `{{available_routes_json}}`, `{{user_chat_message}}`) dựa trên cấu trúc hiện hành từ `SERVICE_REGISTRY`.
+```
+Request → /api/v1/workflows → Submit → BullMQ Queue
+                                            ↓
+                                 Worker: workflow-engine.ts
+                                    WORKFLOW_REGISTRY[process]
+                                    Step 1 (parallel classify)
+                                    Step 2 (parallel extract)
+                                    ──→ PAUSE (HITL) ←── Human reviews
+                                    Step 3 (crosscheck)
+                                    Step 4 (report generation)
+                                    ──→ SUCCEEDED
+```
+
+### 3.2 Các Endpoint
+
+| # | Endpoint | Kiểu Pipeline | Chức năng |
+|---|----------|--------------|-----------|
+| 1 | `POST /api/v1/ingest` | Standard | OCR, số hóa, split tài liệu |
+| 2 | `POST /api/v1/extract` | Standard | Trích xuất dữ liệu có cấu trúc |
+| 3 | `POST /api/v1/analyze` | Standard | Phân loại, fact-check, sentiment |
+| 4 | `POST /api/v1/transform` | Standard | Dịch thuật, rewrite, redact PII |
+| 5 | `POST /api/v1/generate` | Standard | Tóm tắt, QA, soạn email |
+| 6 | `POST /api/v1/compare` | Standard | So sánh ngữ nghĩa / text diff |
+| 7 | `POST /api/v1/workflows` | Workflow | Code-driven multi-step flows (HITL) |
+
+### 3.3 Vòng đời Operation (State Machine)
+
+```mermaid
+stateDiagram-v2
+    [*] --> RUNNING: Submit Job to BullMQ
+    RUNNING --> WAITING_USER_INPUT: pauseWorkflow() — HITL
+    WAITING_USER_INPUT --> RUNNING: POST /operations/{id}/resume
+    RUNNING --> SUCCEEDED: completeWorkflow()
+    RUNNING --> FAILED: Error / Timeout
+    SUCCEEDED --> [*]
+    FAILED --> [*]
+```
 
 ---
 
@@ -107,12 +147,14 @@ Ngoài 6 Endpoint chính chuyên phục vụ kết nối dữ liệu máy-máy (
 
 | # | Nguyên tắc | Mô tả |
 |---|-----------|------|
-| AP-1 | **Gateway Abstraction** | Ứng dụng nghiệp vụ KHÔNG bao giờ gọi trực tiếp AI backend. DUGate là điểm truy cập duy nhất. |
-| AP-2 | **Unified Parameter Guardrails** | Mọi tùy chỉnh tham số phụ thuộc vào khai báo `ParamSchema` tập trung. Các tham số hệ thống bị khóa (locked params) sẽ bị từ chối nếu Client chủ ý gửi từ bên ngoài. |
-| AP-3 | **Profile-Driven Isolation** | Cấu hình Profile chỉ định các tham số và logic routing riêng cho từng ứng dụng API Key mà không ảnh hưởng key khác. |
-| AP-4 | **Async-First** | Mọi pipeline mặc định bất đồng bộ (`202 Accepted`). |
-| AP-5 | **Zero Client Code Change** | Thay đổi AI backend, pipeline model chỉ cần admin thao tác trên Server — 0 dòng code ứng dụng thay đổi. |
-| AP-6 | **Defence in Depth** | Tầng auth kép: NextAuth (Admin UI) + API Key (Public API). AES-256-GCM bảo vệ secret key lưu trữ. |
+| AP-1 | **Gateway Abstraction** | Ứng dụng KHÔNG bao giờ gọi trực tiếp AI backend. AISkillHub là điểm duy nhất. |
+| AP-2 | **Unified Parameter Guardrails** | Tham số hệ thống bị khóa (locked params) từ chối khi Client cố ghi đè. |
+| AP-3 | **Profile-Driven Isolation** | Mỗi API Key có cấu hình prompt/connector riêng, không ảnh hưởng key khác. |
+| AP-4 | **Async-First** | Mọi pipeline bất đồng bộ qua BullMQ. API trả 202 ngay lập tức. |
+| AP-5 | **Zero Client Code Change** | Thay đổi AI backend, prompt, connector chỉ cần Admin thao tác — 0 dòng code client. |
+| AP-6 | **Defence in Depth** | Tầng auth kép: NextAuth (Admin UI) + API Key (Public API). AES-256-GCM cho secrets. |
+| AP-7 | **Checkpoint & Resume** | Worker lưu state sau mỗi step. BullMQ retry sẽ tiếp tục từ đúng bước đã fail. |
+| AP-8 | **Human-in-the-Loop** | Workflow có thể pause để con người inspect, chỉnh sửa JSON, rồi resume đúng checkpoint. |
 
 ---
 
@@ -120,25 +162,26 @@ Ngoài 6 Endpoint chính chuyên phục vụ kết nối dữ liệu máy-máy (
 
 ```mermaid
 C4Context
-    title DUGate — System Context Diagram
+    title AISkillHub — System Context Diagram (v2.1)
 
-    Person(admin, "Administrator", "Quản trị Gateway, Profile, Connector, trò chuyện qua Chat Assistant")
+    Person(admin, "Administrator", "Quản trị Gateway, Profile, Connector, HITL Review")
     Person(dev, "Developer / App Client", "Tích hợp API qua x-api-key")
 
-    System(dugate, "DUGate Gateway", "Document Understanding API Gateway — 6 Unified Endpoints & Chat")
+    System(AISkillHub, "AISkillHub Gateway", "Document Understanding API Gateway — 6 Endpoints + Workflow API + BullMQ Worker")
 
     System_Ext(llmhub, "LLMs Hub", "Cổng trung gian LLM nội bộ — proxy đến Gemini, GPT, Claude")
     System_Ext(ocr_engine, "OCR Engine", "Dịch vụ nhận dạng ký tự quang học")
     System_Ext(internal_ai, "Internal AI Service", "Mô hình AI on-premise")
-
     System_Ext(postgres, "PostgreSQL", "Operational data store & Unified Config")
+    System_Ext(redis, "Redis", "BullMQ Job Queue & Worker coordination")
 
-    Rel(admin, dugate, "Quản trị qua Admin UI, hỏi đáp Bot", "HTTPS/NextAuth")
-    Rel(dev, dugate, "Gửi tài liệu, nhận kết quả", "HTTPS/x-api-key")
-    Rel(dugate, llmhub, "Forward request", "HTTPS/API Key")
-    Rel(dugate, ocr_engine, "Forward request", "HTTPS/API Key")
-    Rel(dugate, internal_ai, "Forward request", "HTTP/mTLS")
-    Rel(dugate, postgres, "CRUD Operations", "TCP/5432")
+    Rel(admin, AISkillHub, "Quản trị qua Admin UI, review HITL", "HTTPS/NextAuth")
+    Rel(dev, AISkillHub, "Gửi tài liệu, nhận kết quả, resume HITL", "HTTPS/x-api-key")
+    Rel(AISkillHub, llmhub, "Forward request", "HTTPS/API Key")
+    Rel(AISkillHub, ocr_engine, "Forward request", "HTTPS/API Key")
+    Rel(AISkillHub, internal_ai, "Forward request", "HTTP/mTLS")
+    Rel(AISkillHub, postgres, "CRUD Operations, Operation State", "TCP/5432")
+    Rel(AISkillHub, redis, "BullMQ job enqueue/dequeue", "TCP/6379")
 ```
 
 ---
@@ -147,24 +190,42 @@ C4Context
 
 ```mermaid
 C4Container
-    title DUGate — Container Diagram
+    title AISkillHub — Container Diagram (v2.1)
 
     Person(client, "API Client")
     Person(admin, "Administrator")
 
-    Container_Boundary(gateway, "DUGate Gateway") {
-        Container(nginx, "Nginx Reverse Proxy", "nginx:alpine", "TLS termination, rate limiting, 300MB upload")
-        Container(nextjs, "Next.js Application", "Node.js 20 / Next.js 14", "API Routes + Admin UI + Pipeline Engine")
-        ContainerDb(pg, "PostgreSQL", "postgres:16-alpine", "Operations, ApiKeys, Connections, Profiles")
+    Container_Boundary(gateway, "AISkillHub Stack") {
+        Container(nginx, "Nginx Reverse Proxy", "nginx:alpine", "TLS termination, rate limiting, 300MB upload cap")
+        Container(nextjs, "Next.js Application", "Node.js 20 / Next.js 14", "API Routes + Admin UI + Operation management")
+        Container(worker, "BullMQ Worker", "Node.js 20 / tsx", "Async job consumer — runs pipeline engine & workflow engine")
+        Container(mock, "Mock Service", "Node.js Express", "Simulates External AI connectors — dev/staging only")
+        ContainerDb(pg, "PostgreSQL 16", "postgres:16-alpine", "Operations, ApiKeys, Connections, Profiles, Overrides")
+        ContainerDb(redis, "Redis 7", "redis:7-alpine", "BullMQ job queue, worker signals")
         Container(volumes, "Persistent Volumes", "Docker Volumes", "uploads/, outputs/, pgdata/")
     }
 
     Rel(client, nginx, "POST /api/v1/*", "HTTPS")
-    Rel(admin, nginx, "Admin Dashboard", "HTTPS")
+    Rel(admin, nginx, "Admin Dashboard + HITL Review", "HTTPS")
     Rel(nginx, nextjs, "Proxy pass", "HTTP:2023")
+    Rel(nextjs, redis, "BullMQ enqueue job", "TCP:6379")
+    Rel(worker, redis, "BullMQ consume job", "TCP:6379")
+    Rel(worker, pg, "Read/Write Operation state", "TCP:5432")
+    Rel(worker, mock, "HTTP call (dev/staging)", "HTTP:3099")
     Rel(nextjs, pg, "Prisma ORM", "TCP:5432")
     Rel(nextjs, volumes, "Read/Write files", "FS mount")
+    Rel(worker, volumes, "Read uploaded files", "FS mount")
 ```
+
+### 6.1 Vai trò từng container
+
+| Container | Image | Vai trò |
+|-----------|-------|---------|
+| **app** | `vietbn/AISkillHub:4.0.0` | Next.js API + Admin UI. Nhận request, tạo Operation, enqueue BullMQ job, trả 202. |
+| **worker** | `vietbn/AISkillHub:4.0.0` (CMD override) | Consumer BullMQ. Chạy `engine.ts` (Standard) hoặc `workflow-engine.ts` (Workflow). |
+| **db** | `postgres:16-alpine` | Lưu trữ toàn bộ state. Nguồn sự thật duy nhất. |
+| **redis** | `redis:7-alpine` | Job queue cho BullMQ. Worker subscribe qua `BLPOP`. |
+| **mock-service** | Custom Express | Mô phỏng External AI API (dev/staging). Port 3099. |
 
 ---
 
@@ -172,354 +233,271 @@ C4Container
 
 ```mermaid
 graph TB
-    subgraph "Next.js Application Container"
+    subgraph "Next.js Container (app)"
         subgraph "Middleware Layer"
-            MW[middleware.ts<br/>Dual Auth Gate]
+            MW["middleware.ts\nDual Auth Gate\nAPI Key / NextAuth JWT"]
         end
 
         subgraph "API Route Layer"
-            V1["/api/v1/{service}" Routes<br/>ingest, extract, analyze,<br/>transform, generate, compare]
-            CHAT["/api/chat" Route<br/>Chat Assistant proxy]
-            ADMIN["/api/operations<br/>/api/settings<br/>/api/users" Admin Routes]
-            INTERNAL["/api/internal/auth-key"<br/>Key validation]
-            HEALTH["/api/health"<br/>Healthcheck]
+            V1["/api/v1/{service}\ningest, extract, analyze,\ntransform, generate, compare"]
+            WF["/api/v1/workflows\nCode-driven Workflow trigger"]
+            OPS["/api/v1/operations/{id}\nStatus poll + Resume HITL"]
+            CHAT["/api/chat\nAdmin Chat Assistant"]
+            ADMIN["/api/settings\n/api/users\n/api/internal/auth-key"]
         end
 
-        subgraph "Core Engine"
-            REG[SERVICE_REGISTRY<br/>6 Services × 30 Sub-cases<br/>Unified ParamSchema Metadata]
-            RUNNER[Endpoint Runner<br/>Discriminator routing,<br/>Unified Param Guard & Merge]
-            SUBMIT[Pipeline Submit<br/>Validation, file save,<br/>Operation create]
-            ENGINE[Pipeline Engine<br/>Sequential step execution,<br/>retry, progress tracking]
-            EXT_API[External API Processor<br/>multipart/form-data builder,<br/>cURL logging, prompt interpolation]
-        end
-
-        subgraph "Shared Libraries"
-            AUTH[Auth Module<br/>NextAuth + bcrypt]
-            PRISMA[Prisma Client<br/>Type-safe ORM]
-            CRYPTO[Crypto Module<br/>AES-256-GCM]
-            LOGGER[Logger<br/>Structured JSON logs]
-            UPLOAD[Upload Helper<br/>File I/O]
-            PARSER[Parser Factory<br/>PDF/DOCX native parse]
+        subgraph "Core Routing"
+            REG["SERVICE_REGISTRY\n6 Services × 30+ Sub-cases\nUnified ParamSchema Metadata"]
+            RUNNER["Endpoint Runner\nDiscriminator routing\nParam Guard & Merge"]
+            SUBMIT["Pipeline Submit\nValidation, file save\nOperation create → BullMQ enqueue"]
         end
 
         subgraph "Admin UI (React)"
-            HOME[Home Page — 6 Services Grid]
-            DASH[Operations Dashboard]
-            PROFILES[Profile Manager]
-            SETTINGS[API Connections Manager]
+            HOME["Home — 6 Services Grid"]
+            DASH["Operations Dashboard\n(BullMQ-linked progress)"]
+            PROFILES["Profile Manager\nWorkflow Prompt Panel"]
+            AIDEMO["/ai-demo\nWorkflow HITL Demo UI"]
         end
     end
 
+    subgraph "Worker Container"
+        subgraph "Standard Pipeline Engine"
+            ENGINE["engine.ts\nSequential step runner\nCheckpoint/Resume\nSession chaining"]
+            EXTAPI["External API Processor\nmultipart/form-data builder\ncURL logging\nprompt interpolation"]
+        end
+
+        subgraph "Workflow Engine"
+            WFENGINE["workflow-engine.ts\nenqueueSubStep()\npauseWorkflow()\ncompleteWorkflow()\nparseDeep()"]
+            WREG["WORKFLOW_REGISTRY\ndisbursement → runDisbursement\nappraisal → runAppraisal\n..."]
+            WFLOWS["workflows/\ndisbursement.ts\nprompts/disbursement-prompts.ts"]
+        end
+    end
+
+    subgraph "Shared Libraries"
+        PRISMA["Prisma Client\nType-safe ORM"]
+        LOGGER["Logger\nStructured JSON\nBullMQ job binding"]
+        CRYPTO["Crypto Module\nAES-256-GCM"]
+        BULLMQ["BullMQ Client\nQueue: pipeline-jobs\nJob priority (LOW/MEDIUM/HIGH)"]
+    end
+
     MW --> V1
+    MW --> WF
+    MW --> OPS
     MW --> CHAT
-    MW --> ADMIN
     V1 --> RUNNER
-    CHAT --> EXT_API
+    WF --> SUBMIT
     RUNNER --> REG
     RUNNER --> SUBMIT
-    SUBMIT --> ENGINE
-    ENGINE --> EXT_API
-    EXT_API --> PARSER
-    RUNNER --> PRISMA
+    SUBMIT --> BULLMQ
+    BULLMQ -->|"Job consumed"| ENGINE
+    BULLMQ -->|"Job consumed"| WFENGINE
+    WFENGINE --> WREG
+    WREG --> WFLOWS
+    WFENGINE --> EXTAPI
+    ENGINE --> EXTAPI
+    EXTAPI --> LOGGER
     ENGINE --> PRISMA
-    ENGINE --> LOGGER
-    EXT_API --> LOGGER
-    AUTH --> PRISMA
-    SUBMIT --> UPLOAD
-    EXT_API --> CRYPTO
+    WFENGINE --> PRISMA
 ```
 
-### 7.1 SERVICE_REGISTRY & ParamSchema
-
-Version 2.0 đưa toàn bộ khai báo Metadata lưu tại `SERVICE_REGISTRY`, được định dạng bởi `ParamSchema`. Các schema này quy định rõ loại tham số, tính bắt buộc, và đặc biệt là cờ `defaultLocked` nhằm định tuyến cái nào được Client override và cái nào Admin được quyền khoá cứng (enforcement parameter).
+### 7.1 Prompt Override — 3 Tầng ưu tiên
 
 ```mermaid
-graph LR
-    subgraph "6 API Services"
-        ING[ingest]
-        EXT[extract]
-        ANA[analyze]
-        TRA[transform]
-        GEN[generate]
-        CMP[compare]
-    end
+graph TD
+    A["buildXxxPrompt(data, promptOverride?)"] --> B{promptOverride?}
+    B -- "YES" --> C["Tầng 2: Profile Override\nInterpolate {{variables}}"]
+    B -- "NO" --> D{_prompt in variables?}
+    D -- "YES" --> E["Tầng 1: Code Prompt\n(hardcoded trong *-prompts.ts)"]
+    D -- "NO" --> F["Tầng 3: DB Connector defaultPrompt\n(enqueueSubStep sẽ dùng connection.defaultPrompt)"]
 
-    subgraph "15+ External AI Connectors"
-        C1[ext-doc-layout]
-        C2[ext-vision-reader]
-        C3[ext-pdf-tools]
-        C4[ext-data-extractor]
-        C5[ext-classifier]
-        C6[ext-sentiment]
-        C7[ext-compliance]
-        C8[ext-fact-verifier]
-        C9[ext-quality-eval]
-        C10[ext-content-gen]
-        C11[ext-translator]
-        C12[ext-rewriter]
-        C13[ext-redactor]
-        C14[ext-qa-engine]
-        C15[ext-comparator]
-        CSYS[sys-assistant]
-    end
-
-    ING --> C1
-    ING --> C2
-    ING --> C3
-    EXT --> C4
-    ANA --> C5
-    ANA --> C6
-    ANA --> C7
-    ANA --> C4
-    ANA --> C8
-    ANA --> C9
-    ANA --> C10
-    TRA --> C1
-    TRA --> C11
-    TRA --> C12
-    TRA --> C13
-    GEN --> C10
-    GEN --> C14
-    CMP --> C15
+    G["workflow-engine.ts\ncreateWorkflowContext()"] --> H["Load _workflowPrompts\nfrom ProfileEndpoint.parameters"]
+    H --> I["ctx.promptOverrides = {\n  classify: '...'\n  report: '...'\n}"]
+    I -->|"Truyền vào"| A
 ```
+
+### 7.2 Connectors
+
+| Slug | Vai trò | Dùng tại |
+|------|---------|---------|
+| `ext-classifier` | Phân loại tài liệu & xác định logical docs | Workflow Step 1, analyze |
+| `ext-data-extractor` | Bóc tách dữ liệu có cấu trúc | Workflow Step 2, extract |
+| `ext-fact-verifier` | Đối chiếu chéo, compliance check | Workflow Step 3, analyze |
+| `ext-content-gen` | Soạn nội dung, báo cáo, tờ trình | Workflow Step 4, generate |
+| `ext-doc-layout` | Phân tích layout, OCR | ingest |
+| `ext-vision-reader` | Vision/OCR thông minh | ingest |
+| `ext-translator` | Dịch thuật | transform |
+| `ext-rewriter` | Rewrite, paraphrase | transform |
+| `ext-redactor` | Che giấu PII | transform |
+| `ext-comparator` | So sánh ngữ nghĩa | compare |
+| `sys-assistant` | Admin Chat Assistant | /api/chat |
 
 ---
 
 ## 8. Sequence Diagrams
 
-### 8.1 Luồng xử lý API Request (Async — Production Flow)
+### 8.1 BullMQ Standard Pipeline Flow
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Client as 📱 Client App
-    participant Nginx as 🔒 Nginx (TLS)
-    participant MW as 🛡️ Middleware
-    participant AuthSvc as 🔑 Auth Service
-    participant Router as 🔀 Endpoint Runner
-    participant Registry as 📋 Service Registry
+    participant App as 🏗️ Next.js App
+    participant Redis as 🔴 Redis (BullMQ)
+    participant Worker as ⚙️ Worker (engine.ts)
+    participant AI as 🤖 External AI / Mock
     participant DB as 🗄️ PostgreSQL
-    participant Submit as 📤 Pipeline Submit
-    participant Disk as 💾 File Storage
 
-    Client->>+Nginx: POST /api/v1/extract<br/>Headers: x-api-key, Content-Type: multipart<br/>Body: file + type=invoice
-    Nginx->>+MW: Proxy pass (HTTP:2023)
+    Client->>+App: POST /api/v1/extract (files + params)
+    App->>App: Auth (x-api-key)
+    App->>App: Routing, Param merge, Profile load
+    App->>DB: INSERT Operation { state: RUNNING }
+    App->>Redis: BullMQ.add('pipeline-jobs', { operationId })
+    App-->>-Client: 202 Accepted { operation_id }
 
-    rect rgb(255, 240, 240)
-        Note over MW,AuthSvc: Authentication Phase
-        MW->>+AuthSvc: GET /api/internal/auth-key<br/>Headers: x-api-key
-        AuthSvc->>DB: SELECT * FROM ApiKey WHERE keyHash = SHA256(key)
-        DB-->>AuthSvc: ApiKey { id, role, status, spendingLimit }
-        AuthSvc->>AuthSvc: Validate status=active, spending within limit
-        AuthSvc-->>-MW: { valid: true, apiKeyId: "uuid" }
-        MW->>MW: Inject header x-api-key-id = "uuid"
+    Redis->>+Worker: Job dequeued
+    Worker->>DB: Load Operation + pipeline steps
+    loop For each step[i]
+        Worker->>DB: UPDATE currentStep=i, progressPercent
+        Worker->>DB: Load ExternalApiConnection (slug)
+        Worker->>AI: POST multipart/form-data (prompt + files)
+        AI-->>Worker: JSON response
+        Worker->>Worker: parseDeep(response)
+        Worker->>DB: UPDATE stepsResultJson (checkpoint)
     end
+    Worker->>DB: UPDATE state=SUCCEEDED, outputContent
+    Worker-->>-Redis: Job complete
 
-    MW->>+Router: Forward request with x-api-key-id
-
-    rect rgb(240, 255, 240)
-        Note over Router,Registry: Routing & Param Resolution Phase
-        Router->>Registry: Lookup SERVICE_REGISTRY["extract"]
-        Registry-->>Router: ServiceDef { discriminator: "type", ParamSchema, subCases }
-        Router->>Router: Resolve subCase by type="invoice"
-        Router->>Router: Build Guardrails (block defaultLocked from client)
-        Router->>DB: SELECT * FROM ProfileEndpoint<br/>WHERE apiKeyId AND endpointSlug="extract:invoice"
-        DB-->>Router: ProfileEndpoint { parameters, connectionsOverride }
-        Router->>Router: Merge unified parameters: Client payload config + Profile JSON
-        Router->>Router: Resolve connections: override → registry default
-    end
-
-    rect rgb(240, 240, 255)
-        Note over Router,Disk: Pipeline Submission Phase
-        Router->>+Submit: submitPipelineJob({ pipeline, files, endpointSlug })
-        Submit->>DB: Validate connectors: ExternalApiConnection.state = ENABLED
-        Submit->>Submit: Check idempotencyKey (AIP-155)
-        Submit->>Disk: Save uploaded files → /uploads/{operationId}/
-        Submit->>DB: INSERT Operation { state: RUNNING, pipelineJson, filesJson }
-        Submit->>Submit: Fire-and-forget: runPipeline(operationId)
-        Submit-->>-Router: { ok: true, operation }
-    end
-
-    Router-->>MW: 202 Accepted<br/>Operation-Location: /api/v1/operations/{id}
-    MW-->>Nginx: Response
-    Nginx-->>-Client: 202 Accepted + operation_id
+    Client->>App: GET /api/v1/operations/{id}
+    App->>DB: SELECT Operation
+    App-->>Client: { state: SUCCEEDED, outputContent, usage }
 ```
 
-### 8.2 Pipeline Engine — Multi-Step Execution
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Engine as ⚙️ Pipeline Engine
-    participant DB as 🗄️ PostgreSQL
-    participant Processor as 🔌 External API Processor
-    participant Parser as 📄 Parser Factory
-    participant AI as 🤖 LLMs Hub / AI Backend
-    participant Webhook as 📡 Webhook
-
-    Engine->>DB: Load Operation (pipelineJson, filesJson)
-
-    loop For each step in pipeline[0..N]
-        Engine->>DB: UPDATE progress: step {i}/{N}, progressPercent
-
-        Engine->>DB: SELECT ExternalApiConnection WHERE slug = step.processor
-        DB-->>Engine: Connection { url, auth, prompt, responseContentPath }
-
-        opt Has per-client override
-            Engine->>DB: SELECT ExternalApiOverride WHERE connectionId + apiKeyId
-            DB-->>Engine: Override { promptOverride }
-        end
-
-        Engine->>+Processor: runExternalApiProcessor(ctx, connection, override)
-
-        alt Single file → Native parser available (PDF/DOCX)
-            Processor->>Parser: ParserFactory.getParserForFile(filename)
-            Parser-->>Processor: Parser instance
-            Processor->>Parser: parse(fileBuffer)
-            Parser-->>Processor: { markdown, pageCount }
-            Note over Processor: Skip external call → cost = $0
-        else External API required
-            Processor->>Processor: Resolve prompt: override → default<br/>Interpolate {{variables}}
-            Processor->>Processor: Build FormData:<br/>• prompt field<br/>• static form fields<br/>• file attachments
-            Processor->>Processor: Log cURL command (audit)
-            Processor->>+AI: HTTP POST multipart/form-data<br/>Headers: x-api-key / Bearer
-            AI-->>-Processor: JSON response
-            Processor->>Processor: resolveDotPath(response, "data.response")
-        end
-
-        Processor-->>-Engine: ProcessorResult { content, tokens, cost }
-
-        Engine->>Engine: Chain output → next step inputText
-        Engine->>DB: UPDATE stepsResultJson (intermediate save)
-    end
-
-    Engine->>DB: UPDATE Operation SET state=SUCCEEDED,<br/>outputFormat, outputContent, totalCostUsd, usageBreakdown
-    opt webhookUrl configured
-        Engine->>+Webhook: POST webhookUrl<br/>{ operation_id, metadata: { state: "SUCCEEDED" } }
-        Webhook-->>-Engine: 200 OK
-        Engine->>DB: UPDATE webhookSentAt
-    end
-```
-
-### 8.3 Operation Polling — Client-side
+### 8.2 Workflow HITL Flow (Code-Driven)
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Client as 📱 Client
-    participant GW as 🏗️ DUGate
+    participant App as 🏗️ Next.js App
+    participant Redis as 🔴 Redis
+    participant Worker as ⚙️ Worker (workflow-engine.ts)
+    participant AI as 🤖 External AI
     participant DB as 🗄️ PostgreSQL
+    participant Human as 👤 Human Reviewer
 
-    Client->>GW: POST /api/v1/extract (file + params)
-    GW-->>Client: 202 Accepted<br/>{ operation_id: "abc-123",<br/>  metadata: { state: "RUNNING" },<br/>  Operation-Location: "/api/v1/operations/abc-123" }
+    Client->>+App: POST /api/v1/workflows\n{ process: "disbursement", files }
+    App->>DB: INSERT Operation { state: RUNNING }
+    App->>Redis: BullMQ.add({ operationId, process: "disbursement" })
+    App-->>-Client: 202 Accepted { operation_id }
 
-    loop Poll every 2-5 seconds
-        Client->>GW: GET /api/v1/operations/abc-123
-        GW->>DB: SELECT * FROM Operation WHERE id = "abc-123"
-        DB-->>GW: Operation { state, progressPercent, progressMessage }
+    Redis->>+Worker: Job dequeued
+    Worker->>Worker: WORKFLOW_REGISTRY["disbursement"] → runDisbursement(ctx)
 
-        alt state = RUNNING
-            GW-->>Client: 200 { metadata: { state: "RUNNING", progress: 45, message: "Step 1/2..." } }
-        else state = SUCCEEDED
-            GW-->>Client: 200 { metadata: { state: "SUCCEEDED" }, result: { output_format: "json", content: "{...}" }, usage: { tokens: 1234, cost: 0.02 } }
-        else state = FAILED
-            GW-->>Client: 200 { metadata: { state: "FAILED", error_code: "PIPELINE_ERROR", message: "..." } }
-        end
+    rect rgb(240, 255, 240)
+        Note over Worker, AI: Step 1 - Parallel Classify
+        Worker->>AI: enqueueSubStep (ext-classifier) × N files
+        AI-->>Worker: classifyData per file
     end
+
+    rect rgb(240, 240, 255)
+        Note over Worker, AI: Step 2 - Parallel Extract (OCR)
+        Worker->>AI: enqueueSubStep (ext-data-extractor) × N files
+        AI-->>Worker: extractedData per file
+        Worker->>DB: stepsResult checkpoint saved
+    end
+
+    Worker->>DB: UPDATE state=WAITING_USER_INPUT\ncurrentStep=2, message="Vui lòng kiểm duyệt..."
+    Worker->>Worker: pauseWorkflow() → return
+    Worker-->>-Redis: Job complete
+
+    Note over Human, DB: Human reviews / edits extracted data in UI
+
+    Human->>+App: POST /api/v1/operations/{id}/resume\n{ step: 1, extracted_data: { ...edited... } }
+    App->>DB: UPDATE stepsResultJson[step=1].extracted_data\nUPDATE state=RUNNING
+    App->>Redis: BullMQ.add({ operationId, resumeFromStep: 2 })
+    App-->>-Human: 200 { status: "resumed" }
+
+    Redis->>+Worker: Job dequeued (resume)
+    Worker->>DB: Load stepsResult from checkpoint
+    rect rgb(255, 250, 230)
+        Note over Worker, AI: Step 3 - Crosscheck
+        Worker->>AI: enqueueSubStep (ext-fact-verifier)
+        AI-->>Worker: { verdict, score, checks }
+    end
+    rect rgb(255, 240, 240)
+        Note over Worker, AI: Step 4 - Generate Report
+        Worker->>AI: enqueueSubStep (ext-content-gen)
+        AI-->>Worker: Tờ trình thẩm định (Markdown)
+    end
+    Worker->>DB: UPDATE state=SUCCEEDED, outputContent
+    Worker-->>-Redis: Job complete
 ```
 
-### 8.4 Per-Profile Connector Routing Override
+### 8.3 API Request Routing & Param Resolution
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client as 📱 Client
+    participant MW as 🛡️ Middleware
+    participant Runner as 🔀 Endpoint Runner
+    participant DB as 🗄️ PostgreSQL
+
+    Client->>+MW: POST /api/v1/extract\nx-api-key: sk-xxx\nbody: { type: "invoice", files }
+    MW->>DB: GET /api/internal/auth-key (SHA256 lookup)
+    DB-->>MW: ApiKey { id, role, spendingLimit }
+    MW->>MW: Validate status=active, spending ok
+    MW->>+Runner: Forward + x-api-key-id header
+
+    Runner->>Runner: Lookup SERVICE_REGISTRY["extract"]
+    Runner->>Runner: Resolve subCase by type="invoice"
+    Runner->>Runner: Block defaultLocked params from client payload
+    Runner->>DB: SELECT ProfileEndpoint WHERE apiKeyId + "extract:invoice"
+    DB-->>Runner: { parameters, connectionsOverride, _workflowPrompts }
+    Runner->>Runner: Merge: Profile params override Client params
+    Runner->>Runner: Resolve connections: override > registry default
+    Runner-->>-MW: Merged pipeline config
+    MW-->>-Client: 202 + operation_id
+```
+
+### 8.4 Per-Profile Prompt Override (Workflow)
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Admin as 👤 Admin
-    participant UI as 🖥️ Admin Dashboard
+    participant UI as 🖥️ Profiles Page
     participant DB as 🗄️ PostgreSQL
-    participant Client as 📱 Client (Key A)
-    participant GW as 🏗️ DUGate
-    participant AI_OCR as 🤖 ext-ocr-premium
-    participant AI_Default as 🤖 ext-data-extractor
+    participant Worker as ⚙️ Worker
 
-    rect rgb(255, 250, 230)
-        Note over Admin,DB: Admin configures Profile Override
-        Admin->>UI: Set Key A → extract:invoice<br/>connectionsOverride = ["ext-ocr-premium"]
-        UI->>DB: UPSERT ProfileEndpoint { apiKeyId: A,<br/>endpointSlug: "extract:invoice",<br/>connectionsOverride: '["ext-ocr-premium"]' }
-    end
+    Admin->>UI: Mở Workflow Prompt Panel\n→ Override "Bước 4: Tờ trình"
+    Admin->>UI: Nhập prompt tùy chỉnh\ndùng {{classify_summary}} {{checks_summary}}
+    UI->>DB: UPSERT ProfileEndpoint.parameters\n{ _workflowPrompts: { report: "Custom prompt..." } }
 
-    rect rgb(230, 255, 230)
-        Note over Client,AI_OCR: Client A → uses overridden connector
-        Client->>GW: POST /api/v1/extract (type=invoice, x-api-key=A)
-        GW->>DB: Load ProfileEndpoint for Key A + "extract:invoice"
-        DB-->>GW: connectionsOverride = ["ext-ocr-premium"]
-        GW->>AI_OCR: Forward → ext-ocr-premium (overridden)
-        AI_OCR-->>GW: Result
-        GW-->>Client: 202 Accepted
-    end
+    Note over Worker: Khi Client gọi /api/v1/workflows
 
-    rect rgb(230, 240, 255)
-        Note over Client,AI_Default: Client B (no override) → uses default
-        Client->>GW: POST /api/v1/extract (type=invoice, x-api-key=B)
-        GW->>DB: Load ProfileEndpoint for Key B → null
-        GW->>AI_Default: Forward → ext-data-extractor (default from registry)
-        AI_Default-->>GW: Result
-        GW-->>Client: 202 Accepted
-    end
-```
-
-### 8.5 Admin Authentication — NextAuth Session Flow
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Browser as 🌐 Browser
-    participant Nginx as 🔒 Nginx
-    participant MW as 🛡️ Middleware
-    participant NextAuth as 🔐 NextAuth
-    participant DB as 🗄️ PostgreSQL
-
-    Browser->>Nginx: GET /settings
-    Nginx->>MW: Proxy pass
-    MW->>MW: getToken(req) — check JWT cookie
-    alt No valid JWT
-        MW-->>Browser: 302 Redirect → /login
-        Browser->>Nginx: POST /api/auth/callback/credentials<br/>{ username, password }
-        Nginx->>NextAuth: Forward
-        NextAuth->>DB: SELECT * FROM User WHERE username = ?
-        DB-->>NextAuth: User { id, password_hash, role }
-        NextAuth->>NextAuth: bcrypt.compare(input, hash)
-        alt Password valid
-            NextAuth-->>Browser: Set-Cookie: next-auth.session-token (JWT)<br/>302 Redirect → /settings
-        else Password invalid
-            NextAuth-->>Browser: Error: "Mật khẩu không chính xác"
-        end
-    else Valid JWT exists
-        MW-->>Browser: 200 OK — render /settings page
-    end
+    Worker->>DB: Load ProfileEndpoint.parameters._workflowPrompts
+    DB-->>Worker: { report: "Custom prompt..." }
+    Worker->>Worker: ctx.promptOverrides = { report: "Custom prompt..." }
+    Worker->>Worker: buildReportPrompt(data, ctx.promptOverrides.report)
+    Note over Worker: 3-tier: Code → Profile Override (ACTIVE) → DB Default
 ```
 
 ---
 
 ## 9. Deployment Architecture — Docker & Kubernetes
 
-### 9.1 Tổng quan triển khai
-
-Hệ thống được đóng gói hoàn toàn bằng **Docker** với multi-stage build (giảm image từ ~1.2GB → ~350MB), triển khai trên **Kubernetes** cho môi trường production. Môi trường dev/staging sử dụng Docker Compose.
-
-| Thành phần | Image | Port | Vai trò |
-|------------|-------|------|---------|
-| **dugate-app** | `node:20-slim` (multi-stage) | 2023 | API Gateway + Admin UI + Pipeline Engine |
-| **dugate-db** | `postgres:16-alpine` | 5432 | Operation state, API Key, Connection registry |
-| **nginx-ingress** | `nginx:alpine` | 80/443 | TLS termination, rate-limit, upload cap 300MB |
-
-### 9.2 Docker Compose — Development / Staging
+### 9.1 Docker Compose Stack (Dev/Staging)
 
 ```mermaid
 graph TB
-    subgraph "Docker Compose Stack"
-        subgraph "Network: dugate-net (bridge)"
-            APP["📦 app (dugate)<br/>node:20-slim<br/>Port: 2023"]
-            DB["🗄️ db<br/>postgres:16-alpine<br/>Port: 5432"]
+    subgraph "Docker Compose Stack (AISkillHub)"
+        subgraph "Network: AISkillHub-net"
+            APP["📦 app (Next.js)\nvietbn/AISkillHub:4.0.0\nPort: 2023\nCmd: node server.js"]
+            WORKER["⚙️ worker (BullMQ)\nvietbn/AISkillHub:4.0.0\nCmd: npx tsx worker.ts\nConcurrency: 5"]
+            DB["🗄️ db\npostgres:16-alpine\nPort: 5432"]
+            REDIS["🔴 redis\nredis:7-alpine\nPort: 6379"]
+            MOCK["🤖 mock-service\nCustom Express\nPort: 3099"]
         end
 
         subgraph "Persistent Volumes"
@@ -528,60 +506,93 @@ graph TB
             V3[("outputs")]
         end
 
-        APP --> DB
+        APP -->|TCP:5432| DB
+        APP -->|TCP:6379| REDIS
+        WORKER -->|TCP:5432| DB
+        WORKER -->|TCP:6379| REDIS
+        WORKER -->|HTTP:3099 dev| MOCK
         DB --> V1
         APP --> V2
         APP --> V3
+        WORKER --> V2
     end
 
     CLIENT[Client] -->|:2023| APP
+    ADMIN[Admin UI] -->|:2023| APP
 ```
 
-### 9.3 Kubernetes — Production Topology
+### 9.2 Service Configuration
+
+| Service | Image | Port | Restart | Depends on |
+|---------|-------|------|---------|------------|
+| **app** | `vietbn/AISkillHub:4.0.0` | 2023 | unless-stopped | db (healthy), redis (healthy) |
+| **worker** | `vietbn/AISkillHub:4.0.0` (CMD override) | — | unless-stopped | db (healthy), redis (healthy) |
+| **db** | `postgres:16-alpine` | 5432 | unless-stopped | — |
+| **redis** | `redis:7-alpine` | 6379 | unless-stopped | — |
+| **mock-service** | Custom Express | 3099 | unless-stopped | — (independent) |
+
+### 9.3 Worker Configuration
+
+| ENV | Mặc định | Ý nghĩa |
+|-----|---------|---------|
+| `REDIS_URL` | `redis://redis:6379` | Kết nối BullMQ |
+| `DATABASE_URL` | `postgresql://...` | Prisma connection |
+| `WORKER_CONCURRENCY` | `5` | Số job chạy song song |
+| `ENCRYPTION_KEY` | Required | Giải mã AI API keys từ DB |
+
+### 9.4 Kubernetes — Production Topology
 
 ```mermaid
 graph TB
-    subgraph "Kubernetes Cluster"
-        subgraph "Namespace: dugate-prod"
-            ING[☁️ Ingress Controller<br/>TLS + cert-manager<br/>300M upload limit]
+    subgraph "Kubernetes Cluster — Namespace: AISkillHub-prod"
+        ING["☁️ Ingress Controller\nTLS + cert-manager\n300M upload limit"]
 
-            subgraph "Deployment: dugate-app (3 replicas)"
-                POD1["Pod 1"]
-                POD2["Pod 2"]
-                POD3["Pod 3"]
-            end
-
-            SVC_APP[Service: dugate-app<br/>ClusterIP:2023]
-
-            subgraph "StatefulSet: dugate-db"
-                DB_POD["Pod: postgres:16<br/>PVC: 50Gi"]
-            end
-
-            SVC_DB[Service: dugate-db<br/>ClusterIP:5432]
-            HPA[HPA: min 2 → max 10<br/>CPU target: 70%]
+        subgraph "Deployment: AISkillHub-app (2-10 replicas)"
+            POD1["App Pod 1\nNext.js :2023"]
+            POD2["App Pod 2\nNext.js :2023"]
         end
+
+        subgraph "Deployment: AISkillHub-worker (1-5 replicas)"
+            WPOD1["Worker Pod 1\ntsx worker.ts"]
+            WPOD2["Worker Pod 2\ntsx worker.ts"]
+        end
+
+        SVC_APP["Service: AISkillHub-app\nClusterIP:2023"]
+        SVC_WORKER["(No Service needed\n— pulls from Redis)"]
+
+        subgraph "StatefulSet: AISkillHub-db"
+            DB_POD["postgres:16\nPVC: 50Gi"]
+        end
+
+        subgraph "Deployment: redis"
+            REDIS_POD["redis:7\nPVC: 5Gi"]
+        end
+
+        HPA_APP["HPA App\nmin 2 → max 10\nCPU 70%"]
+        HPA_WORKER["HPA Worker\nmin 1 → max 5\nBullMQ queue depth"]
     end
 
-    INTERNET[🌐 Internet] -->|HTTPS| ING
+    INTERNET --> ING
     ING --> SVC_APP
     SVC_APP --> POD1
     SVC_APP --> POD2
-    SVC_APP --> POD3
-    POD1 --> SVC_DB
-    SVC_DB --> DB_POD
-    HPA -.->|Auto-scale| POD1
+    WPOD1 -->|BullMQ consume| REDIS_POD
+    WPOD2 -->|BullMQ consume| REDIS_POD
+    POD1 -->|enqueue| REDIS_POD
+    POD1 --> DB_POD
+    WPOD1 --> DB_POD
+    HPA_APP -.->|autoscale| POD1
+    HPA_WORKER -.->|autoscale| WPOD1
 ```
 
-**Đặc điểm triển khai chính:**
+**Điểm mới trong Kubernetes v2.1:**
 
 | Khía cạnh | Cấu hình |
-|-----------|----------|
-| **Deployment strategy** | RollingUpdate — `maxSurge: 1`, `maxUnavailable: 0` (zero-downtime) |
-| **Auto-scaling** | HPA: 2 → 10 pods, trigger tại CPU 70% hoặc Memory 80% |
-| **Health check** | Liveness + Readiness probe qua `GET /api/health` |
-| **Secrets** | K8s Secret: `DB_PASSWORD`, `NEXTAUTH_SECRET`, `ENCRYPTION_KEY` |
-| **Storage** | PVC ReadWriteMany cho `uploads/` và `outputs/` |
-| **Database** | StatefulSet + PVC 50Gi ReadWriteOnce |
+|-----------|---------|
+| **Worker scaling** | HPA riêng dựa trên BullMQ queue depth (KEDA metric adapter) |
+| **Worker replicas** | Stateless — nhiều worker cùng consume queue, BullMQ đảm bảo at-most-once |
+| **App replicas** | Stateless — shared volumes (uploads/outputs) qua PVC ReadWriteMany |
+| **Redis** | PVC 5Gi — append-only persistence cho durability |
 
 ---
 
@@ -592,21 +603,30 @@ graph TB
 | Endpoint Pattern | Auth Method | Token / Key | Session Type |
 |-----------------|-------------|-------------|--------------|
 | `/api/v1/*` | API Key Header | `x-api-key` → SHA-256 → DB lookup | Stateless |
-| `/api/chat` | NextAuth JWT | Cookie Auth Guard | Stateless (Bot usage via session) |
-| `/api/auth/*` | NextAuth Credentials | username + bcrypt password | JWT cookie |
-| `/api/internal/*` | Internal only (middleware bypass) | N/A — only callable by middleware | N/A |
+| `/api/v1/operations/{id}/resume` | API Key Header | Same x-api-key | Stateless |
+| `/api/chat` | NextAuth JWT | Cookie | JWT cookie |
+| `/api/auth/*` | NextAuth Credentials | username + bcrypt | JWT cookie |
+| `/api/internal/*` | Internal only (middleware bypass) | N/A | N/A |
 | `/api/health` | None (public) | N/A | N/A |
 | `/*` (pages) | NextAuth JWT | Session cookie | JWT |
 
-### 10.2 Secrets Management
+### 10.2 Prompt Security
 
-| Secret | Storage | Rotation Strategy |
-|--------|---------|-------------------|
-| `DB_PASSWORD` | K8s Secret / `.env` | Quarterly, zero-downtime via pg_hba reload |
-| `NEXTAUTH_SECRET` | K8s Secret | Requires re-login for all admin sessions |
-| `ENCRYPTION_KEY` | K8s Secret | Requires re-encrypt all ExternalApiConnection.authSecret |
-| AI API Keys | DB (AES-256-GCM encrypted) | Admin changes via Dashboard — no deployment needed |
-| `x-api-key` (client) | Client-managed | Admin revokes + issues new key via Dashboard |
+| Rủi ro | Biện pháp |
+|--------|----------|
+| Prompt injection từ Client | `defaultLocked: true` params bị strip trước khi merge |
+| Client bypass profile prompt | `isLocked: true` trên `_workflowPrompts` → Client không override được |
+| Prompt leak qua log | cURL log chỉ ghi lại metadata, không ghi full prompt content |
+
+### 10.3 Secrets Management
+
+| Secret | Storage | Rotation |
+|--------|---------|---------|
+| `DB_PASSWORD` | K8s Secret / `.env` | Quarterly |
+| `NEXTAUTH_SECRET` | K8s Secret | Requires re-login |
+| `ENCRYPTION_KEY` | K8s Secret | Requires re-encrypt DB |
+| AI API Keys | DB (AES-256-GCM) | Admin dashboard — no deploy |
+| `x-api-key` (client) | Client-managed | Admin revoke + issue |
 
 ---
 
@@ -614,15 +634,17 @@ graph TB
 
 | NFR | Target | Implementation |
 |-----|--------|---------------|
-| **Availability** | 99.9% uptime | K8s replicas ≥ 2, RollingUpdate zero-downtime, PG healthcheck |
-| **Latency (P95)** | < 500ms (gateway overhead) | Direct proxy, no message queue, async pipeline |
-| **Throughput** | 100 req/s sustained | HPA auto-scale 2→10 pods, connection pooling via Prisma |
-| **Max upload** | 300MB per file | Nginx `client_max_body_size`, K8s Ingress annotation |
-| **Pipeline timeout** | 300s per connector step | Per-connector `timeoutSec` config, AbortController |
-| **Data retention** | Files: 24h, Operations: 30d | Cleanup scheduler cron + `filesDeleted` flag |
-| **Recovery (RPO/RTO)** | RPO: 1h, RTO: 15min | PG WAL archival, PVC snapshots, rollout undo |
-| **Observability** | Full structured logging | JSON log format, correlation ID, cURL audit trail |
-| **Scalability** | Horizontal only | Stateless app pods, shared PVC for uploads |
+| **Availability** | 99.9% uptime | K8s replicas ≥ 2, RollingUpdate zero-downtime |
+| **Latency (P95)** | < 500ms gateway overhead | Async 202, no blocking in Next.js |
+| **Throughput** | 100 req/s sustained | HPA app + worker scaling, BullMQ concurrency |
+| **Max upload** | 300MB per file | Nginx `client_max_body_size` |
+| **Sub-step timeout** | 120s per sub-step | SUB_STEP_TIMEOUT in workflow-engine, AbortController |
+| **Pipeline timeout** | 300s per connector step (Standard) | Per-connector `timeoutSec` |
+| **Data retention** | Files: 24h, Operations: 30d | Cleanup scheduler cron |
+| **Recovery (RPO/RTO)** | RPO: 1h, RTO: 15min | PG WAL, PVC snapshots, rollout undo |
+| **Observability** | Full structured logging | JSON logs, correlationId, BullMQ Dashboard |
+| **HITL SLA** | System waits indefinitely | `WAITING_USER_INPUT` persisted in DB |
+| **Job at-most-once** | No duplicate execution | BullMQ job ID idempotency |
 
 ---
 
@@ -630,16 +652,18 @@ graph TB
 
 | Layer | Technology | Lý do chọn | Thay thế đã xem xét |
 |-------|-----------|-----------|---------------------|
-| **Runtime** | Node.js 20 LTS | Ecosystem Next.js, async I/O native, low-memory footprint | Deno (immature ecosystem) |
-| **Framework** | Next.js 14 App Router | SSR admin UI + API routes cùng codebase, chuẩn Vercel | Express.js (không có SSR), NestJS (over-engineering) |
-| **Database** | PostgreSQL 16 | ACID, JSONB native, Prisma first-class support, mature | MySQL (JSONB yếu), MongoDB (không ACID) |
-| **ORM** | Prisma 5 | Type-safe schema, auto-migration, connection pooling | TypeORM (less type-safe), Drizzle (younger ecosystem) |
-| **Auth** | NextAuth v4 + bcryptjs | Native Next.js integration, JWT stateless, credential provider | Passport.js (not Next-native), Clerk (SaaS dependency) |
-| **Encryption** | AES-256-GCM (native crypto) | Zero-dependency, NIST approved, authenticated encryption | Vault (infrastructure overhead) |
-| **Container** | Docker + multi-stage build | 350MB production image, reproducible builds | Podman (less tooling) |
-| **Orchestration** | Kubernetes | HPA, rolling update, secret management, network policy | Docker Swarm (limited auto-scaling) |
-| **Reverse Proxy** | Nginx | TLS termination, rate-limit, mature config | Traefik (auto-discovery overkill for single service) |
-| **AI Integration** | HTTP multipart/form-data via LLMs Hub | Provider-agnostic, tương thích LLMs Hub nội bộ, no SDK lock-in | SDK per-provider (tight coupling, bypass Hub) |
+| **Runtime** | Node.js 20 LTS | Ecosystem Next.js, async I/O native | Deno (immature) |
+| **Framework** | Next.js 14 App Router | SSR admin UI + API routes cùng codebase | Express.js (no SSR) |
+| **Database** | PostgreSQL 16 | ACID, JSONB, Prisma support | MySQL (JSONB yếu) |
+| **ORM** | Prisma 5 | Type-safe, auto-migration | TypeORM (less type-safe) |
+| **Job Queue** | BullMQ + Redis 7 | Priority queue, retry, dashboard, at-most-once | Sidekiq (Ruby), Celery (Python) |
+| **Auth** | NextAuth v4 + bcryptjs | Native Next.js, JWT stateless | Passport.js |
+| **Encryption** | AES-256-GCM (native crypto) | Zero-dep, NIST approved | Vault (infra overhead) |
+| **Container** | Docker multi-stage | 350MB image | Podman |
+| **Orchestration** | Kubernetes | HPA, rolling update, secrets | Docker Swarm (limited scale) |
+| **Reverse Proxy** | Nginx | TLS, rate-limit | Traefik |
+| **Worker** | tsx (TypeScript executor) | No compile step, hot-reload dev | ts-node, compiled JS |
+| **AI Integration** | HTTP multipart/form-data via LLMs Hub | Provider-agnostic, no SDK lock-in | Per-provider SDK |
 
 ---
 
@@ -655,11 +679,12 @@ graph TB
 
 ---
 
-> **Document Control**  
-> - v2.0 (2026-04-04): Cập nhật kiến trúc tham số Unified Parameters, ParamSchema Metadata, Tích hợp tính năng Chat Assistant. 
-> - v1.0 (2026-04-03): Initial draft — full architecture with sequence diagrams, Docker & K8s deployment
-> - Next review: Q3-2026
+> **Document Control**
+> - v2.1 (2026-04-13): Cập nhật kiến trúc BullMQ Worker container, Workflow Engine code-driven, HITL pause/resume, 3-tier Prompt Override system, Mock Service, parseDeep utility. Docker image `vietbn/AISkillHub:4.0.0`.
+> - v2.0 (2026-04-04): Unified Parameters, ParamSchema Metadata, Chat Assistant integration.
+> - v1.0 (2026-04-03): Initial draft — 6 API endpoints, Docker & K8s deployment.
+> - Next review: Q2-2026
 
 ---
 
-*DUGate — Kiến trúc chuẩn hóa truy cập Document AI cho doanh nghiệp.*
+*AISkillHub — Kiến trúc chuẩn hóa truy cập Document AI cho doanh nghiệp.*

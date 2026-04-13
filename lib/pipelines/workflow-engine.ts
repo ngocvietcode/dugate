@@ -24,7 +24,7 @@ export interface WorkflowStepResult {
   stepName: string;
   processor: string;
   sub_operation_id?: string;
-  content_preview?: string | null;
+  content_preview?: unknown;    // Can be string, object, or null
   extracted_data?: unknown;
   sub_results?: unknown[];
 }
@@ -53,9 +53,47 @@ export interface WorkflowContext {
   apiKeyId: string | null;
   /** Per-step prompt overrides loaded from ProfileEndpoint (key = step name, value = prompt text) */
   promptOverrides: Record<string, string>;
+  /** Checkpoint: current step index (used for resume) */
+  currentStep: number;
 }
 
 // ─── Helpers (exported for workflow files) ─────────────────────────────────────
+
+/**
+ * Recursively parse all nested JSON strings in a value into native objects.
+ * Eliminates the "double-escaped JSON" problem from AI connector responses.
+ * Safe to use on strings, objects, and arrays.
+ */
+export const parseDeep = (val: unknown): unknown => {
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (
+      (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))
+    ) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return parseDeep(parsed); // Recursive call to unpack multiple layers
+      } catch {
+        return val;
+      }
+    }
+    return val;
+  }
+
+  if (val && typeof val === 'object') {
+    if (Array.isArray(val)) {
+      return val.map(parseDeep);
+    }
+    const out: Record<string, unknown> = {};
+    for (const key in val as Record<string, unknown>) {
+      out[key] = parseDeep((val as Record<string, unknown>)[key]);
+    }
+    return out;
+  }
+
+  return val;
+};
 
 /**
  * Enqueue a sub-step as a proper BullMQ job.
@@ -177,6 +215,30 @@ export async function completeWorkflow(ctx: WorkflowContext, outputContent: stri
   await sendWebhook(ctx, 'SUCCEEDED');
 }
 
+/** Mark parent operation as WAITING_USER_INPUT (Paused for Human-in-the-Loop) */
+export async function pauseWorkflow(ctx: WorkflowContext, message: string, currentStep: number) {
+  await prisma.operation.update({
+    where: { id: ctx.operationId },
+    data: {
+      done: false,
+      state: 'WAITING_USER_INPUT',
+      progressMessage: message,
+      currentStep, // Save Checkpoint index to resume from there
+      stepsResultJson: JSON.stringify(ctx.stepsResult),
+      
+      // Track usage accumulated so far
+      totalInputTokens: ctx.totalInputTokens,
+      totalOutputTokens: ctx.totalOutputTokens,
+      totalCostUsd: ctx.totalCost,
+    },
+  });
+  // Note: We don't set progressPercent to 100 here since it's waiting
+  ctx.logger.info(`[WORKFLOW] Paused at step ${currentStep} for ${ctx.operationId}: ${message}`);
+
+  // Send a webhook indicating PAUSED state if configured
+  await sendWebhook(ctx, 'PAUSED' as any, message);
+}
+
 /** Mark parent operation as FAILED + send webhook if configured */
 export async function failWorkflow(ctx: WorkflowContext, error: unknown) {
   const msg = error instanceof Error ? error.message : String(error);
@@ -208,7 +270,7 @@ async function sendWebhook(ctx: WorkflowContext, state: 'SUCCEEDED' | 'FAILED', 
   const payload: Record<string, unknown> = {
     operation_id: ctx.operationId,
     state,
-    done: true,
+    done: state === 'SUCCEEDED' || state === 'FAILED', // PAUSED is not done
   };
   if (errorMessage) payload.error = errorMessage;
 
@@ -296,13 +358,14 @@ export async function createWorkflowContext(
     filesJson: operation.filesJson,
     filesData,
     pipelineVars,
-    stepsResult: [],
-    totalInputTokens: 0,
-    totalOutputTokens: 0,
-    totalCost: 0,
+    stepsResult: operation.stepsResultJson ? JSON.parse(operation.stepsResultJson) : [],
+    totalInputTokens: operation.totalInputTokens || 0,
+    totalOutputTokens: operation.totalOutputTokens || 0,
+    totalCost: operation.totalCostUsd || 0,
     webhookUrl: operation.webhookUrl,
     apiKeyId: operation.apiKeyId,
     promptOverrides,
+    currentStep: operation.currentStep,
   };
 }
 
