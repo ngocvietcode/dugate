@@ -73,20 +73,26 @@ export async function runPipeline(operationId: string, correlationId?: string, j
   try {
     const parsedPipeline = JSON.parse(operation.pipelineJson) as unknown;
     if (!Array.isArray(parsedPipeline)) {
-      throw new Error('pipelineJson is not an array');
+      throw new Error('INVALID_PIPELINE_STRUCTURE');
     }
     if (!parsedPipeline.every(isPipelineStep)) {
-      throw new Error('pipelineJson contains invalid step objects');
+      throw new Error('INVALID_PIPELINE_STRUCTURE');
     }
     pipeline = parsedPipeline as PipelineStep[];
 
     const parsedFiles = operation.filesJson ? JSON.parse(operation.filesJson) as unknown : [];
     if (!Array.isArray(parsedFiles)) {
-      throw new Error('filesJson is not an array');
+      throw new Error('INVALID_FILES_STRUCTURE');
     }
     filesData = parsedFiles as Array<{ name: string; path: string; mime: string; size: number }>;
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error);
+    const msg = error instanceof Error ? error.message : '';
+    const clientErrorMessage =
+      msg === 'INVALID_PIPELINE_STRUCTURE'
+        ? 'Invalid pipeline structure.'
+        : msg === 'INVALID_FILES_STRUCTURE'
+          ? 'Invalid files structure.'
+          : 'Invalid pipeline payload.';
     logger.error(`[PIPELINE_FAILED] Invalid operation JSON for ${operationId}: ${msg}`, undefined, error);
     await prisma.operation.update({
       where: { id: operationId },
@@ -95,7 +101,7 @@ export async function runPipeline(operationId: string, correlationId?: string, j
         state: 'FAILED',
         failedAtStep: 0,
         errorCode: 'PIPELINE_INVALID_JSON',
-        errorMessage: 'Invalid pipeline payload.',
+        errorMessage: clientErrorMessage,
         stepsResultJson: JSON.stringify([]),
       },
     });
