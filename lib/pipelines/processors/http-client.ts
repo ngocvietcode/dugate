@@ -111,6 +111,14 @@ export async function fetchWithTimeout(
       throw new Error(`External API returned HTTP ${response.status}: ${errorBody.substring(0, 500)}`);
     }
 
+    const contentType = response.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) {
+      const text = await response.text().catch(() => '(unreadable)');
+      throw new Error(
+        `External API returned non-JSON response (Content-Type: ${contentType || 'none'}): ${text.substring(0, 200)}`,
+      );
+    }
+
     return await response.json();
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {

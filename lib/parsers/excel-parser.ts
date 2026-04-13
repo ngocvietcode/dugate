@@ -14,59 +14,60 @@ export class ExcelParser implements DocumentParser {
   async parse(fileBuffer: Buffer, fileName: string): Promise<ParseResult> {
     // xlsx.read works completely synchronously but we keep async interface
     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
-    let fullMarkdown = '';
-    let fullText = '';
+    // Use arrays + join to avoid O(n²) string concatenation in loops
+    const markdownParts: string[] = [];
+    const textParts: string[] = [];
     let totalCells = 0;
-    
+
     for (const sheetName of workbook.SheetNames) {
       const sheet = workbook.Sheets[sheetName];
       const rows = xlsx.utils.sheet_to_json(sheet, { header: 1, blankrows: false }) as any[][];
-      
+
       if (rows.length === 0) continue;
-      
-      fullMarkdown += `### Sheet: ${sheetName}\n\n`;
-      fullText += `--- Sheet: ${sheetName} ---\n`;
-      
+
+      markdownParts.push(`### Sheet: ${sheetName}\n\n`);
+      textParts.push(`--- Sheet: ${sheetName} ---\n`);
+
       // Determine max columns
       let numCols = 0;
       for (const row of rows) {
         if (row.length > numCols) numCols = row.length;
       }
-      
+
       if (numCols > 0) {
         // Build Headers
         const headerRow = rows[0] || [];
         const headerStrings = Array.from({length: numCols}, (_, i) => {
-           let val = headerRow[i] !== undefined && headerRow[i] !== null ? String(headerRow[i]) : `Col ${i+1}`;
+           const val = headerRow[i] !== undefined && headerRow[i] !== null ? String(headerRow[i]) : `Col ${i+1}`;
            return val.replace(/\|/g, '\\|').replace(/\n/g, ' ');
         });
 
-        fullMarkdown += `| ${headerStrings.join(' | ')} |\n`;
-        fullMarkdown += `| ${headerStrings.map(() => '---').join(' | ')} |\n`;
-        fullText += headerStrings.join('\t') + '\n';
+        markdownParts.push(`| ${headerStrings.join(' | ')} |\n`);
+        markdownParts.push(`| ${headerStrings.map(() => '---').join(' | ')} |\n`);
+        textParts.push(headerStrings.join('\t') + '\n');
         totalCells += numCols;
-        
+
         // Build Rows
         for (let i = 1; i < rows.length; i++) {
           const row = rows[i] || [];
           const rowStrings = Array.from({length: numCols}, (_, j) => {
-            let val = row[j] !== undefined && row[j] !== null ? String(row[j]) : '';
+            const val = row[j] !== undefined && row[j] !== null ? String(row[j]) : '';
             return val.replace(/\|/g, '\\|').replace(/\n/g, '<br>');
           });
-          
-          fullMarkdown += `| ${rowStrings.join(' | ')} |\n`;
-          fullText += rowStrings.join('\t') + '\n';
+
+          markdownParts.push(`| ${rowStrings.join(' | ')} |\n`);
+          textParts.push(rowStrings.join('\t') + '\n');
           totalCells += numCols;
         }
       }
-      
-      fullMarkdown += '\n';
-      fullText += '\n';
+
+      markdownParts.push('\n');
+      textParts.push('\n');
     }
 
     return {
-      text: fullText.trim(),
-      markdown: fullMarkdown.trim(),
+      text: textParts.join('').trim(),
+      markdown: markdownParts.join('').trim(),
       metadata: {
         sheetNames: workbook.SheetNames,
         totalCells

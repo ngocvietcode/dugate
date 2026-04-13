@@ -57,6 +57,31 @@ export interface ProcessorResult {
 }
 
 /**
+ * Send a webhook notification with up to 3 attempts (exponential backoff).
+ * Returns true if delivered, false if all attempts failed.
+ */
+async function sendWebhook(url: string, payload: object, logger: Logger): Promise<boolean> {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok) return true;
+      logger.warn(`Webhook attempt ${attempt}/3 returned HTTP ${res.status} for ${url}`);
+    } catch (e) {
+      logger.warn(`Webhook attempt ${attempt}/3 failed for ${url}`, undefined, e);
+    }
+    if (attempt < 3) {
+      await new Promise((r) => setTimeout(r, attempt * 1000));
+    }
+  }
+  return false;
+}
+
+/**
  * Main pipeline runner. Called async after Operation is created.
  */
 export async function runPipeline(operationId: string, correlationId?: string, job?: Job<any>): Promise<void> {
@@ -163,6 +188,25 @@ export async function runPipeline(operationId: string, correlationId?: string, j
     cost_usd: number;
   }> = [];
 
+  // ── Pre-load all connections & overrides (avoid N+1 queries in the loop) ────
+  const processorSlugs = pipeline.map((s) => s.processor);
+  const allConnections = await prisma.externalApiConnection.findMany({
+    where: { slug: { in: processorSlugs } },
+  });
+  const connectionMap = new Map(allConnections.map((c) => [c.slug, c]));
+
+  const allOverrides = operation.apiKeyId && operation.endpointSlug
+    ? await prisma.externalApiOverride.findMany({
+        where: {
+          apiKeyId: operation.apiKeyId,
+          endpointSlug: operation.endpointSlug,
+        },
+      })
+    : [];
+  // Key: `${connectionId}:${stepId}`
+  const overrideMap = new Map(allOverrides.map((o) => [`${o.connectionId}:${o.stepId}`, o]));
+  // ─────────────────────────────────────────────────────────────────────────────
+
   try {
     for (let i = resumeFromStep; i < pipeline.length; i++) {
       const step = pipeline[i];
@@ -192,10 +236,8 @@ export async function runPipeline(operationId: string, correlationId?: string, j
         variables['input_content'] = currentText;
       }
 
-      // Load ExternalApiConnection
-      const connection = await prisma.externalApiConnection.findUnique({
-        where: { slug: step.processor },
-      });
+      // Look up pre-loaded ExternalApiConnection
+      const connection = connectionMap.get(step.processor);
       if (!connection) {
         throw new Error(`ExternalApiConnection '${step.processor}' not found in database.`);
       }
@@ -203,20 +245,9 @@ export async function runPipeline(operationId: string, correlationId?: string, j
         throw new Error(`ExternalApiConnection '${connection.slug}' is DISABLED.`);
       }
 
-      // Load per-client, per-endpoint, per-step prompt override
+      // Look up pre-loaded per-client, per-endpoint, per-step prompt override
       const resolvedStepId = step.stepId ?? '_default';
-      const extOverride = operation.apiKeyId && operation.endpointSlug
-        ? await prisma.externalApiOverride.findUnique({
-            where: {
-              connectionId_apiKeyId_endpointSlug_stepId: {
-                connectionId: connection.id,
-                apiKeyId: operation.apiKeyId,
-                endpointSlug: operation.endpointSlug,
-                stepId: resolvedStepId,
-              },
-            },
-          })
-        : null;
+      const extOverride = overrideMap.get(`${connection.id}:${resolvedStepId}`) ?? null;
 
       if (extOverride) {
         logger.info(`Applied ExtApiOverride for '${connection.slug}' step='${resolvedStepId}' (key: ${operation.apiKeyId})`);
@@ -314,20 +345,20 @@ export async function runPipeline(operationId: string, correlationId?: string, j
       await job.updateProgress(100);
     }
 
-    // Webhook notification
+    // Webhook notification (with retry)
     if (operation.webhookUrl) {
-      try {
-        await fetch(operation.webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ operation_id: operationId, state: 'SUCCEEDED', done: true }),
-        });
+      const delivered = await sendWebhook(
+        operation.webhookUrl,
+        { operation_id: operationId, state: 'SUCCEEDED', done: true },
+        logger,
+      );
+      if (delivered) {
         await prisma.operation.update({
           where: { id: operationId },
           data: { webhookSentAt: new Date() },
         });
-      } catch (e) {
-        logger.warn(`Webhook failed for ${operationId}`, undefined, e);
+      } else {
+        logger.error(`Webhook delivery failed after 3 attempts for ${operationId}`);
       }
     }
 
@@ -359,18 +390,18 @@ export async function runPipeline(operationId: string, correlationId?: string, j
     });
 
     if (operation.webhookUrl) {
-      try {
-        await fetch(operation.webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ operation_id: operationId, state: 'FAILED', error: msg }),
-        });
+      const delivered = await sendWebhook(
+        operation.webhookUrl,
+        { operation_id: operationId, state: 'FAILED', error: msg },
+        logger,
+      );
+      if (delivered) {
         await prisma.operation.update({
           where: { id: operationId },
           data: { webhookSentAt: new Date() },
         });
-      } catch (webhookErr) {
-        logger.error(`Failure webhook failed for ${operationId}`, undefined, webhookErr);
+      } else {
+        logger.error(`Failure webhook delivery failed after 3 attempts for ${operationId}`);
       }
     }
   }

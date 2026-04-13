@@ -176,24 +176,43 @@ export async function submitPipelineJob(
   // When DISABLE_HISTORY=true, soft-delete immediately so it won't appear in history queries
   const disableHistory = params.disableHistory ?? (process.env.DISABLE_HISTORY === 'true');
 
-  let operation = await prisma.operation.create({
-    data: {
-      id:              operationId,
-      apiKeyId:        apiKeyId || null,
-      createdByUserId: userId || null,
-      idempotencyKey:  idempotencyKey || null,
-      endpointSlug:    endpointSlug || null,
-      pipelineJson:    JSON.stringify(pipeline),
-      filesJson:       filesData.length > 0 ? JSON.stringify(filesData) : null,
-      outputFormat,
-      webhookUrl:      webhookUrl ?? null,
-      state:           'RUNNING',
-      done:            false,
-      progressPercent: 0,
-      progressMessage: 'Initializing pipeline...',
-      deletedAt:       disableHistory ? new Date() : null,
-    },
-  });
+  let operation: any;
+  try {
+    operation = await prisma.operation.create({
+      data: {
+        id:              operationId,
+        apiKeyId:        apiKeyId || null,
+        createdByUserId: userId || null,
+        idempotencyKey:  idempotencyKey || null,
+        endpointSlug:    endpointSlug || null,
+        pipelineJson:    JSON.stringify(pipeline),
+        filesJson:       filesData.length > 0 ? JSON.stringify(filesData) : null,
+        outputFormat,
+        webhookUrl:      webhookUrl ?? null,
+        state:           'RUNNING',
+        done:            false,
+        progressPercent: 0,
+        progressMessage: 'Initializing pipeline...',
+        deletedAt:       disableHistory ? new Date() : null,
+      },
+    });
+  } catch (createErr: unknown) {
+    // Handle idempotency race: two concurrent requests with the same key may both pass the
+    // findUnique check above, but the DB unique constraint ensures only one succeeds.
+    // The loser gets a unique constraint violation — resolve it by returning the winner's record.
+    const isUniqueViolation =
+      createErr instanceof Error &&
+      'code' in createErr &&
+      (createErr as { code?: string }).code === 'P2002';
+
+    if (isUniqueViolation && idempotencyKey) {
+      const existing = await prisma.operation.findUnique({ where: { idempotencyKey } });
+      if (existing) {
+        return { ok: true, operation: existing, isIdempotent: true };
+      }
+    }
+    throw createErr;
+  }
 
   // ── 7. Enqueue to BullMQ Worker ────────────────────────────────────────────
   const queue = getPipelineQueue();

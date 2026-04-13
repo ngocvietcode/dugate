@@ -98,7 +98,8 @@ export async function runExternalApiProcessor(
         formData.append(connection.fileFieldName, fileBlob, fileName);
         ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBlob.size} bytes)`);
       } catch (e) {
-        ctx.logger.warn(`Could not read file '${filePath}'`, undefined, e);
+        ctx.logger.error(`Could not read file '${filePath}'`, undefined, e);
+        throw new Error(`Failed to attach file '${fileName}': file not found or unreadable`);
       }
     }
   } else if (ctx.inputText) {

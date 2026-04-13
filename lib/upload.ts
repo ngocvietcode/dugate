@@ -46,12 +46,12 @@ export function validateFile(file: File): ValidateResult {
     };
   }
 
-  // Check MIME type
+  // Check MIME type — empty type allowed (some clients omit it), but if provided it must match
   const expectedMime = MIME_MAP[ext];
-  if (file.type && file.type !== expectedMime) {
+  if (file.type !== '' && file.type !== expectedMime) {
     return {
       valid: false,
-      error: `MIME type không hợp lệ. Mong đợi "${expectedMime}", nhận được "${file.type}".`,
+      error: `MIME type không hợp lệ. Mong đợi "${expectedMime}", nhận được "${file.type || '(empty)'}".`,
     };
   }
 
