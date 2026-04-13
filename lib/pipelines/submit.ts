@@ -124,6 +124,28 @@ export async function submitPipelineJob(
     }
   }
 
+  // ── 3b. Spending limit check ──────────────────────────────────────────────
+  if (apiKeyId) {
+    const key = await prisma.apiKey.findUnique({
+      where: { id: apiKeyId },
+      select: { spendingLimit: true, totalUsed: true },
+    });
+    if (key && key.spendingLimit > 0 && key.totalUsed >= key.spendingLimit) {
+      return {
+        ok: false,
+        errorResponse: NextResponse.json(
+          {
+            type: 'https://dugate.vn/errors/spending-limit-exceeded',
+            title: 'Payment Required',
+            status: 402,
+            detail: `API key spending limit of $${key.spendingLimit.toFixed(2)} USD has been reached.`,
+          },
+          { status: 402 },
+        ),
+      };
+    }
+  }
+
   // ── 4. Resolve BullMQ job priority from ProfileEndpoint ──────────────────
   let bullPriority = 10; // default MEDIUM
   if (apiKeyId && endpointSlug) {
@@ -176,7 +198,28 @@ export async function submitPipelineJob(
   // ── 7. Enqueue to BullMQ Worker ────────────────────────────────────────────
   const queue = getPipelineQueue();
   const jobName = `pipeline:${endpointSlug ?? 'unknown'}`;
-  const jobData: PipelineJobData = { operationId, correlationId };
+  const isWorkflowJob = endpointSlug?.startsWith('workflows:') ?? false;
+  const jobData: PipelineJobData = {
+    operationId,
+    correlationId,
+    type: isWorkflowJob ? 'workflow' : 'pipeline',
+  };
+
+  // Backpressure: reject new jobs when queue is too deep to avoid unbounded growth
+  const MAX_QUEUE_DEPTH = parseInt(process.env.MAX_QUEUE_DEPTH || '500', 10);
+  const counts = await queue.getJobCounts('waiting', 'delayed');
+  const queueDepth = (counts.waiting ?? 0) + (counts.delayed ?? 0);
+  if (queueDepth > MAX_QUEUE_DEPTH) {
+    // Clean up the operation we just created
+    await prisma.operation.delete({ where: { id: operationId } });
+    return {
+      ok: false,
+      errorResponse: NextResponse.json(
+        { type: 'https://dugate.vn/errors/queue-full', title: 'Service Unavailable', status: 503, detail: 'Queue is at capacity. Please retry later.' },
+        { status: 503, headers: { 'Retry-After': '30' } },
+      ),
+    };
+  }
 
   if (executeSync) {
     // ── SYNC MODE: enqueue then wait for Worker to finish ──

@@ -14,8 +14,8 @@ export async function GET(req: NextRequest) {
         id: true,
         name: true,
         status: true,
-        keyHash: true,
         note: true,
+        // keyHash is intentionally excluded — never expose hashed keys
       }
     });
     return NextResponse.json({ success: true, apiKeys });
@@ -35,9 +35,11 @@ export async function PUT(req: NextRequest) {
 
     if (action === 'rotate') {
       const rawKey = 'dg_' + crypto.randomBytes(32).toString('base64url');
+      const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
       const updatedKey = await prisma.apiKey.update({
         where: { id },
-        data: { keyHash: rawKey }, // Cập nhật plain keyHash
+        data: { keyHash },
+        select: { id: true, name: true, status: true, note: true },
       });
       return NextResponse.json({ success: true, apiKey: updatedKey, rawKey });
     } else {
@@ -64,24 +66,22 @@ export async function POST(req: NextRequest) {
     // Generate prefix and long hex key for the RAW password
     // Prefix 'dg_' (dugate) to easily identify keys
     const rawKey = 'dg_' + crypto.randomBytes(32).toString('base64url');
+    const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
 
     const apiKey = await prisma.apiKey.create({
       data: {
         name: name.trim(),
-        keyHash: rawKey, // Store plain text directly for Admin visibility
+        keyHash,
         prefix: 'dg_',
         status: 'active',
       },
+      select: { id: true, name: true, status: true },
     });
 
     return NextResponse.json({
       success: true,
-      apiKey: {
-        id: apiKey.id,
-        name: apiKey.name,
-        status: apiKey.status,
-      },
-      rawKey, // NOTE: Chỉ trả về nguyên bản ở bước tạo này, Admin phải copy thủ công
+      apiKey,
+      rawKey, // Returned only once at creation — admin must copy immediately
     });
   } catch (error: any) {
     logger.error('[POST] DB error', {}, error);

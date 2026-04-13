@@ -215,7 +215,7 @@ export async function runPipeline(operationId: string, correlationId?: string, j
         step: i,
         processor: ctx.processorSlug,
         output_format: operation.outputFormat,
-        content_preview: result.content ? result.content.substring(0, 2000) : null,
+        content_preview: result.content ? result.content.substring(0, 500) : null,
         extracted_data: result.extractedData,
         pipeline_state_snapshot: Object.keys(pipelineState).length > 0 ? { ...pipelineState } : undefined,
       });
@@ -264,6 +264,14 @@ export async function runPipeline(operationId: string, correlationId?: string, j
         usageBreakdown: JSON.stringify(usageBreakdown),
       },
     });
+
+    // Update ApiKey.totalUsed for billing/spending limit enforcement
+    if (operation.apiKeyId && totalCost > 0) {
+      await prisma.apiKey.update({
+        where: { id: operation.apiKeyId },
+        data: { totalUsed: { increment: totalCost } },
+      });
+    }
 
     if (job) {
       await job.updateProgress(100);
@@ -320,7 +328,13 @@ export async function runPipeline(operationId: string, correlationId?: string, j
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ operation_id: operationId, state: 'FAILED', error: msg }),
         });
-      } catch {}
+        await prisma.operation.update({
+          where: { id: operationId },
+          data: { webhookSentAt: new Date() },
+        });
+      } catch (webhookErr) {
+        logger.error(`Failure webhook failed for ${operationId}`, undefined, webhookErr);
+      }
     }
   }
 }

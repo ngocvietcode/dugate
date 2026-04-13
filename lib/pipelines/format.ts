@@ -3,23 +3,32 @@
 // Kept in lib/ (not in a route file) so it can be safely imported by any route
 // without causing Next.js production-build cross-route import errors.
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export function formatOperationResponse(op: any) {
-  const pipeline = JSON.parse(op.pipelineJson);
+import type { Operation } from '@prisma/client';
 
-  const base: any = {
+function safeParseJson<T>(json: string | null | undefined, fallback: T): T {
+  if (!json) return fallback;
+  try {
+    return JSON.parse(json) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+export function formatOperationResponse(op: Operation) {
+  const pipeline = safeParseJson<Array<{ processor: string }>>(op.pipelineJson, []);
+
+  const base: Record<string, unknown> = {
     name: `operations/${op.id}`,
     done: op.done,
     metadata: {
       state: op.state,
-      pipeline: pipeline.map((s: any) => s.processor),
+      pipeline: pipeline.map((s) => s.processor),
       current_step: op.currentStep,
       progress_percent: op.progressPercent,
       progress_message: op.progressMessage,
       create_time: op.createdAt,
       update_time: op.updatedAt,
-      // Include intermediate step results for real-time polling
-      pipeline_steps: op.stepsResultJson ? JSON.parse(op.stepsResultJson) : [],
+      pipeline_steps: safeParseJson(op.stepsResultJson, []),
     },
   };
 
@@ -27,15 +36,15 @@ export function formatOperationResponse(op: any) {
     base.result = {
       output_format:  op.outputFormat,
       content:        op.outputContent,
-      extracted_data: op.extractedData ? JSON.parse(op.extractedData) : null,
-      pipeline_steps: op.stepsResultJson ? JSON.parse(op.stepsResultJson) : [],
+      extracted_data: safeParseJson(op.extractedData, null),
+      pipeline_steps: safeParseJson(op.stepsResultJson, []),
       usage: {
-        input_tokens:   op.totalInputTokens,
-        output_tokens:  op.totalOutputTokens,
+        input_tokens:    op.totalInputTokens,
+        output_tokens:   op.totalOutputTokens,
         pages_processed: op.pagesProcessed,
-        model_used:     op.modelUsed,
-        cost_usd:       op.totalCostUsd,
-        breakdown:      op.usageBreakdown ? JSON.parse(op.usageBreakdown) : [],
+        model_used:      op.modelUsed,
+        cost_usd:        op.totalCostUsd,
+        breakdown:       safeParseJson(op.usageBreakdown, []),
       },
       download_url: `/api/v1/operations/${op.id}/download`,
     };
@@ -49,12 +58,12 @@ export function formatOperationResponse(op: any) {
     };
     if (op.stepsResultJson) {
       base.result = {
-        pipeline_steps: JSON.parse(op.stepsResultJson),
+        pipeline_steps: safeParseJson(op.stepsResultJson, []),
         usage: {
           input_tokens:  op.totalInputTokens,
           output_tokens: op.totalOutputTokens,
           cost_usd:      op.totalCostUsd,
-          breakdown:     op.usageBreakdown ? JSON.parse(op.usageBreakdown) : [],
+          breakdown:     safeParseJson(op.usageBreakdown, []),
         },
       };
     }

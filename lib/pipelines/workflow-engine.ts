@@ -6,8 +6,8 @@
 import { prisma } from '@/lib/prisma';
 import { Logger } from '@/lib/logger';
 import {
-  getPipelineQueue,
-  getPipelineQueueEvents,
+  getWorkflowStepsQueue,
+  getWorkflowStepsQueueEvents,
   type PipelineJobData,
 } from '@/lib/queue/pipeline-queue';
 import type { Job } from 'bullmq';
@@ -87,11 +87,15 @@ export async function enqueueSubStep(
 
   ctx.logger.info(`[WORKFLOW] Enqueued sub-step: ${processorSlug} → subOpId=${subOpId}`);
 
-  const queue = getPipelineQueue();
-  const jobData: PipelineJobData = { operationId: subOpId, correlationId: ctx.correlationId };
+  // Use the dedicated workflow-steps queue to avoid deadlock:
+  // The parent workflow job occupies a slot on the pipeline queue.
+  // Sub-steps go to a separate queue with its own worker pool so they
+  // are never blocked waiting for the parent to release its slot.
+  const queue = getWorkflowStepsQueue();
+  const jobData: PipelineJobData = { operationId: subOpId, correlationId: ctx.correlationId, type: 'pipeline' };
   const job = await queue.add(`pipeline:${processorSlug}`, jobData, { priority: 5 });
 
-  const queueEvents = getPipelineQueueEvents();
+  const queueEvents = getWorkflowStepsQueueEvents();
   const SUB_STEP_TIMEOUT = 120_000;
   try {
     await job.waitUntilFinished(queueEvents, SUB_STEP_TIMEOUT);
@@ -160,6 +164,14 @@ export async function completeWorkflow(ctx: WorkflowContext, outputContent: stri
   });
   if (ctx.job) await ctx.job.updateProgress(100);
   ctx.logger.info(`[WORKFLOW] Completed for ${ctx.operationId}`);
+
+  // Update ApiKey.totalUsed for billing/spending limit enforcement
+  if (ctx.apiKeyId && ctx.totalCost > 0) {
+    await prisma.apiKey.update({
+      where: { id: ctx.apiKeyId },
+      data: { totalUsed: { increment: ctx.totalCost } },
+    });
+  }
 
   // Send webhook notification (parity with engine.ts)
   await sendWebhook(ctx, 'SUCCEEDED');

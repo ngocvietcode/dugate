@@ -4,6 +4,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { checkRateLimit, RATE_LIMIT_API_KEY, RATE_LIMIT_IP } from '@/lib/rate-limit';
 
 // Paths that bypass ALL middleware checks (no auth required)
 const BYPASS_PREFIXES = [
@@ -37,7 +38,7 @@ export async function middleware(request: NextRequest) {
     if (!passedKey) {
       const token = await getToken({
         req: request,
-        secret: process.env.NEXTAUTH_SECRET || 'fallback-dev-secret-12345',
+        secret: process.env.NEXTAUTH_SECRET,
       });
       if (token) {
         // Authenticated UI user — allow without API key
@@ -46,6 +47,26 @@ export async function middleware(request: NextRequest) {
         if (token.sub) requestHeaders.set('x-user-id', token.sub);
         return NextResponse.next({ request: { headers: requestHeaders } });
       }
+    }
+
+    // Rate limit by API key (if provided) or by IP (unauthenticated)
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+    const rateLimitKey = passedKey
+      ? `ratelimit:apikey:${passedKey.slice(0, 16)}`
+      : `ratelimit:ip:${ip}`;
+    const rateLimitMax = passedKey ? RATE_LIMIT_API_KEY : RATE_LIMIT_IP;
+    const rl = await checkRateLimit(rateLimitKey, rateLimitMax);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too Many Requests' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rl.retryAfter),
+            'X-RateLimit-Remaining': '0',
+          },
+        },
+      );
     }
 
     try {
@@ -88,7 +109,7 @@ export async function middleware(request: NextRequest) {
   // --- All other routes: NextAuth session required ---
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET || 'fallback-dev-secret-12345',
+    secret: process.env.NEXTAUTH_SECRET,
   });
 
   if (!token) {

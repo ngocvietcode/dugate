@@ -14,7 +14,8 @@ export async function saveUploadedFile(
   const dir = path.join(UPLOAD_DIR, operationId);
   await fs.mkdir(dir, { recursive: true });
 
-  const safeName = prefix ? `${prefix}_${file.name}` : file.name;
+  const sanitizedName = path.basename(file.name).replace(/[^a-zA-Z0-9._-]/g, '_');
+  const safeName = prefix ? `${prefix}_${sanitizedName}` : sanitizedName;
   const filePath = path.join(dir, safeName);
 
   const buffer = Buffer.from(await file.arrayBuffer());

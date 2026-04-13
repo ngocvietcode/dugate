@@ -647,7 +647,10 @@ async function main() {
 
   // 2. Setup Default Admin API Key & ProfileEndpoints
   console.log('\n[2/3] Ensuring Default Admin API Key...');
-  const rawAdminKey = process.env.SEED_ADMIN_KEY ?? 'sk-admin-default-secret-key';
+  const rawAdminKey = process.env.SEED_ADMIN_KEY;
+  if (!rawAdminKey) {
+    throw new Error('SEED_ADMIN_KEY environment variable is required. Set it to a strong secret before running seed.');
+  }
   const hashedKey = crypto.createHash('sha256').update(rawAdminKey).digest('hex');
 
   const adminKey = await prisma.apiKey.upsert({
@@ -663,7 +666,7 @@ async function main() {
       totalUsed: 0,
     },
   });
-  console.log(`  🔑 Admin API Key: ${rawAdminKey} (ID: ${adminKey.id})`);
+  console.log(`  🔑 Admin API Key created (ID: ${adminKey.id}) — copy the key from SEED_ADMIN_KEY env var`);
 
   // Enroll admin key to all 31 endpoints
   for (const slug of ALL_ENDPOINT_SLUGS) {
@@ -677,7 +680,10 @@ async function main() {
 
   // 3. Setup Default Admin User
   console.log('\n[3/3] Ensuring Default Admin User...');
-  const defaultPassword = process.env.SEED_ADMIN_PASSWORD ?? '123456';
+  const defaultPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (!defaultPassword) {
+    throw new Error('SEED_ADMIN_PASSWORD environment variable is required. Set it to a strong password before running seed.');
+  }
   const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
   const adminUser = await prisma.user.upsert({
@@ -685,7 +691,7 @@ async function main() {
     update: { password: hashedPassword, role: 'ADMIN' },
     create: { username: 'admin', password: hashedPassword, role: 'ADMIN' },
   });
-  console.log(`  👤 Admin User: ${adminUser.username} / ${defaultPassword}`);
+  console.log(`  👤 Admin User: ${adminUser.username} (password set from SEED_ADMIN_PASSWORD env var)`);
 
   console.log('\n🎉 Seeding completed successfully!');
   console.log(`\n📊 Summary:`);

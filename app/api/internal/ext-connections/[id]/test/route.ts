@@ -79,11 +79,12 @@ export async function POST(
     let errorMessage: string | null = null;
     let errorStack: string | null = null;
 
-    // Generate curl command
+    // Generate curl command — auth headers and field values are redacted
+    const SAFE_HEADERS = new Set(['accept', 'content-type']);
     let curlCmd = `curl -X ${connection.httpMethod} '${connection.endpointUrl}' \\`;
-    for (const [k, v] of Object.entries(headers)) {
-      const escapedValue = String(v).replace(/'/g, "'\\''");
-      curlCmd += `\n  -H '${k}: ${escapedValue}' \\`;
+    for (const k of Object.keys(headers)) {
+      const displayVal = SAFE_HEADERS.has(k.toLowerCase()) ? headers[k] : '***';
+      curlCmd += `\n  -H '${k}: ${displayVal}' \\`;
     }
     curlCmd += `\n  -F '${connection.promptFieldName}=${testPrompt.replace(/'/g, "'\\''")}'`;
 
@@ -91,7 +92,7 @@ export async function POST(
       try {
         const fields = JSON.parse(connection.staticFormFields) as Array<{ key: string; value: string }>;
         for (const field of fields) {
-            curlCmd += ` \\\n  -F '${field.key}=${String(field.value).replace(/'/g, "'\\''")}'`;
+          curlCmd += ` \\\n  -F '${field.key}=***'`;
         }
       } catch { /* ignore */ }
     }

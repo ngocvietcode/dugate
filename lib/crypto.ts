@@ -9,8 +9,11 @@ const IV_LENGTH = 12;    // GCM standard
 const TAG_LENGTH = 16;
 
 function getEncryptionKey(): Buffer {
-  const secret = process.env.NEXTAUTH_SECRET || process.env.ENCRYPTION_KEY || 'default_local_insecure_secret_key_dugate';
-  // Derive 32-byte key từ secret bằng SHA-256
+  const secret = process.env.NEXTAUTH_SECRET || process.env.ENCRYPTION_KEY;
+  if (!secret) {
+    throw new Error('Missing required environment variable: NEXTAUTH_SECRET or ENCRYPTION_KEY must be set');
+  }
+  // Derive 32-byte key from secret using SHA-256
   return crypto.createHash('sha256').update(secret).digest();
 }
 

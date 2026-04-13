@@ -1,40 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 /**
  * @swagger
  * /api/v1/billing/balance:
  *   get:
- *     summary: Kiểm tra số dư hiện tại (Mock API)
- *     description: Mô phỏng trả về số dư tín dụng còn lại của tài khoản/API Key.
+ *     summary: Get current balance and spending limit for the authenticated API key
  *     tags:
  *       - Cost Management
  *     responses:
  *       200:
- *         description: Success
+ *         description: Balance details
  */
 export async function GET(req: NextRequest) {
-  // Mô phỏng check token
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // Để mock cho dễ, không reject 401 mà vẫn trả về nhưng cảnh báo
-    console.warn('[Mock] Thiếu Token');
+  const apiKeyId = req.headers.get('x-api-key-id');
+  if (!apiKeyId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Trả về một đối tượng Mock balance
-  const mockBalance = {
+  const apiKey = await prisma.apiKey.findUnique({
+    where: { id: apiKeyId },
+    select: {
+      id: true,
+      name: true,
+      spendingLimit: true,
+      totalUsed: true,
+      status: true,
+    },
+  });
+
+  if (!apiKey) {
+    return NextResponse.json({ error: 'API key not found' }, { status: 404 });
+  }
+
+  const balance = apiKey.spendingLimit > 0
+    ? apiKey.spendingLimit - apiKey.totalUsed
+    : null; // null = no limit set
+
+  return NextResponse.json({
     object: 'billing_balance',
-    user_id: 'mock_user_1',
-    plan: 'Pay-As-You-Go',
+    api_key_id: apiKey.id,
+    api_key_name: apiKey.name,
     currency: 'USD',
     details: {
-      total_granted: 100.00,
-      total_used: 12.50,
-      balance: 87.50,
-      hard_limit: 150.00,
-      soft_limit: 100.00,
+      spending_limit: apiKey.spendingLimit > 0 ? apiKey.spendingLimit : null,
+      total_used: apiKey.totalUsed,
+      balance,
     },
-    updated_at: new Date().toISOString()
-  };
-
-  return NextResponse.json(mockBalance, { status: 200 });
+    updated_at: new Date().toISOString(),
+  });
 }

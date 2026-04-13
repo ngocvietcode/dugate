@@ -1,78 +1,22 @@
 // lib/pipelines/processors/external-api.ts
-// External API Processor — forward files trực tiếp đến external AI service via multipart/form-data.
-// v2: Supports forwarding multiple files (files[]) in one request.
+// External API Processor — forwards files to an external AI service via multipart/form-data.
+// Delegates to: prompt-resolver, http-client, response-parser.
 
 import fs from 'fs/promises';
 import path from 'path';
 import type { ProcessorContext, ProcessorResult } from '@/lib/pipelines/engine';
 import { ParserFactory } from '@/lib/parsers/factory';
 import type { ExternalApiConnection, ExternalApiOverride } from '@prisma/client';
-import type { Logger } from '@/lib/logger';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Resolve giá trị theo dot-path trong JSON object.
- * VD: resolveDotPath({ data: { response: "hello" } }, "data.response") => "hello"
- */
-function resolveDotPath(obj: unknown, dotPath: string): unknown {
-  if (!dotPath || obj === null || obj === undefined) return obj;
-  const parts = dotPath.split('.');
-  let current: unknown = obj;
-  for (const part of parts) {
-    if (current === null || current === undefined) return undefined;
-    current = (current as Record<string, unknown>)[part];
-  }
-  return current;
-}
+import { resolvePrompt } from './prompt-resolver';
+import { extractContent, resolveDotPath } from './response-parser';
+import { logCurlCommand, assertSafeUrl, fetchWithTimeout } from './http-client';
+import { calculateCostUsd } from '@/lib/config';
 
 /**
- * Interpolate {{variable}} placeholders trong template string.
- * VD: "Xin chào {{name}}" với { name: "An" } => "Xin chào An"
- */
-function interpolateVariables(template: string, variables: Record<string, unknown>): string {
-  let result = template;
-  for (const [key, value] of Object.entries(variables)) {
-    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value));
-  }
-  return result;
-}
-
-function logCurlCommand(url: string, method: string, headers: Record<string, string>, formData: FormData, logger: Logger) {
-  let curl = `curl -X ${method} "${url}" \\\n`;
-  for (const [k, v] of Object.entries(headers)) {
-    // Hide auth secrets in logs to be safe, but keep the header
-    const val = k.toLowerCase().includes('auth') || k.toLowerCase().includes('key') ? '***HIDDEN***' : v;
-    curl += `  -H "${k}: ${val}" \\\n`;
-  }
-  
-  // Try to iterate over FormData if supported
-  try {
-    for (const [key, value] of (formData as any).entries()) {
-      if (typeof value === 'object' && value !== null && 'size' in value) {
-        curl += `  -F "${key}=@/path/to/file" \\\n`;
-      } else {
-        const cleanVal = String(value).replace(/"/g, '\\"').replace(/\n/g, ' ');
-        // Truncate long strings for clean logs
-        const displayVal = cleanVal.length > 200 ? cleanVal.substring(0, 200) + '...' : cleanVal;
-        curl += `  -F "${key}=${displayVal}" \\\n`;
-      }
-    }
-  } catch(e) {}
-  
-  // Trim last backslash
-  curl = curl.trim().replace(/\\$/, '');
-  logger.info(`[cURL COMMAND]\n${curl}`);
-}
-
-
-// ─── Core Processor ───────────────────────────────────────────────────────────
-
-/**
- * Gọi external AI service via multipart/form-data HTTP request.
- * - Forward tất cả files gốc trực tiếp (không extract text trước)
- * - Prompt có thể được override bởi client profile
- * - Static form fields luôn cố định theo config admin
+ * Call an external AI service via multipart/form-data.
+ * - Forwards all files directly (no pre-extraction)
+ * - Prompt resolved from code > profile override > connector default
+ * - Static form fields are always fixed per admin config
  */
 export async function runExternalApiProcessor(
   ctx: ProcessorContext,
@@ -81,20 +25,14 @@ export async function runExternalApiProcessor(
 ): Promise<ProcessorResult> {
   const startedAt = Date.now();
 
-  // ── 1. Resolve prompt (code _prompt → profile override → DB default) ──────
-  // Priority: variables._prompt (code/workflow) > profile override > connector default
-  const rawPrompt = typeof ctx.variables._prompt === 'string'
-    ? ctx.variables._prompt
-    : override?.promptOverride?.trim()
-      ? override.promptOverride
-      : connection.defaultPrompt;
+  // ── 1. Resolve prompt ─────────────────────────────────────────────────────
+  const resolvedPrompt = resolvePrompt(ctx.variables, connection, override);
+  ctx.logger.info(`Formatting prompt for ${connection.slug}`, {
+    promptLength: resolvedPrompt.length,
+    source: ctx.variables._prompt ? 'code' : override?.promptOverride ? 'profile' : 'default',
+  });
 
-  // Interpolate {{variable}} từ pipeline variables (no-op if no placeholders)
-  const resolvedPrompt = interpolateVariables(rawPrompt, ctx.variables);
-
-  ctx.logger.info(`Formatting prompt for ${connection.slug}`, { promptLength: resolvedPrompt.length, source: ctx.variables._prompt ? 'code' : override?.promptOverride ? 'profile' : 'default' });
-
-  // ── 1.5 Intercept with Internal Parsers (if applicable) ────────────────────
+  // ── 1.5 Try internal parsers first (XLSX, DOCX) ──────────────────────────
   if (ctx.filePaths.length === 1) {
     const filePath = ctx.filePaths[0];
     const fileName = ctx.fileNames[0] ?? path.basename(filePath);
@@ -105,9 +43,7 @@ export async function runExternalApiProcessor(
         ctx.logger.info(`[InternalParser] Attempting to parse natively: ${fileName}`);
         const fileBuffer = await fs.readFile(filePath);
         const result = await parser.parse(fileBuffer, fileName);
-
         ctx.logger.info(`[InternalParser] Successfully parsed ${fileName} natively.`);
-
         return {
           content: result.markdown,
           extractedData: undefined,
@@ -129,13 +65,10 @@ export async function runExternalApiProcessor(
     }
   }
 
-  // ── 2. Build multipart/form-data ───────────────────────────────────────────
+  // ── 2. Build multipart form ───────────────────────────────────────────────
   const formData = new FormData();
-
-  // 2a. Prompt field
   formData.append(connection.promptFieldName, resolvedPrompt);
 
-  // 2b. Static form fields (admin-configured, cố định)
   if (connection.staticFormFields) {
     try {
       const staticFields = JSON.parse(connection.staticFormFields) as Array<{ key: string; value: string }>;
@@ -147,44 +80,33 @@ export async function runExternalApiProcessor(
     }
   }
 
-  // 2c. Forward all files (multi-file support)
   if (ctx.filePaths.length > 0) {
     for (let i = 0; i < ctx.filePaths.length; i++) {
       const filePath = ctx.filePaths[i];
       const fileName = ctx.fileNames[i] ?? `file_${i}`;
       try {
         const fileBuffer = await fs.readFile(filePath);
-        const blob = new Blob([fileBuffer]);
-        formData.append(connection.fileFieldName, blob, fileName);
+        formData.append(connection.fileFieldName, new Blob([fileBuffer]), fileName);
         ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBuffer.length} bytes)`);
       } catch (e) {
         ctx.logger.warn(`Could not read file '${filePath}'`, undefined, e);
       }
     }
   } else if (ctx.inputText) {
-    // Chain step: inject previous step output as text variable
     formData.append('input_content', ctx.inputText);
   }
 
-  // 2d. Inject session_id vào request
-  // Priority: endpoint-level (ctx.injectSession) > connector-level (connection.sessionIdFieldName)
+  // Session injection
   const injectSessionField = ctx.injectSession !== undefined
-    ? ctx.injectSession   // endpoint override (kể cả null = tắt)
-    : connection.sessionIdFieldName; // connector default
-
+    ? ctx.injectSession
+    : connection.sessionIdFieldName;
   if (injectSessionField && ctx.pipelineState['session_id']) {
     formData.append(injectSessionField, ctx.pipelineState['session_id']);
-    ctx.logger.info(
-      `[SESSION] Injecting session_id="${ctx.pipelineState['session_id']}" ` +
-      `as field "${injectSessionField}"` +
-      (ctx.injectSession !== undefined ? ' [endpoint-override]' : ' [connector-default]')
-    );
+    ctx.logger.info(`[SESSION] Injecting session_id as field "${injectSessionField}"`);
   }
 
-  // ── 3. Build request headers ────────────────────────────────────────────────
-  const headers: Record<string, string> = {
-    'accept': 'application/json',
-  };
+  // ── 3. Build request headers ─────────────────────────────────────────────
+  const headers: Record<string, string> = { accept: 'application/json' };
 
   if (connection.authType === 'API_KEY_HEADER') {
     headers[connection.authKeyHeader] = connection.authSecret;
@@ -194,99 +116,97 @@ export async function runExternalApiProcessor(
 
   if (connection.extraHeaders) {
     try {
-      const extra = JSON.parse(connection.extraHeaders) as Record<string, string>;
-      Object.assign(headers, extra);
+      Object.assign(headers, JSON.parse(connection.extraHeaders) as Record<string, string>);
     } catch {
       ctx.logger.warn(`extraHeaders JSON invalid for '${connection.slug}', skipping`);
     }
   }
 
-  // ── 4. HTTP Request với timeout ────────────────────────────────────────────
-  const controller = new AbortController();
-  const timeoutMs = connection.timeoutSec * 1000;
-  const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
-
-  let targetUrl = connection.endpointUrl;
-  if (process.env.UPLOAD_DIR === '/app/uploads' && targetUrl.includes('localhost')) {
-    targetUrl = targetUrl.replace('localhost', 'host.docker.internal');
+  // ── 4. Validate URL (SSRF protection) + execute HTTP call ─────────────────
+  let targetUrl: string;
+  try {
+    targetUrl = await assertSafeUrl(connection.endpointUrl);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    ctx.logger.error(`[SSRF] Blocked unsafe URL for '${connection.slug}': ${msg}`);
+    throw new Error(`External API URL rejected: ${msg}`);
   }
+
+  logCurlCommand(targetUrl, connection.httpMethod, headers, formData, ctx.logger);
+  ctx.logger.info(`${connection.httpMethod} → ${targetUrl}`);
 
   let responseJson: unknown;
   try {
-    logCurlCommand(targetUrl, connection.httpMethod, headers, formData, ctx.logger);
-    ctx.logger.info(`POST → ${targetUrl}`);
-    const response = await fetch(targetUrl, {
-      method: connection.httpMethod,
+    responseJson = await fetchWithTimeout(
+      targetUrl,
+      connection.httpMethod,
       headers,
-      body: formData,
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => '(no body)');
-      ctx.logger.error(`HTTP ${response.status} Error Response: ${errorBody.substring(0, 1000)}`);
-      throw new Error(`External API returned HTTP ${response.status}: ${errorBody.substring(0, 500)}`);
-    }
-
-    responseJson = await response.json();
+      formData,
+      connection.timeoutSec * 1000,
+    );
   } catch (err: unknown) {
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error(`External API timeout after ${connection.timeoutSec}s (${connection.slug})`);
-    }
     const msg = err instanceof Error ? err.message : String(err);
-    ctx.logger.error(`Network/Fetch Error for '${connection.slug}' (URL: ${targetUrl})`, undefined, err);
-    // Rethrow a more descriptive error so it gets logged in pipeline engine
+    ctx.logger.error(`Request failed for '${connection.slug}'`, undefined, err);
     throw new Error(`Connection Error to ${connection.slug}: ${msg}`);
-  } finally {
-    clearTimeout(timeoutHandle);
   }
 
-  // ── 5. Parse response với dot-path ────────────────────────────────────────
+  // ── 5. Extract content from response ─────────────────────────────────────
   const contentPath = connection.responseContentPath ?? 'content';
-  const rawContent = resolveDotPath(responseJson, contentPath);
-
-  let content: string;
-  if (typeof rawContent === 'string') {
-    content = rawContent;
-  } else if (rawContent !== null && rawContent !== undefined) {
-    content = JSON.stringify(rawContent);
-  } else {
-    ctx.logger.warn(`Path '${contentPath}' not found in response for '${connection.slug}'. Returning full JSON.`);
-    content = JSON.stringify(responseJson);
-  }
+  const content = extractContent(responseJson, contentPath, (p) => {
+    ctx.logger.warn(`Path '${p}' not found in response for '${connection.slug}'. Returning full JSON.`);
+  });
 
   const latencyMs = Date.now() - startedAt;
-  ctx.logger.info(`Successfully completed API call to ${connection.slug}`, { latencyMs, outputChars: content.length });
+  ctx.logger.info(`Completed API call to ${connection.slug}`, { latencyMs, outputChars: content.length });
 
-  // Capture session_id từ response
-  // Priority: endpoint-level (ctx.captureSession) > connector-level (connection.sessionIdResponsePath)
+  // Capture session_id from response
   const captureSessionPath = ctx.captureSession !== undefined
-    ? ctx.captureSession   // endpoint override (kể cả null = tắt)
-    : connection.sessionIdResponsePath; // connector default
-
+    ? ctx.captureSession
+    : connection.sessionIdResponsePath;
   if (captureSessionPath) {
     const sid = resolveDotPath(responseJson, captureSessionPath);
     if (typeof sid === 'string' && sid) {
       ctx.pipelineState['session_id'] = sid;
-      ctx.logger.info(
-        `[SESSION] Captured session_id="${sid}" from path "${captureSessionPath}"` +
-        (ctx.captureSession !== undefined ? ' [endpoint-override]' : ' [connector-default]')
-      );
+      ctx.logger.info(`[SESSION] Captured session_id from path "${captureSessionPath}"`);
     } else {
-      ctx.logger.warn(
-        `[SESSION] captureSession path="${captureSessionPath}" not found or not a string in response`
-      );
+      ctx.logger.warn(`[SESSION] captureSession path="${captureSessionPath}" not found or not a string`);
     }
+  }
+
+  // Extract token usage from standard API response shapes (Gemini / OpenAI compatible)
+  const responseObj = responseJson as Record<string, unknown>;
+  let inputTokens = 0;
+  let outputTokens = 0;
+
+  // Gemini: usageMetadata.promptTokenCount / candidatesTokenCount
+  const geminiUsage = responseObj?.usageMetadata as Record<string, number> | undefined;
+  if (geminiUsage?.promptTokenCount) {
+    inputTokens = geminiUsage.promptTokenCount ?? 0;
+    outputTokens = geminiUsage.candidatesTokenCount ?? 0;
+  }
+
+  // OpenAI: usage.prompt_tokens / completion_tokens
+  const openaiUsage = responseObj?.usage as Record<string, number> | undefined;
+  if (openaiUsage?.prompt_tokens) {
+    inputTokens = openaiUsage.prompt_tokens ?? 0;
+    outputTokens = openaiUsage.completion_tokens ?? 0;
+  }
+
+  const modelUsed = `ext:${connection.slug}`;
+  const costUsd = calculateCostUsd(modelUsed, inputTokens, outputTokens);
+
+  if (inputTokens > 0) {
+    ctx.logger.info(`[USAGE] tokens: in=${inputTokens} out=${outputTokens} cost=$${costUsd.toFixed(6)}`);
   }
 
   return {
     content,
     extractedData: undefined,
     outputFilePath: undefined,
-    inputTokens: 0,
-    outputTokens: 0,
+    inputTokens,
+    outputTokens,
     pagesProcessed: 0,
-    modelUsed: `ext:${connection.slug}`,
-    costUsd: 0,
+    modelUsed,
+    costUsd,
   };
 }
