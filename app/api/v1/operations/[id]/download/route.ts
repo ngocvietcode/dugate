@@ -57,16 +57,28 @@ export async function GET(
   // If we have an output file path, stream it
   if (op.outputFilePath) {
     try {
-      const stat = await fs.stat(op.outputFilePath);
-      const ext = path.extname(op.outputFilePath).slice(1);
+      const outputBaseDir = path.resolve(process.env.OUTPUT_DIR ?? './outputs');
+      const resolvedOutputPath = path.resolve(op.outputFilePath);
+      if (
+        resolvedOutputPath !== outputBaseDir &&
+        !resolvedOutputPath.startsWith(`${outputBaseDir}${path.sep}`)
+      ) {
+        return NextResponse.json(
+          { type: 'https://dugate.vn/errors/forbidden', title: 'Forbidden', status: 403, detail: 'Access denied.' },
+          { status: 403 }
+        );
+      }
+
+      const stat = await fs.stat(resolvedOutputPath);
+      const ext = path.extname(resolvedOutputPath).slice(1);
       const contentType = ext === 'html' ? 'text/html' : ext === 'json' ? 'application/json' : 'text/markdown';
-      const stream = Readable.toWeb(createReadStream(op.outputFilePath)) as ReadableStream<Uint8Array>;
+      const stream = Readable.toWeb(createReadStream(resolvedOutputPath)) as ReadableStream<Uint8Array>;
 
       return new NextResponse(stream, {
         headers: {
           'Content-Type': `${contentType}; charset=utf-8`,
           'Content-Length': String(stat.size),
-          'Content-Disposition': `attachment; filename="${path.basename(op.outputFilePath)}"`,
+          'Content-Disposition': `attachment; filename="${path.basename(resolvedOutputPath)}"`,
         },
       });
     } catch {

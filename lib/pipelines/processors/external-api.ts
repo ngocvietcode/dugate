@@ -86,20 +86,17 @@ export async function runExternalApiProcessor(
 
   if (ctx.filePaths.length > 0) {
     const openAsBlob = (fs as FsWithOpenAsBlob).openAsBlob;
+    if (!openAsBlob) {
+      throw new Error('Current Node runtime does not support fs.openAsBlob; cannot attach files safely.');
+    }
 
     for (let i = 0; i < ctx.filePaths.length; i++) {
       const filePath = ctx.filePaths[i];
       const fileName = ctx.fileNames[i] ?? `file_${i}`;
       try {
-        if (openAsBlob) {
-          const fileBlob = await openAsBlob(filePath);
-          formData.append(connection.fileFieldName, fileBlob, fileName);
-          ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBlob.size} bytes)`);
-        } else {
-          const fileBuffer = await fs.readFile(filePath);
-          formData.append(connection.fileFieldName, new Blob([fileBuffer]), fileName);
-          ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBuffer.length} bytes)`);
-        }
+        const fileBlob = await openAsBlob(filePath);
+        formData.append(connection.fileFieldName, fileBlob, fileName);
+        ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBlob.size} bytes)`);
       } catch (e) {
         ctx.logger.warn(`Could not read file '${filePath}'`, undefined, e);
       }
