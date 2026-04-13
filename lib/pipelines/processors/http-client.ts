@@ -38,8 +38,46 @@ export function logCurlCommand(
 }
 
 /**
+ * Check if an IP address is private/reserved.
+ */
+function isPrivateIp(ip: string): boolean {
+  const patterns = [
+    /^127\./,                          // IPv4 loopback
+    /^10\./,                           // RFC 1918
+    /^192\.168\./,                     // RFC 1918
+    /^172\.(1[6-9]|2\d|3[01])\./,     // RFC 1918
+    /^169\.254\./,                     // Link-local
+    /^0\./,                            // Current network
+    /^0\.0\.0\.0$/,
+    /^::1$/,                           // IPv6 loopback
+    /^::$/,                            // IPv6 all-zeros
+    /^::ffff:127\./i,                  // IPv4-mapped IPv6 loopback
+    /^::ffff:10\./i,                   // IPv4-mapped RFC 1918
+    /^::ffff:192\.168\./i,             // IPv4-mapped RFC 1918
+    /^::ffff:172\.(1[6-9]|2\d|3[01])\./i, // IPv4-mapped RFC 1918
+    /^::ffff:169\.254\./i,             // IPv4-mapped link-local
+    /^fc[0-9a-f]{2}:/i,               // IPv6 unique local
+    /^fd[0-9a-f]{2}:/i,               // IPv6 unique local
+    /^fe80:/i,                         // IPv6 link-local
+  ];
+  return patterns.some((p) => p.test(ip));
+}
+
+/**
+ * Check if a hostname is private/reserved (string-level check before DNS resolution).
+ */
+function isPrivateHostname(hostname: string): boolean {
+  return /^localhost$/i.test(hostname) || isPrivateIp(hostname);
+}
+
+/**
  * Validate that a URL is safe to call (SSRF protection).
  * Returns the (potentially rewritten) safe URL, or throws on violation.
+ *
+ * Protections:
+ * - Blocks private/reserved hostnames and IPs (string check)
+ * - Resolves DNS and blocks private resolved IPs (prevents DNS rebinding)
+ * - Does NOT follow redirects — caller must handle manually
  */
 export async function assertSafeUrl(rawUrl: string): Promise<string> {
   let parsed: URL;
@@ -61,23 +99,24 @@ export async function assertSafeUrl(rawUrl: string): Promise<string> {
     return parsed.toString();
   }
 
-  const privatePatterns = [
-    /^localhost$/i,
-    /^127\./,
-    /^10\./,
-    /^192\.168\./,
-    /^172\.(1[6-9]|2\d|3[01])\./,
-    /^169\.254\./,
-    /^::1$/,
-    /^fc[0-9a-f]{2}:/i,
-    /^fd[0-9a-f]{2}:/i,
-    /^0\./,
-    /^0\.0\.0\.0$/,
-  ];
+  if (isPrivateHostname(hostname)) {
+    throw new Error(`SSRF protection: URL hostname '${hostname}' is a private/reserved address`);
+  }
 
-  for (const pattern of privatePatterns) {
-    if (pattern.test(hostname)) {
-      throw new Error(`SSRF protection: URL hostname '${hostname}' is a private/reserved address`);
+  // DNS resolution check — prevents DNS rebinding attacks
+  // Skip for IP addresses (they were already checked above)
+  const isIpLiteral = /^\d+\.\d+\.\d+\.\d+$/.test(hostname) || hostname.startsWith('[');
+  if (!isIpLiteral) {
+    try {
+      const dns = await import('dns');
+      const { address } = await dns.promises.lookup(hostname);
+      if (isPrivateIp(address)) {
+        throw new Error(`SSRF protection: hostname '${hostname}' resolves to private IP '${address}'`);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.startsWith('SSRF protection')) throw err;
+      // DNS resolution failed — block the request (fail-closed)
+      throw new Error(`SSRF protection: failed to resolve hostname '${hostname}'`);
     }
   }
 

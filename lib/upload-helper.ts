@@ -11,9 +11,10 @@ export async function saveUploadedFile(
   file: File,
   operationId: string,
   prefix?: string,
+  allowedExtsStr?: string
 ): Promise<{ path: string; size: number }> {
   // Validate file type, MIME, and size before saving anything to disk
-  const validation = validateFile(file);
+  const validation = validateFile(file, allowedExtsStr);
   if (!validation.valid) {
     throw new Error(`File validation failed: ${validation.error}`);
   }

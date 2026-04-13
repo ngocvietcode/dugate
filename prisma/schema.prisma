@@ -218,6 +218,13 @@ model ProfileEndpoint {
   // Map sang số: HIGH=1, MEDIUM=10, LOW=20
   jobPriority String @default("MEDIUM")
 
+  // Auth config cho việc download file từ URLs (optional)
+  // JSON: { type: 'none'|'bearer'|'header'|'query', token?, header_name?, header_value?, query_key?, query_value? }
+  fileUrlAuthConfig String? @db.Text
+
+  // Các định dạng file cho phép, ngăn cách bằng dấu phẩy. VD: .pdf,.docx,.jpg
+  allowedFileExtensions String? @db.Text
+
   apiKey ApiKey @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())

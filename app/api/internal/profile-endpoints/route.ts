@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { SERVICE_REGISTRY, getAllEndpointSlugs } from '@/lib/endpoints/registry';
+import { encrypt, decrypt } from '@/lib/crypto';
 import { Logger } from '@/lib/logger';
 
 const logger = new Logger({ service: 'profile-endpoints' });
@@ -31,9 +32,23 @@ export async function GET(req: NextRequest) {
     const enrichedEndpoints = getAllEndpointSlugs().map((endpointDef) => {
       const dbRecord = profileEndpoints.find((p) => p.endpointSlug === endpointDef.slug);
 
-      const dbConnectionsOverride = dbRecord?.connectionsOverride
-        ? JSON.parse(dbRecord.connectionsOverride as string)
-        : null;
+      let dbConnectionsOverride = null;
+      try { dbConnectionsOverride = dbRecord?.connectionsOverride ? JSON.parse(dbRecord.connectionsOverride as string) : null; } catch { /* skip corrupt JSON */ }
+
+      let dbParameters = null;
+      try { dbParameters = dbRecord?.parameters ? JSON.parse(dbRecord.parameters as string) : null; } catch { /* skip corrupt JSON */ }
+
+      // Decrypt fileUrlAuthConfig (stored encrypted via AES-256-GCM)
+      let fileUrlAuthConfigParsed = null;
+      if (dbRecord?.fileUrlAuthConfig) {
+        try {
+          const decrypted = decrypt(dbRecord.fileUrlAuthConfig);
+          fileUrlAuthConfigParsed = JSON.parse(decrypted);
+        } catch {
+          // Fallback: try plain JSON (legacy data before encryption was added)
+          try { fileUrlAuthConfigParsed = JSON.parse(dbRecord.fileUrlAuthConfig); } catch { /* skip */ }
+        }
+      }
 
       // Normalize steps: extract slug and stepId from each item
       interface ConnStepItem { slug: string; stepId?: string; captureSession?: string | null; injectSession?: string | null; }
@@ -67,10 +82,11 @@ export async function GET(req: NextRequest) {
       return {
         ...endpointDef,
         enabled: dbRecord ? dbRecord.enabled : true,
-        parameters: dbRecord?.parameters ? JSON.parse(dbRecord.parameters as string) : null,
-        connectionsOverride: dbRecord?.connectionsOverride ? JSON.parse(dbRecord.connectionsOverride as string) : null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        jobPriority: (dbRecord as any)?.jobPriority ?? 'MEDIUM',
+        parameters: dbParameters,
+        connectionsOverride: dbConnectionsOverride,
+        jobPriority: dbRecord?.jobPriority ?? 'MEDIUM',
+        fileUrlAuthConfig: fileUrlAuthConfigParsed,
+        allowedFileExtensions: dbRecord?.allowedFileExtensions ?? null,
         isWorkflow: endpointDef.isWorkflow ?? false,
         id: dbRecord?.id ?? null,
         extConnections,
@@ -88,7 +104,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { apiKeyId, endpointSlug, enabled, parameters, connectionsOverride, jobPriority } = body;
+    const { apiKeyId, endpointSlug, enabled, parameters, connectionsOverride, jobPriority, fileUrlAuthConfig, allowedFileExtensions } = body;
 
     if (!apiKeyId || !endpointSlug) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -109,8 +125,9 @@ export async function POST(req: NextRequest) {
       enabled: typeof enabled === 'boolean' ? enabled : true,
       parameters: parameters ? JSON.stringify(parameters) : null,
       connectionsOverride: connectionsOverride ? JSON.stringify(connectionsOverride) : null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(VALID_PRIORITIES.includes(jobPriority) ? { jobPriority } as any : {}),
+      fileUrlAuthConfig: fileUrlAuthConfig ? encrypt(JSON.stringify(fileUrlAuthConfig)) : null,
+      allowedFileExtensions: typeof allowedFileExtensions === 'string' && allowedFileExtensions.trim() ? allowedFileExtensions.trim() : null,
+      jobPriority: VALID_PRIORITIES.includes(jobPriority) ? jobPriority : 'MEDIUM',
     };
 
     const record = await prisma.profileEndpoint.upsert({

@@ -4,6 +4,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import type { ProfileEndpoint } from '@prisma/client';
+import type { FileUrlAuthConfig } from '@/lib/file-url-downloader';
+import { decrypt } from '@/lib/crypto';
 
 export interface ConnectionStep {
   slug: string;
@@ -86,6 +88,27 @@ export function mergeParameters(
   }
 
   return { ok: true, vars: mergedVars };
+}
+
+/**
+ * Parse the fileUrlAuthConfig field from a ProfileEndpoint.
+ * Returns undefined if no config is stored or JSON is invalid.
+ */
+export function getFileUrlAuthConfig(pe: ProfileEndpoint | null): FileUrlAuthConfig | undefined {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = (pe as any)?.fileUrlAuthConfig;
+  if (!raw) return undefined;
+  // Try decrypted (new format) first, then plain JSON (legacy)
+  try {
+    const decrypted = decrypt(raw);
+    return JSON.parse(decrypted) as FileUrlAuthConfig;
+  } catch {
+    try {
+      return JSON.parse(raw) as FileUrlAuthConfig;
+    } catch {
+      return undefined;
+    }
+  }
 }
 
 /**

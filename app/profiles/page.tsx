@@ -724,6 +724,20 @@ function ProfileEndpointCard({
     endpoint.jobPriority ?? 'MEDIUM'
   );
 
+  // File URL Auth Config
+  const [fileUrlAuthConfig, setFileUrlAuthConfig] = useState<{
+    type: 'none' | 'bearer' | 'header' | 'query';
+    token?: string;
+    header_name?: string;
+    header_value?: string;
+    query_key?: string;
+    query_value?: string;
+  }>(endpoint.fileUrlAuthConfig ?? { type: 'none' });
+  const [isFileUrlAuthOpen, setIsFileUrlAuthOpen] = useState(false);
+
+  // Configured allowed file extensions
+  const [allowedFileExtensions, setAllowedFileExtensions] = useState<string>(endpoint.allowedFileExtensions || '');
+
   // Connection Routing Override — format mới: ConnectionStep[]
   interface ConnStep { slug: string; stepId?: string; captureSession?: string | null; injectSession?: string | null; }
 
@@ -743,6 +757,7 @@ function ProfileEndpointCard({
   // Test Endpoint Modal State
   const [showTestModal, setShowTestModal] = useState(false);
   const [testFiles, setTestFiles] = useState<File[]>([]);
+  const [testFileUrlsRaw, setTestFileUrlsRaw] = useState<string>('');
   const [testParams, setTestParams] = useState<Record<string, string>>({});
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
@@ -817,7 +832,10 @@ function ProfileEndpointCard({
     setShowRaw(false);
     setAddKey('');
     setJobPriority(endpoint.jobPriority ?? 'MEDIUM');
-  }, [apiKeyId]);
+    setFileUrlAuthConfig(endpoint.fileUrlAuthConfig ?? { type: 'none' });
+    setAllowedFileExtensions(endpoint.allowedFileExtensions || '');
+    setIsFileUrlAuthOpen(false);
+  }, [apiKeyId, endpoint.slug]);
 
   // Generate cURL preview
   const generateCurl = () => {
@@ -938,6 +956,8 @@ function ProfileEndpointCard({
           parameters: finalParamsObj,
           connectionsOverride: connectionsOverride && connectionsOverride.length > 0 ? connectionsOverride : null,
           jobPriority,
+          fileUrlAuthConfig: fileUrlAuthConfig.type !== 'none' ? fileUrlAuthConfig : null,
+          allowedFileExtensions: allowedFileExtensions.trim() ? allowedFileExtensions.trim() : null,
         }),
       });
 
@@ -992,6 +1012,21 @@ function ProfileEndpointCard({
       fd.append('__service', baseService);
       fd.append('__apiKeyId', apiKeyId);
       for (const file of testFiles) fd.append('files[]', file);
+
+      if (testFileUrlsRaw.trim()) {
+        const urls = testFileUrlsRaw.split('\n').map(l => l.trim()).filter(Boolean);
+        for (const u of urls) {
+          try {
+            new URL(u);
+          } catch {
+            toast.error(`URL không hợp lệ: ${u}`);
+            setTesting(false);
+            return;
+          }
+        }
+        const mapped = urls.map(u => ({ url: u }));
+        fd.append('file_urls', JSON.stringify(mapped));
+      }
 
       if (endpoint.discriminatorName && endpoint.discriminatorValue && endpoint.discriminatorValue !== '_default') {
         fd.append(endpoint.discriminatorName, endpoint.discriminatorValue);
@@ -1267,6 +1302,27 @@ function ProfileEndpointCard({
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Remote URLs <span className="text-xs font-normal text-muted-foreground">(tuỳ chọn)</span></label>
+                <div className="border border-border rounded-xl p-4 hover:border-violet-400 dark:hover:border-violet-600 transition-colors bg-muted/10">
+                  <p className="text-xs text-muted-foreground mb-2">Nhập danh sách <code className="bg-muted px-1 rounded">file_urls</code> cần hệ thống download, mỗi URL một dòng.</p>
+                  <textarea
+                    className="w-full input-field text-xs font-mono min-h-[80px]"
+                    placeholder="https://example.com/file1.pdf&#10;https://example.com/file2.docx"
+                    value={testFileUrlsRaw}
+                    onChange={(e) => {
+                      setTestFileUrlsRaw(e.target.value);
+                      setTestResult(null);
+                    }}
+                  />
+                  {testFileUrlsRaw.trim() && (
+                    <p className="text-xs text-violet-700 dark:text-violet-300 mt-2 font-medium">
+                      ✓ Sẽ tải {testFileUrlsRaw.split('\n').filter(l => l.trim()).length} URL.
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <button
                 onClick={handleTestEndpoint}
                 disabled={testing}
@@ -1407,6 +1463,129 @@ function ProfileEndpointCard({
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* FILE URL AUTH CONFIG SECTION */}
+            <div className="sm:col-span-2">
+              <div
+                className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2 cursor-pointer hover:bg-muted/50 w-fit p-1.5 -ml-1.5 rounded transition-colors select-none"
+                onClick={() => setIsFileUrlAuthOpen(!isFileUrlAuthOpen)}
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform ${isFileUrlAuthOpen ? '' : '-rotate-90'}`} />
+                <span>🔗</span> File URL Authentication
+                {fileUrlAuthConfig.type !== 'none' && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs font-medium bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 rounded-full">
+                    {fileUrlAuthConfig.type}
+                  </span>
+                )}
+              </div>
+
+              {isFileUrlAuthOpen && (
+                <div className="animate-in fade-in border border-border rounded-xl p-4 bg-muted/20 space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    Cấu hình xác thực khi hệ thống download file từ <code className="bg-muted px-1 rounded">file_urls</code>.
+                    Áp dụng cho tất cả URL trong cùng request đến endpoint này.
+                  </p>
+
+                  {/* Auth type selector */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {(['none', 'bearer', 'header', 'query'] as const).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setFileUrlAuthConfig({ ...fileUrlAuthConfig, type: t })}
+                        className={`px-3 py-1 text-xs font-medium rounded-lg border transition-all ${
+                          fileUrlAuthConfig.type === t
+                            ? 'bg-teal-500 text-white border-teal-500 shadow-sm'
+                            : 'bg-background text-muted-foreground border-border hover:border-teal-400 hover:text-foreground'
+                        }`}
+                      >
+                        {t === 'none' ? 'Không có' : t === 'bearer' ? 'Bearer Token' : t === 'header' ? 'Custom Header' : 'Query Param'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Bearer token */}
+                  {fileUrlAuthConfig.type === 'bearer' && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Token</label>
+                      <input
+                        type="password"
+                        placeholder="Bearer token value"
+                        value={fileUrlAuthConfig.token ?? ''}
+                        onChange={(e) => setFileUrlAuthConfig({ ...fileUrlAuthConfig, token: e.target.value })}
+                        className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-400"
+                      />
+                    </div>
+                  )}
+
+                  {/* Custom header */}
+                  {fileUrlAuthConfig.type === 'header' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Header Name</label>
+                        <input
+                          type="text"
+                          placeholder="X-API-Key"
+                          value={fileUrlAuthConfig.header_name ?? ''}
+                          onChange={(e) => setFileUrlAuthConfig({ ...fileUrlAuthConfig, header_name: e.target.value })}
+                          className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-400"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Header Value</label>
+                        <input
+                          type="password"
+                          placeholder="header value"
+                          value={fileUrlAuthConfig.header_value ?? ''}
+                          onChange={(e) => setFileUrlAuthConfig({ ...fileUrlAuthConfig, header_value: e.target.value })}
+                          className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-400"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Query param */}
+                  {fileUrlAuthConfig.type === 'query' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Query Key</label>
+                        <input
+                          type="text"
+                          placeholder="token"
+                          value={fileUrlAuthConfig.query_key ?? ''}
+                          onChange={(e) => setFileUrlAuthConfig({ ...fileUrlAuthConfig, query_key: e.target.value })}
+                          className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-400"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Query Value</label>
+                        <input
+                          type="password"
+                          placeholder="query param value"
+                          value={fileUrlAuthConfig.query_value ?? ''}
+                          onChange={(e) => setFileUrlAuthConfig({ ...fileUrlAuthConfig, query_value: e.target.value })}
+                          className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-400"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* ALLOWED FILE EXTENSIONS SECTION */}
+            <div className="sm:col-span-2">
+              <label className="flex flex-col">
+                <span className="text-sm font-semibold text-foreground mb-1">Allowed File Extensions</span>
+                <span className="text-xs text-muted-foreground mb-2">Định dạng file được phép tải lên. Phân cách bằng dấu phẩy (vd: <code className="bg-muted px-1 rounded">.pdf, .docx, .jpg</code>). Để trống thì dùng mặc định.</span>
+                <input
+                  type="text"
+                  placeholder=".pdf, .docx"
+                  value={allowedFileExtensions}
+                  onChange={(e) => setAllowedFileExtensions(e.target.value)}
+                  className="input-field text-sm font-mono w-full sm:w-1/2"
+                />
+              </label>
             </div>
 
             {/* CURL PREVIEW SECTION */}

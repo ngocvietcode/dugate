@@ -133,6 +133,46 @@ export async function runPipeline(operationId: string, correlationId?: string, j
     return;
   }
 
+  // ── Download pending file_urls (deferred from async submit) ──────────────
+  const jobData = job?.data as import('@/lib/queue/pipeline-queue').PipelineJobData | undefined;
+  if (jobData?.pendingFileUrls && jobData.pendingFileUrls.length > 0) {
+    try {
+      const { downloadAllFileUrls } = await import('@/lib/file-url-downloader');
+      logger.info(`[PIPELINE] Downloading ${jobData.pendingFileUrls.length} pending file URLs`);
+      await prisma.operation.update({
+        where: { id: operationId },
+        data: { progressMessage: `Downloading ${jobData.pendingFileUrls.length} file(s) from URLs...` },
+      });
+      const downloaded = await downloadAllFileUrls(
+        jobData.pendingFileUrls,
+        operationId,
+        jobData.pendingFileUrlAuthConfig,
+        jobData.pendingAllowedFileExtensions,
+      );
+      filesData.push(...downloaded);
+      // Persist updated filesJson so checkpoint/resume picks them up
+      await prisma.operation.update({
+        where: { id: operationId },
+        data: { filesJson: JSON.stringify(filesData) },
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[PIPELINE_FAILED] File URL download failed: ${msg}`, undefined, err);
+      await prisma.operation.update({
+        where: { id: operationId },
+        data: {
+          done: true,
+          state: 'FAILED',
+          failedAtStep: 0,
+          errorCode: 'FILE_URL_DOWNLOAD_FAILED',
+          errorMessage: msg,
+          stepsResultJson: JSON.stringify([]),
+        },
+      });
+      return;
+    }
+  }
+
   // Parse filesJson → filePaths / fileNames
   const filePaths = filesData.map((f) => f.path?.replace(/\\/g, '/'));
   const fileNames = filesData.map((f) => f.name);

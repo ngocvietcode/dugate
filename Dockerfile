@@ -38,6 +38,7 @@ RUN node_modules/.bin/esbuild worker.ts \
     --external:bullmq \
     --external:mammoth \
     --external:sharp \
+    --external:openai \
     --alias:@=. 2>&1 && echo "worker.js built successfully"
 
 # Stage 3: runner (slim — no local PDF/DOCX processing, all done via external API)
