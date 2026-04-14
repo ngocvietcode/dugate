@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { Home, Clock, Settings, FileText, SlidersHorizontal, PlugZap, User, LogOut, Users, ChevronDown, LogIn, BrainCircuit } from 'lucide-react';
+import { Home, Clock, Settings, FileText, SlidersHorizontal, PlugZap, User, LogOut, Users, ChevronDown, LogIn, BrainCircuit, Activity } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
 export default function HeaderNav() {
@@ -56,6 +56,16 @@ export default function HeaderNav() {
           >
             <Home className="w-4 h-4" />
             Trang chủ
+          </Link>
+
+          <Link
+            href="/dashboard"
+            className={`pill-nav-item ${
+              pathname.startsWith('/dashboard') ? 'pill-nav-active' : 'pill-nav-inactive'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            Dashboard
           </Link>
 
           <Link

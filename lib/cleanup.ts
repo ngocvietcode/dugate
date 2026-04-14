@@ -59,14 +59,20 @@ export async function cleanupExpiredFiles(): Promise<{ deleted: number; freedMB:
 
   for (const conv of expired) {
     try {
-      // Delete output directory (local) or output file (S3)
-      if (isLocal) {
-        const convOutputDir = path.join(outputDir, conv.id);
-        freed += await getDirSize(convOutputDir);
-        await fs.rm(convOutputDir, { recursive: true, force: true });
-      } else if (conv.outputFilePath) {
-        // S3: delete the output file stored at outputFilePath key
-        const meta = await backend.getMetadata(conv.outputFilePath);
+      // Unconditionally clean up local output directory if it exists
+      const convOutputDir = path.join(outputDir, conv.id);
+      try {
+        const dsize = await getDirSize(convOutputDir);
+        if (dsize > 0) {
+          freed += dsize;
+          await fs.rm(convOutputDir, { recursive: true, force: true });
+        }
+      } catch {}
+
+      // Clean up output file from backend if configured
+      if (conv.outputFilePath) {
+        // Safe delete from active backend
+        const meta = await backend.getMetadata(conv.outputFilePath).catch(() => null);
         if (meta) freed += meta.size;
         await backend.delete(conv.outputFilePath).catch(() => {});
       }
@@ -87,20 +93,20 @@ export async function cleanupExpiredFiles(): Promise<{ deleted: number; freedMB:
           });
         } else if (f.s3Key) {
           // S3 file without cache entry — delete directly
-          const meta = await backend.getMetadata(f.s3Key);
+          const meta = await backend.getMetadata(f.s3Key).catch(() => null);
           if (meta) freed += meta.size;
           await backend.delete(f.s3Key).catch(() => {});
-        } else if (f.path && isLocal) {
+        } else if (f.path) {
           // Legacy local file
           try {
             const stat = await fs.stat(f.path);
             freed += stat.size;
-          } catch { /* already deleted */ }
-          await fs.rm(f.path, { force: true });
-          try {
-            const parentDir = path.dirname(f.path);
-            await fs.rmdir(parentDir);
-          } catch { /* ignore if not empty */ }
+            await fs.rm(f.path, { force: true });
+            try {
+              const parentDir = path.dirname(f.path);
+              await fs.rmdir(parentDir);
+            } catch { /* ignore if not empty */ }
+          } catch { /* already deleted or error */ }
         }
       }
 

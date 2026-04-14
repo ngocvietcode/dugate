@@ -51,5 +51,5 @@ export function decrypt(ciphertext: string): string {
 // Mask API key cho display: "AIza...xxxx" (giữ 4 đầu + 4 cuối)
 export function maskApiKey(key: string): string {
   if (!key || key.length <= 8) return '****';
-  return `${key.slice(0, 4)}...${key.slice(-4)}`;
+  return `${key.slice(0, 4)}****${key.slice(-4)}`;
 }

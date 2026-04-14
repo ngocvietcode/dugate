@@ -47,7 +47,8 @@ export async function middleware(request: NextRequest) {
       });
       if (token) {
         // Authenticated UI user — allow without API key
-        if (token.sub) requestHeaders.set('x-user-id', token.sub);
+        const userId = (token.id as string) || token.sub;
+        if (userId) requestHeaders.set('x-user-id', userId);
         if (token.role) requestHeaders.set('x-user-role', token.role as string);
         return NextResponse.next({ request: { headers: requestHeaders } });
       }

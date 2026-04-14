@@ -66,9 +66,11 @@ export async function GET(
         const resolvedOutputPath = path.resolve(op.outputFilePath);
         const relativePath = path.relative(outputBaseDir, resolvedOutputPath);
         if (relativePath === '' || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+          // If the path breaks out of the output directory, it's either an invalid path or a legacy S3 key
+          // accessed while the local backend is active. Return 404 instead of an alarming 403.
           return NextResponse.json(
-            { type: 'https://dugate.vn/errors/forbidden', title: 'Forbidden', status: 403, detail: 'Invalid output file path.' },
-            { status: 403 }
+            { type: 'https://dugate.vn/errors/file-not-found', title: 'File Not Found', status: 404, detail: 'Output file not found or is stored in an inactive S3 backend.' },
+            { status: 404 }
           );
         }
 

@@ -133,8 +133,9 @@ docs-site/                  # Documentation site
 | **ExternalApiConnection** | External AI service registry (URL, authType, authSecret, prompt, response path, session chaining, state) |
 | **ExternalApiOverride** | Per-client prompt overrides scoped to (connection, apiKey, endpointSlug, stepId) |
 | **ProfileEndpoint** | Per-client endpoint config (enabled, locked params, connection override, job priority, fileUrlAuthConfig, allowedFileExtensions) |
-| **AppSetting** | Key-value store (AI provider, model, encrypted API keys, prompt templates) |
+| **AppSetting** | Key-value store (AI provider, model, encrypted API keys, prompt templates, S3 backend config) |
 | **User** | Auth users (username, bcrypt password, role: ADMIN/USER/VIEWER, OIDC: provider, providerSub, email, displayName) |
+| **FileCache** | File deduplication tracking for S3 storage backend (md5Hash, s3Key, size, refCount) |
 
 ## API Services (6 core + workflows)
 
@@ -170,6 +171,7 @@ docs-site/                  # Documentation site
 - **Idempotency**: Built-in via idempotency keys on job submission
 - **Webhook Callbacks**: Notify clients on operation completion
 - **Rate Limiting**: Middleware-level per-API-key rate limiting
+- **Storage Engine**: Configurable Local or S3-compatible backend (AWS, MinIO, R2) with MD5 deduplication
 - **File Cleanup**: Auto-delete uploaded files after 7 days
 - **Memory Monitoring**: Worker pauses at 90% heap usage, resumes at 75%
 - **Stalled Job Recovery**: Auto-detection (30s interval) with max 2 retries before DLQ
