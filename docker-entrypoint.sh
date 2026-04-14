@@ -6,8 +6,12 @@ if [ "$MIGRATION" = "true" ]; then
   echo "[entrypoint] MIGRATION=true → Running prisma migrate deploy"
   npx prisma migrate deploy
   echo "[entrypoint] Migration complete."
+elif [ "$DB_PUSH" = "true" ]; then
+  echo "[entrypoint] DB_PUSH=true → Running prisma db push to sync schema directly"
+  npx prisma db push --accept-data-loss
+  echo "[entrypoint] DB Push complete."
 else
-  echo "[entrypoint] MIGRATION not set to true → Skipping migration."
+  echo "[entrypoint] MIGRATION and DB_PUSH not set to true → Skipping migration."
 fi
 
 # Run seeding when SEED=true

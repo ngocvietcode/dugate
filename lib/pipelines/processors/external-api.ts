@@ -2,7 +2,6 @@
 // External API Processor — forwards files to an external AI service via multipart/form-data.
 // Delegates to: prompt-resolver, http-client, response-parser.
 
-import { openAsBlob } from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import type { ProcessorContext, ProcessorResult } from '@/lib/pipelines/engine';
@@ -82,15 +81,12 @@ export async function runExternalApiProcessor(
   }
 
   if (ctx.filePaths.length > 0) {
-    if (typeof openAsBlob !== 'function') {
-      throw new Error('File upload requires a runtime with fs.openAsBlob support. Please upgrade Node.js.');
-    }
-
     for (let i = 0; i < ctx.filePaths.length; i++) {
       const filePath = ctx.filePaths[i];
       const fileName = ctx.fileNames[i] ?? `file_${i}`;
       try {
-        const fileBlob = await openAsBlob(filePath);
+        const fileBuffer = await fsPromises.readFile(filePath);
+        const fileBlob = new Blob([fileBuffer]);
         formData.append(connection.fileFieldName, fileBlob, fileName);
         ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBlob.size} bytes)`);
       } catch (e) {

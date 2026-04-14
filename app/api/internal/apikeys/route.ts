@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { Logger } from '@/lib/logger';
+import { requireAdmin } from '@/lib/rbac';
 
 const logger = new Logger({ service: 'apikeys' });
 
 
 export async function GET(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const apiKeys = await prisma.apiKey.findMany({
       orderBy: { createdAt: 'desc' },
@@ -27,6 +31,9 @@ export async function GET(req: NextRequest) {
 
 // Cập nhật ApiKey (Note) hoặc Rotate Key
 export async function PUT(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const { id, note, action } = body;
@@ -57,6 +64,9 @@ export async function PUT(req: NextRequest) {
 
 // Tạo mới ApiKey
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const { name } = await req.json();
     if (!name || name.trim().length === 0) {
@@ -91,6 +101,9 @@ export async function POST(req: NextRequest) {
 
 // Xóa ApiKey
 export async function DELETE(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');

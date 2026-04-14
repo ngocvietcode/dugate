@@ -4,6 +4,7 @@
 // Reads from unified /api/operations endpoint
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Loader2, CheckCircle2, XCircle, Clock, Ban, Trash2 } from 'lucide-react';
 
@@ -35,6 +36,8 @@ function StatusBadge({ state }: { state: string }) {
 }
 
 export default function ConversionHistory() {
+  const { data: session } = useSession();
+  const canDelete = session?.user?.role !== 'VIEWER';
   const [ops, setOps] = useState<OperationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -91,12 +94,14 @@ export default function ConversionHistory() {
               </Link>
             </div>
 
-            <button
-              onClick={() => deleteOp(opId)}
-              className="shrink-0 p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {canDelete && (
+              <button
+                onClick={() => deleteOp(opId)}
+                className="shrink-0 p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         );
       })}

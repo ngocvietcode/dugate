@@ -6,12 +6,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Logger } from '@/lib/logger';
+import { requireAdmin } from '@/lib/rbac';
 
 const logger = new Logger({ service: 'ext-overrides' });
 
 
 // ─── GET: List overrides ────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const { searchParams } = new URL(req.url);
     const connectionId = searchParams.get('connectionId') ?? undefined;
@@ -39,6 +43,9 @@ export async function GET(req: NextRequest) {
 
 // ─── POST: Upsert (create or update) override ──────────────────────────────────
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const { connectionId, apiKeyId, endpointSlug, stepId, promptOverride, isActive } = await req.json();
     const resolvedStepId = stepId ?? '_default';
@@ -98,6 +105,9 @@ export async function POST(req: NextRequest) {
 
 // ─── DELETE: Remove override ────────────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const { connectionId, apiKeyId } = await req.json();
 

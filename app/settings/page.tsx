@@ -1,9 +1,28 @@
 // app/settings/page.tsx
-// Trang cài đặt AI provider
+// Trang cài đặt AI provider — Admin only
 
+'use client';
+
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import SettingsForm from '@/components/SettingsForm';
 
 export default function SettingsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (!session || session.user.role !== 'ADMIN') {
+      router.push('/');
+    }
+  }, [session, status, router]);
+
+  if (status === 'loading' || !session || session.user.role !== 'ADMIN') {
+    return null;
+  }
+
   return (
     <main className="max-w-3xl mx-auto px-4 py-12">
       <div className="mb-8">

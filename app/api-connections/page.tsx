@@ -3,6 +3,8 @@
 // Admin UI — Quản lý External AI Service Connections
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import {
   PlugZap, Plus, Trash2, Save, Eye, EyeOff, ChevronRight,
   Loader2, CheckCircle, XCircle, FlaskConical, RefreshCw,
@@ -183,6 +185,16 @@ function parseCurl(curlText: string) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ApiConnectionsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (!session || session.user.role !== 'ADMIN') {
+      router.push('/');
+    }
+  }, [session, status, router]);
+
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | 'new' | null>(null);
@@ -206,6 +218,10 @@ export default function ApiConnectionsPage() {
   // Import modal state
   const [showImportModal, setShowImportModal] = useState(false);
   const [importCurlText, setImportCurlText] = useState('');
+
+  if (status !== 'loading' && (!session || session.user.role !== 'ADMIN')) {
+    return null;
+  }
 
   const fetchConnections = useCallback(async () => {
     try {

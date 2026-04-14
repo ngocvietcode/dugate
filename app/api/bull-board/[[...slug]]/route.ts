@@ -9,6 +9,7 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { HonoAdapter } from '@bull-board/hono';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { isAdmin } from '@/lib/rbac';
 import { getPipelineQueue } from '@/lib/queue/pipeline-queue';
 import { Hono } from 'hono';
 import { serveStatic } from '@hono/node-server/serve-static';
@@ -22,7 +23,10 @@ const app = new Hono();
 app.use('*', async (c, next) => {
   const session = await getServerSession(authOptions);
   if (!session) {
-    return c.json({ error: 'Unauthorized — Admin only' }, 401);
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  if (!isAdmin(session.user.role)) {
+    return c.json({ error: 'Forbidden — Admin only' }, 403);
   }
   await next();
 });

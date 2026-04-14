@@ -77,11 +77,9 @@ export async function runEndpoint(serviceSlug: string, req: NextRequest): Promis
       return apiError(404, 'Service Not Found', `Service '${serviceSlug}' is not registered.`);
     }
 
-    // ── 1b. VIEWER role guard (read-only users cannot submit jobs) ─────────
-    const userRole = req.headers.get('x-user-role');
-    if (userRole && !canMutate(userRole)) {
-      return apiError(403, 'Forbidden', 'Read-only users cannot submit jobs.');
-    }
+    // ── 1b. Role guard ────────────────────────────────────────────────────
+    // VIEWER users can submit jobs from UI (for testing/demo purposes)
+    // but cannot delete operations (enforced in operations/[id] route).
 
     const form = await req.formData();
     const apiKeyId = req.headers.get('x-api-key-id') ?? undefined;

@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   Loader2, CheckCircle, Plus, Copy,
   Settings, Save, Key, ChevronRight, ChevronDown, FileText, PlugZap, Trash2, Code, FlaskConical, Zap, XCircle, GripVertical, X
@@ -18,6 +19,20 @@ interface ApiKey {
 }
 
 export default function OverridesPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (!session || session.user.role !== 'ADMIN') {
+      router.push('/');
+    }
+  }, [session, status, router]);
+
+  if (status === 'loading' || !session || session.user.role !== 'ADMIN') {
+    return null;
+  }
+
   return (
     <Suspense fallback={<div className="p-12 text-center text-muted-foreground flex justify-center items-center"><Loader2 className="w-6 h-6 animate-spin mr-2" /> Đang tải cấu hình Admin...</div>}>
       <OverridesContent />

@@ -5,6 +5,7 @@
 import { getAllSettings, setSettings } from '@/lib/settings';
 import { maskApiKey } from '@/lib/crypto';
 import { Logger } from '@/lib/logger';
+import { requireAdmin } from '@/lib/rbac';
 
 const logger = new Logger({ service: 'settings' });
 
@@ -12,6 +13,9 @@ const logger = new Logger({ service: 'settings' });
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const settings = await getAllSettings();
     // Mask API key trước khi trả về client (S04)
@@ -33,6 +37,9 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = await request.json() as Record<string, string>;
 
