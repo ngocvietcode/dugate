@@ -33,10 +33,11 @@ export async function getStorageBackend(): Promise<StorageBackend> {
     _backend = new S3StorageBackend({
       endpoint: endpoint || undefined,
       bucket,
-      accessKeyId: accessKeyId || '',
-      secretAccessKey: secretAccessKey || '',
+      // Optional: if empty, SDK uses default credential chain (EC2 instance profile, ECS task role, env vars)
+      accessKeyId: accessKeyId || undefined,
+      secretAccessKey: secretAccessKey || undefined,
       region: region || 'us-east-1',
-    } as any); // S3BackendConfig type compatibility check
+    });
     return _backend;
   }
 

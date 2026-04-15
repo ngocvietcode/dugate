@@ -18,10 +18,10 @@ import { Upload } from '@aws-sdk/lib-storage';
 import type { StorageBackend, UploadResult, StorageMetadata } from './types';
 
 export interface S3BackendConfig {
-  endpoint: string;
+  endpoint?: string;
   bucket: string;
-  accessKeyId: string;
-  secretAccessKey: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
   region: string;
 }
 
@@ -31,13 +31,17 @@ export class S3StorageBackend implements StorageBackend {
 
   constructor(config: S3BackendConfig) {
     this.bucket = config.bucket;
+
+    const hasExplicitCredentials = config.accessKeyId && config.secretAccessKey;
+
     this.client = new S3Client({
-      endpoint: config.endpoint,
+      ...(config.endpoint ? { endpoint: config.endpoint } : {}),
       region: config.region || 'us-east-1',
-      credentials: {
-        accessKeyId: config.accessKeyId,
-        secretAccessKey: config.secretAccessKey,
-      },
+      // Only set explicit credentials if provided; otherwise let SDK use
+      // default credential chain (env vars, EC2 instance profile, ECS task role, etc.)
+      ...(hasExplicitCredentials
+        ? { credentials: { accessKeyId: config.accessKeyId!, secretAccessKey: config.secretAccessKey! } }
+        : {}),
       forcePathStyle: true, // Required for MinIO and most S3-compatible services
     });
   }
