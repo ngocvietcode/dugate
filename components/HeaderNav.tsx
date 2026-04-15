@@ -80,15 +80,27 @@ export default function HeaderNav() {
             Lịch sử
           </Link>
           {!isViewer && (
+            <Link
+              href="/profiles"
+              className={`pill-nav-item ${
+                pathname.startsWith('/profiles') ? 'pill-nav-active' : 'pill-nav-inactive'
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Profiles
+            </Link>
+          )}
+
+          {isAdmin && (
             <>
               <Link
-                href="/profiles"
+                href="/settings"
                 className={`pill-nav-item ${
-                  pathname.startsWith('/profiles') ? 'pill-nav-active' : 'pill-nav-inactive'
+                  pathname.startsWith('/settings') ? 'pill-nav-active' : 'pill-nav-inactive'
                 }`}
               >
-                <SlidersHorizontal className="w-4 h-4" />
-                Profiles
+                <Settings className="w-4 h-4" />
+                Cài đặt
               </Link>
               <Link
                 href="/api-connections"

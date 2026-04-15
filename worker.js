@@ -5,8 +5,15 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -24,371 +31,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
-
-// node_modules/dotenv/lib/main.js
-var require_main = __commonJS({
-  "node_modules/dotenv/lib/main.js"(exports2, module2) {
-    var fs2 = require("fs");
-    var path2 = require("path");
-    var os = require("os");
-    var crypto2 = require("crypto");
-    var TIPS = [
-      "\u25C8 encrypted .env [www.dotenvx.com]",
-      "\u25C8 secrets for agents [www.dotenvx.com]",
-      "\u2301 auth for agents [www.vestauth.com]",
-      "\u2318 custom filepath { path: '/custom/path/.env' }",
-      "\u2318 enable debugging { debug: true }",
-      "\u2318 override existing { override: true }",
-      "\u2318 suppress logs { quiet: true }",
-      "\u2318 multiple files { path: ['.env.local', '.env'] }"
-    ];
-    function _getRandomTip() {
-      return TIPS[Math.floor(Math.random() * TIPS.length)];
-    }
-    function parseBoolean(value) {
-      if (typeof value === "string") {
-        return !["false", "0", "no", "off", ""].includes(value.toLowerCase());
-      }
-      return Boolean(value);
-    }
-    function supportsAnsi() {
-      return process.stdout.isTTY;
-    }
-    function dim(text) {
-      return supportsAnsi() ? `\x1B[2m${text}\x1B[0m` : text;
-    }
-    var LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg;
-    function parse(src) {
-      const obj = {};
-      let lines = src.toString();
-      lines = lines.replace(/\r\n?/mg, "\n");
-      let match;
-      while ((match = LINE.exec(lines)) != null) {
-        const key = match[1];
-        let value = match[2] || "";
-        value = value.trim();
-        const maybeQuote = value[0];
-        value = value.replace(/^(['"`])([\s\S]*)\1$/mg, "$2");
-        if (maybeQuote === '"') {
-          value = value.replace(/\\n/g, "\n");
-          value = value.replace(/\\r/g, "\r");
-        }
-        obj[key] = value;
-      }
-      return obj;
-    }
-    function _parseVault(options) {
-      options = options || {};
-      const vaultPath = _vaultPath(options);
-      options.path = vaultPath;
-      const result = DotenvModule.configDotenv(options);
-      if (!result.parsed) {
-        const err = new Error(`MISSING_DATA: Cannot parse ${vaultPath} for an unknown reason`);
-        err.code = "MISSING_DATA";
-        throw err;
-      }
-      const keys = _dotenvKey(options).split(",");
-      const length = keys.length;
-      let decrypted;
-      for (let i = 0; i < length; i++) {
-        try {
-          const key = keys[i].trim();
-          const attrs = _instructions(result, key);
-          decrypted = DotenvModule.decrypt(attrs.ciphertext, attrs.key);
-          break;
-        } catch (error) {
-          if (i + 1 >= length) {
-            throw error;
-          }
-        }
-      }
-      return DotenvModule.parse(decrypted);
-    }
-    function _warn(message) {
-      console.error(`\u26A0 ${message}`);
-    }
-    function _debug(message) {
-      console.log(`\u2506 ${message}`);
-    }
-    function _log(message) {
-      console.log(`\u25C7 ${message}`);
-    }
-    function _dotenvKey(options) {
-      if (options && options.DOTENV_KEY && options.DOTENV_KEY.length > 0) {
-        return options.DOTENV_KEY;
-      }
-      if (process.env.DOTENV_KEY && process.env.DOTENV_KEY.length > 0) {
-        return process.env.DOTENV_KEY;
-      }
-      return "";
-    }
-    function _instructions(result, dotenvKey) {
-      let uri;
-      try {
-        uri = new URL(dotenvKey);
-      } catch (error) {
-        if (error.code === "ERR_INVALID_URL") {
-          const err = new Error("INVALID_DOTENV_KEY: Wrong format. Must be in valid uri format like dotenv://:key_1234@dotenvx.com/vault/.env.vault?environment=development");
-          err.code = "INVALID_DOTENV_KEY";
-          throw err;
-        }
-        throw error;
-      }
-      const key = uri.password;
-      if (!key) {
-        const err = new Error("INVALID_DOTENV_KEY: Missing key part");
-        err.code = "INVALID_DOTENV_KEY";
-        throw err;
-      }
-      const environment = uri.searchParams.get("environment");
-      if (!environment) {
-        const err = new Error("INVALID_DOTENV_KEY: Missing environment part");
-        err.code = "INVALID_DOTENV_KEY";
-        throw err;
-      }
-      const environmentKey = `DOTENV_VAULT_${environment.toUpperCase()}`;
-      const ciphertext = result.parsed[environmentKey];
-      if (!ciphertext) {
-        const err = new Error(`NOT_FOUND_DOTENV_ENVIRONMENT: Cannot locate environment ${environmentKey} in your .env.vault file.`);
-        err.code = "NOT_FOUND_DOTENV_ENVIRONMENT";
-        throw err;
-      }
-      return { ciphertext, key };
-    }
-    function _vaultPath(options) {
-      let possibleVaultPath = null;
-      if (options && options.path && options.path.length > 0) {
-        if (Array.isArray(options.path)) {
-          for (const filepath of options.path) {
-            if (fs2.existsSync(filepath)) {
-              possibleVaultPath = filepath.endsWith(".vault") ? filepath : `${filepath}.vault`;
-            }
-          }
-        } else {
-          possibleVaultPath = options.path.endsWith(".vault") ? options.path : `${options.path}.vault`;
-        }
-      } else {
-        possibleVaultPath = path2.resolve(process.cwd(), ".env.vault");
-      }
-      if (fs2.existsSync(possibleVaultPath)) {
-        return possibleVaultPath;
-      }
-      return null;
-    }
-    function _resolveHome(envPath) {
-      return envPath[0] === "~" ? path2.join(os.homedir(), envPath.slice(1)) : envPath;
-    }
-    function _configVault(options) {
-      const debug = parseBoolean(process.env.DOTENV_CONFIG_DEBUG || options && options.debug);
-      const quiet = parseBoolean(process.env.DOTENV_CONFIG_QUIET || options && options.quiet);
-      if (debug || !quiet) {
-        _log("loading env from encrypted .env.vault");
-      }
-      const parsed = DotenvModule._parseVault(options);
-      let processEnv = process.env;
-      if (options && options.processEnv != null) {
-        processEnv = options.processEnv;
-      }
-      DotenvModule.populate(processEnv, parsed, options);
-      return { parsed };
-    }
-    function configDotenv(options) {
-      const dotenvPath = path2.resolve(process.cwd(), ".env");
-      let encoding = "utf8";
-      let processEnv = process.env;
-      if (options && options.processEnv != null) {
-        processEnv = options.processEnv;
-      }
-      let debug = parseBoolean(processEnv.DOTENV_CONFIG_DEBUG || options && options.debug);
-      let quiet = parseBoolean(processEnv.DOTENV_CONFIG_QUIET || options && options.quiet);
-      if (options && options.encoding) {
-        encoding = options.encoding;
-      } else {
-        if (debug) {
-          _debug("no encoding is specified (UTF-8 is used by default)");
-        }
-      }
-      let optionPaths = [dotenvPath];
-      if (options && options.path) {
-        if (!Array.isArray(options.path)) {
-          optionPaths = [_resolveHome(options.path)];
-        } else {
-          optionPaths = [];
-          for (const filepath of options.path) {
-            optionPaths.push(_resolveHome(filepath));
-          }
-        }
-      }
-      let lastError;
-      const parsedAll = {};
-      for (const path3 of optionPaths) {
-        try {
-          const parsed = DotenvModule.parse(fs2.readFileSync(path3, { encoding }));
-          DotenvModule.populate(parsedAll, parsed, options);
-        } catch (e) {
-          if (debug) {
-            _debug(`failed to load ${path3} ${e.message}`);
-          }
-          lastError = e;
-        }
-      }
-      const populated = DotenvModule.populate(processEnv, parsedAll, options);
-      debug = parseBoolean(processEnv.DOTENV_CONFIG_DEBUG || debug);
-      quiet = parseBoolean(processEnv.DOTENV_CONFIG_QUIET || quiet);
-      if (debug || !quiet) {
-        const keysCount = Object.keys(populated).length;
-        const shortPaths = [];
-        for (const filePath of optionPaths) {
-          try {
-            const relative = path2.relative(process.cwd(), filePath);
-            shortPaths.push(relative);
-          } catch (e) {
-            if (debug) {
-              _debug(`failed to load ${filePath} ${e.message}`);
-            }
-            lastError = e;
-          }
-        }
-        _log(`injecting env (${keysCount}) from ${shortPaths.join(",")} ${dim(`// tip: ${_getRandomTip()}`)}`);
-      }
-      if (lastError) {
-        return { parsed: parsedAll, error: lastError };
-      } else {
-        return { parsed: parsedAll };
-      }
-    }
-    function config(options) {
-      if (_dotenvKey(options).length === 0) {
-        return DotenvModule.configDotenv(options);
-      }
-      const vaultPath = _vaultPath(options);
-      if (!vaultPath) {
-        _warn(`you set DOTENV_KEY but you are missing a .env.vault file at ${vaultPath}`);
-        return DotenvModule.configDotenv(options);
-      }
-      return DotenvModule._configVault(options);
-    }
-    function decrypt(encrypted, keyStr) {
-      const key = Buffer.from(keyStr.slice(-64), "hex");
-      let ciphertext = Buffer.from(encrypted, "base64");
-      const nonce = ciphertext.subarray(0, 12);
-      const authTag = ciphertext.subarray(-16);
-      ciphertext = ciphertext.subarray(12, -16);
-      try {
-        const aesgcm = crypto2.createDecipheriv("aes-256-gcm", key, nonce);
-        aesgcm.setAuthTag(authTag);
-        return `${aesgcm.update(ciphertext)}${aesgcm.final()}`;
-      } catch (error) {
-        const isRange = error instanceof RangeError;
-        const invalidKeyLength = error.message === "Invalid key length";
-        const decryptionFailed = error.message === "Unsupported state or unable to authenticate data";
-        if (isRange || invalidKeyLength) {
-          const err = new Error("INVALID_DOTENV_KEY: It must be 64 characters long (or more)");
-          err.code = "INVALID_DOTENV_KEY";
-          throw err;
-        } else if (decryptionFailed) {
-          const err = new Error("DECRYPTION_FAILED: Please check your DOTENV_KEY");
-          err.code = "DECRYPTION_FAILED";
-          throw err;
-        } else {
-          throw error;
-        }
-      }
-    }
-    function populate(processEnv, parsed, options = {}) {
-      const debug = Boolean(options && options.debug);
-      const override = Boolean(options && options.override);
-      const populated = {};
-      if (typeof parsed !== "object") {
-        const err = new Error("OBJECT_REQUIRED: Please check the processEnv argument being passed to populate");
-        err.code = "OBJECT_REQUIRED";
-        throw err;
-      }
-      for (const key of Object.keys(parsed)) {
-        if (Object.prototype.hasOwnProperty.call(processEnv, key)) {
-          if (override === true) {
-            processEnv[key] = parsed[key];
-            populated[key] = parsed[key];
-          }
-          if (debug) {
-            if (override === true) {
-              _debug(`"${key}" is already defined and WAS overwritten`);
-            } else {
-              _debug(`"${key}" is already defined and was NOT overwritten`);
-            }
-          }
-        } else {
-          processEnv[key] = parsed[key];
-          populated[key] = parsed[key];
-        }
-      }
-      return populated;
-    }
-    var DotenvModule = {
-      configDotenv,
-      _configVault,
-      _parseVault,
-      config,
-      decrypt,
-      parse,
-      populate
-    };
-    module2.exports.configDotenv = DotenvModule.configDotenv;
-    module2.exports._configVault = DotenvModule._configVault;
-    module2.exports._parseVault = DotenvModule._parseVault;
-    module2.exports.config = DotenvModule.config;
-    module2.exports.decrypt = DotenvModule.decrypt;
-    module2.exports.parse = DotenvModule.parse;
-    module2.exports.populate = DotenvModule.populate;
-    module2.exports = DotenvModule;
-  }
-});
-
-// node_modules/dotenv/lib/env-options.js
-var require_env_options = __commonJS({
-  "node_modules/dotenv/lib/env-options.js"(exports2, module2) {
-    var options = {};
-    if (process.env.DOTENV_CONFIG_ENCODING != null) {
-      options.encoding = process.env.DOTENV_CONFIG_ENCODING;
-    }
-    if (process.env.DOTENV_CONFIG_PATH != null) {
-      options.path = process.env.DOTENV_CONFIG_PATH;
-    }
-    if (process.env.DOTENV_CONFIG_QUIET != null) {
-      options.quiet = process.env.DOTENV_CONFIG_QUIET;
-    }
-    if (process.env.DOTENV_CONFIG_DEBUG != null) {
-      options.debug = process.env.DOTENV_CONFIG_DEBUG;
-    }
-    if (process.env.DOTENV_CONFIG_OVERRIDE != null) {
-      options.override = process.env.DOTENV_CONFIG_OVERRIDE;
-    }
-    if (process.env.DOTENV_CONFIG_DOTENV_KEY != null) {
-      options.DOTENV_KEY = process.env.DOTENV_CONFIG_DOTENV_KEY;
-    }
-    module2.exports = options;
-  }
-});
-
-// node_modules/dotenv/lib/cli-options.js
-var require_cli_options = __commonJS({
-  "node_modules/dotenv/lib/cli-options.js"(exports2, module2) {
-    var re = /^dotenv_config_(encoding|path|quiet|debug|override|DOTENV_KEY)=(.+)$/;
-    module2.exports = function optionMatcher(args) {
-      const options = args.reduce(function(acc, cur) {
-        const matches = cur.match(re);
-        if (matches) {
-          acc[matches[1]] = matches[2];
-        }
-        return acc;
-      }, {});
-      if (!("quiet" in options)) {
-        options.quiet = "true";
-      }
-      return options;
-    };
-  }
-});
 
 // node_modules/xlsx/dist/cpexcel.js
 var require_cpexcel = __commonJS({
@@ -6075,7 +5717,7 @@ var require_xlsx = __commonJS({
           }
           return o;
         }
-        function find(cfb, path2) {
+        function find(cfb, path4) {
           var UCFullPaths = cfb.FullPaths.map(function(x) {
             return x.toUpperCase();
           });
@@ -6084,11 +5726,11 @@ var require_xlsx = __commonJS({
             return y[y.length - (x.slice(-1) == "/" ? 2 : 1)];
           });
           var k = false;
-          if (path2.charCodeAt(0) === 47) {
+          if (path4.charCodeAt(0) === 47) {
             k = true;
-            path2 = UCFullPaths[0].slice(0, -1) + path2;
-          } else k = path2.indexOf("/") !== -1;
-          var UCPath = path2.toUpperCase();
+            path4 = UCFullPaths[0].slice(0, -1) + path4;
+          } else k = path4.indexOf("/") !== -1;
+          var UCPath = path4.toUpperCase();
           var w = k === true ? UCFullPaths.indexOf(UCPath) : UCPaths.indexOf(UCPath);
           if (w !== -1) return cfb.FileIndex[w];
           var m = !UCPath.match(chr1);
@@ -7069,11 +6711,11 @@ var require_xlsx = __commonJS({
         }
         throw new Error("cannot save file " + fname);
       }
-      function read_binary(path2) {
-        if (typeof _fs !== "undefined") return _fs.readFileSync(path2);
-        if (typeof Deno !== "undefined") return Deno.readFileSync(path2);
+      function read_binary(path4) {
+        if (typeof _fs !== "undefined") return _fs.readFileSync(path4);
+        if (typeof Deno !== "undefined") return Deno.readFileSync(path4);
         if (typeof $ !== "undefined" && typeof File !== "undefined" && typeof Folder !== "undefined") try {
-          var infile = File(path2);
+          var infile = File(path4);
           infile.open("r");
           infile.encoding = "binary";
           var data = infile.read();
@@ -7082,7 +6724,7 @@ var require_xlsx = __commonJS({
         } catch (e) {
           if (!e.message || !e.message.match(/onstruct/)) throw e;
         }
-        throw new Error("Cannot access file " + path2);
+        throw new Error("Cannot access file " + path4);
       }
       function keys(o) {
         var ks = Object.keys(o), o2 = [];
@@ -7359,16 +7001,16 @@ var require_xlsx = __commonJS({
         for (var i = 0; i < k.length; ++i) if (k[i].slice(-1) != "/") o.push(k[i].replace(/^Root Entry[\/]/, ""));
         return o.sort();
       }
-      function zip_add_file(zip, path2, content) {
+      function zip_add_file(zip, path4, content) {
         if (zip.FullPaths) {
           if (typeof content == "string") {
             var res;
             if (has_buf) res = Buffer_from(content);
             else res = utf8decode(content);
-            return CFB.utils.cfb_add(zip, path2, res);
+            return CFB.utils.cfb_add(zip, path4, res);
           }
-          CFB.utils.cfb_add(zip, path2, content);
-        } else zip.file(path2, content);
+          CFB.utils.cfb_add(zip, path4, content);
+        } else zip.file(path4, content);
       }
       function zip_new() {
         return CFB.utils.cfb_new();
@@ -7385,11 +7027,11 @@ var require_xlsx = __commonJS({
         }
         throw new Error("Unrecognized type " + o.type);
       }
-      function resolve_path(path2, base) {
-        if (path2.charAt(0) == "/") return path2.slice(1);
+      function resolve_path(path4, base) {
+        if (path4.charAt(0) == "/") return path4.slice(1);
         var result = base.split("/");
         if (base.slice(-1) != "/") result.pop();
-        var target = path2.split("/");
+        var target = path4.split("/");
         while (target.length !== 0) {
           var step = target.shift();
           if (step === "..") result.pop();
@@ -32043,19 +31685,19 @@ var require_xlsx = __commonJS({
         }
         return !wbrels || wbrels.length === 0 ? null : wbrels;
       }
-      function safe_parse_sheet(zip, path2, relsPath, sheet, idx, sheetRels, sheets, stype, opts, wb, themes, styles) {
+      function safe_parse_sheet(zip, path4, relsPath, sheet, idx, sheetRels, sheets, stype, opts, wb, themes, styles) {
         try {
-          sheetRels[sheet] = parse_rels(getzipstr(zip, relsPath, true), path2);
-          var data = getzipdata(zip, path2);
+          sheetRels[sheet] = parse_rels(getzipstr(zip, relsPath, true), path4);
+          var data = getzipdata(zip, path4);
           var _ws;
           switch (stype) {
             case "sheet":
-              _ws = parse_ws(data, path2, idx, opts, sheetRels[sheet], wb, themes, styles);
+              _ws = parse_ws(data, path4, idx, opts, sheetRels[sheet], wb, themes, styles);
               break;
             case "chart":
-              _ws = parse_cs(data, path2, idx, opts, sheetRels[sheet], wb, themes, styles);
+              _ws = parse_cs(data, path4, idx, opts, sheetRels[sheet], wb, themes, styles);
               if (!_ws || !_ws["!drawel"]) break;
-              var dfile = resolve_path(_ws["!drawel"].Target, path2);
+              var dfile = resolve_path(_ws["!drawel"].Target, path4);
               var drelsp = get_rels_path(dfile);
               var draw = parse_drawing(getzipstr(zip, dfile, true), parse_rels(getzipstr(zip, drelsp, true), dfile));
               var chartp = resolve_path(draw, dfile);
@@ -32063,10 +31705,10 @@ var require_xlsx = __commonJS({
               _ws = parse_chart(getzipstr(zip, chartp, true), chartp, opts, parse_rels(getzipstr(zip, crelsp, true), chartp), wb, _ws);
               break;
             case "macro":
-              _ws = parse_ms(data, path2, idx, opts, sheetRels[sheet], wb, themes, styles);
+              _ws = parse_ms(data, path4, idx, opts, sheetRels[sheet], wb, themes, styles);
               break;
             case "dialog":
-              _ws = parse_ds(data, path2, idx, opts, sheetRels[sheet], wb, themes, styles);
+              _ws = parse_ds(data, path4, idx, opts, sheetRels[sheet], wb, themes, styles);
               break;
             default:
               throw new Error("Unrecognized sheet type " + stype);
@@ -32076,13 +31718,13 @@ var require_xlsx = __commonJS({
           if (sheetRels && sheetRels[sheet]) keys(sheetRels[sheet]).forEach(function(n) {
             var dfile2 = "";
             if (sheetRels[sheet][n].Type == RELS.CMNT) {
-              dfile2 = resolve_path(sheetRels[sheet][n].Target, path2);
+              dfile2 = resolve_path(sheetRels[sheet][n].Target, path4);
               var comments = parse_cmnt(getzipdata(zip, dfile2, true), dfile2, opts);
               if (!comments || !comments.length) return;
               sheet_insert_comments(_ws, comments, false);
             }
             if (sheetRels[sheet][n].Type == RELS.TCMNT) {
-              dfile2 = resolve_path(sheetRels[sheet][n].Target, path2);
+              dfile2 = resolve_path(sheetRels[sheet][n].Target, path4);
               tcomments = tcomments.concat(parse_tcmnt_xml(getzipdata(zip, dfile2, true), opts));
             }
           });
@@ -32186,7 +31828,7 @@ var require_xlsx = __commonJS({
         if (opts.bookDeps && dir.calcchain) deps = parse_cc(getzipdata(zip, strip_front_slash(dir.calcchain)), dir.calcchain, opts);
         var i = 0;
         var sheetRels = {};
-        var path2, relsPath;
+        var path4, relsPath;
         {
           var wbsheets = wb.Sheets;
           props.Worksheets = wbsheets.length;
@@ -32211,15 +31853,15 @@ var require_xlsx = __commonJS({
         wsloop: for (i = 0; i != props.Worksheets; ++i) {
           var stype = "sheet";
           if (wbrels && wbrels[i]) {
-            path2 = "xl/" + wbrels[i][1].replace(/[\/]?xl\//, "");
-            if (!safegetzipfile(zip, path2)) path2 = wbrels[i][1];
-            if (!safegetzipfile(zip, path2)) path2 = wbrelsfile.replace(/_rels\/.*$/, "") + wbrels[i][1];
+            path4 = "xl/" + wbrels[i][1].replace(/[\/]?xl\//, "");
+            if (!safegetzipfile(zip, path4)) path4 = wbrels[i][1];
+            if (!safegetzipfile(zip, path4)) path4 = wbrelsfile.replace(/_rels\/.*$/, "") + wbrels[i][1];
             stype = wbrels[i][2];
           } else {
-            path2 = "xl/worksheets/sheet" + (i + 1 - nmode) + "." + wbext;
-            path2 = path2.replace(/sheet0\./, "sheet.");
+            path4 = "xl/worksheets/sheet" + (i + 1 - nmode) + "." + wbext;
+            path4 = path4.replace(/sheet0\./, "sheet.");
           }
-          relsPath = path2.replace(/^(.*)(\/)([^\/]*)$/, "$1/_rels/$3.rels");
+          relsPath = path4.replace(/^(.*)(\/)([^\/]*)$/, "$1/_rels/$3.rels");
           if (opts && opts.sheets != null) switch (typeof opts.sheets) {
             case "number":
               if (i != opts.sheets) continue wsloop;
@@ -32237,7 +31879,7 @@ var require_xlsx = __commonJS({
                 if (!snjseen) continue wsloop;
               }
           }
-          safe_parse_sheet(zip, path2, relsPath, props.SheetNames[i], i, sheetRels, sheets, stype, opts, wb, themes, styles);
+          safe_parse_sheet(zip, path4, relsPath, props.SheetNames[i], i, sheetRels, sheets, stype, opts, wb, themes, styles);
         }
         out = {
           Directory: dir,
@@ -33612,16 +33254,402 @@ var require_xlsx = __commonJS({
   }
 });
 
-// node_modules/dotenv/config.js
-(function() {
-  require_main().config(
-    Object.assign(
-      {},
-      require_env_options(),
-      require_cli_options()(process.argv)
-    )
-  );
-})();
+// lib/pipelines/processors/http-client.ts
+function logCurlCommand(url, method, headers, formData, logger2) {
+  let curl = `curl -X ${method} "${url}" \\
+`;
+  for (const k of Object.keys(headers)) {
+    const val = SAFE_LOG_HEADERS.has(k.toLowerCase()) ? headers[k] : "***";
+    curl += `  -H "${k}: ${val}" \\
+`;
+  }
+  try {
+    formData.forEach((value, key) => {
+      if (typeof value === "object" && value !== null && "size" in value) {
+        curl += `  -F "${key}=@/path/to/file" \\
+`;
+      } else {
+        curl += `  -F "${key}=***" \\
+`;
+      }
+    });
+  } catch (_e) {
+  }
+  curl = curl.trim().replace(/\\$/, "");
+  logger2.info(`[cURL COMMAND]
+${curl}`);
+}
+function isPrivateIp(ip) {
+  const patterns = [
+    /^127\./,
+    // IPv4 loopback
+    /^10\./,
+    // RFC 1918
+    /^192\.168\./,
+    // RFC 1918
+    /^172\.(1[6-9]|2\d|3[01])\./,
+    // RFC 1918
+    /^169\.254\./,
+    // Link-local
+    /^0\./,
+    // Current network
+    /^0\.0\.0\.0$/,
+    /^::1$/,
+    // IPv6 loopback
+    /^::$/,
+    // IPv6 all-zeros
+    /^::ffff:127\./i,
+    // IPv4-mapped IPv6 loopback
+    /^::ffff:10\./i,
+    // IPv4-mapped RFC 1918
+    /^::ffff:192\.168\./i,
+    // IPv4-mapped RFC 1918
+    /^::ffff:172\.(1[6-9]|2\d|3[01])\./i,
+    // IPv4-mapped RFC 1918
+    /^::ffff:169\.254\./i,
+    // IPv4-mapped link-local
+    /^fc[0-9a-f]{2}:/i,
+    // IPv6 unique local
+    /^fd[0-9a-f]{2}:/i,
+    // IPv6 unique local
+    /^fe80:/i
+    // IPv6 link-local
+  ];
+  return patterns.some((p) => p.test(ip));
+}
+function isPrivateHostname(hostname) {
+  return /^localhost$/i.test(hostname) || isPrivateIp(hostname);
+}
+async function assertSafeUrl(rawUrl) {
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error(`Invalid external API URL: ${rawUrl}`);
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error(`Disallowed URL scheme '${parsed.protocol}' \u2014 only http/https are permitted`);
+  }
+  const hostname = parsed.hostname;
+  if (process.env.UPLOAD_DIR === "/app/uploads" && hostname === "localhost") {
+    parsed.hostname = "host.docker.internal";
+    return parsed.toString();
+  }
+  if (isPrivateHostname(hostname)) {
+    throw new Error(`SSRF protection: URL hostname '${hostname}' is a private/reserved address`);
+  }
+  const isIpLiteral = /^\d+\.\d+\.\d+\.\d+$/.test(hostname) || hostname.startsWith("[");
+  if (!isIpLiteral) {
+    try {
+      const dns = await import("dns");
+      const { address } = await dns.promises.lookup(hostname);
+      if (isPrivateIp(address)) {
+        throw new Error(`SSRF protection: hostname '${hostname}' resolves to private IP '${address}'`);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("SSRF protection")) throw err;
+      throw new Error(`SSRF protection: failed to resolve hostname '${hostname}'`);
+    }
+  }
+  return parsed.toString();
+}
+async function fetchWithTimeout(url, method, headers, body, timeoutMs) {
+  const controller = new AbortController();
+  const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      method,
+      headers,
+      body,
+      signal: controller.signal
+    });
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => "(no body)");
+      throw new Error(`External API returned HTTP ${response.status}: ${errorBody.substring(0, 500)}`);
+    }
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) {
+      const text = await response.text().catch(() => "(unreadable)");
+      throw new Error(
+        `External API returned non-JSON response (Content-Type: ${contentType || "none"}): ${text.substring(0, 200)}`
+      );
+    }
+    return await response.json();
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(`External API timeout after ${timeoutMs / 1e3}s`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+}
+var SAFE_LOG_HEADERS;
+var init_http_client = __esm({
+  "lib/pipelines/processors/http-client.ts"() {
+    "use strict";
+    SAFE_LOG_HEADERS = /* @__PURE__ */ new Set(["accept", "content-type"]);
+  }
+});
+
+// lib/upload.ts
+function validateFileMetadata(filename, mime, size, allowedExtsStr) {
+  const rawName = filename.normalize("NFC");
+  const ext = import_path2.default.extname(rawName).toLowerCase();
+  if (ext === ".docm") {
+    return { valid: false, error: "File .docm (c\xF3 macro) kh\xF4ng \u0111\u01B0\u1EE3c h\u1ED7 tr\u1EE3. Vui l\xF2ng l\u01B0u l\u1EA1i d\u1EA1ng .docx thu\u1EA7n." };
+  }
+  const allowed = allowedExtsStr ? allowedExtsStr.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean) : [...DEFAULT_ALLOWED_EXTENSIONS];
+  if (!allowed.includes(ext)) {
+    return { valid: false, error: `Ch\u1EC9 h\u1ED7 tr\u1EE3 file ${allowed.join(", ")}. File c\xF3 \u0111\u1ECBnh d\u1EA1ng "${ext || "kh\xF4ng x\xE1c \u0111\u1ECBnh"}".` };
+  }
+  const expectedMime = MIME_MAP[ext];
+  if (expectedMime && mime !== "" && mime !== expectedMime) {
+    return { valid: false, error: `MIME type kh\xF4ng h\u1EE3p l\u1EC7. Mong \u0111\u1EE3i "${expectedMime}", nh\u1EADn \u0111\u01B0\u1EE3c "${mime || "(empty)"}".` };
+  }
+  if (size > MAX_FILE_SIZE) {
+    const sizeMB = (size / 1024 / 1024).toFixed(1);
+    const maxSizeMB = (MAX_FILE_SIZE / 1024 / 1024).toFixed(1);
+    return { valid: false, error: `File qu\xE1 l\u1EDBn (${sizeMB}MB). Gi\u1EDBi h\u1EA1n t\u1ED1i \u0111a l\xE0 ${maxSizeMB}MB.` };
+  }
+  const fileType = ext === ".docx" ? "docx" : ext === ".pdf" ? "pdf" : "other";
+  return { valid: true, fileType, extension: ext };
+}
+var import_path2, MAX_FILE_SIZE, DEFAULT_ALLOWED_EXTENSIONS, MIME_MAP;
+var init_upload = __esm({
+  "lib/upload.ts"() {
+    "use strict";
+    import_path2 = __toESM(require("path"));
+    MAX_FILE_SIZE = 300 * 1024 * 1024;
+    DEFAULT_ALLOWED_EXTENSIONS = [".docx", ".pdf"];
+    MIME_MAP = {
+      ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ".pdf": "application/pdf"
+    };
+  }
+});
+
+// lib/file-url-downloader.ts
+var file_url_downloader_exports = {};
+__export(file_url_downloader_exports, {
+  DEFAULT_FILE_URL_METADATA_FIELDS: () => DEFAULT_FILE_URL_METADATA_FIELDS,
+  MAX_FILE_URL_ENTRIES: () => MAX_FILE_URL_ENTRIES,
+  downloadAllFileUrls: () => downloadAllFileUrls,
+  downloadFileUrl: () => downloadFileUrl
+});
+function deriveFilenameFromUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const base = import_path3.default.basename(parsed.pathname);
+    return base && base !== "/" ? decodeURIComponent(base) : "downloaded_file";
+  } catch {
+    return "downloaded_file";
+  }
+}
+function deriveFilenameFromContentDisposition(header) {
+  if (!header) return null;
+  const match = header.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)["']?/i);
+  return match ? decodeURIComponent(match[1].trim()) : null;
+}
+function truncateFilename(name, maxLen) {
+  if (name.length <= maxLen) return name;
+  const ext = import_path3.default.extname(name);
+  const base = import_path3.default.basename(name, ext);
+  const truncated = base.substring(0, maxLen - ext.length);
+  return truncated + ext;
+}
+function buildDownloadHeaders(authConfig) {
+  const headers = {};
+  if (!authConfig || authConfig.type === "none") return headers;
+  if (authConfig.type === "bearer" && authConfig.token) {
+    headers["Authorization"] = `Bearer ${authConfig.token}`;
+  } else if (authConfig.type === "header" && authConfig.header_name && authConfig.header_value) {
+    headers[authConfig.header_name] = authConfig.header_value;
+  }
+  return headers;
+}
+function applyQueryAuth(urlStr, authConfig) {
+  if (!authConfig || authConfig.type !== "query") return urlStr;
+  if (!authConfig.query_key || !authConfig.query_value) return urlStr;
+  try {
+    const url = new URL(urlStr);
+    url.searchParams.set(authConfig.query_key, authConfig.query_value);
+    return url.toString();
+  } catch {
+    return urlStr;
+  }
+}
+async function safeFetch(url, headers, signal, index) {
+  let currentUrl = url;
+  for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
+    const response = await fetch(currentUrl, {
+      headers,
+      signal,
+      redirect: "manual"
+      // Don't auto-follow — validate each redirect target
+    });
+    if (response.status < 300 || response.status >= 400) {
+      return response;
+    }
+    const location = response.headers.get("location");
+    if (!location) {
+      throw new Error(`file_urls[${index}]: redirect (${response.status}) but no Location header`);
+    }
+    const redirectUrl = new URL(location, currentUrl).toString();
+    currentUrl = await assertSafeUrl(redirectUrl);
+  }
+  throw new Error(`file_urls[${index}]: too many redirects (>${MAX_REDIRECTS})`);
+}
+async function downloadFileUrl(entry, operationId, index, authConfig, allowedExtsStr) {
+  const safeUrl = await assertSafeUrl(applyQueryAuth(entry.url, authConfig));
+  const headers = buildDownloadHeaders(authConfig);
+  const controller = new AbortController();
+  const timeoutHandle = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
+  let response;
+  try {
+    response = await safeFetch(safeUrl, headers, controller.signal, index);
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(`file_urls[${index}]: download timed out after ${DOWNLOAD_TIMEOUT_MS / 1e3}s`);
+    }
+    throw err instanceof Error ? err : new Error(`file_urls[${index}]: network error \u2014 ${String(err)}`);
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+  if (!response.ok) {
+    const reader = response.body?.getReader();
+    let errorSnippet = "";
+    if (reader) {
+      try {
+        const { value } = await reader.read();
+        errorSnippet = value ? new TextDecoder().decode(value).substring(0, 200) : "";
+        reader.cancel().catch(() => {
+        });
+      } catch {
+      }
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(`file_urls[${index}]: authentication failed (HTTP ${response.status})`);
+    }
+    throw new Error(`file_urls[${index}]: remote server returned HTTP ${response.status}: ${errorSnippet}`);
+  }
+  const contentLength = parseInt(response.headers.get("content-length") ?? "", 10);
+  if (!isNaN(contentLength) && contentLength > MAX_FILE_SIZE) {
+    response.body?.cancel().catch(() => {
+    });
+    throw new Error(`file_urls[${index}]: Content-Length ${(contentLength / 1024 / 1024).toFixed(1)}MB exceeds maximum of ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+  }
+  const contentDisposition = response.headers.get("content-disposition");
+  const serverContentType = (response.headers.get("content-type") ?? "").split(";")[0].trim();
+  const rawFilename = (entry.filename?.trim() || deriveFilenameFromContentDisposition(contentDisposition) || deriveFilenameFromUrl(entry.url)).normalize("NFC");
+  const filename = truncateFilename(rawFilename, MAX_FILENAME_LENGTH);
+  const mime = serverContentType || entry.mime_type?.trim() || "application/octet-stream";
+  const earlyValidation = validateFileMetadata(filename, mime, 0, allowedExtsStr);
+  if (!earlyValidation.valid && !earlyValidation.error.includes("qu\xE1 l\u1EDBn")) {
+    response.body?.cancel().catch(() => {
+    });
+    throw new Error(`file_urls[${index}]: ${earlyValidation.error}`);
+  }
+  const dir = import_path3.default.join(UPLOAD_DIR2, operationId);
+  await import_promises2.default.mkdir(dir, { recursive: true });
+  const safeName = `url_${index}_${import_path3.default.basename(filename).replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+  const filePath = import_path3.default.join(dir, safeName);
+  const writeStream = import_fs2.default.createWriteStream(filePath);
+  let bytesWritten = 0;
+  if (!response.body) {
+    throw new Error(`file_urls[${index}]: response body is empty`);
+  }
+  const nodeReadable = import_stream.Readable.fromWeb(response.body);
+  try {
+    await (0, import_promises3.pipeline)(
+      nodeReadable,
+      async function* (source) {
+        let stallTimer = null;
+        const resetStallTimer = () => {
+          if (stallTimer) clearTimeout(stallTimer);
+          stallTimer = setTimeout(() => {
+            controller.abort();
+          }, READ_STALL_TIMEOUT_MS);
+        };
+        resetStallTimer();
+        try {
+          for await (const chunk of source) {
+            bytesWritten += chunk.length;
+            if (bytesWritten > MAX_FILE_SIZE) {
+              throw new Error(`file_urls[${index}]: file exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+            }
+            resetStallTimer();
+            yield chunk;
+          }
+        } finally {
+          if (stallTimer) clearTimeout(stallTimer);
+        }
+      },
+      writeStream
+    );
+  } catch (err) {
+    await import_promises2.default.unlink(filePath).catch(() => {
+    });
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(`file_urls[${index}]: download stalled \u2014 no data received for ${READ_STALL_TIMEOUT_MS / 1e3}s`);
+    }
+    throw err;
+  }
+  const validation = validateFileMetadata(filename, mime, bytesWritten, allowedExtsStr);
+  if (!validation.valid) {
+    await import_promises2.default.unlink(filePath).catch(() => {
+    });
+    throw new Error(`file_urls[${index}]: ${validation.error}`);
+  }
+  const normalizedPath = filePath.replace(/\\/g, "/");
+  return { name: filename, path: normalizedPath, mime, size: bytesWritten };
+}
+async function downloadAllFileUrls(entries, operationId, authConfig, allowedExtsStr) {
+  const results = [];
+  try {
+    for (let i = 0; i < entries.length; i += MAX_CONCURRENT_DOWNLOADS) {
+      const batch = entries.slice(i, i + MAX_CONCURRENT_DOWNLOADS);
+      const batchResults = await Promise.all(
+        batch.map(
+          (entry, batchIndex) => downloadFileUrl(entry, operationId, i + batchIndex, authConfig, allowedExtsStr)
+        )
+      );
+      results.push(...batchResults);
+    }
+  } catch (err) {
+    for (const file of results) {
+      await import_promises2.default.unlink(file.path).catch(() => {
+      });
+    }
+    throw err;
+  }
+  return results;
+}
+var import_fs2, import_promises2, import_path3, import_promises3, import_stream, UPLOAD_DIR2, DOWNLOAD_TIMEOUT_MS, MAX_REDIRECTS, READ_STALL_TIMEOUT_MS, MAX_FILENAME_LENGTH, DEFAULT_FILE_URL_METADATA_FIELDS, MAX_FILE_URL_ENTRIES, MAX_CONCURRENT_DOWNLOADS;
+var init_file_url_downloader = __esm({
+  "lib/file-url-downloader.ts"() {
+    "use strict";
+    import_fs2 = __toESM(require("fs"));
+    import_promises2 = __toESM(require("fs/promises"));
+    import_path3 = __toESM(require("path"));
+    import_promises3 = require("stream/promises");
+    import_stream = require("stream");
+    init_http_client();
+    init_upload();
+    UPLOAD_DIR2 = process.env.UPLOAD_DIR ?? "./uploads";
+    DOWNLOAD_TIMEOUT_MS = parseInt(process.env.FILE_URL_DOWNLOAD_TIMEOUT_MS ?? "120000", 10);
+    MAX_REDIRECTS = 5;
+    READ_STALL_TIMEOUT_MS = parseInt(process.env.FILE_URL_READ_STALL_TIMEOUT_MS ?? "60000", 10);
+    MAX_FILENAME_LENGTH = 200;
+    DEFAULT_FILE_URL_METADATA_FIELDS = [
+      { key: "filename", label: "T\xEAn file (override)", required: false },
+      { key: "mime_type", label: "MIME type (override)", required: false },
+      { key: "description", label: "M\xF4 t\u1EA3", required: false }
+    ];
+    MAX_FILE_URL_ENTRIES = 20;
+    MAX_CONCURRENT_DOWNLOADS = 5;
+  }
+});
 
 // worker.ts
 var import_v8 = __toESM(require("v8"));
@@ -33649,6 +33677,7 @@ var prisma = globalForPrisma.prisma ?? new import_client.PrismaClient({
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 // lib/pipelines/processors/external-api.ts
+var import_fs = require("fs");
 var import_promises = __toESM(require("fs/promises"));
 var import_path = __toESM(require("path"));
 
@@ -33903,98 +33932,8 @@ function extractContent(responseJson, contentPath, onMiss) {
   }
 }
 
-// lib/pipelines/processors/http-client.ts
-var SAFE_LOG_HEADERS = /* @__PURE__ */ new Set(["accept", "content-type"]);
-function logCurlCommand(url, method, headers, formData, logger2) {
-  let curl = `curl -X ${method} "${url}" \\
-`;
-  for (const k of Object.keys(headers)) {
-    const val = SAFE_LOG_HEADERS.has(k.toLowerCase()) ? headers[k] : "***";
-    curl += `  -H "${k}: ${val}" \\
-`;
-  }
-  try {
-    formData.forEach((value, key) => {
-      if (typeof value === "object" && value !== null && "size" in value) {
-        curl += `  -F "${key}=@/path/to/file" \\
-`;
-      } else {
-        curl += `  -F "${key}=***" \\
-`;
-      }
-    });
-  } catch (_e) {
-  }
-  curl = curl.trim().replace(/\\$/, "");
-  logger2.info(`[cURL COMMAND]
-${curl}`);
-}
-async function assertSafeUrl(rawUrl) {
-  let parsed;
-  try {
-    parsed = new URL(rawUrl);
-  } catch {
-    throw new Error(`Invalid external API URL: ${rawUrl}`);
-  }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error(`Disallowed URL scheme '${parsed.protocol}' \u2014 only http/https are permitted`);
-  }
-  const hostname = parsed.hostname;
-  if (process.env.UPLOAD_DIR === "/app/uploads" && hostname === "localhost") {
-    parsed.hostname = "host.docker.internal";
-    return parsed.toString();
-  }
-  const privatePatterns = [
-    /^localhost$/i,
-    /^127\./,
-    /^10\./,
-    /^192\.168\./,
-    /^172\.(1[6-9]|2\d|3[01])\./,
-    /^169\.254\./,
-    /^::1$/,
-    /^fc[0-9a-f]{2}:/i,
-    /^fd[0-9a-f]{2}:/i,
-    /^0\./,
-    /^0\.0\.0\.0$/
-  ];
-  for (const pattern of privatePatterns) {
-    if (pattern.test(hostname)) {
-      throw new Error(`SSRF protection: URL hostname '${hostname}' is a private/reserved address`);
-    }
-  }
-  return parsed.toString();
-}
-async function fetchWithTimeout(url, method, headers, body, timeoutMs) {
-  const controller = new AbortController();
-  const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, {
-      method,
-      headers,
-      body,
-      signal: controller.signal
-    });
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => "(no body)");
-      throw new Error(`External API returned HTTP ${response.status}: ${errorBody.substring(0, 500)}`);
-    }
-    const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.includes("application/json")) {
-      const text = await response.text().catch(() => "(unreadable)");
-      throw new Error(
-        `External API returned non-JSON response (Content-Type: ${contentType || "none"}): ${text.substring(0, 200)}`
-      );
-    }
-    return await response.json();
-  } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") {
-      throw new Error(`External API timeout after ${timeoutMs / 1e3}s`);
-    }
-    throw err;
-  } finally {
-    clearTimeout(timeoutHandle);
-  }
-}
+// lib/pipelines/processors/external-api.ts
+init_http_client();
 
 // lib/config.ts
 var MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
@@ -34073,15 +34012,14 @@ async function runExternalApiProcessor(ctx, connection, override) {
     }
   }
   if (ctx.filePaths.length > 0) {
-    const openAsBlob = import_promises.default.openAsBlob;
-    if (!openAsBlob) {
+    if (typeof import_fs.openAsBlob !== "function") {
       throw new Error("File upload requires a runtime with fs.openAsBlob support. Please upgrade Node.js.");
     }
     for (let i = 0; i < ctx.filePaths.length; i++) {
       const filePath = ctx.filePaths[i];
       const fileName = ctx.fileNames[i] ?? `file_${i}`;
       try {
-        const fileBlob = await openAsBlob(filePath);
+        const fileBlob = await (0, import_fs.openAsBlob)(filePath);
         formData.append(connection.fileFieldName, fileBlob, fileName);
         ctx.logger.info(`Attaching file[${i}]: ${fileName} (${fileBlob.size} bytes)`);
       } catch (e) {
@@ -34220,7 +34158,7 @@ async function runPipeline(operationId, correlationId, job) {
     logger2.error(`Operation ${operationId} not found`);
     return;
   }
-  let pipeline = [];
+  let pipeline2 = [];
   let filesData = [];
   try {
     const parsedPipeline = JSON.parse(operation.pipelineJson);
@@ -34230,7 +34168,7 @@ async function runPipeline(operationId, correlationId, job) {
     if (!parsedPipeline.every(isPipelineStep)) {
       throw new Error("INVALID_PIPELINE_STRUCTURE");
     }
-    pipeline = parsedPipeline;
+    pipeline2 = parsedPipeline;
     const parsedFiles = operation.filesJson ? JSON.parse(operation.filesJson) : [];
     if (!Array.isArray(parsedFiles)) {
       throw new Error("INVALID_FILES_STRUCTURE");
@@ -34253,6 +34191,43 @@ async function runPipeline(operationId, correlationId, job) {
     });
     return;
   }
+  const jobData = job?.data;
+  if (jobData?.pendingFileUrls && jobData.pendingFileUrls.length > 0) {
+    try {
+      const { downloadAllFileUrls: downloadAllFileUrls2 } = await Promise.resolve().then(() => (init_file_url_downloader(), file_url_downloader_exports));
+      logger2.info(`[PIPELINE] Downloading ${jobData.pendingFileUrls.length} pending file URLs`);
+      await prisma.operation.update({
+        where: { id: operationId },
+        data: { progressMessage: `Downloading ${jobData.pendingFileUrls.length} file(s) from URLs...` }
+      });
+      const downloaded = await downloadAllFileUrls2(
+        jobData.pendingFileUrls,
+        operationId,
+        jobData.pendingFileUrlAuthConfig,
+        jobData.pendingAllowedFileExtensions
+      );
+      filesData.push(...downloaded);
+      await prisma.operation.update({
+        where: { id: operationId },
+        data: { filesJson: JSON.stringify(filesData) }
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger2.error(`[PIPELINE_FAILED] File URL download failed: ${msg}`, void 0, err);
+      await prisma.operation.update({
+        where: { id: operationId },
+        data: {
+          done: true,
+          state: "FAILED",
+          failedAtStep: 0,
+          errorCode: "FILE_URL_DOWNLOAD_FAILED",
+          errorMessage: msg,
+          stepsResultJson: JSON.stringify([])
+        }
+      });
+      return;
+    }
+  }
   const filePaths = filesData.map((f) => f.path?.replace(/\\/g, "/"));
   const fileNames = filesData.map((f) => f.name);
   const stepsResult = [];
@@ -34270,7 +34245,7 @@ async function runPipeline(operationId, correlationId, job) {
       if (lastCompleted?.pipeline_state_snapshot) {
         Object.assign(pipelineState, lastCompleted.pipeline_state_snapshot);
       }
-      logger2.info(`[CHECKPOINT] Resuming from step ${resumeFromStep}/${pipeline.length} (skipping ${resumeFromStep} completed steps)`);
+      logger2.info(`[CHECKPOINT] Resuming from step ${resumeFromStep}/${pipeline2.length} (skipping ${resumeFromStep} completed steps)`);
     } catch {
       logger2.warn(`[CHECKPOINT] Failed to parse stepsResultJson, restarting from step 0`);
     }
@@ -34281,7 +34256,7 @@ async function runPipeline(operationId, correlationId, job) {
   let totalPages = 0;
   let lastModelUsed = "";
   const usageBreakdown = [];
-  const processorSlugs = pipeline.map((s) => s.processor);
+  const processorSlugs = pipeline2.map((s) => s.processor);
   const allConnections = await prisma.externalApiConnection.findMany({
     where: { slug: { in: processorSlugs } }
   });
@@ -34294,10 +34269,10 @@ async function runPipeline(operationId, correlationId, job) {
   }) : [];
   const overrideMap = new Map(allOverrides.map((o) => [`${o.connectionId}:${o.stepId}`, o]));
   try {
-    for (let i = resumeFromStep; i < pipeline.length; i++) {
-      const step = pipeline[i];
-      const progressPercent = Math.round(i / pipeline.length * 100);
-      const progressMessage = `\u0110ang x\u1EED l\xFD b\u01B0\u1EDBc ${i + 1}/${pipeline.length}: ${step.processor}...`;
+    for (let i = resumeFromStep; i < pipeline2.length; i++) {
+      const step = pipeline2[i];
+      const progressPercent = Math.round(i / pipeline2.length * 100);
+      const progressMessage = `\u0110ang x\u1EED l\xFD b\u01B0\u1EDBc ${i + 1}/${pipeline2.length}: ${step.processor}...`;
       await prisma.operation.update({
         where: { id: operationId },
         data: {
@@ -34328,7 +34303,7 @@ async function runPipeline(operationId, correlationId, job) {
       const ctx = {
         operationId,
         stepIndex: i,
-        totalSteps: pipeline.length,
+        totalSteps: pipeline2.length,
         filePaths: i === 0 ? filePaths : [],
         // Only first step gets original files
         fileNames: i === 0 ? fileNames : [],
@@ -34383,7 +34358,7 @@ async function runPipeline(operationId, correlationId, job) {
         state: "SUCCEEDED",
         progressPercent: 100,
         progressMessage: null,
-        currentStep: pipeline.length - 1,
+        currentStep: pipeline2.length - 1,
         outputContent: currentText,
         extractedData: lastStep?.extracted_data ? JSON.stringify(lastStep.extracted_data) : null,
         stepsResultJson: JSON.stringify(stepsResult),
@@ -35084,8 +35059,8 @@ async function createWorkflowContext(operationId, correlationId, job) {
   }
   const pipelineVars = {};
   try {
-    const pipeline = JSON.parse(operation.pipelineJson);
-    if (pipeline[0]?.variables) Object.assign(pipelineVars, pipeline[0].variables);
+    const pipeline2 = JSON.parse(operation.pipelineJson);
+    if (pipeline2[0]?.variables) Object.assign(pipelineVars, pipeline2[0].variables);
   } catch (err) {
     logger2.warn(`[WORKFLOW] Failed to parse pipelineJson for ${operationId}, proceeding with empty variables`, void 0, err);
   }

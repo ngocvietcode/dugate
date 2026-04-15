@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
     if (!passedKey) {
       const token = await getToken({
         req: request,
-        secret: process.env.NEXTAUTH_SECRET,
+        secret: process.env.NEXTAUTH_SECRET!,
       });
       if (token) {
         // Authenticated UI user — allow without API key
@@ -111,7 +111,7 @@ export async function middleware(request: NextRequest) {
   // --- All other routes: NextAuth session required ---
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET!,
   });
 
   if (!token) {
@@ -124,7 +124,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  if (token.sub) requestHeaders.set('x-user-id', token.sub);
+  if (token.role) requestHeaders.set('x-user-role', token.role as string);
+
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {

@@ -10,7 +10,8 @@
 //   - workflow-steps worker  — handles sub-step jobs spawned by workflows
 //     (separate queue prevents deadlock when parent holds a pipeline slot)
 
-import 'dotenv/config';
+// Note: env vars are injected by docker-compose in production.
+// In development, use: npx tsx --env-file=.env worker.ts
 import v8 from 'v8';
 import { Worker, Job } from 'bullmq';
 import { createRedisConnection } from './lib/queue/redis';

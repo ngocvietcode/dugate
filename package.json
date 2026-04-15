@@ -1,12 +1,12 @@
 {
   "name": "dugate",
-  "version": "1.5.0",
+  "version": "4.8.0",
   "description": "Convert Word & PDF to AI-ready Markdown with image descriptions",
   "private": true,
   "scripts": {
     "dev": "next dev -p 2023",
-    "worker:dev": "npx tsx worker.ts",
-    "worker:build": "node_modules/.bin/esbuild worker.ts --bundle --platform=node --target=node20 --outfile=worker.js --external:@prisma/client --external:prisma --external:bcryptjs --external:ioredis --external:bullmq --external:mammoth --external:sharp --alias:@=.",
+    "worker:dev": "npx tsx --env-file=.env worker.ts",
+    "worker:build": "npx esbuild worker.ts --bundle --platform=node --target=node20 --outfile=worker.js --external:@prisma/client --external:prisma --external:bcryptjs --external:ioredis --external:bullmq --external:mammoth --external:sharp --external:openai --alias:@=.",
     "build": "next build",
     "start": "next start -p 2025",
     "lint": "next lint",

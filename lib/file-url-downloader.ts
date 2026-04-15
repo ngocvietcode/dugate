@@ -11,8 +11,8 @@ import { dedup } from '@/lib/storage/dedup';
 
 const DOWNLOAD_TIMEOUT_MS = parseInt(process.env.FILE_URL_DOWNLOAD_TIMEOUT_MS ?? '120000', 10);
 const MAX_REDIRECTS = 5;
-const READ_STALL_TIMEOUT_MS = 15_000;
-const MAX_FILENAME_LENGTH = 200;
+const READ_STALL_TIMEOUT_MS = parseInt(process.env.FILE_URL_READ_STALL_TIMEOUT_MS ?? '60000', 10); // Abort if no data received for N ms (slowloris protection). Default 60s for large files.
+const MAX_FILENAME_LENGTH = 200; // Filesystem-safe limit
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

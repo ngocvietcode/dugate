@@ -6,20 +6,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Logger } from '@/lib/logger';
-import { requireAdmin } from '@/lib/rbac';
+import { requireProfileAccess } from '@/lib/auth-guard';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 const logger = new Logger({ service: 'ext-overrides' });
 
 
 // ─── GET: List overrides ────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
-
   try {
     const { searchParams } = new URL(req.url);
     const connectionId = searchParams.get('connectionId') ?? undefined;
     const apiKeyId = searchParams.get('apiKeyId') ?? undefined;
+
+    const session = await getServerSession(authOptions);
+    const isAdmin = session?.user?.role === 'ADMIN';
+
+    if (!isAdmin && !apiKeyId) {
+      return NextResponse.json({ success: false, error: 'Standard users must provide apiKeyId' }, { status: 403 });
+    }
+
+    if (apiKeyId) {
+      const guard = await requireProfileAccess(apiKeyId);
+      if (guard instanceof NextResponse) return guard;
+    }
 
     const overrides = await prisma.externalApiOverride.findMany({
       where: {
@@ -43,9 +54,6 @@ export async function GET(req: NextRequest) {
 
 // ─── POST: Upsert (create or update) override ──────────────────────────────────
 export async function POST(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
-
   try {
     const { connectionId, apiKeyId, endpointSlug, stepId, promptOverride, isActive } = await req.json();
     const resolvedStepId = stepId ?? '_default';
@@ -55,6 +63,21 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'connectionId, apiKeyId và endpointSlug là bắt buộc' },
         { status: 400 },
       );
+    }
+
+    const guard = await requireProfileAccess(apiKeyId);
+    if (guard instanceof NextResponse) return guard;
+
+    const session = await getServerSession(authOptions);
+    const isAdmin = session?.user?.role === 'ADMIN';
+
+    if (!isAdmin) {
+      const existingEndpoint = await prisma.profileEndpoint.findUnique({
+        where: { apiKeyId_endpointSlug: { apiKeyId, endpointSlug } }
+      });
+      if (!existingEndpoint || !existingEndpoint.enabled) {
+        return NextResponse.json({ success: false, error: 'Endpoint is not enabled or does not exist.' }, { status: 403 });
+      }
     }
 
     // Verify connection và apiKey tồn tại
@@ -105,9 +128,6 @@ export async function POST(req: NextRequest) {
 
 // ─── DELETE: Remove override ────────────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
-
   try {
     const { connectionId, apiKeyId } = await req.json();
 
@@ -117,6 +137,9 @@ export async function DELETE(req: NextRequest) {
         { status: 400 },
       );
     }
+
+    const guard = await requireProfileAccess(apiKeyId);
+    if (guard instanceof NextResponse) return guard;
 
     await prisma.externalApiOverride.deleteMany({
       where: { connectionId, apiKeyId },

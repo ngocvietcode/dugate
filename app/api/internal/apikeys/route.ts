@@ -2,17 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { Logger } from '@/lib/logger';
-import { requireAdmin } from '@/lib/rbac';
+import { requireAuth, requireAdmin, getAssignedProfileIds } from '@/lib/auth-guard';
 
 const logger = new Logger({ service: 'apikeys' });
 
 
 export async function GET(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const guard = await requireAuth();
+  if (guard instanceof NextResponse) return guard;
 
   try {
+    const assignedIds = await getAssignedProfileIds();
+    const whereClause = assignedIds === null ? {} : { id: { in: assignedIds } };
+
     const apiKeys = await prisma.apiKey.findMany({
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -31,8 +35,8 @@ export async function GET(req: NextRequest) {
 
 // Cập nhật ApiKey (Note) hoặc Rotate Key
 export async function PUT(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const body = await req.json();
@@ -64,8 +68,8 @@ export async function PUT(req: NextRequest) {
 
 // Tạo mới ApiKey
 export async function POST(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const { name } = await req.json();
@@ -101,8 +105,8 @@ export async function POST(req: NextRequest) {
 
 // Xóa ApiKey
 export async function DELETE(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const { searchParams } = new URL(req.url);

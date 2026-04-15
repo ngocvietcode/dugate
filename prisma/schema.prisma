@@ -99,6 +99,7 @@ model ApiKey {
   operations           Operation[]
   externalApiOverrides ExternalApiOverride[]
   profileEndpoints     ProfileEndpoint[]
+  userAssignments      UserProfileAssignment[]
 
   @@index([status])
 }
@@ -278,5 +279,24 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  operations Operation[]
+  operations         Operation[]
+  profileAssignments UserProfileAssignment[]
+}
+
+// ═══════════════════════════════════════════════
+// User ↔ Profile Assignment (RBAC)
+// ═══════════════════════════════════════════════
+model UserProfileAssignment {
+  id       String @id @default(uuid())
+  userId   String
+  apiKeyId String // Profile được assign (ApiKey.id)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, apiKeyId])
+  @@index([userId])
+  @@index([apiKeyId])
 }

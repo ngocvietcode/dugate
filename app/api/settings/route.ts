@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 // app/api/settings/route.ts
 // GET /api/settings → trả tất cả settings (api_key masked)
 // PUT /api/settings → update 1 hoặc nhiều settings
@@ -5,7 +6,7 @@
 import { getAllSettings, setSettings } from '@/lib/settings';
 import { maskApiKey } from '@/lib/crypto';
 import { Logger } from '@/lib/logger';
-import { requireAdmin } from '@/lib/rbac';
+import { requireAdmin } from '@/lib/auth-guard';
 import { resetStorageBackend } from '@/lib/storage';
 
 const logger = new Logger({ service: 'settings' });
@@ -14,8 +15,8 @@ const logger = new Logger({ service: 'settings' });
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const settings = await getAllSettings();
@@ -44,8 +45,8 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const body = await request.json() as Record<string, string>;

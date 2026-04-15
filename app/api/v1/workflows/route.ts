@@ -4,6 +4,7 @@
 // The actual orchestration logic runs in the Worker process (workflow-engine.ts).
 
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { normalizeFiles, apiError } from '@/lib/endpoints/runner';
 import { submitPipelineJob } from '@/lib/pipelines/submit';
 import { SERVICE_REGISTRY } from '@/lib/endpoints/registry';
@@ -47,14 +48,18 @@ export async function POST(req: NextRequest) {
 
     if (apiKeyId) {
       // Validate that the provided API key ID actually exists to avoid foreign key constraint errors
-      // Allow users to paste either the internal UUID or the plain "dg_..." string
+      // Support 3 input formats:
+      //   1. Internal UUID  → findUnique by id
+      //   2. Raw key string (dg_xxx...) → SHA-256 hash then findUnique by keyHash
       let existingKey = await prisma.apiKey.findUnique({
         where: { id: apiKeyId },
-      }).catch(() => null); // Catch UUID parse error if they pass a plain string
+      }).catch(() => null); // Catch UUID parse error if they pass a non-UUID string
 
       if (!existingKey) {
+        // Hash the raw key string (same as auth-key/route.ts) before looking up
+        const computedHash = crypto.createHash('sha256').update(apiKeyId).digest('hex');
         existingKey = await prisma.apiKey.findUnique({
-          where: { keyHash: apiKeyId },
+          where: { keyHash: computedHash },
         }).catch(() => null);
       }
 

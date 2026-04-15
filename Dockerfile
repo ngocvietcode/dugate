@@ -41,7 +41,11 @@ RUN node_modules/.bin/esbuild worker.ts \
     --external:openai \
     --alias:@=. 2>&1 && echo "worker.js built successfully"
 
-# Stage 3: runner (slim — no local PDF/DOCX processing, all done via external API)
+# CACHE OPTIMIZATION: Prune dev dependencies and huge frontend libraries not needed by the worker
+RUN npm prune --production && \
+    rm -rf node_modules/next node_modules/@next node_modules/typescript node_modules/swagger-ui-react node_modules/@swagger-api node_modules/lucide-react node_modules/@swc node_modules/tailwindcss node_modules/pdfjs-dist
+
+# Stage 3: runner
 FROM node:20-slim AS runner
 WORKDIR /app
 

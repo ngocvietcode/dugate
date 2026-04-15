@@ -52,6 +52,7 @@ describe('External API Processor', () => {
     authSecret: 'secret123',
     fileFieldName: 'file',
     fileUrlFieldName: null,
+
     promptFieldName: 'prompt',
     defaultPrompt: 'Hello {{name}}',
     responseContentPath: 'data.content',

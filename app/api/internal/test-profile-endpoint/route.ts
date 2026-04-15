@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { runEndpoint } from '@/lib/endpoints/runner';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { requireProfileAccess } from '@/lib/auth-guard';
 
 /**
  * Internal route for testing Profile Endpoints synchronously from the Admin UI.
@@ -10,14 +11,6 @@ import { authOptions } from '@/lib/auth';
  */
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'ADMIN') {
-      return new Response(JSON.stringify({ error: 'Unauthorized: Admin access required.' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
     const formData = await req.formData();
 
     // Extract hidden internal metadata fields provided by the admin UI
@@ -30,6 +23,11 @@ export async function POST(req: NextRequest) {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    const guard = await requireProfileAccess(apiKeyId);
+    if (guard instanceof Response) return guard;
+
+    const session = await getServerSession(authOptions);
 
     // Remove metadata fields from the payload to avoid polluting the actual service payload
     const testForm = new FormData();
@@ -62,7 +60,7 @@ export async function POST(req: NextRequest) {
     // Inject the apiKeyId so the runner knows which Profile to load overrides for
     const headers = new Headers(req.headers);
     if (apiKeyId) headers.set('x-api-key-id', apiKeyId);
-    if (session.user.id) headers.set('x-user-id', session.user.id);
+    if (session?.user?.id) headers.set('x-user-id', session.user.id);
 
     // Remove content-type and content-length because the new FormData body 
     // will generate its own boundary and length.

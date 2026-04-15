@@ -7,21 +7,23 @@ import { prisma } from '@/lib/prisma';
 import { SERVICE_REGISTRY, getAllEndpointSlugs } from '@/lib/endpoints/registry';
 import { encrypt, decrypt } from '@/lib/crypto';
 import { Logger } from '@/lib/logger';
-import { requireAdmin } from '@/lib/rbac';
+import { requireAdmin, requireProfileAccess } from '@/lib/auth-guard';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 const logger = new Logger({ service: 'profile-endpoints' });
 
 
 export async function GET(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
-
   const { searchParams } = new URL(req.url);
   const apiKeyId = searchParams.get('apiKeyId');
 
   if (!apiKeyId) {
     return NextResponse.json({ error: 'Missing apiKeyId' }, { status: 400 });
   }
+
+  const guard = await requireProfileAccess(apiKeyId);
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const [profileEndpoints, allExtConnections, allExtOverrides] = await Promise.all([
@@ -106,9 +108,6 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
-
   try {
     const body = await req.json();
     const { apiKeyId, endpointSlug, enabled, parameters, connectionsOverride, jobPriority, fileUrlAuthConfig, allowedFileExtensions } = body;
@@ -116,6 +115,12 @@ export async function POST(req: NextRequest) {
     if (!apiKeyId || !endpointSlug) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    const guard = await requireProfileAccess(apiKeyId);
+    if (guard instanceof NextResponse) return guard;
+
+    const session = await getServerSession(authOptions);
+    const isAdmin = session?.user?.role === 'ADMIN';
 
     // Validate endpointSlug against SERVICE_REGISTRY
     const allSlugs = getAllEndpointSlugs().map((e) => e.slug);
@@ -127,6 +132,26 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (!isAdmin) {
+      const existing = await prisma.profileEndpoint.findUnique({
+        where: { apiKeyId_endpointSlug: { apiKeyId, endpointSlug } }
+      });
+      if (!existing || !existing.enabled) {
+        return NextResponse.json({ error: 'Endpoint is not enabled or does not exist. Users cannot configure disabled endpoints.' }, { status: 403 });
+      }
+
+      // User can only update parameters and overrides, not core properties
+      const record = await prisma.profileEndpoint.update({
+        where: { apiKeyId_endpointSlug: { apiKeyId, endpointSlug } },
+        data: {
+          parameters: parameters ? JSON.stringify(parameters) : null,
+          connectionsOverride: connectionsOverride ? JSON.stringify(connectionsOverride) : null,
+        },
+      });
+      return NextResponse.json(record);
+    }
+
+    // Admin can update all fields
     const VALID_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'];
     const payload = {
       enabled: typeof enabled === 'boolean' ? enabled : true,

@@ -17,9 +17,9 @@ services:
       ALLOWED_PRIVATE_HOSTS: ${ALLOWED_PRIVATE_HOSTS:-}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       MOCK_SERVICE_URL: ${MOCK_SERVICE_URL:-http://mock-service:3099}
-      SEED: true
-      SEED_ADMIN_KEY: ${SEED_ADMIN_KEY}
-      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      SEED: ${SEED:-true}
+      SEED_ADMIN_KEY: ${SEED_ADMIN_KEY:-sk-admin-default-secret-key}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-123456}
       OIDC_ENABLED: ${OIDC_ENABLED:-false}
       OIDC_ISSUER: ${OIDC_ISSUER:-}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}

@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   Users, Plus, Pencil, Trash2, Shield, User as UserIcon,
-  AlertCircle, CheckCircle, X, Eye, EyeOff, Search,
+  AlertCircle, CheckCircle, X, Eye, EyeOff, Search, Key
 } from 'lucide-react';
 
 interface UserRecord {
@@ -26,6 +26,7 @@ export default function UsersManagementPage() {
   const router = useRouter();
 
   const [users, setUsers] = useState<UserRecord[]>([]);
+  const [allProfiles, setAllProfiles] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -35,6 +36,7 @@ export default function UsersManagementPage() {
   const [formUsername, setFormUsername] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState('USER');
+  const [formProfileIds, setFormProfileIds] = useState<string[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSaving, setFormSaving] = useState(false);
@@ -63,6 +65,18 @@ export default function UsersManagementPage() {
     }
   }, []);
 
+  const fetchProfiles = useCallback(async () => {
+    try {
+      const res = await fetch('/api/internal/apikeys');
+      const data = await res.json();
+      if (data.apiKeys) {
+        setAllProfiles(data.apiKeys);
+      }
+    } catch {
+      console.error('Failed to fetch API keys');
+    }
+  }, []);
+
   useEffect(() => {
     if (status === 'loading') return;
     if (!session || session.user.role !== 'ADMIN') {
@@ -70,7 +84,8 @@ export default function UsersManagementPage() {
       return;
     }
     fetchUsers();
-  }, [session, status, router, fetchUsers]);
+    fetchProfiles();
+  }, [session, status, router, fetchUsers, fetchProfiles]);
 
   // ----- Modal helpers -----
   const openCreate = () => {
@@ -78,19 +93,31 @@ export default function UsersManagementPage() {
     setFormUsername('');
     setFormPassword('');
     setFormRole('USER');
+    setFormProfileIds([]);
     setFormError('');
     setShowPassword(false);
     setModalMode('create');
   };
 
-  const openEdit = (u: UserRecord) => {
+  const openEdit = async (u: UserRecord) => {
     setEditingUser(u);
     setFormUsername(u.username);
     setFormPassword('');
     setFormRole(u.role);
+    setFormProfileIds([]);
     setFormError('');
     setShowPassword(false);
     setModalMode('edit');
+
+    try {
+      const res = await fetch(`/api/internal/user-profiles?userId=${u.id}`);
+      const data = await res.json();
+      if (data.success && data.apiKeyIds) {
+        setFormProfileIds(data.apiKeyIds);
+      }
+    } catch {
+      console.error('Failed to fetch assignments');
+    }
   };
 
   const closeModal = () => {
@@ -103,6 +130,8 @@ export default function UsersManagementPage() {
     setFormSaving(true);
 
     try {
+      let assignedUserId = '';
+
       if (modalMode === 'create') {
         const res = await fetch('/api/users', {
           method: 'POST',
@@ -110,7 +139,8 @@ export default function UsersManagementPage() {
           body: JSON.stringify({ username: formUsername, password: formPassword, role: formRole }),
         });
         const data = await res.json();
-        if (!res.ok) { setFormError(data.error || 'Lỗi'); return; }
+        if (!res.ok) { setFormError(data.error || 'Lỗi'); setFormSaving(false); return; }
+        assignedUserId = data.id;
         showToast(`Đã tạo người dùng "${data.username}"`, 'success');
       } else if (modalMode === 'edit' && editingUser) {
         const body: Record<string, string> = { role: formRole };
@@ -123,9 +153,20 @@ export default function UsersManagementPage() {
           body: JSON.stringify(body),
         });
         const data = await res.json();
-        if (!res.ok) { setFormError(data.error || 'Lỗi'); return; }
+        if (!res.ok) { setFormError(data.error || 'Lỗi'); setFormSaving(false); return; }
+        assignedUserId = editingUser.id;
         showToast(`Đã cập nhật "${data.username}"`, 'success');
       }
+
+      // Save Profile Assignments
+      if (assignedUserId) {
+        await fetch('/api/internal/user-profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: assignedUserId, apiKeyIds: formProfileIds })
+        });
+      }
+
       closeModal();
       fetchUsers();
     } catch {
@@ -405,6 +446,36 @@ export default function UsersManagementPage() {
                     Admin
                   </button>
                 </div>
+              </div>
+
+              <div className="space-y-1.5 flex flex-col pt-3 border-t border-border">
+                <label className="text-sm font-medium text-foreground flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Key className="w-4 h-4 text-primary" /> Profile được phân công</span>
+                  <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{formProfileIds.length} đã chọn</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 max-h-48 overflow-y-auto pr-1">
+                  {allProfiles.length === 0 ? (
+                    <div className="col-span-2 text-xs text-muted-foreground italic text-center p-2 bg-muted/30 rounded border border-dashed">Không có profile nào trong hệ thống</div>
+                  ) : (
+                    allProfiles.map(p => (
+                      <label key={p.id} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${formProfileIds.includes(p.id) ? 'bg-primary/5 border-primary/30 text-primary' : 'bg-background hover:bg-muted border-border'}`}>
+                        <input
+                          type="checkbox"
+                          className="rounded border-border w-3.5 h-3.5"
+                          checked={formProfileIds.includes(p.id)}
+                          onChange={e => {
+                            if (e.target.checked) setFormProfileIds(prev => [...prev, p.id]);
+                            else setFormProfileIds(prev => prev.filter(id => id !== p.id));
+                          }}
+                        />
+                        <span className="text-xs font-semibold truncate leading-tight flex-1" title={p.name}>{p.name}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Chọn các profile mà User này được phép truy cập. Các chức năng của User đó sẽ bị giới hạn chỉ hiển thị những profile được chọn. Nếu không chọn, User sẽ không quản lý profile nào. Admin thì mặc định được truy cập toàn bộ.
+                </p>
               </div>
             </div>
 

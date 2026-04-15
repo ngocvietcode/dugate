@@ -10,7 +10,7 @@ import { HonoAdapter } from '@bull-board/hono';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { isAdmin } from '@/lib/rbac';
-import { getPipelineQueue } from '@/lib/queue/pipeline-queue';
+import { getPipelineQueue, getWorkflowStepsQueue } from '@/lib/queue/pipeline-queue';
 import { Hono } from 'hono';
 import { serveStatic } from '@hono/node-server/serve-static';
 
@@ -40,7 +40,10 @@ serverAdapter.setBasePath('/api/bull-board');
 function initBoard() {
   if (!isInitialized) {
     createBullBoard({
-      queues: [new BullMQAdapter(getPipelineQueue())],
+      queues: [
+        new BullMQAdapter(getPipelineQueue()),
+        new BullMQAdapter(getWorkflowStepsQueue()),
+      ],
       serverAdapter,
     });
     // Mount bull board onto hono at the specific path
