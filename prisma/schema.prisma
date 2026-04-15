@@ -122,8 +122,9 @@ model ExternalApiConnection {
   authSecret    String @db.Text // Plaintext secret
 
   // Request format: multipart/form-data
-  promptFieldName String @default("query") // Tên field chứa prompt
-  fileFieldName   String @default("files") // Tên field chứa file upload
+  promptFieldName  String  @default("query") // Tên field chứa prompt
+  fileFieldName    String  @default("files") // Tên field chứa file upload
+  fileUrlFieldName String? // Tên field truyền URL thay vì file blob (null = luôn download file)
 
   // Default prompt — client chỉ được override trường này
   defaultPrompt String @db.Text
@@ -245,15 +246,37 @@ model AppSetting {
 }
 
 // ═══════════════════════════════════════════════
+// File Cache — S3 dedup tracking via MD5 hash
+// ═══════════════════════════════════════════════
+model FileCache {
+  id             String   @id @default(uuid())
+  md5Hash        String   @unique
+  s3Key          String
+  fileName       String
+  mimeType       String
+  size           Int      // bytes
+  refCount       Int      @default(1)
+  createdAt      DateTime @default(now())
+  lastAccessedAt DateTime @default(now())
+
+  @@index([refCount])
+  @@index([lastAccessedAt])
+}
+
+// ═══════════════════════════════════════════════
 // Users & Authentication
 // ═══════════════════════════════════════════════
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  password  String // Hashed via bcrypt
-  role      String   @default("USER") // ADMIN | USER
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  username    String   @unique
+  password    String   @default("") // Hashed via bcrypt, empty for OIDC users
+  role        String   @default("USER") // ADMIN | USER | VIEWER
+  provider    String?  // "oidc" | null (null = credentials)
+  providerSub String?  @unique // OIDC subject ID for linking
+  email       String?  // from OIDC claims
+  displayName String?  // from OIDC claims
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   operations Operation[]
 }

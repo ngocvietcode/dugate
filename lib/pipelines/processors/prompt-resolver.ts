@@ -10,7 +10,10 @@ import type { ExternalApiConnection, ExternalApiOverride } from '@prisma/client'
 export function interpolateVariables(template: string, variables: Record<string, unknown>): string {
   let result = template;
   for (const [key, value] of Object.entries(variables)) {
-    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value));
+    const strValue = typeof value === 'object' && value !== null 
+      ? JSON.stringify(value) 
+      : String(value);
+    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), strValue);
   }
   return result;
 }

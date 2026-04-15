@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { formatOperationResponse } from '@/lib/pipelines/format';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { canMutate } from '@/lib/rbac';
 
 export async function GET(
   req: NextRequest,
@@ -42,6 +43,10 @@ export async function DELETE(
   
   if (!op || op.deletedAt) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  if (!canMutate(session.user.role)) {
+    return NextResponse.json({ error: 'Forbidden: read-only access' }, { status: 403 });
   }
 
   if (session.user.role !== 'ADMIN' && op.createdByUserId !== session.user.id) {

@@ -12,6 +12,9 @@ interface UserRecord {
   id: string;
   username: string;
   role: string;
+  provider?: string | null;
+  email?: string | null;
+  displayName?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -216,20 +219,29 @@ export default function UsersManagementPage() {
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${u.role === 'ADMIN' ? 'bg-primary/15' : 'bg-muted'}`}>
                           {u.role === 'ADMIN' ? (
                             <Shield className="w-4 h-4 text-primary" />
+                          ) : u.role === 'VIEWER' ? (
+                            <Eye className="w-4 h-4 text-muted-foreground" />
                           ) : (
                             <UserIcon className="w-4 h-4 text-muted-foreground" />
                           )}
                         </div>
-                        <span className="font-medium text-foreground">{u.username}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-foreground">{u.username}</span>
+                          {u.provider === 'oidc' && (
+                            <span className="text-[10px] text-muted-foreground font-mono">SSO</span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
                         u.role === 'ADMIN'
                           ? 'bg-primary/10 text-primary'
+                          : u.role === 'VIEWER'
+                          ? 'bg-amber-500/10 text-amber-600'
                           : 'bg-muted text-muted-foreground'
                       }`}>
-                        {u.role === 'ADMIN' ? '🔑 Admin' : '👤 User'}
+                        {u.role === 'ADMIN' ? '🔑 Admin' : u.role === 'VIEWER' ? '👁 Viewer' : '👤 User'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">
@@ -326,31 +338,50 @@ export default function UsersManagementPage() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">
-                  {modalMode === 'edit' ? 'Mật khẩu mới (bỏ trống = giữ nguyên)' : 'Mật khẩu'}
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={formPassword}
-                    onChange={e => setFormPassword(e.target.value)}
-                    className="input-field pr-12"
-                    placeholder={modalMode === 'edit' ? '••••••' : 'Nhập mật khẩu'}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+              {/* Hide password field for OIDC users */}
+              {!(modalMode === 'edit' && editingUser?.provider === 'oidc') && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">
+                    {modalMode === 'edit' ? 'Mật khẩu mới (bỏ trống = giữ nguyên)' : 'Mật khẩu'}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={formPassword}
+                      onChange={e => setFormPassword(e.target.value)}
+                      className="input-field pr-12"
+                      placeholder={modalMode === 'edit' ? '••••••' : 'Nhập mật khẩu'}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
+              {modalMode === 'edit' && editingUser?.provider === 'oidc' && (
+                <p className="text-xs text-muted-foreground bg-muted/50 rounded-xl px-3 py-2">
+                  Người dùng SSO — xác thực qua nhà cung cấp bên ngoài, không thể đặt mật khẩu.
+                </p>
+              )}
 
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">Vai trò</label>
                 <div className="flex gap-3">
+                  <button
+                    onClick={() => setFormRole('VIEWER')}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border text-sm font-medium transition-all ${
+                      formRole === 'VIEWER'
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-600'
+                        : 'border-border bg-background text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <Eye className="w-4 h-4" />
+                    Viewer
+                  </button>
                   <button
                     onClick={() => setFormRole('USER')}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border text-sm font-medium transition-all ${

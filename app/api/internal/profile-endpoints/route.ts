@@ -7,11 +7,15 @@ import { prisma } from '@/lib/prisma';
 import { SERVICE_REGISTRY, getAllEndpointSlugs } from '@/lib/endpoints/registry';
 import { encrypt, decrypt } from '@/lib/crypto';
 import { Logger } from '@/lib/logger';
+import { requireAdmin } from '@/lib/rbac';
 
 const logger = new Logger({ service: 'profile-endpoints' });
 
 
 export async function GET(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const { searchParams } = new URL(req.url);
   const apiKeyId = searchParams.get('apiKeyId');
 
@@ -102,6 +106,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const { apiKeyId, endpointSlug, enabled, parameters, connectionsOverride, jobPriority, fileUrlAuthConfig, allowedFileExtensions } = body;

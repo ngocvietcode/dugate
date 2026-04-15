@@ -2,7 +2,7 @@
 // Singleton: chạy cleanup 1 lần khi server khởi động + mỗi 6 tiếng
 // Import từ layout.tsx để đảm bảo chạy khi app start
 
-import { cleanupExpiredFiles } from './cleanup';
+import { cleanupExpiredFiles, cleanupExpiredCache } from './cleanup';
 import { Logger } from './logger';
 
 const logger = new Logger({ service: 'cleanup-scheduler' });
@@ -16,17 +16,18 @@ export function ensureCleanupScheduled(): void {
   if (scheduled) return;
   scheduled = true;
 
-  // Chạy lần đầu sau 10s (đợi server fully ready)
-  setTimeout(() => {
-    cleanupExpiredFiles().catch(err =>
-      logger.error('[Initial] Cleanup run failed', {}, err)
+  async function runAllCleanups() {
+    await cleanupExpiredFiles().catch(err =>
+      logger.error('[Scheduled] File cleanup failed', {}, err)
     );
-  }, 10_000);
+    await cleanupExpiredCache().catch(err =>
+      logger.error('[Scheduled] Cache cleanup failed', {}, err)
+    );
+  }
+
+  // Chạy lần đầu sau 10s (đợi server fully ready)
+  setTimeout(() => runAllCleanups(), 10_000);
 
   // Lặp mỗi 6 tiếng
-  setInterval(() => {
-    cleanupExpiredFiles().catch(err =>
-      logger.error('[Scheduled] Cleanup run failed', {}, err)
-    );
-  }, SIX_HOURS_MS);
+  setInterval(() => runAllCleanups(), SIX_HOURS_MS);
 }

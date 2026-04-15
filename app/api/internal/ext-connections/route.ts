@@ -5,12 +5,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Logger } from '@/lib/logger';
+import { requireAdmin } from '@/lib/rbac';
 
 const logger = new Logger({ service: 'ext-connections' });
 
 
 // ─── GET: List all connections ────────────────────────────────────────────────
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const connections = await prisma.externalApiConnection.findMany({
       orderBy: { createdAt: 'asc' },
@@ -31,6 +35,9 @@ export async function GET() {
 
 // ─── POST: Create new connection + auto-create Processor ──────────────────────
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const {

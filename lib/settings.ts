@@ -97,9 +97,16 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   openai_api_key: '',
   openai_base_url: 'https://api.openai.com/v1',
   api_secret_key: '',
+  // S3-compatible storage
+  s3_endpoint: '',
+  s3_bucket: '',
+  s3_access_key: '',
+  s3_secret_key: '',
+  s3_region: 'us-east-1',
+  s3_cache_ttl_hours: '168', // 7 days
 };
 
-const ENCRYPTED_KEYS = new Set(['ai_api_key', 'openai_api_key', 'api_secret_key']);
+const ENCRYPTED_KEYS = new Set(['ai_api_key', 'openai_api_key', 'api_secret_key', 's3_access_key', 's3_secret_key']);
 
 // ─── Read ──────────────────────────────────────────────────────────────────────
 

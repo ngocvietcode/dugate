@@ -51,6 +51,8 @@ export interface WorkflowContext {
   webhookUrl: string | null;
   /** API key ID of the requesting client (used for prompt override lookup) */
   apiKeyId: string | null;
+  /** User ID of the requesting client */
+  createdByUserId: string | null;
   /** Per-step prompt overrides loaded from ProfileEndpoint (key = step name, value = prompt text) */
   promptOverrides: Record<string, string>;
   /** Checkpoint: current step index (used for resume) */
@@ -112,6 +114,8 @@ export async function enqueueSubStep(
     data: {
       id: subOpId,
       endpointSlug: processorSlug,
+      apiKeyId: ctx.apiKeyId,
+      createdByUserId: ctx.createdByUserId,
       pipelineJson: JSON.stringify([{ processor: processorSlug, variables }]),
       filesJson: filesJson,
       outputFormat: 'json',
@@ -364,6 +368,7 @@ export async function createWorkflowContext(
     totalCost: operation.totalCostUsd || 0,
     webhookUrl: operation.webhookUrl,
     apiKeyId: operation.apiKeyId,
+    createdByUserId: operation.createdByUserId,
     promptOverrides,
     currentStep: operation.currentStep,
   };

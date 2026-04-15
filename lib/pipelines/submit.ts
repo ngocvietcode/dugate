@@ -7,7 +7,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { type PipelineStep } from '@/lib/pipelines/engine';
 import { saveUploadedFile } from '@/lib/upload-helper';
-import { downloadAllFileUrls, type FileUrlEntry, type FileUrlAuthConfig } from '@/lib/file-url-downloader';
+import { downloadAllFileUrls, type FileUrlEntry, type FileUrlAuthConfig, type DownloadedFile } from '@/lib/file-url-downloader';
+import { getStorageBackend } from '@/lib/storage';
 import { Logger } from '@/lib/logger';
 import {
   getPipelineQueue,
@@ -165,38 +166,113 @@ export async function submitPipelineJob(
     bullPriority = resolveBullPriority((profileEndpoint as any)?.jobPriority);
   }
 
-  // ── 4. Save uploaded files to disk (skip if no files) ──────────────────
+  // ── 4. Save uploaded files via storage backend ──────────────────────────
+  const MAX_TOTAL_SIZE = parseInt(process.env.MAX_TOTAL_UPLOAD_SIZE ?? String(1024 * 1024 * 1024), 10); // 1GB default
   const operationId = crypto.randomUUID();
-  const filesData: Array<{ name: string; path: string; mime: string; size: number }> = [];
+  const filesData: Array<DownloadedFile & { url?: string; isRemoteUrl?: boolean }> = [];
+  const backend = await getStorageBackend();
 
   for (const file of (files ?? [])) {
-    const saved = await saveUploadedFile(file, operationId, undefined, allowedFileExtensions);
+    let saved;
+    try {
+      saved = await saveUploadedFile(file, operationId, undefined, allowedFileExtensions);
+    } catch (uploadErr: unknown) {
+      const uploadMsg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
+      const errName = uploadErr instanceof Error ? (uploadErr as any).name ?? '' : '';
+      const httpStatus = (uploadErr as any)?.$metadata?.httpStatusCode;
+      const isStorageConfig =
+        uploadMsg.includes('NoSuchBucket') ||
+        uploadMsg.includes('does not exist') ||
+        uploadMsg.includes('Access Denied') ||
+        errName === 'NoSuchBucket' ||
+        httpStatus === 404 ||
+        httpStatus === 403;
+      return {
+        ok: false,
+        errorResponse: NextResponse.json(
+          {
+            type: 'https://dugate.vn/errors/storage-error',
+            title: 'Storage Error',
+            status: isStorageConfig ? 503 : 500,
+            detail: isStorageConfig
+              ? `Storage backend is misconfigured or unavailable: ${uploadMsg}`
+              : `Failed to save uploaded file: ${uploadMsg}`,
+          },
+          { status: isStorageConfig ? 503 : 500 },
+        ),
+      };
+    }
     filesData.push({
       name: file.name,
       path: saved.path,
       mime: file.type || 'application/octet-stream',
-      size: file.size,
+      size: saved.size,
+      fileCacheId: saved.fileCacheId,
+      s3Key: saved.s3Key,
+      md5: saved.md5,
     });
   }
 
-  // ── 4b. Download file_urls ──────────────────────────────────────────────
-  // In sync mode: download now (client is waiting anyway).
-  // In async mode: defer downloads to the worker (return 202 immediately).
-  const hasPendingFileUrls = fileUrls && fileUrls.length > 0;
-  if (hasPendingFileUrls && executeSync) {
-    try {
-      const downloaded = await downloadAllFileUrls(fileUrls, operationId, fileUrlAuthConfig, allowedFileExtensions);
-      filesData.push(...downloaded);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return {
-        ok: false,
-        errorResponse: NextResponse.json(
-          { type: 'https://dugate.vn/errors/file-url-download-failed', title: 'File URL Download Failed', status: 422, detail: msg },
-          { status: 422 },
-        ),
-      };
+  // Check total size of all uploaded files
+  const totalUploadSize = filesData.reduce((sum, f) => sum + f.size, 0);
+  if (totalUploadSize > MAX_TOTAL_SIZE) {
+    for (const f of filesData) {
+      await backend.delete(f.s3Key ?? f.path).catch(() => {});
     }
+    return {
+      ok: false,
+      errorResponse: NextResponse.json(
+        { type: 'https://dugate.vn/errors/total-size-exceeded', title: 'Total Upload Size Exceeded', status: 413, detail: `Total upload size ${(totalUploadSize / 1024 / 1024).toFixed(1)}MB exceeds maximum of ${(MAX_TOTAL_SIZE / 1024 / 1024).toFixed(0)}MB.` },
+        { status: 413 },
+      ),
+    };
+  }
+
+  // ── 4b. Handle file_urls ───────────────────────────────────────────────
+  const hasPendingFileUrls = fileUrls && fileUrls.length > 0;
+
+  // Check if first pipeline step's connector supports URL forwarding
+  // (fileUrlFieldName set → forward URLs to connector, skip download/cache)
+  let forwardUrls = false;
+  if (hasPendingFileUrls && pipeline.length > 0) {
+    const firstConn = await prisma.externalApiConnection.findUnique({
+      where: { slug: pipeline[0].processor },
+    });
+    if (firstConn?.fileUrlFieldName) {
+      forwardUrls = true;
+      // Store URLs as remote references — no download needed
+      for (const entry of fileUrls) {
+        filesData.push({
+          name: entry.filename?.trim() || entry.url,
+          path: '',
+          mime: entry.mime_type?.trim() || '',
+          size: 0,
+          url: entry.url,
+          isRemoteUrl: true,
+        });
+      }
+    }
+  }
+
+  // Download file_urls if not forwarding
+  if (hasPendingFileUrls && !forwardUrls) {
+    if (executeSync) {
+      // Sync mode: download now (client is waiting anyway)
+      try {
+        const downloaded = await downloadAllFileUrls(fileUrls, operationId, fileUrlAuthConfig, allowedFileExtensions);
+        filesData.push(...downloaded);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return {
+          ok: false,
+          errorResponse: NextResponse.json(
+            { type: 'https://dugate.vn/errors/file-url-download-failed', title: 'File URL Download Failed', status: 422, detail: msg },
+            { status: 422 },
+          ),
+        };
+      }
+    }
+    // Async mode: deferred to worker (handled in jobData below)
   }
 
   // ── 6. Create Operation in DB ─────────────────────────────────────────────
@@ -250,7 +326,8 @@ export async function submitPipelineJob(
     correlationId,
     type: isWorkflowJob ? 'workflow' : 'pipeline',
     // Deferred file_urls for async mode — worker will download before running pipeline
-    ...(hasPendingFileUrls && !executeSync ? {
+    // Skip if URLs are being forwarded (already stored in filesJson as isRemoteUrl)
+    ...(hasPendingFileUrls && !executeSync && !forwardUrls ? {
       pendingFileUrls: fileUrls,
       pendingFileUrlAuthConfig: fileUrlAuthConfig,
       pendingAllowedFileExtensions: allowedFileExtensions,

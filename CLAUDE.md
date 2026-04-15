@@ -9,77 +9,133 @@
 | Version | 1.5.0 |
 | Purpose | API Gateway for document processing: ingest, extract, analyze, transform, generate, compare |
 | Stack | Next.js 14, TypeScript 5, Prisma 5, PostgreSQL 16, Redis 7, BullMQ, Tailwind CSS 3 |
-| AI SDKs | Google Gemini, OpenAI |
-| External tools | Pandoc (CLI), Ghostscript (CLI), sharp, mammoth |
-| Ports | 2023 (dev/prod Next.js), 3099 (mock service) |
-| Worker | Standalone BullMQ process (`npx tsx worker.ts`), concurrency 5 |
+| AI SDKs | Google Gemini (`@google/generative-ai`), OpenAI (`openai`) |
+| External tools | Pandoc (CLI), Ghostscript (CLI), sharp, mammoth, pdf-parse, xlsx |
+| Ports | 2023 (dev), 2025 (prod), 3099 (mock service) |
+| Worker | Standalone BullMQ process (`npx tsx worker.ts`), concurrency 5 (pipeline) / 10 (workflow) |
 
 ## Architecture
 
 ```
-Client → /api/v1/{service} → Middleware (x-api-key | NextAuth)
+Client → /api/v1/{service} → Middleware (x-api-key | NextAuth | OIDC)
        → Runner (discriminate sub-case, load ProfileEndpoint overrides)
-       → submitPipelineJob (save files, create Operation, enqueue BullMQ job)
+       → submitPipelineJob (save files / download file_urls, create Operation, enqueue BullMQ job)
        → Worker picks job → Pipeline engine (sequential steps) or Workflow engine (DAG)
        → Each step calls ExternalApiConnection (multipart/form-data)
        → Operation updated → Client polls GET /api/v1/operations/{id}
 ```
 
-**Key patterns**: AIP-151 Long-Running Operations, idempotency keys, profile-driven overrides, pipeline chaining with session state, per-operation cost tracking.
+**Key patterns**: AIP-151 Long-Running Operations, idempotency keys, profile-driven overrides, pipeline chaining with session state, per-operation cost tracking, RBAC (ADMIN/USER/VIEWER), OIDC SSO.
 
 ## Directory Structure
 
 ```
-app/                    # Next.js App Router (pages + API routes)
-  api/v1/               # Public API: ingest, extract, analyze, transform, generate, compare, workflows, operations, services, billing
-  api/internal/         # Admin API: apikeys, ext-connections, ext-overrides, profile-endpoints
-  api/auth/             # NextAuth
-  api/bull-board/       # BullMQ dashboard UI
-  (pages)/              # UI: login, settings, profiles, history, api-connections, api-docs, etc.
-components/             # React components (HeaderNav, SettingsForm, ServiceTestClient, ChatConsultant, etc.)
+app/                        # Next.js App Router
+  api/v1/                   # Public API: ingest, extract, analyze, transform, generate, compare, workflows, operations, services, billing
+  api/internal/             # Admin API: apikeys, auth-key, ext-connections, ext-overrides, profile-endpoints, dev-sync-endpoints, recover-stalled
+  api/auth/                 # NextAuth (Credentials + OIDC providers)
+  api/bull-board/           # BullMQ dashboard UI
+  api/chat/                 # Public chat endpoint (homepage demo)
+  api/health/               # Health check
+  api/swagger/              # Swagger/OpenAPI docs
+  api/settings/             # AppSetting CRUD + test
+  api/users/                # User management CRUD
+  api/operations/           # Internal operation polling (UI)
+  login/                    # Login page
+  ai-demo/                  # Interactive AI demo playground
+    components/             # Demo-specific components (UploadZone, PipelineStepCard, ParallelFileGrid, etc.)
+  (pages)/                  # Authenticated UI pages
+    ingest/                 # Document ingestion
+    extract/                # Data extraction
+    analyze/                # Document analysis
+    transform/              # Content transformation
+    generate/               # Content generation
+    compare/                # Document comparison
+    history/                # Operation history
+    operations/[id]/        # Operation detail
+    profiles/               # API key profile management
+    api-connections/        # External API connections
+    api-docs/               # API documentation
+    settings/               # Settings + user management
+components/                 # Shared React components
+  ChatConsultant.tsx        # AI chat interface
+  ConversionHistory.tsx     # Operation history display
+  HeaderNav.tsx             # Navigation header
+  MarkdownEditor.tsx        # Markdown editor
+  MarkdownPreview.tsx       # Markdown preview
+  PageWrapper.tsx           # Page layout wrapper
+  ServiceTestClient.tsx     # Service testing UI
+  SessionProviderWrapper.tsx # NextAuth provider
+  SettingsForm.tsx          # Settings form
+  StatusBadge.tsx           # Status indicator badge
+  ThemeProvider.tsx         # Dark/light theme
+  ThemeToggle.tsx           # Theme switcher
 lib/
-  auth.ts               # NextAuth config (CredentialsProvider, bcrypt, JWT)
-  crypto.ts             # AES-256-GCM encryption for API keys in DB
-  upload.ts             # File upload validation (100MB max, PDF/DOCX/XLSX/images)
-  logger.ts             # Structured logging with correlation IDs
-  settings.ts           # AppSetting read/write, prompt presets
-  cleanup.ts            # Auto-delete uploaded files after 7 days
+  auth.ts                   # NextAuth config (CredentialsProvider + OIDC)
+  config.ts                 # App configuration loader
+  crypto.ts                 # AES-256-GCM encryption for API keys in DB
+  errors.ts                 # Custom error definitions
+  prisma.ts                 # Prisma singleton
+  rbac.ts                   # Role-based access control (ADMIN/USER/VIEWER, canMutate())
+  rate-limit.ts             # Rate limiting logic
+  upload.ts                 # File upload validation (300MB max, macro rejection)
+  upload-helper.ts          # Upload helper utilities
+  file-url-downloader.ts    # Download files from URLs with auth config & SSRF protection
+  logger.ts                 # Structured logging with correlation IDs
+  settings.ts               # AppSetting read/write, prompt presets
+  cleanup.ts                # Auto-delete uploaded files after 7 days
+  cleanup-scheduler.ts      # Cleanup scheduler initialization
+  zip.ts                    # Archive creation (archiver)
   endpoints/
-    registry.ts         # SERVICE_REGISTRY: 6 services × N sub-cases with param schemas & connection chains
-    presets.ts           # Extract field presets (invoice, contract, id-card, receipt, etc.)
-    runner.ts            # Universal endpoint dispatcher → resolves sub-case, merges params, submits job
+    registry.ts             # SERVICE_REGISTRY: 6 services × N sub-cases with param schemas & connection chains
+    presets.ts              # Extract field presets (invoice, contract, id-card, receipt, table, custom)
+    runner.ts               # Universal endpoint dispatcher → resolves sub-case, merges params, submits job
+    profile-resolver.ts     # Resolve ProfileEndpoint per API key
   pipelines/
-    engine.ts           # Core pipeline executor (sequential steps, checkpoint/resume)
-    submit.ts           # Job submission (idempotency, sync/async modes, file save)
-    format.ts           # Operation response serialization
+    engine.ts               # Core pipeline executor (sequential steps, checkpoint/resume)
+    submit.ts               # Job submission (idempotency, sync/async modes, file save)
+    format.ts               # Operation response serialization
+    validate.ts             # Pipeline validation
     processors/
-      external-api.ts   # External API caller (multipart, prompt interpolation, session chaining)
-    workflow-engine.ts   # Code-driven DAG orchestration (parallel + sequential steps)
-    workflows/          # Registered workflows (e.g. disbursement)
+      external-api.ts       # External API caller (multipart, prompt interpolation, session chaining)
+      http-client.ts        # HTTP client with SSRF protection
+      prompt-resolver.ts    # Template prompt resolver
+      response-parser.ts    # Response JSON parsing
+    workflow-engine.ts      # Code-driven DAG orchestration (parallel + sequential steps)
+    workflows/              # Registered workflows (e.g. disbursement)
   queue/
-    pipeline-queue.ts   # BullMQ queue singleton (3 attempts, exponential backoff)
-  parsers/              # Built-in parsers: XLSX (mammoth), DOCX (mammoth)
+    pipeline-queue.ts       # BullMQ queue singleton (3 attempts, exponential backoff)
+    redis.ts                # Redis connection factory
+  parsers/
+    interface.ts            # Parser interface definition
+    factory.ts              # Parser factory (dispatch by MIME type)
+    word-parser.ts          # DOCX parser (mammoth)
+    excel-parser.ts         # XLSX parser
 prisma/
-  schema.prisma         # 7 models: Operation, ApiKey, ExternalApiConnection, ExternalApiOverride, ProfileEndpoint, AppSetting, User
-  migrations/           # Incremental migrations
-worker.ts               # Standalone BullMQ worker (routes to pipeline-engine or workflow-engine)
-middleware.ts           # Auth: NextAuth for UI, x-api-key for /api/v1/
-mock-service/           # Fake external API for testing
-scripts/                # DB cleanup, migration, mock endpoint setup utilities
-docs/                   # Architecture docs, integration guide, admin guide
+  schema.prisma             # 7 models
+  migrations/               # Incremental migrations
+worker.ts                   # Standalone BullMQ worker (pipeline + workflow queues, memory monitoring, stalled job detection)
+middleware.ts               # Dual auth: NextAuth for UI, x-api-key for /api/v1/, rate limiting
+mock-service/               # Fake external API for testing
+scripts/                    # DB cleanup, migration, mock endpoint setup utilities
+tests/                      # E2E & unit tests
+types/                      # TypeScript type declarations
+docs/                       # Architecture docs, integration guide, admin guide
+docs-site/                  # Documentation site
 ```
 
 ## Database Models (Prisma)
 
 | Model | Purpose |
 |---|---|
-| **Operation** | Long-running operation (state, pipeline steps, files, output, token usage, cost, webhook) |
-| **ApiKey** | Client API keys (hashed, role, spending limit, status) |
-| **ExternalApiConnection** | External AI service registry (URL, auth, prompt, response path, session chaining) |
+| **Operation** | Long-running operation (state, progressPercent, progressMessage, pipeline steps, files, output, token usage, cost, webhook, errorCode) |
+| **ApiKey** | Client API keys (hashed, role: STANDARD/ADMIN, spending limit, totalUsed, status) |
+| **ExternalApiConnection** | External AI service registry (URL, authType, authSecret, prompt, response path, session chaining, state) |
 | **ExternalApiOverride** | Per-client prompt overrides scoped to (connection, apiKey, endpointSlug, stepId) |
-| **ProfileEndpoint** | Per-client endpoint config (enabled, locked params, connection override, job priority) |
-| **AppSetting** | Key-value store (AI provider, model, encrypted API keys, prompt templates) |
-| **User** | Auth users (username, bcrypt password, role: ADMIN/USER) |
+| **ProfileEndpoint** | Per-client endpoint config (enabled, locked params, connection override, job priority, fileUrlAuthConfig, allowedFileExtensions) |
+| **AppSetting** | Key-value store (AI provider, model, encrypted API keys, prompt templates, S3 backend config) |
+| **User** | Auth users (username, bcrypt password, role: ADMIN/USER/VIEWER, OIDC: provider, providerSub, email, displayName) |
+| **FileCache** | File deduplication tracking for S3 storage backend (md5Hash, s3Key, size, refCount) |
 
 ## API Services (6 core + workflows)
 
@@ -93,7 +149,33 @@ docs/                   # Architecture docs, integration guide, admin guide
 | `/api/v1/compare` | diff, semantic, version | Document comparison |
 | `/api/v1/workflows` | disbursement (example) | Code-driven multi-step workflows |
 
-**Supporting endpoints**: `GET /api/v1/operations/{id}` (poll status), `GET /api/v1/services` (list available), `GET /api/v1/billing/balance|usage`.
+**Supporting endpoints**:
+- `GET /api/v1/operations` — List operations
+- `GET /api/v1/operations/{id}` — Poll operation status
+- `POST /api/v1/operations/{id}/cancel` — Cancel operation
+- `GET /api/v1/operations/{id}/download` — Download output file
+- `POST /api/v1/operations/{id}/resume` — Resume stalled operation
+- `GET /api/v1/services` — List available services
+- `GET /api/v1/billing/balance` — API key spending balance
+- `GET /api/v1/billing/usage` — Billing usage summary
+
+## Features
+
+- **OIDC Single Sign-On**: Enterprise SSO via configurable OIDC provider (issuer, client ID/secret)
+- **RBAC**: Three roles — ADMIN (full access), USER (standard), VIEWER (read-only, no mutations)
+- **File URL Downloads**: Accept `file_urls` param (JSON array of `{url, filename?, mime_type?}`) with per-profile auth config, SSRF protection, 120s timeout
+- **Pipeline Engine**: Sequential step execution with checkpoint/resume capability
+- **Workflow Engine**: DAG-based orchestration for complex multi-step workflows
+- **Session Chaining**: Multi-step external API calls preserving session state
+- **Cost Tracking**: Per-operation input/output token counting and USD cost calculation
+- **Idempotency**: Built-in via idempotency keys on job submission
+- **Webhook Callbacks**: Notify clients on operation completion
+- **Rate Limiting**: Middleware-level per-API-key rate limiting
+- **Storage Engine**: Configurable Local or S3-compatible backend (AWS, MinIO, R2) with MD5 deduplication
+- **File Cleanup**: Auto-delete uploaded files after 7 days
+- **Memory Monitoring**: Worker pauses at 90% heap usage, resumes at 75%
+- **Stalled Job Recovery**: Auto-detection (30s interval) with max 2 retries before DLQ
+- **Security**: AES-256-GCM encryption, path traversal protection, SSRF protection, macro file rejection, API key hashing
 
 ## Environment Variables
 
@@ -108,10 +190,15 @@ docs/                   # Architecture docs, integration guide, admin guide
 | `REDIS_URL` | Redis connection (default: redis://localhost:6379) |
 | `UPLOAD_DIR` | Upload directory (default: ./uploads) |
 | `OUTPUT_DIR` | Output directory (default: ./outputs) |
-| `WORKER_CONCURRENCY` | BullMQ worker slots (default: 5) |
+| `WORKER_CONCURRENCY` | BullMQ pipeline worker slots (default: 5) |
 | `SYNC_TIMEOUT_MS` | Sync mode timeout (default: 30000) |
 | `MIGRATION` | Auto-run prisma db push + seed on startup (true/false) |
 | `MOCK_SERVICE_URL` | Mock service URL for testing (default: http://localhost:3099) |
+| `FILE_URL_DOWNLOAD_TIMEOUT_MS` | File URL download timeout (default: 120000) |
+| `NEXT_PUBLIC_OIDC_ENABLED` | Enable OIDC authentication (true/false) |
+| `OIDC_ISSUER` | OIDC provider issuer URL |
+| `OIDC_CLIENT_ID` | OIDC client ID |
+| `OIDC_CLIENT_SECRET` | OIDC client secret |
 
 ## Deploy
 
@@ -132,6 +219,8 @@ Open `https://your-domain.com/setup` to create the first admin account.
 ```bash
 npm run dev          # Next.js on port 2023
 npm run worker:dev   # BullMQ worker
+npm run test         # Jest tests
+npm run test:e2e     # E2E tests
 # Requires: PostgreSQL + Redis running
 ```
 

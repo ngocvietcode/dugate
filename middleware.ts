@@ -33,6 +33,12 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/v1/')) {
     const passedKey = request.headers.get('x-api-key') || '';
 
+    // Strip sensitive internal headers to prevent spoofing
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.delete('x-api-key-id');
+    requestHeaders.delete('x-user-id');
+    requestHeaders.delete('x-user-role');
+
     // If no API key provided, check for NextAuth session (browser UI calls)
     if (!passedKey) {
       const token = await getToken({
@@ -41,9 +47,9 @@ export async function middleware(request: NextRequest) {
       });
       if (token) {
         // Authenticated UI user — allow without API key
-        const requestHeaders = new Headers(request.headers);
-        requestHeaders.delete('x-api-key-id');
-        if (token.sub) requestHeaders.set('x-user-id', token.sub);
+        const userId = (token.id as string) || token.sub;
+        if (userId) requestHeaders.set('x-user-id', userId);
+        if (token.role) requestHeaders.set('x-user-role', token.role as string);
         return NextResponse.next({ request: { headers: requestHeaders } });
       }
     }
@@ -87,11 +93,8 @@ export async function middleware(request: NextRequest) {
         );
       }
 
-      const requestHeaders = new Headers(request.headers);
       if (data.apiKeyId) {
         requestHeaders.set('x-api-key-id', data.apiKeyId);
-      } else {
-        requestHeaders.delete('x-api-key-id');
       }
       return NextResponse.next({
         request: { headers: requestHeaders },

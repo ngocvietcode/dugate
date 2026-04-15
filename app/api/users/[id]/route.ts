@@ -46,14 +46,14 @@ export async function PUT(
       updateData.password = await bcrypt.hash(password, 10);
     }
 
-    if (role && ['ADMIN', 'USER'].includes(role)) {
+    if (role && ['ADMIN', 'USER', 'VIEWER'].includes(role)) {
       updateData.role = role;
     }
 
     const user = await prisma.user.update({
       where: { id },
       data: updateData,
-      select: { id: true, username: true, role: true, createdAt: true, updatedAt: true },
+      select: { id: true, username: true, role: true, provider: true, email: true, displayName: true, createdAt: true, updatedAt: true },
     });
 
     return NextResponse.json(user);

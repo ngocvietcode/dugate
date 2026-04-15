@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { Home, Clock, Settings, FileText, SlidersHorizontal, PlugZap, User, LogOut, Users, ChevronDown, LogIn, BrainCircuit } from 'lucide-react';
+import { Home, Clock, SlidersHorizontal, PlugZap, User, LogOut, Users, ChevronDown, LogIn, BrainCircuit, Activity, Settings } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
 export default function HeaderNav() {
@@ -28,6 +28,7 @@ export default function HeaderNav() {
   if (pathname === '/login' || pathname === '/setup') return null;
 
   const isAdmin = session?.user?.role === 'ADMIN';
+  const isViewer = session?.user?.role === 'VIEWER';
 
   return (
     <header className="glass-header sticky top-0 z-50">
@@ -57,6 +58,18 @@ export default function HeaderNav() {
             Trang chủ
           </Link>
 
+          {!isViewer && (
+            <Link
+              href="/dashboard"
+              className={`pill-nav-item ${
+                pathname.startsWith('/dashboard') ? 'pill-nav-active' : 'pill-nav-inactive'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              Dashboard
+            </Link>
+          )}
+
           <Link
             href="/history"
             className={`pill-nav-item ${
@@ -66,38 +79,31 @@ export default function HeaderNav() {
             <Clock className="w-4 h-4" />
             Lịch sử
           </Link>
-          <Link
-            href="/settings"
-            className={`pill-nav-item ${
-              pathname.startsWith('/settings') ? 'pill-nav-active' : 'pill-nav-inactive'
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            Cài đặt
-          </Link>
-          <Link
-            href="/profiles"
-            className={`pill-nav-item ${
-              pathname.startsWith('/profiles') ? 'pill-nav-active' : 'pill-nav-inactive'
-            }`}
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            Profiles
-          </Link>
-          <Link
-            href="/api-connections"
-            className={`pill-nav-item ${
-              pathname.startsWith('/api-connections') ? 'pill-nav-active' : 'pill-nav-inactive'
-            }`}
-          >
-            <PlugZap className="w-4 h-4" />
-            API Connections
-          </Link>
+          {!isViewer && (
+            <>
+              <Link
+                href="/profiles"
+                className={`pill-nav-item ${
+                  pathname.startsWith('/profiles') ? 'pill-nav-active' : 'pill-nav-inactive'
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                Profiles
+              </Link>
+              <Link
+                href="/api-connections"
+                className={`pill-nav-item ${
+                  pathname.startsWith('/api-connections') ? 'pill-nav-active' : 'pill-nav-inactive'
+                }`}
+              >
+                <PlugZap className="w-4 h-4" />
+                API Connections
+              </Link>
+            </>
+          )}
           
           <div className="w-[1px] h-6 bg-border mx-2" />
           
-          <ThemeToggle />
-
           {/* User Profile Dropdown or Login Button */}
           {session?.user ? (
             <div className="relative" ref={dropdownRef}>
@@ -120,12 +126,22 @@ export default function HeaderNav() {
                       {session.user.username || session.user.name}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {session.user.role === 'ADMIN' ? '🔑 Quản trị viên' : '👤 Người dùng'}
+                      {session.user.role === 'ADMIN' ? '🔑 Quản trị viên' : session.user.role === 'VIEWER' ? '👁 Chỉ xem' : '👤 Người dùng'}
                     </p>
                   </div>
 
                   {/* Menu Items */}
                   <div className="p-1.5">
+                    {isAdmin && (
+                      <Link
+                        href="/settings"
+                        onClick={() => setShowDropdown(false)}
+                        className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground rounded-xl hover:bg-muted transition-colors"
+                      >
+                        <Settings className="w-4 h-4 text-muted-foreground" />
+                        Cài đặt
+                      </Link>
+                    )}
                     {isAdmin && (
                       <Link
                         href="/settings/users"
@@ -136,6 +152,11 @@ export default function HeaderNav() {
                         Quản lý người dùng
                       </Link>
                     )}
+                    
+                    <div className="my-1 border-t border-border/50" />
+                    <ThemeToggle />
+                    <div className="my-1 border-t border-border/50" />
+                    
                       <button
                         onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
                         className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-destructive rounded-xl hover:bg-destructive/10 transition-colors w-full text-left"

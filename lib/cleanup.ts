@@ -1,15 +1,18 @@
 // lib/cleanup.ts
-// Auto cleanup: xóa file uploads + outputs sau 24h, giữ Transformation record trong DB
+// Auto cleanup: xóa file uploads + outputs, giữ Operation record trong DB.
+// Supports both local filesystem and S3 storage backend.
 
 import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from './prisma';
 import { Logger } from './logger';
+import { getStorageBackend } from './storage';
+import { LocalStorageBackend } from './storage/local-backend';
+import { getSetting } from './settings';
 
 const logger = new Logger({ service: 'cleanup' });
 
-
-const EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 giờ
+const EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // ─── getDirSize: tính dung lượng thư mục đệ quy ──────────────────────────────
 async function getDirSize(dirPath: string): Promise<number> {
@@ -24,10 +27,10 @@ async function getDirSize(dirPath: string): Promise<number> {
         try {
           const stat = await fs.stat(p);
           size += stat.size;
-        } catch { /* bỏ qua file lỗi */ }
+        } catch { /* ignore */ }
       }
     }
-  } catch { /* thư mục không tồn tại */ }
+  } catch { /* directory doesn't exist */ }
   return size;
 }
 
@@ -35,6 +38,8 @@ async function getDirSize(dirPath: string): Promise<number> {
 export async function cleanupExpiredFiles(): Promise<{ deleted: number; freedMB: number }> {
   const cutoff = new Date(Date.now() - EXPIRY_MS);
   const outputDir = process.env.OUTPUT_DIR ?? './outputs';
+  const backend = await getStorageBackend();
+  const isLocal = backend instanceof LocalStorageBackend;
 
   const expired = await prisma.operation.findMany({
     where: {
@@ -45,6 +50,7 @@ export async function cleanupExpiredFiles(): Promise<{ deleted: number; freedMB:
     select: {
       id: true,
       filesJson: true,
+      outputFilePath: true,
     },
   });
 
@@ -53,26 +59,57 @@ export async function cleanupExpiredFiles(): Promise<{ deleted: number; freedMB:
 
   for (const conv of expired) {
     try {
-      // Xóa thư mục outputs/[uuid]/
+      // Unconditionally clean up local output directory if it exists
       const convOutputDir = path.join(outputDir, conv.id);
-      freed += await getDirSize(convOutputDir);
-      await fs.rm(convOutputDir, { recursive: true, force: true });
+      try {
+        const dsize = await getDirSize(convOutputDir);
+        if (dsize > 0) {
+          freed += dsize;
+          await fs.rm(convOutputDir, { recursive: true, force: true });
+        }
+      } catch {}
 
-      // Delete all uploaded files from filesJson
-      const filesData: Array<{ name: string; path: string }> = conv.filesJson
+      // Clean up output file from backend if configured
+      if (conv.outputFilePath) {
+        // Safe delete from active backend
+        const meta = await backend.getMetadata(conv.outputFilePath).catch(() => null);
+        if (meta) freed += meta.size;
+        await backend.delete(conv.outputFilePath).catch(() => {});
+      }
+
+      // Delete uploaded files
+      const filesData: Array<{ name: string; path: string; fileCacheId?: string; s3Key?: string }> = conv.filesJson
         ? JSON.parse(conv.filesJson)
         : [];
+
       for (const f of filesData) {
-        if (f.path) {
+        if (f.fileCacheId) {
+          // S3-cached file: decrement refCount (actual S3 deletion in cleanupExpiredCache)
+          await prisma.fileCache.update({
+            where: { id: f.fileCacheId },
+            data: { refCount: { decrement: 1 } },
+          }).catch(() => {
+            // FileCache record may already be deleted
+          });
+        } else if (f.s3Key) {
+          // S3 file without cache entry — delete directly
+          const meta = await backend.getMetadata(f.s3Key).catch(() => null);
+          if (meta) freed += meta.size;
+          await backend.delete(f.s3Key).catch(() => {});
+        } else if (f.path) {
+          // Legacy local file
           try {
             const stat = await fs.stat(f.path);
             freed += stat.size;
-          } catch { /* file already deleted */ }
-          await fs.rm(f.path, { force: true });
+            await fs.rm(f.path, { force: true });
+            try {
+              const parentDir = path.dirname(f.path);
+              await fs.rmdir(parentDir);
+            } catch { /* ignore if not empty */ }
+          } catch { /* already deleted or error */ }
         }
       }
 
-      // Mark as deleted in DB
       await prisma.operation.update({
         where: { id: conv.id },
         data: { filesDeleted: true },
@@ -90,4 +127,34 @@ export async function cleanupExpiredFiles(): Promise<{ deleted: number; freedMB:
   }
 
   return { deleted, freedMB };
+}
+
+// ─── cleanupExpiredCache — S3 FileCache TTL cleanup ──────────────────────────
+export async function cleanupExpiredCache(): Promise<{ deleted: number; freedMB: number }> {
+  const ttlHours = parseInt(await getSetting('s3_cache_ttl_hours') || '168', 10);
+  const cutoff = new Date(Date.now() - ttlHours * 3600_000);
+
+  const expired = await prisma.fileCache.findMany({
+    where: {
+      refCount: { lte: 0 },
+      lastAccessedAt: { lt: cutoff },
+    },
+  });
+
+  if (expired.length === 0) return { deleted: 0, freedMB: 0 };
+
+  const backend = await getStorageBackend();
+  const keys = expired.map((e) => e.s3Key);
+
+  await backend.deleteMany(keys);
+  await prisma.fileCache.deleteMany({
+    where: { id: { in: expired.map((e) => e.id) } },
+  });
+
+  const freedBytes = expired.reduce((sum, e) => sum + e.size, 0);
+  const freedMB = Math.round((freedBytes / 1024 / 1024) * 100) / 100;
+
+  logger.info(`[cleanupExpiredCache] Deleted ${expired.length} cached files, freed ${freedMB} MB`);
+
+  return { deleted: expired.length, freedMB };
 }

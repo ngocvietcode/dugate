@@ -13,11 +13,17 @@ services:
       UPLOAD_DIR: /app/uploads
       OUTPUT_DIR: /app/outputs
       MIGRATION: ${MIGRATION:-true}
+      DB_PUSH: ${DB_PUSH:-false}
+      ALLOWED_PRIVATE_HOSTS: ${ALLOWED_PRIVATE_HOSTS:-}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       MOCK_SERVICE_URL: ${MOCK_SERVICE_URL:-http://mock-service:3099}
       SEED: true
       SEED_ADMIN_KEY: ${SEED_ADMIN_KEY}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      OIDC_ENABLED: ${OIDC_ENABLED:-false}
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
     volumes:
       - ./uploads:/app/uploads
       - ./outputs:/app/outputs
@@ -56,7 +62,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     #ports:
     #  - "6379:6379"
     # Dev: in-memory mode (no persistence). Production: add --appendonly yes + volume

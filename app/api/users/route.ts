@@ -18,7 +18,7 @@ export async function GET() {
   }
 
   const users = await prisma.user.findMany({
-    select: { id: true, username: true, role: true, createdAt: true, updatedAt: true },
+    select: { id: true, username: true, role: true, provider: true, email: true, displayName: true, createdAt: true, updatedAt: true },
     orderBy: { createdAt: 'asc' },
   });
 
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       data: {
         username,
         password: hashedPassword,
-        role: role === 'ADMIN' ? 'ADMIN' : 'USER',
+        role: ['ADMIN', 'USER', 'VIEWER'].includes(role) ? role : 'USER',
       },
       select: { id: true, username: true, role: true, createdAt: true },
     });

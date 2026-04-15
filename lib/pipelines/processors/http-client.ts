@@ -99,14 +99,21 @@ export async function assertSafeUrl(rawUrl: string): Promise<string> {
     return parsed.toString();
   }
 
-  if (isPrivateHostname(hostname)) {
+  // Allow explicitly trusted private hosts (comma-separated hostnames/IPs)
+  const allowedPrivateHosts = (process.env.ALLOWED_PRIVATE_HOSTS ?? '')
+    .split(',')
+    .map(h => h.trim().toLowerCase())
+    .filter(Boolean);
+  const isTrusted = allowedPrivateHosts.includes(hostname.toLowerCase());
+
+  if (!isTrusted && isPrivateHostname(hostname)) {
     throw new Error(`SSRF protection: URL hostname '${hostname}' is a private/reserved address`);
   }
 
   // DNS resolution check — prevents DNS rebinding attacks
   // Skip for IP addresses (they were already checked above)
   const isIpLiteral = /^\d+\.\d+\.\d+\.\d+$/.test(hostname) || hostname.startsWith('[');
-  if (!isIpLiteral) {
+  if (!isIpLiteral && !isTrusted) {
     try {
       const dns = await import('dns');
       const { address } = await dns.promises.lookup(hostname);

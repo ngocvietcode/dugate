@@ -1,10 +1,7 @@
 // lib/upload.ts
-// Business logic cho upload: validate, normalize filename, lưu file, tạo output dir
-// Dùng bởi app/api/upload/route.ts
+// File upload validation, filename normalization, and shared constants.
 
-import fs from 'fs/promises';
 import path from 'path';
-import crypto from 'crypto';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -116,7 +113,7 @@ export function normalizeFilename(name: string): string {
   return name.normalize('NFC');
 }
 
-// ─── File saving ──────────────────────────────────────────────────────────────
+// ─── Legacy types (kept for backward compatibility) ──────────────────────────
 
 export interface SaveResult {
   conversionId: string;
@@ -125,36 +122,8 @@ export interface SaveResult {
   normalizedName: string;
 }
 
-export async function saveUploadedFile(file: File): Promise<SaveResult> {
-  const uploadDir = process.env.UPLOAD_DIR ?? './uploads';
-  const outputDir = process.env.OUTPUT_DIR ?? './outputs';
-
-  const conversionId = crypto.randomUUID();
-
-  // E07: normalize tên file tiếng Việt NFD → NFC
-  const normalizedName = normalizeFilename(file.name);
-
-  // Lưu file gốc: uploads/[uuid]-[originalname]
-  const originalPath = path.join(uploadDir, `${conversionId}-${normalizedName}`);
-
-  // Tạo thư mục outputs/[uuid]/ cho transformation này
-  const conversionOutputDir = path.join(outputDir, conversionId);
-
-  // Đảm bảo các thư mục tồn tại
-  await fs.mkdir(path.dirname(originalPath), { recursive: true });
-  await fs.mkdir(conversionOutputDir, { recursive: true });
-
-  // Ghi file từ ArrayBuffer
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(originalPath, buffer);
-
-  return {
-    conversionId,
-    originalPath,
-    outputDir: conversionOutputDir,
-    normalizedName,
-  };
-}
+// NOTE: File saving is handled by lib/upload-helper.ts (streaming, operation-scoped).
+// The legacy saveUploadedFile() was removed — use upload-helper.ts instead.
 
 // ─── CompressLevel validation ─────────────────────────────────────────────────
 

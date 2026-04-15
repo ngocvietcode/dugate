@@ -10,6 +10,7 @@ import { EXTRACT_PRESETS } from './presets';
 import { Logger } from '@/lib/logger';
 import { loadProfileEndpoint, mergeParameters, parseConnectionSteps, getFileUrlAuthConfig } from './profile-resolver';
 import { type FileUrlEntry, MAX_FILE_URL_ENTRIES } from '@/lib/file-url-downloader';
+import { canMutate } from '@/lib/rbac';
 import crypto from 'crypto';
 
 // ─── Error helper ─────────────────────────────────────────────────────────────
@@ -75,6 +76,10 @@ export async function runEndpoint(serviceSlug: string, req: NextRequest): Promis
     if (!service) {
       return apiError(404, 'Service Not Found', `Service '${serviceSlug}' is not registered.`);
     }
+
+    // ── 1b. Role guard ────────────────────────────────────────────────────
+    // VIEWER users can submit jobs from UI (for testing/demo purposes)
+    // but cannot delete operations (enforced in operations/[id] route).
 
     const form = await req.formData();
     const apiKeyId = req.headers.get('x-api-key-id') ?? undefined;

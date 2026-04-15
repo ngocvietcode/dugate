@@ -35,6 +35,12 @@ interface Settings {
   openai_api_key: string;
   openai_base_url: string;
   api_secret_key: string;
+  s3_endpoint: string;
+  s3_bucket: string;
+  s3_access_key: string;
+  s3_secret_key: string;
+  s3_region: string;
+  s3_cache_ttl_hours: string;
 }
 
 const PROVIDER_OPTIONS = [
@@ -82,12 +88,23 @@ export default function SettingsForm() {
     openai_api_key: '',
     openai_base_url: 'https://api.openai.com/v1',
     api_secret_key: '',
+    s3_endpoint: '',
+    s3_bucket: '',
+    s3_access_key: '',
+    s3_secret_key: '',
+    s3_region: 'us-east-1',
+    s3_cache_ttl_hours: '168',
   });
   const [showKey, setShowKey] = useState(false);
+  const [showS3Key, setShowS3Key] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
+  const [testingS3, setTestingS3] = useState(false);
   const [saveResult, setSaveResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [s3TestResult, setS3TestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [cacheStats, setCacheStats] = useState<{ totalFiles: number; totalSizeMB: number; outputFiles: number; expiredOperations: number; storageBackend: string } | null>(null);
+  const [clearingCache, setClearingCache] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -99,6 +116,8 @@ export default function SettingsForm() {
       })
       .catch(() => setLoading(false));
       
+    // Load cache stats
+    fetch('/api/settings/cache').then(r => r.json()).then(setCacheStats).catch(() => {});
     // ensure theme is mounted
     setMounted(true);
   }, []);
@@ -145,13 +164,9 @@ export default function SettingsForm() {
   async function handleTest() {
     setTesting(true);
     setTestResult(null);
-    // Lưu trước rồi mới test
+    // Test endpoint đọc settings trực tiếp từ DB — không cần PUT trước
+    // (PUT sẽ ghi đè key thật bằng giá trị masked "****" → data corruption)
     try {
-      await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
-      });
       const res = await fetch('/api/settings/test', { method: 'POST' });
       const data = await res.json();
       setTestResult({ ok: data.success, msg: data.message });
@@ -285,6 +300,217 @@ export default function SettingsForm() {
           >
             {saving === 'Bảo mật API' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving === 'Bảo mật API' ? 'Đang lưu...' : 'Lưu API Key Gateway'}
+          </button>
+        </div>
+      </div>
+
+      {/* S3 Storage */}
+      <div className="modern-card p-6 md:p-8 space-y-6">
+        <div className="flex items-center gap-2 border-b border-border pb-4">
+          <FileText className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-bold text-foreground">File Storage (S3 Compatible)</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-bold text-foreground mb-2">Endpoint URL (Tùy chọn)</label>
+            <input
+              type="text"
+              value={settings.s3_endpoint}
+              onChange={e => setSettings(s => ({ ...s, s3_endpoint: e.target.value }))}
+              placeholder="Để trống nếu dùng AWS mặc định"
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-foreground mb-2">Bucket</label>
+            <input
+              type="text"
+              value={settings.s3_bucket}
+              onChange={e => setSettings(s => ({ ...s, s3_bucket: e.target.value }))}
+              placeholder="dugate-files"
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-foreground mb-2">Access Key (Tùy chọn)</label>
+            <div className="relative">
+              <input
+                type={showS3Key ? 'text' : 'password'}
+                value={settings.s3_access_key}
+                onChange={e => setSettings(s => ({ ...s, s3_access_key: e.target.value }))}
+                placeholder="Để trống nếu dùng IAM Role"
+                className="input-field font-mono pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowS3Key(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary p-1 rounded transition-colors"
+              >
+                {showS3Key ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-foreground mb-2">Secret Key (Tùy chọn)</label>
+            <input
+              type="password"
+              value={settings.s3_secret_key}
+              onChange={e => setSettings(s => ({ ...s, s3_secret_key: e.target.value }))}
+              placeholder="Để trống nếu dùng IAM Role"
+              className="input-field font-mono"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-foreground mb-2">Region</label>
+            <input
+              type="text"
+              value={settings.s3_region}
+              onChange={e => setSettings(s => ({ ...s, s3_region: e.target.value }))}
+              placeholder="us-east-1"
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-foreground mb-2">Cache TTL (hours)</label>
+            <input
+              type="number"
+              value={settings.s3_cache_ttl_hours}
+              onChange={e => setSettings(s => ({ ...s, s3_cache_ttl_hours: e.target.value }))}
+              placeholder="168"
+              className="input-field"
+              min={1}
+            />
+            <p className="text-xs text-muted-foreground mt-1">File cache sẽ tự xóa sau khoảng thời gian này (mặc định 7 ngày)</p>
+          </div>
+        </div>
+
+        {/* Storage Stats */}
+        {cacheStats && (
+          <div className="space-y-3">
+            {/* Backend indicator */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold ${
+                cacheStats.storageBackend === 's3'
+                  ? 'bg-primary/10 text-primary border border-primary/20'
+                  : 'bg-muted text-muted-foreground border border-border'
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${cacheStats.storageBackend === 's3' ? 'bg-primary' : 'bg-muted-foreground'}`} />
+                {cacheStats.storageBackend === 's3' ? 'S3 Active' : 'Local Disk'}
+              </span>
+            </div>
+
+            {/* File Cache row */}
+            <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">File Cache (Dedup)</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      setClearingCache(true);
+                      try {
+                        const res = await fetch('/api/settings/cache?expired=true', { method: 'DELETE' });
+                        const data = await res.json();
+                        setS3TestResult({ ok: true, msg: `Cleared ${data.deleted} expired file(s), freed ${data.freedMB} MB` });
+                        fetch('/api/settings/cache').then(r => r.json()).then(setCacheStats).catch(() => {});
+                      } catch { setS3TestResult({ ok: false, msg: 'Failed to clear cache' }); }
+                      setClearingCache(false);
+                    }}
+                    disabled={clearingCache}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-border hover:border-primary transition-colors disabled:opacity-50"
+                  >
+                    Clear Expired
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Xóa toàn bộ file cache (unreferenced)? Hành động này không thể hoàn tác.')) return;
+                      setClearingCache(true);
+                      try {
+                        const res = await fetch('/api/settings/cache', { method: 'DELETE' });
+                        const data = await res.json();
+                        setS3TestResult({ ok: true, msg: `Cleared ${data.deleted} file(s), freed ${data.freedMB} MB` });
+                        fetch('/api/settings/cache').then(r => r.json()).then(setCacheStats).catch(() => {});
+                      } catch { setS3TestResult({ ok: false, msg: 'Failed to clear cache' }); }
+                      setClearingCache(false);
+                    }}
+                    disabled={clearingCache}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <span className="font-medium text-foreground">{cacheStats.totalFiles} file(s)</span>
+                <span className="text-muted-foreground">|</span>
+                <span className="font-medium text-foreground">{cacheStats.totalSizeMB} MB</span>
+              </div>
+            </div>
+
+            {/* Output Files row */}
+            <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Output Files</span>
+                {cacheStats.expiredOperations > 0 && (
+                  <button
+                    onClick={async () => {
+                      setClearingCache(true);
+                      try {
+                        const res = await fetch('/api/settings/cache?target=outputs', { method: 'DELETE' });
+                        const data = await res.json();
+                        setS3TestResult({ ok: true, msg: `Cleaned ${data.deleted} expired operation(s), freed ${data.freedMB} MB` });
+                        fetch('/api/settings/cache').then(r => r.json()).then(setCacheStats).catch(() => {});
+                      } catch { setS3TestResult({ ok: false, msg: 'Failed to clean output files' }); }
+                      setClearingCache(false);
+                    }}
+                    disabled={clearingCache}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-border hover:border-primary transition-colors disabled:opacity-50"
+                  >
+                    Clean Expired Outputs
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <span className="font-medium text-foreground">{cacheStats.outputFiles} operation(s) with output files</span>
+                {cacheStats.expiredOperations > 0 && (
+                  <>
+                    <span className="text-muted-foreground">|</span>
+                    <span className="font-medium text-amber-600 dark:text-amber-400">{cacheStats.expiredOperations} expired (cleanable)</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {s3TestResult && (
+          <div className={`flex items-center gap-2 text-sm font-medium rounded-xl px-4 py-3 ${
+            s3TestResult.ok ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-destructive/10 text-destructive border border-destructive/20'
+          }`}>
+            {s3TestResult.ok ? <CheckCircle className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
+            {s3TestResult.msg}
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+          <button
+            onClick={async () => {
+              setTestingS3(true);
+              setS3TestResult(null);
+              try {
+                // Save S3 settings first
+                await savePartial(['s3_endpoint', 's3_bucket', 's3_access_key', 's3_secret_key', 's3_region', 's3_cache_ttl_hours'], 'S3 Storage');
+                const res = await fetch('/api/settings/s3-test', { method: 'POST' });
+                const data = await res.json();
+                setS3TestResult({ ok: data.ok, msg: data.ok ? data.message : data.error });
+              } catch { setS3TestResult({ ok: false, msg: 'Network error' }); }
+              setTestingS3(false);
+            }}
+            disabled={testingS3 || saving === 'S3 Storage'}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2 bg-card border-2 border-border text-foreground rounded-xl font-bold hover:border-primary hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+          >
+            {testingS3 ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-primary" />}
+            {testingS3 ? 'Testing...' : 'Lưu & Test Connection'}
           </button>
         </div>
       </div>

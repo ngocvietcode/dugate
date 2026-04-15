@@ -38,10 +38,10 @@ export const metadata: Metadata = {
   description: "Trợ lý AI đa năng dành cho doanh nghiệp, từ phân tích tài liệu đến tổng hợp dữ liệu.",
 };
 
-// Cleanup scheduler: chạy 1 lần khi server start, lặp mỗi 6 tiếng
-ensureCleanupScheduled();
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Cleanup scheduler: chạy 1 lần khi server start, lặp mỗi 6 tiếng
+  // Must be called inside the function, not at module-level, to avoid DB connection during next build
+  ensureCleanupScheduled();
   return (
     <html lang="vi" className={`${jakarta.variable} ${dmSans.variable} ${beVietnam.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className={`${beVietnam.className} bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary transition-colors duration-300`}>

@@ -51,6 +51,7 @@ describe('External API Processor', () => {
     authKeyHeader: 'x-api-key',
     authSecret: 'secret123',
     fileFieldName: 'file',
+    fileUrlFieldName: null,
     promptFieldName: 'prompt',
     defaultPrompt: 'Hello {{name}}',
     responseContentPath: 'data.content',

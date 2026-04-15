@@ -2,11 +2,16 @@
 // Core Pipeline Engine — runs a chain of ExternalApiConnection steps sequentially.
 // v2: Local processors removed. All processing done via External API connectors.
 
+import os from 'os';
+import path from 'path';
+import fs from 'fs/promises';
 import { prisma } from '@/lib/prisma';
 import { runExternalApiProcessor } from '@/lib/pipelines/processors/external-api';
 import { Logger } from '@/lib/logger';
 import type { Job } from 'bullmq';
 import { isPipelineStep } from '@/lib/pipelines/validate';
+import { getStorageBackend } from '@/lib/storage';
+import { LocalStorageBackend } from '@/lib/storage/local-backend';
 
 export interface PipelineStep {
   processor: string;  // ExternalApiConnection slug
@@ -25,8 +30,10 @@ export interface ProcessorContext {
   stepIndex: number;
   totalSteps: number;
   // Input — all uploaded files
-  filePaths: string[];    // Absolute paths to uploaded files on disk
+  filePaths: string[];    // Absolute paths to uploaded files on disk (or temp files from S3)
   fileNames: string[];    // Original file names
+  // Remote file URLs — forwarded to connector instead of downloading
+  remoteFileUrls?: string[];
   // Chained input from previous step
   inputText?: string;
   // Processor config
@@ -94,7 +101,7 @@ export async function runPipeline(operationId: string, correlationId?: string, j
   }
 
   let pipeline: PipelineStep[] = [];
-  let filesData: Array<{ name: string; path: string; mime: string; size: number }> = [];
+  let filesData: Array<{ name: string; path: string; mime: string; size: number; s3Key?: string; fileCacheId?: string; isRemoteUrl?: boolean; url?: string }> = [];
   try {
     const parsedPipeline = JSON.parse(operation.pipelineJson) as unknown;
     if (!Array.isArray(parsedPipeline)) {
@@ -109,7 +116,7 @@ export async function runPipeline(operationId: string, correlationId?: string, j
     if (!Array.isArray(parsedFiles)) {
       throw new Error('INVALID_FILES_STRUCTURE');
     }
-    filesData = parsedFiles as Array<{ name: string; path: string; mime: string; size: number }>;
+    filesData = parsedFiles as typeof filesData;
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : '';
     const clientErrorMessage =
@@ -173,9 +180,41 @@ export async function runPipeline(operationId: string, correlationId?: string, j
     }
   }
 
-  // Parse filesJson → filePaths / fileNames
-  const filePaths = filesData.map((f) => f.path?.replace(/\\/g, '/'));
-  const fileNames = filesData.map((f) => f.name);
+  // ── Resolve files: S3 → temp file, local → as-is, remote URLs → separate list ──
+  const backend = await getStorageBackend();
+  const isLocal = backend instanceof LocalStorageBackend;
+  const tmpDir = path.join(os.tmpdir(), 'dugate', operationId);
+  const filePaths: string[] = [];
+  const fileNames: string[] = [];
+  const remoteFileUrls: string[] = [];
+
+  // Separate remote URLs from files that need resolving
+  const filesToResolve: Array<{ key: string; name: string }> = [];
+  for (const f of filesData) {
+    if (f.isRemoteUrl && f.url) {
+      remoteFileUrls.push(f.url);
+      continue;
+    }
+    const key = f.s3Key ?? f.path;
+    if (!key) continue;
+    filesToResolve.push({ key, name: f.name });
+  }
+
+  // Download files in parallel (bounded by 5) for S3 backend
+  const MAX_PARALLEL_DOWNLOADS = 5;
+  for (let i = 0; i < filesToResolve.length; i += MAX_PARALLEL_DOWNLOADS) {
+    const batch = filesToResolve.slice(i, i + MAX_PARALLEL_DOWNLOADS);
+    const results = await Promise.all(
+      batch.map(async ({ key, name }) => {
+        const resolved = await backend.downloadToTempFile(key, tmpDir);
+        return { path: resolved.replace(/\\/g, '/'), name };
+      }),
+    );
+    for (const r of results) {
+      filePaths.push(r.path);
+      fileNames.push(r.name);
+    }
+  }
 
   const stepsResult: Array<{
     step: number;
@@ -299,6 +338,7 @@ export async function runPipeline(operationId: string, correlationId?: string, j
         totalSteps: pipeline.length,
         filePaths: i === 0 ? filePaths : [],   // Only first step gets original files
         fileNames: i === 0 ? fileNames : [],
+        remoteFileUrls: i === 0 ? remoteFileUrls : [],
         inputText: currentText,
         processorSlug: connection.slug,
         variables,
@@ -443,6 +483,11 @@ export async function runPipeline(operationId: string, correlationId?: string, j
       } else {
         logger.error(`Failure webhook delivery failed after 3 attempts for ${operationId}`);
       }
+    }
+  } finally {
+    // Clean up temp files downloaded from S3 (no-op if tmpDir was never created)
+    if (!isLocal) {
+      await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
     }
   }
 }

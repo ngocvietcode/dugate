@@ -7,6 +7,8 @@ import path from 'path';
 import fs from 'fs/promises';
 import { createReadStream } from 'fs';
 import { Readable } from 'stream';
+import { getStorageBackend } from '@/lib/storage';
+import { LocalStorageBackend } from '@/lib/storage/local-backend';
 
 export async function GET(
   req: NextRequest,
@@ -41,7 +43,6 @@ export async function GET(
   if (op.outputContent) {
     const ext = op.outputFormat === 'html' ? 'html' : op.outputFormat === 'json' ? 'json' : 'md';
     const contentType = ext === 'html' ? 'text/html' : ext === 'json' ? 'application/json' : 'text/markdown';
-    // Derive base name from first uploaded file in filesJson
     const filesData: Array<{ name: string }> = op.filesJson ? JSON.parse(op.filesJson) : [];
     const firstName = filesData[0]?.name ?? 'output';
     const baseName = path.basename(firstName, path.extname(firstName));
@@ -57,28 +58,50 @@ export async function GET(
   // If we have an output file path, stream it
   if (op.outputFilePath) {
     try {
-      const outputBaseDir = path.resolve(process.env.OUTPUT_DIR ?? './outputs');
-      const resolvedOutputPath = path.resolve(op.outputFilePath);
-      const relativePath = path.relative(outputBaseDir, resolvedOutputPath);
-      if (relativePath === '' || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
-        return NextResponse.json(
-          { type: 'https://dugate.vn/errors/forbidden', title: 'Forbidden', status: 403, detail: 'Invalid output file path.' },
-          { status: 403 }
-        );
+      const backend = await getStorageBackend();
+
+      if (backend instanceof LocalStorageBackend) {
+        // Local: validate path traversal and stream from disk
+        const outputBaseDir = path.resolve(process.env.OUTPUT_DIR ?? './outputs');
+        const resolvedOutputPath = path.resolve(op.outputFilePath);
+        const relativePath = path.relative(outputBaseDir, resolvedOutputPath);
+        if (relativePath === '' || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+          // If the path breaks out of the output directory, it's either an invalid path or a legacy S3 key
+          // accessed while the local backend is active. Return 404 instead of an alarming 403.
+          return NextResponse.json(
+            { type: 'https://dugate.vn/errors/file-not-found', title: 'File Not Found', status: 404, detail: 'Output file not found or is stored in an inactive S3 backend.' },
+            { status: 404 }
+          );
+        }
+
+        const stat = await fs.stat(resolvedOutputPath);
+        const ext = path.extname(resolvedOutputPath).slice(1);
+        const contentType = ext === 'html' ? 'text/html' : ext === 'json' ? 'application/json' : 'text/markdown';
+        const stream = Readable.toWeb(createReadStream(resolvedOutputPath)) as ReadableStream<Uint8Array>;
+
+        return new NextResponse(stream, {
+          headers: {
+            'Content-Type': `${contentType}; charset=utf-8`,
+            'Content-Length': String(stat.size),
+            'Content-Disposition': `attachment; filename="${path.basename(resolvedOutputPath)}"`,
+          },
+        });
+      } else {
+        // S3: stream from storage backend
+        const readable = await backend.download(op.outputFilePath);
+        const meta = await backend.getMetadata(op.outputFilePath);
+        const ext = path.extname(op.outputFilePath).slice(1);
+        const contentType = ext === 'html' ? 'text/html' : ext === 'json' ? 'application/json' : 'text/markdown';
+        const stream = Readable.toWeb(readable) as ReadableStream<Uint8Array>;
+
+        return new NextResponse(stream, {
+          headers: {
+            'Content-Type': `${contentType}; charset=utf-8`,
+            ...(meta?.size ? { 'Content-Length': String(meta.size) } : {}),
+            'Content-Disposition': `attachment; filename="${path.basename(op.outputFilePath)}"`,
+          },
+        });
       }
-
-      const stat = await fs.stat(resolvedOutputPath);
-      const ext = path.extname(resolvedOutputPath).slice(1);
-      const contentType = ext === 'html' ? 'text/html' : ext === 'json' ? 'application/json' : 'text/markdown';
-      const stream = Readable.toWeb(createReadStream(resolvedOutputPath)) as ReadableStream<Uint8Array>;
-
-      return new NextResponse(stream, {
-        headers: {
-          'Content-Type': `${contentType}; charset=utf-8`,
-          'Content-Length': String(stat.size),
-          'Content-Disposition': `attachment; filename="${path.basename(resolvedOutputPath)}"`,
-        },
-      });
     } catch {
       return NextResponse.json(
         { type: 'https://dugate.vn/errors/file-not-found', title: 'File Not Found', status: 404, detail: 'Output file has been cleaned up.' },
