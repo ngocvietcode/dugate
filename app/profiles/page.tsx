@@ -24,12 +24,12 @@ export default function OverridesPage() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session) {
       router.push('/');
     }
   }, [session, status, router]);
 
-  if (status === 'loading' || !session || session.user.role !== 'ADMIN') {
+  if (status === 'loading' || !session) {
     return null;
   }
 
@@ -1230,7 +1230,7 @@ function ProfileEndpointCard({
 
           {(isActive || isEditing) && (
             <button
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={(e) => { e.stopPropagation(); setIsEditing(!isEditing); }}
               className={`p-1.5 rounded-lg transition-colors border ${isEditing
                 ? 'bg-indigo-50 dark:bg-indigo-950 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400'
                 : 'bg-transparent border-transparent text-slate-400 hover:text-foreground hover:bg-muted'

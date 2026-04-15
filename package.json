@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 2023",
-    "worker:dev": "npx tsx --env-file=.env worker.ts",
+    "worker:dev": "npx tsx worker.ts",
     "worker:build": "npx esbuild worker.ts --bundle --platform=node --target=node20 --outfile=worker.js --external:@prisma/client --external:prisma --external:bcryptjs --external:ioredis --external:bullmq --external:mammoth --external:sharp --external:openai --alias:@=.",
     "build": "next build",
     "start": "next start -p 2025",
