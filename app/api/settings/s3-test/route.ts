@@ -48,9 +48,12 @@ export async function POST() {
     // Log full error server-side, return sanitized message to client
     console.error('[s3-test] Connection failed:', err);
     const msg = err instanceof Error ? err.message : String(err);
+    const errName = err instanceof Error ? (err as any).name ?? '' : '';
+    const httpStatus = (err as any)?.$metadata?.httpStatusCode;
     // Only expose safe error hints
-    const safeMsg = msg.includes('Access Denied') ? 'Access Denied — check credentials'
-      : msg.includes('NoSuchBucket') ? 'Bucket not found'
+    // HeadBucketCommand returns errName='NotFound' (404) when bucket doesn't exist
+    const safeMsg = msg.includes('Access Denied') || msg.includes('Forbidden') ? 'Access Denied — check credentials'
+      : (msg.includes('NoSuchBucket') || errName === 'NotFound' || httpStatus === 404) ? 'Bucket not found'
       : msg.includes('ECONNREFUSED') ? 'Connection refused — check endpoint URL'
       : msg.includes('ENOTFOUND') ? 'Hostname not found — check endpoint URL'
       : 'Connection failed — check your S3 configuration';

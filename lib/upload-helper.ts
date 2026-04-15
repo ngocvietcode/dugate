@@ -48,14 +48,14 @@ export async function saveUploadedFile(
     contentType: file.type || 'application/octet-stream',
   });
 
-  // MD5 dedup via FileCache
-  const fileCacheId = await dedup(result.md5, result.s3Key, sanitizedName, file.type || 'application/octet-stream', result.bytesWritten, backend);
+  // MD5 dedup via FileCache — returns canonical s3Key (may differ if file was a duplicate)
+  const dedupResult = await dedup(result.md5, result.s3Key, sanitizedName, file.type || 'application/octet-stream', result.bytesWritten, backend);
 
   return {
-    path: result.s3Key,
+    path: dedupResult.s3Key,
     size: result.bytesWritten,
-    fileCacheId,
-    s3Key: result.s3Key,
+    fileCacheId: dedupResult.id,
+    s3Key: dedupResult.s3Key,
     md5: result.md5,
   };
 }

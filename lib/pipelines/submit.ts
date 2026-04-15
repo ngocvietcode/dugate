@@ -173,7 +173,35 @@ export async function submitPipelineJob(
   const backend = await getStorageBackend();
 
   for (const file of (files ?? [])) {
-    const saved = await saveUploadedFile(file, operationId, undefined, allowedFileExtensions);
+    let saved;
+    try {
+      saved = await saveUploadedFile(file, operationId, undefined, allowedFileExtensions);
+    } catch (uploadErr: unknown) {
+      const uploadMsg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
+      const errName = uploadErr instanceof Error ? (uploadErr as any).name ?? '' : '';
+      const httpStatus = (uploadErr as any)?.$metadata?.httpStatusCode;
+      const isStorageConfig =
+        uploadMsg.includes('NoSuchBucket') ||
+        uploadMsg.includes('does not exist') ||
+        uploadMsg.includes('Access Denied') ||
+        errName === 'NoSuchBucket' ||
+        httpStatus === 404 ||
+        httpStatus === 403;
+      return {
+        ok: false,
+        errorResponse: NextResponse.json(
+          {
+            type: 'https://dugate.vn/errors/storage-error',
+            title: 'Storage Error',
+            status: isStorageConfig ? 503 : 500,
+            detail: isStorageConfig
+              ? `Storage backend is misconfigured or unavailable: ${uploadMsg}`
+              : `Failed to save uploaded file: ${uploadMsg}`,
+          },
+          { status: isStorageConfig ? 503 : 500 },
+        ),
+      };
+    }
     filesData.push({
       name: file.name,
       path: saved.path,

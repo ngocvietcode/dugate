@@ -10,6 +10,12 @@ import type { StorageBackend } from './types';
  * - One wins the create, the other catches P2002 and increments refCount.
  * - The loser's S3 object is deleted.
  */
+export interface DedupResult {
+  id: string;
+  /** The canonical S3 key that exists in storage (may differ from the uploaded key if deduped). */
+  s3Key: string;
+}
+
 export async function dedup(
   md5: string,
   s3Key: string,
@@ -17,7 +23,7 @@ export async function dedup(
   mimeType: string,
   size: number,
   backend: StorageBackend,
-): Promise<string> {
+): Promise<DedupResult> {
   // Try upsert: if md5Hash exists → increment refCount, else create
   try {
     const result = await prisma.fileCache.upsert({
@@ -40,7 +46,7 @@ export async function dedup(
       await backend.delete(s3Key).catch(() => {});
     }
 
-    return result.id;
+    return { id: result.id, s3Key: result.s3Key };
   } catch (err: unknown) {
     // Fallback: unique constraint race (extremely rare with upsert, but be defensive)
     const isUniqueViolation =
@@ -54,7 +60,7 @@ export async function dedup(
       if (s3Key !== existing.s3Key) {
         await backend.delete(s3Key).catch(() => {});
       }
-      return existing.id;
+      return { id: existing.id, s3Key: existing.s3Key };
     }
     throw err;
   }

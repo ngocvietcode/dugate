@@ -252,16 +252,16 @@ export async function downloadFileUrl(
     throw new Error(`file_urls[${index}]: ${validation.error}`);
   }
 
-  // 8. MD5 dedup via FileCache
-  const fileCacheId = await dedup(uploadResult.md5, uploadResult.s3Key, filename, mime, uploadResult.bytesWritten, backend);
+  // 8. MD5 dedup via FileCache — returns canonical s3Key (may differ if file was a duplicate)
+  const dedupResult = await dedup(uploadResult.md5, uploadResult.s3Key, filename, mime, uploadResult.bytesWritten, backend);
 
   return {
     name: filename,
-    path: uploadResult.s3Key,
+    path: dedupResult.s3Key,
     mime,
     size: uploadResult.bytesWritten,
-    fileCacheId,
-    s3Key: uploadResult.s3Key,
+    fileCacheId: dedupResult.id,
+    s3Key: dedupResult.s3Key,
     md5: uploadResult.md5,
   };
 }
