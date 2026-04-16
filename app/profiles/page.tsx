@@ -2152,19 +2152,31 @@ const LC_CHECKER_STEPS: WorkflowStep[] = [
 Task: identify and classify ALL document types present in the file "{{file_name}}".
 
 For EACH logical document detected, return:
-- id: unique key, e.g. "ld-1"
+- id: unique key, e.g. "ld-1", "ld-2"
 - label: EXACT name from the allowed categories below
 - pages: page range, e.g. "1-3", "4", "all"
 - confidence: 0.0–1.0
 
-ALLOWED CATEGORIES:
-Letter of Credit, Bill of Lading, Commercial Invoice, Packing List,
-Bill of Exchange, Certificate of Origin, Insurance Certificate,
-Inspection Certificate, Phytosanitary Certificate, Customs Declaration,
-Airway Bill, Draft, Khác
+ALLOWED CATEGORIES (use EXACTLY these labels):
+Letter of Credit, Bill of Lading, Commercial Invoice, Packing List, Bill of Exchange, Certificate of Origin, Insurance Certificate, Inspection Certificate, Phytosanitary Certificate, Customs Declaration, Airway Bill, Draft, Khác
+
+CLASSIFICATION RULES:
+- "Letter of Credit" = the L/C instrument itself (MT700, L/C form, Swift)
+- "Bill of Lading" = ocean B/L; use "Airway Bill" for air transport AWB
+- "Bill of Exchange" and "Draft" are both hối phiếu — use "Bill of Exchange"
+- A single PDF may contain MULTIPLE document types on different pages — list each separately
+- Use "Khác" only if no category matches
+- Do NOT merge separate documents into one entry
 
 Return ONLY valid JSON (no markdown fences):
-{ "document_type": "...", "confidence": 0.95, "logical_documents": [...] }`,
+{
+  "document_type": "Primary document type in this file",
+  "confidence": 0.95,
+  "logical_documents": [
+    { "id": "ld-1", "label": "Commercial Invoice", "pages": "1-2", "confidence": 0.97 },
+    { "id": "ld-2", "label": "Packing List", "pages": "3", "confidence": 0.95 }
+  ]
+}`,
     hasDynamicSections: false,
   },
   {
@@ -2179,17 +2191,35 @@ Return ONLY valid JSON (no markdown fences):
     ],
     codePromptPreview: `You are an expert LC document examiner. Extract all required fields from file "{{file_name}}".
 
-This file contains N document(s):
+This file contains {{doc_count}} document(s):
 {{doc_sections}}
-(⬆️ Dynamic — auto-generated from Step 1 classify results)
 
 EXTRACTION RULES:
-1. Copy field values EXACTLY as they appear — do NOT translate or summarize
-2. If a field is not found → use null
-3. For B/L: record CLEAN ON BOARD notation, on-board date, freight terms
+1. Copy field values EXACTLY as they appear — do NOT translate, summarize, or interpret
+2. Preserve original formatting: dates (e.g. 15 Apr 2025), amounts (e.g. USD 50,000.00), reference numbers
+3. If a field is not found → use null (not empty string)
+4. For descriptions and remarks: copy the FULL TEXT verbatim, do not truncate
+5. Capture any CLAUSES, ENDORSEMENTS, or SPECIAL CONDITIONS in the "special_conditions" array
+6. For Bill of Lading specifically:
+   - Record if it states "CLEAN ON BOARD" or has any remarks about goods/packaging condition
+   - Record the exact on-board date notation (e.g. "Shipped on board 10 Apr 2025")
+   - Record freight payment terms exactly (Freight Prepaid / Freight Collect)
 
-Return ONLY valid JSON:
-{ "file": "...", "documents": [{ "label": "...", "fields": {...}, "special_conditions": [...] }] }`,
+Return ONLY valid JSON (no markdown fences):
+{
+  "file": "{{file_name}}",
+  "documents": [
+    {
+      "label": "Exact document type label",
+      "pages": "page range",
+      "fields": {
+        "Field Name": "Exact value from document",
+        "Another Field": null
+      },
+      "special_conditions": ["Any clause, endorsement, or special note found verbatim"]
+    }
+  ]
+}`,
     hasDynamicSections: true,
     dynamicWarning: '{{doc_sections}} được tự động tạo từ kết quả Classify (Bước 1). Override prompt cần tự mô tả fields cần extract cho từng loại chứng từ LC.',
   },
@@ -2203,24 +2233,113 @@ Return ONLY valid JSON:
       { name: '{{extraction_summary}}', desc: 'Tóm tắt file → chứng từ từ Bước 2' },
       { name: '{{extraction_detail}}', desc: 'JSON chi tiết dữ liệu đã extract' },
     ],
-    codePromptPreview: `You are a senior Documentary Credit (LC) checker (UCP 600, ISBP 821).
+    codePromptPreview: `You are a senior Documentary Credit (LC) checker with expertise in UCP 600, ISBP 821 (2013 Revision) and eUCP v2.0.
 
-Files: {{extraction_summary}}
-Detail: {{extraction_detail}}
+TASK: Examine the presented LC document set for compliance with international standards and internal cross-document consistency.
+You do NOT need the original L/C — apply the rules below as your embedded expert knowledge base.
 
-Examine for: completeness, Commercial Invoice (Art.18), Bill of Lading (Art.20/27),
-cross-document consistency (Art.14d), ancillary docs (Art.28).
+=== EXTRACTED DOCUMENT DATA ===
+Files presented:
+{{extraction_summary}}
 
-Severity: MAJOR (→ Art.16 refusal) | MINOR (discretion) | ADVISORY (observation)
+Full extraction detail:
+{{extraction_detail}}
 
-Return ONLY valid JSON:
-{ "verdict": "COMPLIANT|DISCREPANT|PENDING",
-  "total_discrepancies": 0, "major_discrepancies": 0,
-  "documents_present": [...], "documents_missing": [...],
-  "discrepancies": [{ "id":"D001", "severity":"MAJOR", "document":"...",
-    "field":"...", "issue":"...", "rule_reference":"UCP 600 Art.XX",
-    "recommendation":"..." }],
-  "summary": "...", "recommendation": "ACCEPT|REJECT|RESERVE_FOR_REVIEW" }`,
+=== EXAMINATION RULES (UCP 600 / ISBP 821) ===
+
+GROUP A — DOCUMENT COMPLETENESS [UCP 600 Art. 14]
+A1. List all document types identified in the presented set -> populate "documents_present"
+A2. Flag as ADVISORY if any of these are absent:
+    - Commercial Invoice (ALWAYS required)
+    - Bill of Lading or Airway Bill (required if shipment is involved)
+A3. If Insurance Certificate, Certificate of Origin, or Bill of Exchange exist but appear
+    incomplete, flag as MINOR
+
+GROUP B — COMMERCIAL INVOICE [UCP 600 Art. 18 / ISBP 821 Section C]
+B1. [MAJOR] Goods description: must be specific and unambiguous [ISBP 821 C1]
+B2. [MINOR] Seller and Buyer names/addresses: must be clearly stated
+B3. [MAJOR] Currency: must be consistent throughout the invoice
+B4. [MAJOR] Amount: must be a positive number in correct format
+B5. [MINOR] If LC reference number appears: must be consistent with other documents
+B6. [MINOR] Incoterms: if stated, must be a valid ICC Incoterm (EXW/FOB/CFR/CIF/DAP)
+
+GROUP C — BILL OF LADING [UCP 600 Art. 20 / ISBP 821 Section E]
+C1. [MAJOR] On board notation: must show a specific on-board date [Art. 20(a)(ii)]
+C2. [MAJOR] Port of Loading: must be explicitly stated
+C3. [MAJOR] Port of Discharge: must be explicitly stated
+C4. [MAJOR] Consignee: must be "To Order", "To Order of [bank name]", or a named party — NOT blank
+C5. [MAJOR] Cleanliness: B/L MUST NOT contain any clause declaring defective condition
+    of goods or packaging — this triggers UCP 600 Art. 27 (Unclean B/L)
+C6. [MINOR] Number of originals issued must be stated (e.g. "3/3 ORIGINALS")
+C7. [MINOR] Freight terms: Prepaid or Collect must be indicated clearly
+C8. [ADVISORY] Vessel name and voyage number should be present
+
+GROUP D — CROSS-DOCUMENT CONSISTENCY [UCP 600 Art. 14d / ISBP 821 A18]
+D1. [MAJOR] Goods description must NOT contradict between:
+    Invoice <-> Packing List <-> Bill of Lading <-> Certificate of Origin
+    (different wording is acceptable; outright contradiction is not)
+D2. [MINOR] Quantity must be consistent across documents (+-5% tolerance if applicable)
+D3. [MINOR] Gross/net weight: Packing List and B/L must not contradict each other
+D4. [MAJOR] Date logic: Invoice date must NOT be later than B/L on-board date
+    (goods must be invoiced before or on the date of shipment)
+D5. [MINOR] LC reference number, if on multiple documents, must match exactly
+D6. [MINOR] Goods name must not conflict between any two documents
+
+GROUP E — ANCILLARY DOCUMENTS
+E1. Certificate of Origin [ISBP 821 Section L]
+    [MINOR] Country of origin explicitly stated
+    [MINOR] Issuing authority named
+    [MINOR] Goods description must not contradict Invoice
+E2. Insurance Certificate / Policy [UCP 600 Art. 28]
+    [MAJOR] Insured amount >= 110% of CIF invoice value [Art. 28(f)(ii)]
+    [MAJOR] Effective date must not be later than B/L on-board date [Art. 28(e)]
+    [MINOR] Risks covered: at minimum ICC(A) or all-risks equivalent
+E3. Bill of Exchange / Draft
+    [MAJOR] Amount must match Commercial Invoice amount exactly
+    [MINOR] Drawee must be identified (issuing/nominated bank or buyer)
+    [MINOR] Tenor/usance must be clearly stated ("at sight", "60 days after B/L date", etc.)
+E4. Inspection / Phytosanitary Certificate
+    [MINOR] Issue date must not be later than the B/L on-board date
+
+=== SEVERITY DEFINITIONS ===
+- MAJOR    -> must cause refusal under UCP 600 Art. 16 unless applicant waives
+- MINOR    -> formal issue; may be acceptable or requires clarification at examiner's discretion
+- ADVISORY -> observation or absent optional element; no automatic refusal
+
+verdict logic:
+- "COMPLIANT"  -> zero MAJOR + zero MINOR discrepancies
+- "DISCREPANT" -> at least one MAJOR or MINOR discrepancy
+- "PENDING"    -> data insufficient to determine (e.g. key document missing entirely)
+
+recommendation logic:
+- "ACCEPT"             -> COMPLIANT, all checks pass
+- "REJECT"             -> one or more MAJOR discrepancies that cannot be waived
+- "RESERVE_FOR_REVIEW" -> MINOR discrepancies only, or mixed with ADVISORY
+
+=== OUTPUT ===
+Return ONLY valid JSON (no markdown fences):
+{
+  "verdict": "COMPLIANT | DISCREPANT | PENDING",
+  "total_discrepancies": 0,
+  "major_discrepancies": 0,
+  "minor_discrepancies": 0,
+  "advisory_count": 0,
+  "documents_present": ["Commercial Invoice", "Bill of Lading"],
+  "documents_missing": [],
+  "discrepancies": [
+    {
+      "id": "D001",
+      "severity": "MAJOR | MINOR | ADVISORY",
+      "document": "Exact document type label",
+      "field": "Specific field name",
+      "issue": "Clear, concise description of the problem",
+      "rule_reference": "UCP 600 Art. XX / ISBP 821 Para. YY",
+      "recommendation": "Suggested corrective action or handling"
+    }
+  ],
+  "summary": "2-3 sentence objective summary of the examination result",
+  "recommendation": "ACCEPT | REJECT | RESERVE_FOR_REVIEW"
+}`,
     hasDynamicSections: true,
     dynamicWarning: '{{extraction_summary}} và {{extraction_detail}} được tự động chèn từ Bước 2. Override prompt phải giữ logic phân loại MAJOR/MINOR/ADVISORY và output JSON schema.',
   },
@@ -2232,33 +2351,73 @@ Return ONLY valid JSON:
     description: 'Soạn LC Checking Report cho Cán bộ Tác nghiệp TM',
     variables: [
       { name: '{{classify_summary}}', desc: 'Tóm tắt phân loại (N file, M chứng từ)' },
+      { name: '{{documents_present}}', desc: 'Danh sách chứng từ đã nộp' },
+      { name: '{{documents_missing}}', desc: 'Danh sách chứng từ thiếu' },
       { name: '{{extraction_data}}', desc: 'Dữ liệu bóc tách đầy đủ' },
       { name: '{{verdict}}', desc: 'Kết quả tổng hợp (COMPLIANT/DISCREPANT/PENDING)' },
       { name: '{{recommendation}}', desc: 'Đề xuất ACCEPT/REJECT/RESERVE_FOR_REVIEW' },
+      { name: '{{total_discrepancies}}', desc: 'Tổng số discrepancy' },
       { name: '{{major_count}}', desc: 'Số lượng MAJOR discrepancy' },
       { name: '{{minor_count}}', desc: 'Số lượng MINOR discrepancy' },
+      { name: '{{advisory_count}}', desc: 'Số lượng ADVISORY discrepancy' },
       { name: '{{discrepancy_table}}', desc: 'Bảng discrepancy dạng Markdown' },
       { name: '{{check_summary}}', desc: 'Tóm tắt kết quả từ Bước 3' },
     ],
-    codePromptPreview: `You are a senior Trade Finance Officer. Produce a professional LC CHECKING REPORT in Vietnamese.
+    codePromptPreview: `You are a senior Trade Finance Officer. Produce a professional LC CHECKING REPORT (Bao cao Kiem tra Chung tu LC) in Vietnamese.
+
+=== INPUT DATA ===
 
 Document set: {{classify_summary}}
-Extracted data: {{extraction_data}}
-Result: {{verdict}} — {{recommendation}}
-Discrepancies: MAJOR {{major_count}}, MINOR {{minor_count}}
-Summary: {{check_summary}}
+Documents present: {{documents_present}}
+Documents not presented: {{documents_missing}}
+
+Extracted data:
+{{extraction_data}}
+
+Examination result: {{verdict}}
+Recommendation: {{recommendation}}
+Discrepancy count: {{total_discrepancies}} total (MAJOR: {{major_count}}, MINOR: {{minor_count}}, ADVISORY: {{advisory_count}})
+Examination summary: {{check_summary}}
 
 Discrepancy table:
+| ID | Severity | Document | Field | Issue | Rule Reference |
+|----|----------|----------|-------|-------|----------------|
 {{discrepancy_table}}
 
-Structure:
-## I. THONG TIN BO CHUNG TU
-## II. KET QUA BOC TACH DU LIEU
-## III. KET QUA KIEM TRA TUAN THU
-## IV. NHAN XET VA DE XUAT XU LY
-## V. KET LUAN
+=== REPORT STRUCTURE ===
 
-Max 2,000 words. Output in Markdown.`,
+Write a complete, formal LC Checking Report in Vietnamese using EXACTLY these sections:
+
+## I. THONG TIN BO CHUNG TU
+- List each document received: type, reference number, date, issuing party
+- Note any documents not presented
+
+## II. KET QUA BOC TACH DU LIEU
+- Key extracted fields per document type
+- Highlight: amounts, dates, parties, port info, goods description
+
+## III. KET QUA KIEM TRA TUAN THU
+- State overall verdict clearly (HOP LE / CO SAI LECH / CAN XEM XET)
+- Full discrepancy table with UCP 600 / ISBP 821 references
+- Group: MAJOR first, then MINOR, then ADVISORY
+- For each MAJOR: explain why it triggers Art. 16 refusal
+
+## IV. NHAN XET VA DE XUAT XU LY
+- Professional assessment from examiner's perspective
+- If COMPLIANT: recommend acceptance, note any advisory items
+- If DISCREPANT: for each MAJOR — state whether correctable (request amendment) or non-correctable (recommend rejection or waiver)
+- If RESERVE_FOR_REVIEW: list items requiring senior approval
+
+## V. KET LUAN
+- One unambiguous final recommendation in formal banking language
+- Examiner signature line placeholder
+
+FORMATTING:
+- Language: Vietnamese (professional banking register)
+- Audience: Trade Finance Operations Head, Compliance Officer
+- Cite UCP 600 articles and ISBP 821 paragraphs explicitly
+- Maximum 2,000 words
+- Output in Markdown`,
     hasDynamicSections: true,
     dynamicWarning: 'Nhiều biến dynamic từ Bước 1-3. Override prompt cần giữ cấu trúc 5 sections và trích dẫn điều khoản UCP 600 / ISBP 821.',
   },
