@@ -23,7 +23,8 @@ COPY . .
 RUN npx tsc prisma/seed.ts --esModuleInterop --skipLibCheck --module CommonJS --target ES2022 --outDir prisma
 # Provide a dummy DATABASE_URL so Prisma client initialises during static page generation
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
-RUN npm run build
+# NODE_TLS_REJECT_UNAUTHORIZED=0: allow Next.js to fetch Google Fonts through proxies with self-signed certs
+RUN NODE_TLS_REJECT_UNAUTHORIZED=0 npm run build
 # Bundle worker.ts into a single worker.js using esbuild (handles @/ path aliases cleanly)
 # esbuild is available via Next.js' own dependency tree
 RUN node_modules/.bin/esbuild worker.ts \

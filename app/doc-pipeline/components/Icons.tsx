@@ -1,4 +1,4 @@
-// app/ai-demo/components/Icons.tsx
+// app/doc-pipeline/components/Icons.tsx
 // Shared SVG icon components
 
 import React from 'react';

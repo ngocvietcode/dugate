@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAllEndpointSlugs } from "@/lib/endpoints/registry";
+import { requireAdmin } from "@/lib/auth-guard";
 
 export async function GET(req: NextRequest) {
-  // Simple protection
-  const { searchParams } = new URL(req.url);
-  if (searchParams.get("secret") !== "sync123") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Rất nguy hiểm: route này xóa toàn bộ ProfileEndpoint → bắo vệ bằng ADMIN session
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const deletedEndpoints = await prisma.profileEndpoint.deleteMany({});

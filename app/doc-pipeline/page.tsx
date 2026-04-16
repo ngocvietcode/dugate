@@ -1,13 +1,13 @@
 'use client';
 
-// app/ai-demo/page.tsx
-// AI Document Pipeline Demo — Refactored with extracted components and hooks.
+// app/doc-pipeline/page.tsx
+// AI Document Pipeline Demo — Real API mode only.
 //
 // Architecture:
-//   page.tsx            → Orchestrator (state + mode toggle)
+//   page.tsx            → Orchestrator (state management)
 //   components/         → Presentational components
-//   hooks/              → Business logic (polling, mock pipeline)
-//   lib/mock-data.ts    → Mock data generators
+//   hooks/              → Business logic (polling)
+//   lib/mock-data.ts    → Shared utilities (getInitialSteps, getFileIcon, formatBytes)
 //   types.ts            → Shared TypeScript types
 
 import React, { useState, useRef, useCallback, useMemo } from 'react';
@@ -18,7 +18,6 @@ import { PipelineStepCard } from './components/PipelineStepCard';
 import { CompletionBanner } from './components/CompletionBanner';
 import { JsonEditor } from './components/JsonEditor';
 import { SpinnerIcon, CheckIcon } from './components/Icons';
-import { useMockPipeline } from './hooks/useMockPipeline';
 import { useWorkflowPolling } from './hooks/useWorkflowPolling';
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -30,7 +29,6 @@ export default function AiDemoPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [pipelineComplete, setPipelineComplete] = useState(false);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
-  const [mode, setMode] = useState<'mock' | 'api'>('api');
   const [testApiKeyId, setTestApiKeyId] = useState('');
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -75,26 +73,34 @@ export default function AiDemoPage() {
       uiStep.progress = 100;
 
       // Map output based on step type
-      const extracted = backendStep.extracted_data;
-      if (extracted) {
-        if (stepIdx === 1 && Array.isArray(backendStep.sub_results)) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          uiStep.filesProgress = (backendStep.sub_results as any[]).map((r, idx) => ({
-            id: r.doc_id || `sub-${idx}`,
-            file: { id: r.doc_id, name: r.doc_label || `Document ${idx + 1}`, size: 0, type: '', icon: '📄' },
-            status: (r.status === 'success' ? 'done' : 'error') as StepStatus,
-            progress: 100,
-            output: r.content || JSON.stringify(r.extracted_data, null, 2),
-            duration: null,
-          }));
+      // Steps 0 (Classify) and 1 (OCR) both use parallel per-file filesProgress
+      if ((stepIdx === 0 || stepIdx === 1) && Array.isArray(backendStep.sub_results)) {
+        uiStep.filesProgress = (backendStep.sub_results as any[]).map((r, idx) => {
+            // Support both new shape (doc_id/doc_label/content) and old shape (file/logical_documents)
+            const name = r.doc_label ?? r.file ?? `Document ${idx + 1}`;
+            const outputStr: string | null =
+              r.content                                                                       // new shape: JSON string from classifier
+              ?? (r.extracted_data != null ? JSON.stringify(r.extracted_data, null, 2) : null) // new shape: object fallback
+              ?? (r.logical_documents?.length ? JSON.stringify(r.logical_documents, null, 2) : null); // old shape fallback
+            return {
+              id: r.doc_id ?? r.file ?? `sub-${idx}`,
+              file: { id: r.doc_id ?? r.file, name, size: 0, type: '', icon: '📄' },
+              status: (r.status === 'success' ? 'done' : 'error') as StepStatus,
+              progress: 100,
+              output: outputStr,
+              duration: null,
+            };
+          });
           uiStep.output = null;
-        } else {
+      } else {
+        const extracted = backendStep.extracted_data;
+        if (extracted) {
           uiStep.output = typeof extracted === 'string'
             ? extracted
             : JSON.stringify(extracted, null, 2);
+        } else if (typeof backendStep.content_preview === 'string') {
+          uiStep.output = backendStep.content_preview;
         }
-      } else if (typeof backendStep.content_preview === 'string') {
-        uiStep.output = backendStep.content_preview;
       }
 
       newSteps[stepIdx] = uiStep;
@@ -109,9 +115,6 @@ export default function AiDemoPage() {
     });
     scrollToStep(stepIdx);
   }, [scrollToStep]);
-
-  // ── Mock Pipeline Hook ───────────────────────────────────────────────────
-  const { runFullMockPipeline, retryMockStep } = useMockPipeline({ files, setSteps });
 
   // ── API Polling Hook ────────────────────────────────────────────────────
   const polling = useWorkflowPolling({
@@ -176,6 +179,23 @@ export default function AiDemoPage() {
     }
   }, [waitingHitl, polling]);
 
+  const handleAbortPipeline = useCallback(async () => {
+    if (!polling.operationId) return;
+    const confirmed = window.confirm('Hủy pipeline? Thao tác này không thể khôi phục.');
+    if (!confirmed) return;
+    try {
+      await fetch(`/api/v1/operations/${polling.operationId}/cancel`, { method: 'POST' });
+    } catch {
+      // best-effort — ignore network errors on abort
+    } finally {
+      polling.stopPolling();
+      setWaitingHitl(null);
+      setPipelineError('Pipeline đã bị hủy bởi người dùng.');
+      setPipelineComplete(true);
+      setIsProcessing(false);
+    }
+  }, [polling]);
+
   const handleFilesAdded = useCallback((uploadedFiles: UploadedFile[], fileObjects?: File[]) => {
     if (fileObjects && fileObjects.length > 0) {
       setRealFiles(prev => [...prev, ...fileObjects]);
@@ -200,6 +220,12 @@ export default function AiDemoPage() {
   // ── Run Pipeline ──────────────────────────────────────────────────────────
   const runPipeline = async () => {
     if (files.length === 0 || isProcessing) return;
+    
+    if (!testApiKeyId.trim()) {
+      setPipelineError('Vui lòng nhập Profile API Key ID để chạy chức năng test.');
+      return;
+    }
+
     setIsProcessing(true);
     setPipelineError(null);
     setWaitingHitl(null);
@@ -210,62 +236,48 @@ export default function AiDemoPage() {
       idx === 0 ? { ...s, status: 'running' as StepStatus, progress: 5 } : s
     ));
 
-    if (mode === 'mock') {
-      try {
-        await runFullMockPipeline();
-        setPipelineComplete(true);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        setPipelineError(msg);
-        setPipelineComplete(true);
-      }
+    try {
+      await polling.submitWorkflow(files, realFiles, testApiKeyId);
+      // Polling is now active — completion handled by hook callbacks
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Failed to start workflow:', msg);
+      setSteps(prev => prev.map((s, idx) =>
+        idx === 0 ? { ...s, status: 'error' as StepStatus, output: msg } : s
+      ));
+      setPipelineError(msg);
+      setPipelineComplete(true);
       setIsProcessing(false);
-    } else {
-      try {
-        await polling.submitWorkflow(files, realFiles, testApiKeyId);
-        // Polling is now active — completion handled by hook callbacks
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error('Failed to start workflow:', msg);
-        setSteps(prev => prev.map((s, idx) =>
-          idx === 0 ? { ...s, status: 'error' as StepStatus, output: msg } : s
-        ));
-        setPipelineError(msg);
-        setPipelineComplete(true);
-        setIsProcessing(false);
-      }
     }
   };
 
   // ── Retry step ────────────────────────────────────────────────────────────
-  const retryStep = async (stepIndex: number) => {
+  // Re-submits the entire workflow (individual step retry not yet supported)
+  const retryStep = async (_stepIndex: number) => {
     if (isProcessing) return;
+
+    if (!testApiKeyId.trim()) {
+      setPipelineError('Vui lòng nhập Profile API Key ID để chạy chức năng test.');
+      return;
+    }
+
     setIsProcessing(true);
     setPipelineComplete(false);
     setPipelineError(null);
 
-    if (mode === 'mock') {
-      await retryMockStep(stepIndex);
-      setSteps(prev => {
-        if (prev.every(s => s.status === 'done')) setPipelineComplete(true);
-        return prev;
-      });
-    } else {
-      // For API mode, re-submit the entire workflow (individual step retry not yet supported)
-      setSteps(getInitialSteps());
+    setSteps(getInitialSteps());
+    setSteps(prev => prev.map((s, idx) =>
+      idx === 0 ? { ...s, status: 'running' as StepStatus, progress: 5 } : s
+    ));
+    try {
+      await polling.submitWorkflow(files, realFiles, testApiKeyId);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       setSteps(prev => prev.map((s, idx) =>
-        idx === 0 ? { ...s, status: 'running' as StepStatus, progress: 5 } : s
+        idx === 0 ? { ...s, status: 'error' as StepStatus, output: msg } : s
       ));
-      try {
-        await polling.submitWorkflow(files, realFiles, testApiKeyId);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        setSteps(prev => prev.map((s, idx) =>
-          idx === 0 ? { ...s, status: 'error' as StepStatus, output: msg } : s
-        ));
-        setPipelineError(msg);
-        setPipelineComplete(true);
-      }
+      setPipelineError(msg);
+      setPipelineComplete(true);
     }
     setIsProcessing(false);
   };
@@ -280,13 +292,13 @@ export default function AiDemoPage() {
       {/* Header */}
       <div className="max-w-5xl mx-auto px-4 pt-8 pb-6">
         <div className="text-center mb-2">
-          {/* Mode indicator */}
+          {/* Live indicator */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary tracking-wider uppercase mb-4">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
             </span>
-            {mode === 'mock' ? 'Demo Mode — Mock Data' : 'Live Mode — Real API'}
+            Live Mode — Real API
           </div>
 
           <h1 className="text-3xl md:text-4xl font-heading font-bold tracking-tight mb-3">
@@ -296,44 +308,18 @@ export default function AiDemoPage() {
             Upload chứng từ → Phân loại tự động → OCR bóc tách → Đối chiếu Nghị quyết → Soạn Tờ trình
           </p>
 
-          {/* Mode toggle */}
-          <div className="mt-4 inline-flex items-center gap-1 p-1 rounded-xl bg-muted/80 border border-border/50">
-            <button
-              onClick={() => setMode('mock')}
-              disabled={isProcessing}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                mode === 'mock'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              🎭 Mock Demo
-            </button>
-            <button
-              onClick={() => setMode('api')}
-              disabled={isProcessing}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                mode === 'api'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              🚀 Real API
-            </button>
-          </div>
-
-          {/* Optional Profile Key ID Input */}
-          <div className={`mt-4 mx-auto max-w-sm transition-all duration-300 ${mode === 'api' ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+          {/* Required Profile Key ID Input */}
+          <div className="mt-4 mx-auto max-w-sm">
             <input
               type="text"
-              placeholder="Target Profile API Key ID (Optional)"
+              placeholder="Target Profile API Key ID (Bắt buộc)"
               className="w-full px-3 py-2 text-xs bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/50 text-center"
               value={testApiKeyId}
               onChange={(e) => setTestApiKeyId(e.target.value)}
               disabled={isProcessing}
             />
-            <p className="mt-1.5 text-[10px] text-muted-foreground opacity-80">
-              Để trống để dùng cấu hình mặc định (System Admin)
+            <p className="mt-1.5 text-[10px] text-destructive opacity-80">
+              * Bắt buộc phải nhập Profile API Key ID để chạy test
             </p>
           </div>
         </div>
@@ -422,16 +408,33 @@ export default function AiDemoPage() {
                       value={waitingHitl.jsonStr}
                       onChange={val => setWaitingHitl({ ...waitingHitl, jsonStr: val })}
                     />
-                    <div className="mt-6 flex justify-end">
+                    <div className="mt-6 flex items-center justify-end gap-3">
+                      {/* Resume button */}
                       <button
                         onClick={handleResumePipeline}
                         disabled={isProcessing}
                         className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-500 transition-all focus:ring-4 focus:ring-emerald-500/20 active:scale-95 flex items-center gap-2.5 shadow-xl shadow-emerald-900/20 disabled:opacity-50"
+                        id="btn-resume-pipeline"
                       >
                         {isProcessing ? <SpinnerIcon className="w-5 h-5 text-white" /> : (
                           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                         )}
                         Lưu & Tiếp tục Pipeline
+                      </button>
+
+                      {/* Abort button */}
+                      <button
+                        onClick={handleAbortPipeline}
+                        disabled={isProcessing}
+                        className="px-6 py-3 bg-destructive/10 text-destructive font-semibold rounded-xl hover:bg-destructive/20 transition-all focus:ring-4 focus:ring-destructive/20 active:scale-95 flex items-center gap-2 border border-destructive/30 disabled:opacity-50"
+                        id="btn-abort-pipeline"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="15" y1="9" x2="9" y2="15"/>
+                          <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        Hủy Pipeline
                       </button>
                     </div>
                   </div>

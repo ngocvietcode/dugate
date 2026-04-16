@@ -1,5 +1,5 @@
-// app/ai-demo/types.ts
-// Shared types for the AI Pipeline Demo UI
+// app/lc-checker/types.ts
+// Shared types for the LC Checker UI — identical to doc-pipeline/types.ts
 
 export type StepStatus = 'pending' | 'running' | 'done' | 'error';
 
@@ -35,7 +35,6 @@ export interface PipelineStep {
   isCollapsed?: boolean;
 }
 
-/** Shape of a single step config for mock or real orchestration */
 export interface StepConfig {
   isParallel: boolean;
   outputFn?: () => string;

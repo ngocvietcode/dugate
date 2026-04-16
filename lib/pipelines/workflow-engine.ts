@@ -68,7 +68,14 @@ export interface WorkflowContext {
  */
 export const parseDeep = (val: unknown): unknown => {
   if (typeof val === 'string') {
-    const trimmed = val.trim();
+    let trimmed = val.trim();
+    
+    // Auto-strip markdown json wrappers (e.g., ```json\n...\n```)
+    const match = trimmed.match(/```(?:json|javascript|js)?\s*([\s\S]*?)\s*```/i);
+    if (match && match[1]) {
+      trimmed = match[1].trim();
+    }
+
     if (
       (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
       (trimmed.startsWith('[') && trimmed.endsWith(']'))
@@ -378,11 +385,11 @@ export async function createWorkflowContext(
 // Import and register workflow functions here.
 
 import { runDisbursement } from '@/lib/pipelines/workflows/disbursement';
+import { runLcChecker } from '@/lib/pipelines/workflows/lc-checker';
 
 const WORKFLOW_REGISTRY: Record<string, (ctx: WorkflowContext) => Promise<void>> = {
   disbursement: runDisbursement,
-  // Future: appraisal: runAppraisal,
-  // Future: collateral: runCollateral,
+  'lc-checker': runLcChecker,
 };
 
 /**

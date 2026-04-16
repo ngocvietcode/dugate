@@ -262,47 +262,6 @@ export default function SettingsForm() {
         )}
       </div>
 
-      {/* API Secret Key Protection */}
-      <div className="modern-card p-6 md:p-8 space-y-6">
-        <div className="flex items-center gap-2 border-b border-border pb-4">
-          <Zap className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold text-foreground">Bảo mật API (Dugateway)</h2>
-        </div>
-
-        <div>
-          <label className="block text-sm font-bold text-foreground mb-2">
-            API Secret Key (Client header `x-api-key`)
-          </label>
-          <div className="relative">
-            <input
-              type={showKey ? 'text' : 'password'}
-              value={settings.api_secret_key}
-              onChange={e => setSettings(s => ({ ...s, api_secret_key: e.target.value }))}
-              placeholder="Nhập khóa bảo vệ API Gateway..."
-              className="input-field font-mono pr-12"
-            />
-            <button
-              type="button"
-              onClick={() => setShowKey(v => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary p-1 rounded transition-colors"
-            >
-              {showKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">Dùng để xác thực các request gọi tới `/api/v1/`. Mọi client đều phải truyền key này qua header `x-api-key` để vượt qua Middleware.</p>
-        </div>
-        
-        <div className="flex justify-end pt-2">
-          <button
-            onClick={() => savePartial(['api_secret_key'], 'Bảo mật API')}
-            disabled={saving === 'Bảo mật API'}
-            className="w-full sm:w-auto btn-primary modern-button py-2 px-5 text-sm"
-          >
-            {saving === 'Bảo mật API' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving === 'Bảo mật API' ? 'Đang lưu...' : 'Lưu API Key Gateway'}
-          </button>
-        </div>
-      </div>
 
       {/* S3 Storage */}
       <div className="modern-card p-6 md:p-8 space-y-6">

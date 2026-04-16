@@ -164,6 +164,11 @@ export default function ServiceTestClient({
 
   // -- Submission
   const handleSubmit = async () => {
+    if (!apiKey.trim()) {
+      setError('Vui lòng nhập Profile API Key để thực hiện request.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
@@ -174,7 +179,7 @@ export default function ServiceTestClient({
     try {
       const form = new FormData();
 
-      let curlStr = `curl -X POST ${window.location.origin}/api/v1/${serviceSlug}?sync=true \\\n`;
+      let curlStr = `curl -X POST ${window.location.origin}/api/v1/docs/${serviceSlug}?sync=true \\\n`;
       curlStr += `  -H "x-api-key: ${apiKey}" \\\n`;
       // Note: we don't need __service or __apiKeyId since we hit the endpoint directly
 
@@ -206,7 +211,7 @@ export default function ServiceTestClient({
       curlStr = curlStr.replace(/ \\\n$/, '');
       setCurlCommand(curlStr);
 
-      const res = await fetch(`/api/v1/${serviceSlug}?sync=true`, {
+      const res = await fetch(`/api/v1/docs/${serviceSlug}?sync=true`, {
         method: 'POST',
         headers: {
           'x-api-key': apiKey
@@ -241,20 +246,20 @@ export default function ServiceTestClient({
           <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{description}</p>
         </div>
 
-        {/* API Key Input */}
-        <div className="modern-card p-5 space-y-3 shadow-sm">
+        {/* Profile API Key */}
+        <div className="modern-card p-5 space-y-3 shadow-sm border border-destructive/20">
           <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
             <KeyRound className="w-4 h-4" />
-            Xác thực API Key *
+            Profile API Key (Bắt buộc)
           </label>
           <input
             type="password"
             className="input-field py-2.5 font-mono text-sm tracking-widest border-primary/20 focus:border-primary"
-            placeholder="Nhập API Key ở đây..."
+            placeholder="Nhập API Key của Profile để chạy test..."
             value={apiKey}
             onChange={e => handleApiKeyChange(e.target.value)}
           />
-          <p className="text-xs text-muted-foreground mt-1">API Key dùng để xác thực hệ thống và phân định Profile/Endpoint.</p>
+          <p className="text-xs text-destructive opacity-80 mt-1">* Bắt buộc phải nhập Profile API Key ID để chạy test.</p>
         </div>
 
         {/* Parameters Form */}
@@ -325,7 +330,7 @@ export default function ServiceTestClient({
 
         <button
           onClick={handleSubmit}
-          disabled={loading || !apiKey || (isCompareMode && !targetFile)}
+          disabled={loading || (isCompareMode && !targetFile)}
           className="w-full btn-primary modern-button py-3 text-lg font-bold shadow-lg shadow-primary/20"
         >
           {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Đang xử lý...</> : 'Bắt đầu xử lý đồng bộ'}

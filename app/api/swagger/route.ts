@@ -14,8 +14,9 @@ export async function GET() {
      
      const serviceName = routeEndpoints[0].serviceName;
      const discriminator = routeEndpoints[0].discriminatorName;
+     const actualRoute = routeEndpoints[0].route.split(' ')[1];
 
-     paths[`/api/v1/${group}`] = {
+     paths[actualRoute] = {
        post: {
          summary: serviceName,
          description: `Bao gồm các chức năng con: ${routeEndpoints.map(e => e.displayName).join(', ')}`,

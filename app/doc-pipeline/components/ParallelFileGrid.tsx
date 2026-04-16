@@ -1,6 +1,6 @@
 'use client';
 
-// app/ai-demo/components/ParallelFileGrid.tsx
+// app/doc-pipeline/components/ParallelFileGrid.tsx
 // Sub-cards for parallel file processing within a pipeline step.
 
 import React from 'react';

@@ -1,12 +1,12 @@
 'use client';
 
-// app/ai-demo/components/UploadZone.tsx
+// app/doc-pipeline/components/UploadZone.tsx
 // File upload zone with drag & drop, file list, and sample files.
 
 import React, { useRef, useCallback } from 'react';
 import type { UploadedFile } from '../types';
 import { UploadCloudIcon, XIcon } from './Icons';
-import { getFileIcon, formatBytes, getSampleFiles } from '../lib/mock-data';
+import { getFileIcon, formatBytes } from '../lib/mock-data';
 
 interface UploadZoneProps {
   files: UploadedFile[];
@@ -29,10 +29,6 @@ export function UploadZone({ files, isProcessing, onFilesAdded, onFileRemoved, o
       icon: getFileIcon(f.name),
     }));
     onFilesAdded(newFiles, Array.from(fileList));
-  }, [onFilesAdded]);
-
-  const handleSampleFiles = useCallback(() => {
-    onFilesAdded(getSampleFiles());
   }, [onFilesAdded]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -79,15 +75,7 @@ export function UploadZone({ files, isProcessing, onFilesAdded, onFileRemoved, o
         <p className="font-semibold text-sm mb-1">
           {isDragOver ? 'Thả file vào đây...' : 'Kéo thả file hoặc click để chọn'}
         </p>
-        <p className="text-xs text-muted-foreground mb-4">PDF, DOCX, XLSX, PNG, JPG, ZIP — tối đa 300MB/file</p>
-
-        <button
-          onClick={(e) => { e.stopPropagation(); handleSampleFiles(); }}
-          className="modern-button btn-outline text-sm"
-          aria-label="Sử dụng file mẫu"
-        >
-          📂 Dùng file mẫu (5 files - Chứa tài liệu hỗn hợp)
-        </button>
+        <p className="text-xs text-muted-foreground">PDF, DOCX, XLSX, PNG, JPG, ZIP — tối đa 300MB/file</p>
         <input
           ref={fileInputRef}
           type="file"

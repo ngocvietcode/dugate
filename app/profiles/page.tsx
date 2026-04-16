@@ -59,6 +59,7 @@ function OverridesContent() {
   // New Client Modal/State
   const [showAddClient, setShowAddClient] = useState(false);
   const [newClientName, setNewClientName] = useState('');
+  const [creatingClient, setCreatingClient] = useState(false);
   const [createdRawKey, setCreatedRawKey] = useState<{ name: string; key: string } | null>(null);
 
   // Profile Details State
@@ -240,7 +241,8 @@ function OverridesContent() {
 
   // Handle Client Creation
   const handleCreateClient = async () => {
-    if (!newClientName) return;
+    if (!newClientName || creatingClient) return; // chặn double-submit
+    setCreatingClient(true);
     try {
       const res = await fetch('/api/internal/apikeys', {
         method: 'POST',
@@ -249,7 +251,7 @@ function OverridesContent() {
       });
       const data = await res.json();
       if (data.success) {
-        setApiKeys([...apiKeys, data.apiKey]);
+        setApiKeys(prev => [...prev, data.apiKey]); // dùng functional update tránh stale closure
         setCreatedRawKey({ name: data.apiKey.name, key: data.rawKey });
         setShowAddClient(false);
         setNewClientName('');
@@ -259,6 +261,8 @@ function OverridesContent() {
       }
     } catch (e) {
       toast.error('Lỗi khi tạo API Key');
+    } finally {
+      setCreatingClient(false);
     }
   };
 
@@ -391,14 +395,16 @@ function OverridesContent() {
                     value={newClientName}
                     onChange={e => setNewClientName(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleCreateClient()}
+                    disabled={creatingClient}
                     className="input-field"
                   />
                 </div>
                 <button
                   onClick={handleCreateClient}
-                  disabled={!newClientName.trim()}
-                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg disabled:opacity-50 transition-colors"
+                  disabled={!newClientName.trim() || creatingClient}
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
+                  {creatingClient && <Loader2 className="w-4 h-4 animate-spin" />}
                   Tạo Access Key
                 </button>
                 <button
@@ -870,7 +876,7 @@ function ProfileEndpointCard({
   const generateCurl = () => {
     // Bug fix 1: use actual browser origin instead of recreating a potentially wrong host
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://api.dugate.vn';
-    const [method, routePath] = (endpoint.route || 'POST /api/v1/extract').split(' ');
+    const [method, routePath] = (endpoint.route || 'POST /api/v1/docs/extract').split(' ');
     const fullUrl = `${origin}${routePath}`;
 
     let curlLines = [
@@ -924,7 +930,7 @@ function ProfileEndpointCard({
   // Generate exact cURL for the test payload
   const generateTestCurl = () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://api.dugate.vn';
-    const [method, routePath] = (endpoint.route || 'POST /api/v1/extract').split(' ');
+    const [method, routePath] = (endpoint.route || 'POST /api/v1/docs/extract').split(' ');
     const fullUrl = `${origin}${routePath}`;
 
     let curlLines = [
@@ -2131,6 +2137,139 @@ Viết Tờ trình bằng Markdown.`,
   },
 ];
 
+const LC_CHECKER_STEPS: WorkflowStep[] = [
+  {
+    key: 'classify',
+    label: 'Bước 1: AI Classify',
+    icon: '🏷️',
+    connector: 'ext-classifier',
+    description: 'Nhận diện loại chứng từ LC (B/L, Invoice, Packing List, C/O...)',
+    variables: [
+      { name: '{{file_name}}', desc: 'Tên file đang xử lý' },
+      { name: '{{categories}}', desc: 'Danh sách 13 loại chứng từ LC (tự động)' },
+    ],
+    codePromptPreview: `You are an expert in international trade finance and documentary credits (LC).
+Task: identify and classify ALL document types present in the file "{{file_name}}".
+
+For EACH logical document detected, return:
+- id: unique key, e.g. "ld-1"
+- label: EXACT name from the allowed categories below
+- pages: page range, e.g. "1-3", "4", "all"
+- confidence: 0.0–1.0
+
+ALLOWED CATEGORIES:
+Letter of Credit, Bill of Lading, Commercial Invoice, Packing List,
+Bill of Exchange, Certificate of Origin, Insurance Certificate,
+Inspection Certificate, Phytosanitary Certificate, Customs Declaration,
+Airway Bill, Draft, Khác
+
+Return ONLY valid JSON (no markdown fences):
+{ "document_type": "...", "confidence": 0.95, "logical_documents": [...] }`,
+    hasDynamicSections: false,
+  },
+  {
+    key: 'extract',
+    label: 'Bước 2: OCR & Bóc tách',
+    icon: '🔍',
+    connector: 'ext-data-extractor',
+    description: 'Trích xuất dữ liệu từng chứng từ LC (song song, verbatim)',
+    variables: [
+      { name: '{{file_name}}', desc: 'Tên file đang xử lý' },
+      { name: '{{doc_sections}}', desc: 'Danh sách chứng từ + fields cần extract (tự động từ Bước 1)' },
+    ],
+    codePromptPreview: `You are an expert LC document examiner. Extract all required fields from file "{{file_name}}".
+
+This file contains N document(s):
+{{doc_sections}}
+(⬆️ Dynamic — auto-generated from Step 1 classify results)
+
+EXTRACTION RULES:
+1. Copy field values EXACTLY as they appear — do NOT translate or summarize
+2. If a field is not found → use null
+3. For B/L: record CLEAN ON BOARD notation, on-board date, freight terms
+
+Return ONLY valid JSON:
+{ "file": "...", "documents": [{ "label": "...", "fields": {...}, "special_conditions": [...] }] }`,
+    hasDynamicSections: true,
+    dynamicWarning: '{{doc_sections}} được tự động tạo từ kết quả Classify (Bước 1). Override prompt cần tự mô tả fields cần extract cho từng loại chứng từ LC.',
+  },
+  {
+    key: 'compliance',
+    label: 'Bước 3: Kiểm tra Tuân thủ UCP 600',
+    icon: '⚖️',
+    connector: 'ext-fact-verifier',
+    description: 'Đối chiếu theo UCP 600, ISBP 821 & phát hiện Discrepancy',
+    variables: [
+      { name: '{{extraction_summary}}', desc: 'Tóm tắt file → chứng từ từ Bước 2' },
+      { name: '{{extraction_detail}}', desc: 'JSON chi tiết dữ liệu đã extract' },
+    ],
+    codePromptPreview: `You are a senior Documentary Credit (LC) checker (UCP 600, ISBP 821).
+
+Files: {{extraction_summary}}
+Detail: {{extraction_detail}}
+
+Examine for: completeness, Commercial Invoice (Art.18), Bill of Lading (Art.20/27),
+cross-document consistency (Art.14d), ancillary docs (Art.28).
+
+Severity: MAJOR (→ Art.16 refusal) | MINOR (discretion) | ADVISORY (observation)
+
+Return ONLY valid JSON:
+{ "verdict": "COMPLIANT|DISCREPANT|PENDING",
+  "total_discrepancies": 0, "major_discrepancies": 0,
+  "documents_present": [...], "documents_missing": [...],
+  "discrepancies": [{ "id":"D001", "severity":"MAJOR", "document":"...",
+    "field":"...", "issue":"...", "rule_reference":"UCP 600 Art.XX",
+    "recommendation":"..." }],
+  "summary": "...", "recommendation": "ACCEPT|REJECT|RESERVE_FOR_REVIEW" }`,
+    hasDynamicSections: true,
+    dynamicWarning: '{{extraction_summary}} và {{extraction_detail}} được tự động chèn từ Bước 2. Override prompt phải giữ logic phân loại MAJOR/MINOR/ADVISORY và output JSON schema.',
+  },
+  {
+    key: 'report',
+    label: 'Bước 4: Báo cáo Kiểm tra LC',
+    icon: '📋',
+    connector: 'ext-content-gen',
+    description: 'Soạn LC Checking Report cho Cán bộ Tác nghiệp TM',
+    variables: [
+      { name: '{{classify_summary}}', desc: 'Tóm tắt phân loại (N file, M chứng từ)' },
+      { name: '{{extraction_data}}', desc: 'Dữ liệu bóc tách đầy đủ' },
+      { name: '{{verdict}}', desc: 'Kết quả tổng hợp (COMPLIANT/DISCREPANT/PENDING)' },
+      { name: '{{recommendation}}', desc: 'Đề xuất ACCEPT/REJECT/RESERVE_FOR_REVIEW' },
+      { name: '{{major_count}}', desc: 'Số lượng MAJOR discrepancy' },
+      { name: '{{minor_count}}', desc: 'Số lượng MINOR discrepancy' },
+      { name: '{{discrepancy_table}}', desc: 'Bảng discrepancy dạng Markdown' },
+      { name: '{{check_summary}}', desc: 'Tóm tắt kết quả từ Bước 3' },
+    ],
+    codePromptPreview: `You are a senior Trade Finance Officer. Produce a professional LC CHECKING REPORT in Vietnamese.
+
+Document set: {{classify_summary}}
+Extracted data: {{extraction_data}}
+Result: {{verdict}} — {{recommendation}}
+Discrepancies: MAJOR {{major_count}}, MINOR {{minor_count}}
+Summary: {{check_summary}}
+
+Discrepancy table:
+{{discrepancy_table}}
+
+Structure:
+## I. THONG TIN BO CHUNG TU
+## II. KET QUA BOC TACH DU LIEU
+## III. KET QUA KIEM TRA TUAN THU
+## IV. NHAN XET VA DE XUAT XU LY
+## V. KET LUAN
+
+Max 2,000 words. Output in Markdown.`,
+    hasDynamicSections: true,
+    dynamicWarning: 'Nhiều biến dynamic từ Bước 1-3. Override prompt cần giữ cấu trúc 5 sections và trích dẫn điều khoản UCP 600 / ISBP 821.',
+  },
+];
+
+/** Map workflow slug → step definitions */
+const WORKFLOW_STEPS: Record<string, WorkflowStep[]> = {
+  'workflows:disbursement': DISBURSEMENT_STEPS,
+  'workflows:lc-checker': LC_CHECKER_STEPS,
+};
+
 function WorkflowPromptPanel({ 
   endpoint,
   paramsObj,
@@ -2199,7 +2338,7 @@ function WorkflowPromptPanel({
   };
 
   const activeOverrides = Object.entries(overrides).filter(([, v]) => v.enabled).length;
-  const steps = DISBURSEMENT_STEPS;
+  const steps = WORKFLOW_STEPS[endpoint.slug] ?? DISBURSEMENT_STEPS;
 
   return (
     <div className="sm:col-span-2 mt-4 pt-4 border-t border-border/50">

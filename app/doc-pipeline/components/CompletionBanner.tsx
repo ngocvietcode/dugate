@@ -1,6 +1,6 @@
 'use client';
 
-// app/ai-demo/components/CompletionBanner.tsx
+// app/doc-pipeline/components/CompletionBanner.tsx
 // Success/failure banner shown when the pipeline completes.
 
 import React from 'react';

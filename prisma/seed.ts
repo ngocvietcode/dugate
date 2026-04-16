@@ -653,20 +653,51 @@ async function main() {
   }
   const hashedKey = crypto.createHash('sha256').update(rawAdminKey).digest('hex');
 
-  const adminKey = await prisma.apiKey.upsert({
-    where: { keyHash: hashedKey },
-    update: { role: 'ADMIN', status: 'active' },
-    create: {
-      name: 'System Admin (Default)',
-      prefix: 'sk-admin',
-      keyHash: hashedKey,
-      role: 'ADMIN',
-      status: 'active',
-      spendingLimit: 0,
-      totalUsed: 0,
-    },
+  // ── Tìm theo name cố định, KHÔNG theo keyHash ──────────────────────────────
+  // Lý do: nếu upsert theo keyHash, mỗi lần SEED_ADMIN_KEY thay đổi sẽ tạo thêm
+  // một record mới (keyHash khác → Prisma coi là chưa tồn tại → create duplicate).
+  // Giải pháp: tìm theo name "System Admin (Default)" → update keyHash nếu đã có,
+  // tạo mới nếu chưa có.
+  const ADMIN_KEY_NAME = 'System Admin (Default)';
+
+  // Xóa bản ghi duplicate cùng tên nếu tồn tại từ bug cũ (giữ lại bản cũ nhất)
+  const allAdminKeys = await prisma.apiKey.findMany({
+    where: { name: ADMIN_KEY_NAME },
+    orderBy: { createdAt: 'asc' },
   });
-  console.log(`  🔑 Admin API Key created (ID: ${adminKey.id}) — copy the key from SEED_ADMIN_KEY env var`);
+  if (allAdminKeys.length > 1) {
+    const [keep, ...duplicates] = allAdminKeys;
+    const dupIds = duplicates.map((k) => k.id);
+    await prisma.apiKey.deleteMany({ where: { id: { in: dupIds } } });
+    console.log(`  🧹 Cleaned up ${dupIds.length} duplicate "${ADMIN_KEY_NAME}" record(s).`);
+  }
+
+  const existingAdminKey = allAdminKeys[0] ?? null;
+
+  let adminKey;
+  if (existingAdminKey) {
+    // Đã có → update keyHash sang key mới (SEED_ADMIN_KEY có thể đã rotate)
+    adminKey = await prisma.apiKey.update({
+      where: { id: existingAdminKey.id },
+      data: { keyHash: hashedKey, role: 'ADMIN', status: 'active' },
+    });
+    const keyChanged = existingAdminKey.keyHash !== hashedKey;
+    console.log(`  🔑 Admin API Key found (ID: ${adminKey.id})${keyChanged ? ' — keyHash updated (SEED_ADMIN_KEY rotated)' : ' — no change'}`);
+  } else {
+    // Chưa có → tạo mới
+    adminKey = await prisma.apiKey.create({
+      data: {
+        name: ADMIN_KEY_NAME,
+        prefix: 'sk-admin',
+        keyHash: hashedKey,
+        role: 'ADMIN',
+        status: 'active',
+        spendingLimit: 0,
+        totalUsed: 0,
+      },
+    });
+    console.log(`  🔑 Admin API Key created (ID: ${adminKey.id}) — copy the key from SEED_ADMIN_KEY env var`);
+  }
 
   // Enroll admin key to all 31 endpoints
   for (const slug of ALL_ENDPOINT_SLUGS) {

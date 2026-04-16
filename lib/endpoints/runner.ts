@@ -82,8 +82,30 @@ export async function runEndpoint(serviceSlug: string, req: NextRequest): Promis
     // but cannot delete operations (enforced in operations/[id] route).
 
     const form = await req.formData();
-    const apiKeyId = req.headers.get('x-api-key-id') ?? undefined;
+    let apiKeyId = req.headers.get('x-api-key-id') ?? undefined;
     const userId = req.headers.get('x-user-id') ?? undefined;
+
+    // ── 1c. Resolve apiKeyId from raw x-api-key header (external API callers) ──
+    // Middleware no longer validates x-api-key at the edge; we do it here so
+    // profile loading works correctly for both browser-session and API-key calls.
+    if (!apiKeyId) {
+      const rawKey = req.headers.get('x-api-key');
+      if (rawKey) {
+        try {
+          const { prisma } = await import('@/lib/prisma');
+          const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
+          const found = await prisma.apiKey.findUnique({ where: { keyHash } });
+          if (found) {
+            apiKeyId = found.id;
+            logger.info(`[AUTH] Resolved apiKeyId from x-api-key header`, { apiKeyId });
+          } else {
+            logger.warn(`[AUTH] x-api-key provided but no matching ApiKey found`);
+          }
+        } catch (err) {
+          logger.warn(`[AUTH] Failed to resolve apiKeyId from x-api-key`, {}, err);
+        }
+      }
+    }
 
     // ── 2. Resolve sub-case ─────────────────────────────────────────────────
     const discriminatorValue = (form.get(service.discriminatorName) as string | null)?.trim();

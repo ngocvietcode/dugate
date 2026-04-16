@@ -1,6 +1,6 @@
 'use client';
 
-// app/ai-demo/components/PipelineStepCard.tsx
+// app/doc-pipeline/components/PipelineStepCard.tsx
 // Individual pipeline step card with progress, output, and collapse toggle.
 
 import React from 'react';

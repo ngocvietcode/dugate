@@ -70,7 +70,7 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
   ingest: {
     slug: 'ingest',
     displayName: 'Document Ingestion',
-    route: 'POST /api/v1/ingest',
+    route: 'POST /api/v1/docs/ingest',
     discriminatorName: 'mode',
     subCases: {
       parse: {
@@ -112,7 +112,7 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
   extract: {
     slug: 'extract',
     displayName: 'Data Extraction',
-    route: 'POST /api/v1/extract',
+    route: 'POST /api/v1/docs/extract',
     discriminatorName: 'type',
     subCases: {
       invoice: {
@@ -171,7 +171,7 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
   analyze: {
     slug: 'analyze',
     displayName: 'Document Analysis',
-    route: 'POST /api/v1/analyze',
+    route: 'POST /api/v1/docs/analyze',
     discriminatorName: 'task',
     subCases: {
       classify: {
@@ -238,7 +238,7 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
   transform: {
     slug: 'transform',
     displayName: 'Document Transformation',
-    route: 'POST /api/v1/transform',
+    route: 'POST /api/v1/docs/transform',
     discriminatorName: 'action',
     subCases: {
       convert: {
@@ -284,7 +284,7 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
   generate: {
     slug: 'generate',
     displayName: 'Content Generation',
-    route: 'POST /api/v1/generate',
+    route: 'POST /api/v1/docs/generate',
     discriminatorName: 'task',
     subCases: {
       summary: {
@@ -338,7 +338,7 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
   compare: {
     slug: 'compare',
     displayName: 'Document Comparison',
-    route: 'POST /api/v1/compare',
+    route: 'POST /api/v1/docs/compare',
     discriminatorName: 'mode',
     subCases: {
       diff: {
@@ -373,7 +373,7 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
   workflows: {
     slug: 'workflows',
     displayName: 'Business Workflows',
-    route: 'POST /api/v1/workflows',
+    route: 'POST /api/v1/docs/workflows',
     discriminatorName: 'process',
     subCases: {
       'disbursement': {
@@ -383,6 +383,13 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
           resolution_data: PARAMS.reference_data,
         },
         connections: [], // Orchestrator pattern uses custom code, not linear engine connections
+        isWorkflow: true,
+      },
+      'lc-checker': {
+        displayName: 'Kiểm tra Bộ Chứng từ LC',
+        description: 'Kiểm tra bộ chứng từ Letter of Credit theo chuẩn quốc tế UCP 600, ISBP 821. Classify → OCR → HITL → Compliance Check → LC Checking Report.',
+        parameters: {},
+        connections: [],
         isWorkflow: true,
       },
     },

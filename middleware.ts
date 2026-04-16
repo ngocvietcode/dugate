@@ -1,5 +1,5 @@
 // middleware.ts
-// Dual auth: NextAuth for UI routes, x-api-key for /api/v1/ integration routes.
+// Auth: NextAuth for UI routes. /api/v1/docs/* routes allow NextAuth session OR raw x-api-key (resolved by runner layer).
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -29,83 +29,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // --- Public API Integration (/api/v1/) — x-api-key auth ---
+  // --- /api/v1/docs/* — Pass-through auth (runner resolves x-api-key into profile) ---
   if (pathname.startsWith('/api/v1/')) {
-    const passedKey = request.headers.get('x-api-key') || '';
-
     // Strip sensitive internal headers to prevent spoofing
     const requestHeaders = new Headers(request.headers);
     requestHeaders.delete('x-api-key-id');
     requestHeaders.delete('x-user-id');
     requestHeaders.delete('x-user-role');
 
-    // If no API key provided, check for NextAuth session (browser UI calls)
-    if (!passedKey) {
-      const token = await getToken({
-        req: request,
-        secret: process.env.NEXTAUTH_SECRET!,
-      });
-      if (token) {
-        // Authenticated UI user — allow without API key
-        const userId = (token.id as string) || token.sub;
-        if (userId) requestHeaders.set('x-user-id', userId);
-        if (token.role) requestHeaders.set('x-user-role', token.role as string);
-        return NextResponse.next({ request: { headers: requestHeaders } });
-      }
+    // Inject NextAuth session info if the caller is an authenticated browser user
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET!,
+    });
+    if (token) {
+      const userId = (token.id as string) || token.sub;
+      if (userId) requestHeaders.set('x-user-id', userId);
+      if (token.role) requestHeaders.set('x-user-role', token.role as string);
     }
 
-    // Retrieve IP for rate limiting on the internal auth backend
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
-
-    try {
-      // Use INTERNAL_API_URL if UAT host isn't resolvable inside the container, fallback to request.url
-      const baseUrl = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_APP_URL || request.url;
-      const authUrl = new URL('/api/internal/auth-key', baseUrl);
-      
-      const res = await fetch(authUrl, {
-        method: 'GET',
-        headers: { 
-          'x-api-key': passedKey,
-          'x-forwarded-for': ip,
-          'Host': request.headers.get('host') || '' 
-        },
-        cache: 'no-store',
-      });
-
-      if (res.status === 429) {
-        return NextResponse.json(
-          { error: 'Too Many Requests' },
-          {
-            status: 429,
-            headers: {
-              'Retry-After': res.headers.get('Retry-After') || '60',
-              'X-RateLimit-Remaining': '0',
-            },
-          },
-        );
-      }
-      const data = await res.json();
-
-      if (!res.ok || !data.valid) {
-        return NextResponse.json(
-          { error: data.error || 'Unauthorized' },
-          { status: res.status }
-        );
-      }
-
-      if (data.apiKeyId) {
-        requestHeaders.set('x-api-key-id', data.apiKeyId);
-      }
-      return NextResponse.next({
-        request: { headers: requestHeaders },
-      });
-    } catch (e: unknown) {
-      console.error('[Middleware] Internal Auth Check error:', e);
-      return NextResponse.json(
-        { error: 'Internal Auth Service Error' },
-        { status: 500 }
-      );
-    }
+    // Always allow — runner will validate x-api-key and resolve the profile
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   // --- All other routes: NextAuth session required ---

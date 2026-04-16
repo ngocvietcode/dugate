@@ -164,9 +164,18 @@ export function parseClassifyResult(
 
   if (content) {
     try {
-      classifyData = JSON.parse(content) as ClassifyData;
+      // Clean up markdown block if the LLM output is wrapped in ```json ... ```
+      let cleanContent = content.trim();
+      const match = cleanContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+      if (match && match[1]) {
+        cleanContent = match[1].trim();
+      }
+
+      classifyData = JSON.parse(cleanContent) as ClassifyData;
     } catch (err) {
       console.warn(`[parseClassifyResult] Failed to parse JSON for ${sourceFileName}:`, err);
+      // Fallback for debugging, save the raw content if parsing fails so we can see what was wrong
+      console.warn(`RAW CONTENT:`, content);
       classifyData = {};
     }
   }

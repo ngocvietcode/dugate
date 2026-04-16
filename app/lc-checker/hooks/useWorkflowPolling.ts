@@ -1,5 +1,5 @@
-// app/ai-demo/hooks/useWorkflowPolling.ts
-// Custom hook: Submit workflow to real API + poll for results.
+// app/lc-checker/hooks/useWorkflowPolling.ts
+// Custom hook: Submit lc-checker workflow to real API + poll for results.
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { PipelineStep, StepStatus, UploadedFile } from '../types';
@@ -43,7 +43,8 @@ export function useWorkflowPolling(options: UseWorkflowPollingOptions) {
     revealedCountRef.current = 0;
 
     const formData = new FormData();
-    formData.append('process', 'disbursement');
+    // Send the lc-checker workflow slug
+    formData.append('process', 'lc-checker');
     if (apiKeyId) {
       formData.append('apiKeyId', apiKeyId);
     }
@@ -57,7 +58,7 @@ export function useWorkflowPolling(options: UseWorkflowPollingOptions) {
       });
     }
 
-    const res = await fetch('/api/v1/workflows', { method: 'POST', body: formData });
+    const res = await fetch('/api/v1/docs/workflows', { method: 'POST', body: formData });
     const data = await res.json();
 
     if (!res.ok) {
@@ -76,7 +77,6 @@ export function useWorkflowPolling(options: UseWorkflowPollingOptions) {
     setIsPolling(true);
     stopPolling();
 
-    // Start polling
     pollIntervalRef.current = setInterval(async () => {
       try {
         const pollRes = await fetch(`/api/v1/operations/${opId}`);
@@ -108,11 +108,10 @@ export function useWorkflowPolling(options: UseWorkflowPollingOptions) {
 
           if (hasFailed) {
             const failedIdx = opData.error?.failed_step ?? revealedCountRef.current;
-            const errorMsg = opData.error?.message || 'Pipeline failed';
+            const errorMsg = opData.error?.message || 'Pipeline thất bại';
             options.onError(failedIdx, errorMsg);
             setApiError(errorMsg);
           } else if (isWaiting) {
-            // Signal UI to show Editor form
             const currentStepData = stepsRes[revealedCountRef.current - 1];
             options.onWaitingForInput?.(revealedCountRef.current - 1, currentStepData);
           } else {
