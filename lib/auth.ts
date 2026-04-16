@@ -148,6 +148,23 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
+    // Fix: NextAuth v4 validate callbackUrl dựa theo NEXTAUTH_URL (baseUrl).
+    // Khi chạy sau Nginx trên VPS, NEXTAUTH_URL có thể là localhost nhưng
+    // callbackUrl từ client là production domain → NextAuth reject và redirect về localhost.
+    // Giải pháp: accept mọi absolute URL hợp lệ, vì callbackUrl được set từ
+    // window.location.origin ở phía client nên luôn là domain thực tế của user.
+    async redirect({ url, baseUrl }) {
+      // Relative URL (e.g. /login) → prepend baseUrl
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Absolute URL hợp lệ → pass through trực tiếp
+      // (không validate theo NEXTAUTH_URL để tránh redirect về localhost)
+      try {
+        new URL(url); // validate cú pháp URL
+        return url;
+      } catch {
+        return baseUrl;
+      }
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
