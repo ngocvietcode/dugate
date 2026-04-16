@@ -12,13 +12,8 @@
 
 // Note: env vars are injected by docker-compose in production.
 // In development, Next.js loads .env.local automatically, so we must load it here too to avoid path mismatches.
-import fs from 'fs';
-import dotenv from 'dotenv';
+import './env-init';
 
-if (fs.existsSync('.env.local')) {
-  dotenv.config({ path: '.env.local', override: true });
-}
-dotenv.config();
 
 
 import v8 from 'v8';

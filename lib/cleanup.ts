@@ -4,7 +4,9 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { prisma } from './prisma';
+import { db } from './db';
+import { operations, fileCaches } from './db/schema';
+import { lt, eq, isNull, and, lte, inArray, sql } from 'drizzle-orm';
 import { Logger } from './logger';
 import { getStorageBackend } from './storage';
 import { LocalStorageBackend } from './storage/local-backend';
@@ -41,18 +43,15 @@ export async function cleanupExpiredFiles(): Promise<{ deleted: number; freedMB:
   const backend = await getStorageBackend();
   const isLocal = backend instanceof LocalStorageBackend;
 
-  const expired = await prisma.operation.findMany({
-    where: {
-      createdAt: { lt: cutoff },
-      filesDeleted: false,
-      deletedAt: null,
-    },
-    select: {
-      id: true,
-      filesJson: true,
-      outputFilePath: true,
-    },
-  });
+  const expired = await db.select({
+    id: operations.id,
+    filesJson: operations.filesJson,
+    outputFilePath: operations.outputFilePath,
+  }).from(operations).where(and(
+    lt(operations.createdAt, cutoff),
+    eq(operations.filesDeleted, false),
+    isNull(operations.deletedAt)
+  ));
 
   let freed = 0;
   let deleted = 0;
@@ -85,10 +84,9 @@ export async function cleanupExpiredFiles(): Promise<{ deleted: number; freedMB:
       for (const f of filesData) {
         if (f.fileCacheId) {
           // S3-cached file: decrement refCount (actual S3 deletion in cleanupExpiredCache)
-          await prisma.fileCache.update({
-            where: { id: f.fileCacheId },
-            data: { refCount: { decrement: 1 } },
-          }).catch(() => {
+          await db.update(fileCaches)
+            .set({ refCount: sql`${fileCaches.refCount} - 1` })
+            .where(eq(fileCaches.id, f.fileCacheId)).catch(() => {
             // FileCache record may already be deleted
           });
         } else if (f.s3Key) {
@@ -110,10 +108,7 @@ export async function cleanupExpiredFiles(): Promise<{ deleted: number; freedMB:
         }
       }
 
-      await prisma.operation.update({
-        where: { id: conv.id },
-        data: { filesDeleted: true },
-      });
+      await db.update(operations).set({ filesDeleted: true }).where(eq(operations.id, conv.id));
 
       deleted++;
     } catch (err) {
@@ -134,12 +129,10 @@ export async function cleanupExpiredCache(): Promise<{ deleted: number; freedMB:
   const ttlHours = parseInt(await getSetting('s3_cache_ttl_hours') || '168', 10);
   const cutoff = new Date(Date.now() - ttlHours * 3600_000);
 
-  const expired = await prisma.fileCache.findMany({
-    where: {
-      refCount: { lte: 0 },
-      lastAccessedAt: { lt: cutoff },
-    },
-  });
+  const expired = await db.select().from(fileCaches).where(and(
+    lte(fileCaches.refCount, 0),
+    lt(fileCaches.lastAccessedAt, cutoff)
+  ));
 
   if (expired.length === 0) return { deleted: 0, freedMB: 0 };
 
@@ -147,9 +140,7 @@ export async function cleanupExpiredCache(): Promise<{ deleted: number; freedMB:
   const keys = expired.map((e) => e.s3Key);
 
   await backend.deleteMany(keys);
-  await prisma.fileCache.deleteMany({
-    where: { id: { in: expired.map((e) => e.id) } },
-  });
+  await db.delete(fileCaches).where(inArray(fileCaches.id, expired.map((e) => e.id)));
 
   const freedBytes = expired.reduce((sum, e) => sum + e.size, 0);
   const freedMB = Math.round((freedBytes / 1024 / 1024) * 100) / 100;

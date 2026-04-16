@@ -2,7 +2,9 @@
 // Internal: GET /api/operations — List operations for frontend History page
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { operations } from '@/lib/db/schema';
+import { eq, isNull, and, desc, SQL } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { extractPipelineProcessors } from '@/lib/pipelines/validate';
@@ -17,38 +19,36 @@ export async function GET(req: NextRequest) {
   const pageSize = Math.min(parseInt(params.get('page_size') ?? '50'), 100);
   const filter = params.get('filter');
 
-  const where: Record<string, unknown> = { deletedAt: null };
+  const conditions: SQL[] = [isNull(operations.deletedAt)];
   if (session.user.role !== 'ADMIN') {
-    where.createdByUserId = session.user.id;
+    conditions.push(eq(operations.createdByUserId, session.user.id));
   }
 
   if (filter) {
     const parts = filter.split(',');
     for (const part of parts) {
       const [key, val] = part.trim().split('=');
-      if (key === 'state') where.state = val;
+      if (key === 'state') conditions.push(eq(operations.state, val));
     }
   }
 
-  const operations = await prisma.operation.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    take: pageSize,
-    select: {
-      id: true,
-      done: true,
-      state: true,
-      currentStep: true,
-      progressPercent: true,
-      progressMessage: true,
-      createdAt: true,
-      updatedAt: true,
-      pipelineJson: true,
-    },
-  });
+  const opsList = await db.select({
+      id: operations.id,
+      done: operations.done,
+      state: operations.state,
+      currentStep: operations.currentStep,
+      progressPercent: operations.progressPercent,
+      progressMessage: operations.progressMessage,
+      createdAt: operations.createdAt,
+      updatedAt: operations.updatedAt,
+      pipelineJson: operations.pipelineJson,
+  }).from(operations)
+    .where(and(...conditions))
+    .orderBy(desc(operations.createdAt))
+    .limit(pageSize);
 
   return NextResponse.json({
-    operations: operations.map((op) => {
+    operations: opsList.map((op) => {
       const pipeline = extractPipelineProcessors(op.pipelineJson);
 
       return {

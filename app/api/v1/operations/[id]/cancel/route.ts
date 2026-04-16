@@ -2,7 +2,9 @@
 // POST /api/v1/operations/{id}/cancel
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { operations } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { formatOperationResponse } from '@/lib/pipelines/format';
 
 export async function POST(
@@ -10,7 +12,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const op = await prisma.operation.findUnique({ where: { id } });
+  const [op] = await db.select().from(operations).where(eq(operations.id, id)).limit(1);
 
   if (!op || op.deletedAt) {
     return NextResponse.json(
@@ -34,10 +36,11 @@ export async function POST(
     );
   }
 
-  const updated = await prisma.operation.update({
-    where: { id },
-    data: { done: true, state: 'CANCELLED', progressMessage: null },
-  });
+  const [updated] = await db.update(operations).set({ 
+    done: true, 
+    state: 'CANCELLED', 
+    progressMessage: null 
+  }).where(eq(operations.id, id)).returning();
 
   return NextResponse.json(formatOperationResponse(updated));
 }

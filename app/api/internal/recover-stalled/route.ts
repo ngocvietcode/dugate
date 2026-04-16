@@ -11,7 +11,9 @@
 //   - Or manually by Admin via Dashboard
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { operations } from '@/lib/db/schema';
+import { eq, lt, and, inArray, sql } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
 
 const logger = new Logger({ service: 'recover-stalled' });
@@ -30,14 +32,13 @@ export async function POST(req: NextRequest) {
 
   const thresholdDate = new Date(Date.now() - STALL_THRESHOLD_MS);
 
-  const stalledOps = await prisma.operation.findMany({
-    where: {
-      state: 'RUNNING',
-      done: false,
-      createdAt: { lt: thresholdDate },
-    },
-    select: { id: true, createdAt: true, endpointSlug: true },
-  });
+  const stalledOps = await db.select({ id: operations.id, createdAt: operations.createdAt, endpointSlug: operations.endpointSlug }).from(operations).where(
+    and(
+      eq(operations.state, 'RUNNING'),
+      eq(operations.done, false),
+      lt(operations.createdAt, thresholdDate)
+    )
+  );
 
   if (stalledOps.length === 0) {
     logger.info('[recover-stalled] No stalled operations found.');
@@ -48,16 +49,13 @@ export async function POST(req: NextRequest) {
 
   const ids = stalledOps.map((op) => op.id);
 
-  await prisma.operation.updateMany({
-    where: { id: { in: ids } },
-    data: {
+  await db.update(operations).set({
       done: true,
       state: 'FAILED',
       errorCode: 'STALLED',
       errorMessage: `Operation exceeded stall threshold of ${STALL_THRESHOLD_MS / 1000}s with no progress.`,
       progressMessage: null,
-    },
-  });
+  }).where(inArray(operations.id, ids));
 
   logger.info(`[recover-stalled] Recovered ${ids.length} stalled operation(s).`, { ids });
 
@@ -74,8 +72,8 @@ export async function POST(req: NextRequest) {
 // GET: status check — how many operations are currently stalled
 export async function GET(req: NextRequest) {
   const thresholdDate = new Date(Date.now() - STALL_THRESHOLD_MS);
-  const count = await prisma.operation.count({
-    where: { state: 'RUNNING', done: false, createdAt: { lt: thresholdDate } },
-  });
+  const [{ count }] = await db.select({ count: sql`count(*)`.mapWith(Number) }).from(operations).where(
+    and(eq(operations.state, 'RUNNING'), eq(operations.done, false), lt(operations.createdAt, thresholdDate))
+  );
   return NextResponse.json({ stalled: count, thresholdMs: STALL_THRESHOLD_MS });
 }

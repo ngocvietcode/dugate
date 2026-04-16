@@ -13,14 +13,13 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && r
 
 COPY --from=deps /app/node_modules ./node_modules
 
-# CACHE OPTIMIZATION: Copy prisma first and generate client
-COPY prisma ./prisma
-RUN npx prisma generate
+
 
 # Now copy the rest of the source code
 COPY . .
 
-RUN npx tsc prisma/seed.ts --esModuleInterop --skipLibCheck --module CommonJS --target ES2022 --outDir prisma
+# Bundle seed script
+RUN node_modules/.bin/esbuild lib/db/seed.ts --bundle --platform=node --target=node20 --outfile=dist/seed.js
 # Provide a dummy DATABASE_URL so Prisma client initialises during static page generation
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 # NODE_TLS_REJECT_UNAUTHORIZED=0: allow Next.js to fetch Google Fonts through proxies with self-signed certs
@@ -59,10 +58,7 @@ ENV NODE_ENV=production
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/dist/seed.js ./dist/seed.js
 COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
 # BullMQ Worker — copy compiled bundle + node_modules for native addons (bcrypt, prisma)

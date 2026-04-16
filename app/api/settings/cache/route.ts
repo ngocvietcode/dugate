@@ -6,7 +6,9 @@
 //   &expired=true           — only expired entries
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { fileCaches, operations } from '@/lib/db/schema';
+import { lte, inArray, sql, sum, asc } from 'drizzle-orm';
 import { getStorageBackend } from '@/lib/storage';
 import { LocalStorageBackend } from '@/lib/storage/local-backend';
 import { getSetting } from '@/lib/settings';
@@ -22,41 +24,35 @@ export async function GET() {
     const isS3 = !(backend instanceof LocalStorageBackend);
 
     // FileCache stats (deduped uploaded files)
-    const [cacheCount, cacheSizeResult, cacheOldest] = await Promise.all([
-      prisma.fileCache.count(),
-      prisma.fileCache.aggregate({ _sum: { size: true } }),
-      prisma.fileCache.findFirst({ orderBy: { createdAt: 'asc' }, select: { createdAt: true } }),
+    const [cacheCountResult, cacheSizeResult, cacheOldestResult] = await Promise.all([
+      db.select({ count: sql`count(*)`.mapWith(Number) }).from(fileCaches),
+      db.select({ sum: sum(fileCaches.size).mapWith(Number) }).from(fileCaches),
+      db.select({ createdAt: fileCaches.createdAt }).from(fileCaches).orderBy(asc(fileCaches.createdAt)).limit(1),
     ]);
+    const cacheCount = cacheCountResult[0].count;
+    const cacheSizeTotal = cacheSizeResult[0].sum ?? 0;
+    const cacheOldest = cacheOldestResult[0];
 
     // Output file stats — operations with outputFilePath that haven't been cleaned
-    const outputStats = await prisma.operation.aggregate({
-      where: {
-        outputFilePath: { not: null },
-        filesDeleted: false,
-        deletedAt: null,
-      },
-      _count: true,
-    });
+    const [outputStatsResult] = await db.select({ count: sql`count(*)`.mapWith(Number) }).from(operations).where(
+      sql`${operations.outputFilePath} IS NOT NULL AND ${operations.filesDeleted} = false AND ${operations.deletedAt} IS NULL`
+    );
 
     // Expired operations (files older than 24h that can be cleaned)
     const expiryCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const expiredCount = await prisma.operation.count({
-      where: {
-        createdAt: { lt: expiryCutoff },
-        filesDeleted: false,
-        deletedAt: null,
-      },
-    });
+    const [expiredCountResult] = await db.select({ count: sql`count(*)`.mapWith(Number) }).from(operations).where(
+      sql`${operations.createdAt} < ${expiryCutoff} AND ${operations.filesDeleted} = false AND ${operations.deletedAt} IS NULL`
+    );
 
     return NextResponse.json({
       // FileCache (deduped uploads)
       totalFiles: cacheCount,
-      totalSizeBytes: cacheSizeResult._sum.size ?? 0,
-      totalSizeMB: Math.round(((cacheSizeResult._sum.size ?? 0) / 1024 / 1024) * 100) / 100,
+      totalSizeBytes: cacheSizeTotal,
+      totalSizeMB: Math.round((cacheSizeTotal / 1024 / 1024) * 100) / 100,
       oldestEntry: cacheOldest?.createdAt ?? null,
       // Output files
-      outputFiles: outputStats._count,
-      expiredOperations: expiredCount,
+      outputFiles: outputStatsResult.count,
+      expiredOperations: expiredCountResult.count,
       // Backend info
       storageBackend: isS3 ? 's3' : 'local',
     });
@@ -90,12 +86,12 @@ export async function DELETE(req: NextRequest) {
     if (expiredOnly) {
       const ttlHours = parseInt(await getSetting('s3_cache_ttl_hours') || '168', 10);
       const cutoff = new Date(Date.now() - ttlHours * 3600_000);
-      entries = await prisma.fileCache.findMany({
-        where: { refCount: { lte: 0 }, lastAccessedAt: { lt: cutoff } },
-      });
+      entries = await db.select().from(fileCaches).where(
+        sql`${fileCaches.refCount} <= 0 AND ${fileCaches.lastAccessedAt} < ${cutoff}`
+      );
     } else {
       // Only delete unreferenced files (refCount <= 0) to avoid breaking in-progress operations
-      entries = await prisma.fileCache.findMany({ where: { refCount: { lte: 0 } } });
+      entries = await db.select().from(fileCaches).where(lte(fileCaches.refCount, 0));
     }
 
     if (entries.length === 0) {
@@ -107,9 +103,7 @@ export async function DELETE(req: NextRequest) {
     await backend.deleteMany(keys);
 
     // Delete DB records
-    await prisma.fileCache.deleteMany({
-      where: { id: { in: entries.map((e) => e.id) } },
-    });
+    await db.delete(fileCaches).where(inArray(fileCaches.id, entries.map((e) => e.id)));
 
     const freedBytes = entries.reduce((sum, e) => sum + e.size, 0);
     return NextResponse.json({

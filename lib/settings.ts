@@ -1,7 +1,9 @@
 // lib/settings.ts
 // Read/write AppSetting from DB. Used by AI wrapper and Settings API.
 
-import { prisma } from './prisma';
+import { db } from './db';
+import { appSettings } from './db/schema';
+import { eq } from 'drizzle-orm';
 import { encrypt, decrypt } from './crypto';
 
 // ─── Prompt presets ────────────────────────────────────────────────────────────
@@ -111,7 +113,7 @@ const ENCRYPTED_KEYS = new Set(['ai_api_key', 'openai_api_key', 'api_secret_key'
 // ─── Read ──────────────────────────────────────────────────────────────────────
 
 export async function getSetting(key: string): Promise<string> {
-  const row = await prisma.appSetting.findUnique({ where: { key } });
+  const [row] = await db.select().from(appSettings).where(eq(appSettings.key, key)).limit(1);
   if (!row) return SETTING_DEFAULTS[key] ?? '';
 
   if (ENCRYPTED_KEYS.has(key) && row.value) {
@@ -125,7 +127,7 @@ export async function getSetting(key: string): Promise<string> {
 }
 
 export async function getAllSettings(): Promise<Record<string, string>> {
-  const rows = await prisma.appSetting.findMany();
+  const rows = await db.select().from(appSettings);
   const result: Record<string, string> = { ...SETTING_DEFAULTS };
 
   for (const row of rows) {
@@ -146,10 +148,9 @@ export async function getAllSettings(): Promise<Record<string, string>> {
 
 export async function setSetting(key: string, value: string): Promise<void> {
   const stored = ENCRYPTED_KEYS.has(key) && value ? encrypt(value) : value;
-  await prisma.appSetting.upsert({
-    where: { key },
-    update: { value: stored },
-    create: { key, value: stored },
+  await db.insert(appSettings).values({ key, value: stored }).onConflictDoUpdate({
+    target: appSettings.key,
+    set: { value: stored },
   });
 }
 

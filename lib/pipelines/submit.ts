@@ -4,7 +4,9 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { apiKeys, externalApiConnections, operations, profileEndpoints } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { type PipelineStep } from '@/lib/pipelines/engine';
 import { saveUploadedFile } from '@/lib/upload-helper';
 import { downloadAllFileUrls, type FileUrlEntry, type FileUrlAuthConfig, type DownloadedFile } from '@/lib/file-url-downloader';
@@ -99,9 +101,9 @@ export async function submitPipelineJob(
   // ── 2. Validate each connector in DB ─────────────────────────────────────
   for (let i = 0; i < pipeline.length; i++) {
     const step = pipeline[i];
-    const conn = await prisma.externalApiConnection.findUnique({
-      where: { slug: step.processor },
-    });
+    const [conn] = await db.select().from(externalApiConnections)
+      .where(eq(externalApiConnections.slug, step.processor))
+      .limit(1);
 
     if (!conn) {
       return {
@@ -126,7 +128,7 @@ export async function submitPipelineJob(
 
   // ── 3. Idempotency check ──────────────────────────────────────────────────
   if (idempotencyKey) {
-    const existing = await prisma.operation.findUnique({ where: { idempotencyKey } });
+    const [existing] = await db.select().from(operations).where(eq(operations.idempotencyKey, idempotencyKey)).limit(1);
     if (existing) {
       return { ok: true, operation: existing, isIdempotent: true };
     }
@@ -134,10 +136,8 @@ export async function submitPipelineJob(
 
   // ── 3b. Spending limit check ──────────────────────────────────────────────
   if (apiKeyId) {
-    const key = await prisma.apiKey.findUnique({
-      where: { id: apiKeyId },
-      select: { spendingLimit: true, totalUsed: true },
-    });
+    const [key] = await db.select({ spendingLimit: apiKeys.spendingLimit, totalUsed: apiKeys.totalUsed })
+      .from(apiKeys).where(eq(apiKeys.id, apiKeyId)).limit(1);
     if (key && key.spendingLimit > 0 && key.totalUsed >= key.spendingLimit) {
       return {
         ok: false,
@@ -157,11 +157,10 @@ export async function submitPipelineJob(
   // ── 4. Resolve BullMQ job priority from ProfileEndpoint ──────────────────
   let bullPriority = 10; // default MEDIUM
   if (apiKeyId && endpointSlug) {
-    const profileEndpoint = await prisma.profileEndpoint.findUnique({
-      where: { apiKeyId_endpointSlug: { apiKeyId, endpointSlug } },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      select: { jobPriority: true } as any,
-    });
+    const [profileEndpoint] = await db.select({ jobPriority: profileEndpoints.jobPriority })
+      .from(profileEndpoints)
+      .where(and(eq(profileEndpoints.apiKeyId, apiKeyId), eq(profileEndpoints.endpointSlug, endpointSlug)))
+      .limit(1);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     bullPriority = resolveBullPriority((profileEndpoint as any)?.jobPriority);
   }
@@ -235,9 +234,8 @@ export async function submitPipelineJob(
   // (fileUrlFieldName set → forward URLs to connector, skip download/cache)
   let forwardUrls = false;
   if (hasPendingFileUrls && pipeline.length > 0) {
-    const firstConn = await prisma.externalApiConnection.findUnique({
-      where: { slug: pipeline[0].processor },
-    });
+    const [firstConn] = await db.select().from(externalApiConnections)
+      .where(eq(externalApiConnections.slug, pipeline[0].processor)).limit(1);
     if (firstConn?.fileUrlFieldName) {
       forwardUrls = true;
       // Store URLs as remote references — no download needed
@@ -281,24 +279,23 @@ export async function submitPipelineJob(
 
   let operation: any;
   try {
-    operation = await prisma.operation.create({
-      data: {
-        id:              operationId,
-        apiKeyId:        apiKeyId || null,
-        createdByUserId: userId || null,
-        idempotencyKey:  idempotencyKey || null,
-        endpointSlug:    endpointSlug || null,
-        pipelineJson:    JSON.stringify(pipeline),
-        filesJson:       filesData.length > 0 ? JSON.stringify(filesData) : null,
-        outputFormat,
-        webhookUrl:      webhookUrl ?? null,
-        state:           'RUNNING',
-        done:            false,
-        progressPercent: 0,
-        progressMessage: 'Initializing pipeline...',
-        deletedAt:       disableHistory ? new Date() : null,
-      },
-    });
+    const [inserted] = await db.insert(operations).values({
+      id:              operationId,
+      apiKeyId:        apiKeyId || null,
+      createdByUserId: userId || null,
+      idempotencyKey:  idempotencyKey || null,
+      endpointSlug:    endpointSlug || null,
+      pipelineJson:    JSON.stringify(pipeline),
+      filesJson:       filesData.length > 0 ? JSON.stringify(filesData) : null,
+      outputFormat,
+      webhookUrl:      webhookUrl ?? null,
+      state:           'RUNNING',
+      done:            false,
+      progressPercent: 0,
+      progressMessage: 'Initializing pipeline...',
+      deletedAt:       disableHistory ? new Date() : null,
+    }).returning();
+    operation = inserted;
   } catch (createErr: unknown) {
     // Handle idempotency race: two concurrent requests with the same key may both pass the
     // findUnique check above, but the DB unique constraint ensures only one succeeds.
@@ -306,10 +303,10 @@ export async function submitPipelineJob(
     const isUniqueViolation =
       createErr instanceof Error &&
       'code' in createErr &&
-      (createErr as { code?: string }).code === 'P2002';
+      (createErr as { code?: string }).code === '23505';
 
     if (isUniqueViolation && idempotencyKey) {
-      const existing = await prisma.operation.findUnique({ where: { idempotencyKey } });
+      const [existing] = await db.select().from(operations).where(eq(operations.idempotencyKey, idempotencyKey)).limit(1);
       if (existing) {
         return { ok: true, operation: existing, isIdempotent: true };
       }
@@ -340,7 +337,7 @@ export async function submitPipelineJob(
   const queueDepth = (counts.waiting ?? 0) + (counts.delayed ?? 0);
   if (queueDepth > MAX_QUEUE_DEPTH) {
     // Clean up the operation we just created
-    await prisma.operation.delete({ where: { id: operationId } });
+    await db.delete(operations).where(eq(operations.id, operationId));
     return {
       ok: false,
       errorResponse: NextResponse.json(
@@ -365,7 +362,8 @@ export async function submitPipelineJob(
     }
 
     // Reload to get the latest state written by Worker
-    operation = (await prisma.operation.findUnique({ where: { id: operationId } }))!;
+    const [reloaded] = await db.select().from(operations).where(eq(operations.id, operationId)).limit(1);
+    operation = reloaded!;
 
   } else {
     // ── ASYNC MODE: enqueue and return 202 immediately ──

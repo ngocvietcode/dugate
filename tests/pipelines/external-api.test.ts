@@ -1,6 +1,6 @@
 import { runExternalApiProcessor } from '../../lib/pipelines/processors/external-api';
 import type { ProcessorContext } from '../../lib/pipelines/engine';
-import type { ExternalApiConnection } from '@prisma/client';
+import type { ExternalApiConnection } from '../../lib/db/schema';
 
 // Mock system fs/promises since external-api uses it
 jest.mock('fs/promises', () => ({

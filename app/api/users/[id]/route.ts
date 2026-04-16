@@ -3,10 +3,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
+import { db } from '@/lib/db';
+import { users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
 
 // PUT /api/users/:id — update user (password / role)
 export async function PUT(
@@ -23,7 +23,7 @@ export async function PUT(
     const body = await request.json();
     const { username, password, role } = body;
 
-    const existing = await prisma.user.findUnique({ where: { id } });
+    const [existing] = await db.select().from(users).where(eq(users.id, id)).limit(1);
     if (!existing) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -32,7 +32,7 @@ export async function PUT(
     const updateData: Record<string, string> = {};
 
     if (username && username !== existing.username) {
-      const dup = await prisma.user.findUnique({ where: { username } });
+      const [dup] = await db.select().from(users).where(eq(users.username, username)).limit(1);
       if (dup) {
         return NextResponse.json({ error: 'Username đã tồn tại' }, { status: 409 });
       }
@@ -50,10 +50,9 @@ export async function PUT(
       updateData.role = role;
     }
 
-    const user = await prisma.user.update({
-      where: { id },
-      data: updateData,
-      select: { id: true, username: true, role: true, provider: true, email: true, displayName: true, createdAt: true, updatedAt: true },
+    const [user] = await db.update(users).set(updateData).where(eq(users.id, id)).returning({
+      id: users.id, username: users.username, role: users.role, provider: users.provider,
+      email: users.email, displayName: users.displayName, createdAt: users.createdAt, updatedAt: users.updatedAt
     });
 
     return NextResponse.json(user);
@@ -80,11 +79,11 @@ export async function DELETE(
     return NextResponse.json({ error: 'Không thể xóa chính mình' }, { status: 400 });
   }
 
-  const existing = await prisma.user.findUnique({ where: { id } });
+  const [existing] = await db.select().from(users).where(eq(users.id, id)).limit(1);
   if (!existing) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
-  await prisma.user.delete({ where: { id } });
+  await db.delete(users).where(eq(users.id, id));
   return NextResponse.json({ success: true });
 }

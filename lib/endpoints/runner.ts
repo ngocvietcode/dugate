@@ -92,9 +92,11 @@ export async function runEndpoint(serviceSlug: string, req: NextRequest): Promis
       const rawKey = req.headers.get('x-api-key');
       if (rawKey) {
         try {
-          const { prisma } = await import('@/lib/prisma');
+          const { db } = await import('@/lib/db');
+          const { apiKeys } = await import('@/lib/db/schema');
+          const { eq } = await import('drizzle-orm');
           const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
-          const found = await prisma.apiKey.findUnique({ where: { keyHash } });
+          const [found] = await db.select().from(apiKeys).where(eq(apiKeys.keyHash, keyHash)).limit(1);
           if (found) {
             apiKeyId = found.id;
             logger.info(`[AUTH] Resolved apiKeyId from x-api-key header`, { apiKeyId });

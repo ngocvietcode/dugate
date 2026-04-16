@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { operations } from '@/lib/db/schema';
+import { and, eq, gte, lte } from 'drizzle-orm';
 
 /**
  * @swagger
@@ -37,22 +39,22 @@ export async function GET(req: NextRequest) {
   }
 
   // Aggregate usage from completed operations in the date range
-  const operations = await prisma.operation.findMany({
-    where: {
-      apiKeyId,
-      state: 'SUCCEEDED',
-      done: true,
-      createdAt: { gte: startDate, lte: endDate },
-    },
-    select: {
-      modelUsed: true,
-      endpointSlug: true,
-      totalInputTokens: true,
-      totalOutputTokens: true,
-      pagesProcessed: true,
-      totalCostUsd: true,
-    },
-  });
+  const opsList = await db.select({
+    modelUsed: operations.modelUsed,
+    endpointSlug: operations.endpointSlug,
+    totalInputTokens: operations.totalInputTokens,
+    totalOutputTokens: operations.totalOutputTokens,
+    pagesProcessed: operations.pagesProcessed,
+    totalCostUsd: operations.totalCostUsd,
+  }).from(operations).where(
+    and(
+      eq(operations.apiKeyId, apiKeyId),
+      eq(operations.state, 'SUCCEEDED'),
+      eq(operations.done, true),
+      gte(operations.createdAt, startDate),
+      lte(operations.createdAt, endDate)
+    )
+  );
 
   // Group by model
   const byModel: Record<string, {
@@ -67,7 +69,7 @@ export async function GET(req: NextRequest) {
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
 
-  for (const op of operations) {
+  for (const op of opsList) {
     const model = op.modelUsed ?? 'unknown';
     if (!byModel[model]) {
       byModel[model] = { model, prompt_tokens: 0, completion_tokens: 0, pages_processed: 0, cost_usd: 0 };
@@ -88,7 +90,7 @@ export async function GET(req: NextRequest) {
     total_cost_usd: totalCostUsd,
     total_input_tokens: totalInputTokens,
     total_output_tokens: totalOutputTokens,
-    total_operations: operations.length,
+    total_operations: opsList.length,
     usage: Object.values(byModel),
   });
 }

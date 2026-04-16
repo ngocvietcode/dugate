@@ -6,7 +6,7 @@ import fsPromises from 'fs/promises';
 import path from 'path';
 import type { ProcessorContext, ProcessorResult } from '@/lib/pipelines/engine';
 import { ParserFactory } from '@/lib/parsers/factory';
-import type { ExternalApiConnection, ExternalApiOverride } from '@prisma/client';
+import type { ExternalApiConnection, ExternalApiOverride } from '@/lib/db/schema';
 import { resolvePrompt } from './prompt-resolver';
 import { extractContent, resolveDotPath } from './response-parser';
 import { logCurlCommand, assertSafeUrl, fetchWithTimeout } from './http-client';

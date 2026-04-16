@@ -5,7 +5,9 @@
 import os from 'os';
 import path from 'path';
 import fs from 'fs/promises';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { operations, apiKeys, externalApiConnections, externalApiOverrides } from '@/lib/db/schema';
+import { eq, inArray, and, sql } from 'drizzle-orm';
 import { runExternalApiProcessor } from '@/lib/pipelines/processors/external-api';
 import { Logger } from '@/lib/logger';
 import type { Job } from 'bullmq';
@@ -94,7 +96,7 @@ async function sendWebhook(url: string, payload: object, logger: Logger): Promis
 export async function runPipeline(operationId: string, correlationId?: string, job?: Job<any>): Promise<void> {
   const logger = new Logger({ correlationId, operationId }, job);
 
-  const operation = await prisma.operation.findUnique({ where: { id: operationId } });
+  const [operation] = await db.select().from(operations).where(eq(operations.id, operationId)).limit(1);
   if (!operation) {
     logger.error(`Operation ${operationId} not found`);
     return;
@@ -126,17 +128,14 @@ export async function runPipeline(operationId: string, correlationId?: string, j
           ? 'Invalid files structure.'
           : 'Invalid pipeline payload.';
     logger.error(`[PIPELINE_FAILED] Invalid operation JSON for ${operationId}: ${msg}`, undefined, error);
-    await prisma.operation.update({
-      where: { id: operationId },
-      data: {
-        done: true,
-        state: 'FAILED',
-        failedAtStep: 0,
-        errorCode: 'PIPELINE_INVALID_JSON',
-        errorMessage: clientErrorMessage,
-        stepsResultJson: JSON.stringify([]),
-      },
-    });
+    await db.update(operations).set({
+      done: true,
+      state: 'FAILED',
+      failedAtStep: 0,
+      errorCode: 'PIPELINE_INVALID_JSON',
+      errorMessage: clientErrorMessage,
+      stepsResultJson: JSON.stringify([]),
+    }).where(eq(operations.id, operationId));
     return;
   }
 
@@ -146,10 +145,9 @@ export async function runPipeline(operationId: string, correlationId?: string, j
     try {
       const { downloadAllFileUrls } = await import('@/lib/file-url-downloader');
       logger.info(`[PIPELINE] Downloading ${jobData.pendingFileUrls.length} pending file URLs`);
-      await prisma.operation.update({
-        where: { id: operationId },
-        data: { progressMessage: `Downloading ${jobData.pendingFileUrls.length} file(s) from URLs...` },
-      });
+      await db.update(operations).set({
+        progressMessage: `Downloading ${jobData.pendingFileUrls.length} file(s) from URLs...`
+      }).where(eq(operations.id, operationId));
       const downloaded = await downloadAllFileUrls(
         jobData.pendingFileUrls,
         operationId,
@@ -158,24 +156,20 @@ export async function runPipeline(operationId: string, correlationId?: string, j
       );
       filesData.push(...downloaded);
       // Persist updated filesJson so checkpoint/resume picks them up
-      await prisma.operation.update({
-        where: { id: operationId },
-        data: { filesJson: JSON.stringify(filesData) },
-      });
+      await db.update(operations).set({
+        filesJson: JSON.stringify(filesData)
+      }).where(eq(operations.id, operationId));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       logger.error(`[PIPELINE_FAILED] File URL download failed: ${msg}`, undefined, err);
-      await prisma.operation.update({
-        where: { id: operationId },
-        data: {
-          done: true,
-          state: 'FAILED',
-          failedAtStep: 0,
-          errorCode: 'FILE_URL_DOWNLOAD_FAILED',
-          errorMessage: msg,
-          stepsResultJson: JSON.stringify([]),
-        },
-      });
+      await db.update(operations).set({
+        done: true,
+        state: 'FAILED',
+        failedAtStep: 0,
+        errorCode: 'FILE_URL_DOWNLOAD_FAILED',
+        errorMessage: msg,
+        stepsResultJson: JSON.stringify([]),
+      }).where(eq(operations.id, operationId));
       return;
     }
   }
@@ -269,18 +263,16 @@ export async function runPipeline(operationId: string, correlationId?: string, j
 
   // ── Pre-load all connections & overrides (avoid N+1 queries in the loop) ────
   const processorSlugs = pipeline.map((s) => s.processor);
-  const allConnections = await prisma.externalApiConnection.findMany({
-    where: { slug: { in: processorSlugs } },
-  });
+  const allConnections = processorSlugs.length > 0 
+    ? await db.select().from(externalApiConnections).where(inArray(externalApiConnections.slug, processorSlugs))
+    : [];
   const connectionMap = new Map(allConnections.map((c) => [c.slug, c]));
 
   const allOverrides = operation.apiKeyId && operation.endpointSlug
-    ? await prisma.externalApiOverride.findMany({
-        where: {
-          apiKeyId: operation.apiKeyId,
-          endpointSlug: operation.endpointSlug,
-        },
-      })
+    ? await db.select().from(externalApiOverrides).where(and(
+          eq(externalApiOverrides.apiKeyId, operation.apiKeyId),
+          eq(externalApiOverrides.endpointSlug, operation.endpointSlug)
+        ))
     : [];
   // Key: `${connectionId}:${stepId}`
   const overrideMap = new Map(allOverrides.map((o) => [`${o.connectionId}:${o.stepId}`, o]));
@@ -294,14 +286,11 @@ export async function runPipeline(operationId: string, correlationId?: string, j
       const progressMessage = `Đang xử lý bước ${i + 1}/${pipeline.length}: ${step.processor}...`;
 
       // Update progress in DB
-      await prisma.operation.update({
-        where: { id: operationId },
-        data: {
-          currentStep: i,
-          progressPercent,
-          progressMessage,
-        },
-      });
+      await db.update(operations).set({
+        currentStep: i,
+        progressPercent,
+        progressMessage,
+      }).where(eq(operations.id, operationId));
 
       // Update progress in BullMQ
       if (job) {
@@ -385,40 +374,35 @@ export async function runPipeline(operationId: string, correlationId?: string, j
       currentText = result.content ?? (result.extractedData ? JSON.stringify(result.extractedData) : undefined);
 
       // Save intermediate progress
-      await prisma.operation.update({
-        where: { id: operationId },
-        data: { stepsResultJson: JSON.stringify(stepsResult) },
-      });
+      await db.update(operations).set({
+        stepsResultJson: JSON.stringify(stepsResult)
+      }).where(eq(operations.id, operationId));
     }
 
     // Pipeline completed successfully
     const lastStep = stepsResult[stepsResult.length - 1];
-    await prisma.operation.update({
-      where: { id: operationId },
-      data: {
-        done: true,
-        state: 'SUCCEEDED',
-        progressPercent: 100,
-        progressMessage: null,
-        currentStep: pipeline.length - 1,
-        outputContent: currentText,
-        extractedData: lastStep?.extracted_data ? JSON.stringify(lastStep.extracted_data) : null,
-        stepsResultJson: JSON.stringify(stepsResult),
-        totalInputTokens,
-        totalOutputTokens,
-        pagesProcessed: totalPages,
-        modelUsed: lastModelUsed,
-        totalCostUsd: totalCost,
-        usageBreakdown: JSON.stringify(usageBreakdown),
-      },
-    });
+    await db.update(operations).set({
+      done: true,
+      state: 'SUCCEEDED',
+      progressPercent: 100,
+      progressMessage: null,
+      currentStep: pipeline.length - 1,
+      outputContent: currentText,
+      extractedData: lastStep?.extracted_data ? JSON.stringify(lastStep.extracted_data) : null,
+      stepsResultJson: JSON.stringify(stepsResult),
+      totalInputTokens,
+      totalOutputTokens,
+      pagesProcessed: totalPages,
+      modelUsed: lastModelUsed,
+      totalCostUsd: totalCost,
+      usageBreakdown: JSON.stringify(usageBreakdown),
+    }).where(eq(operations.id, operationId));
 
     // Update ApiKey.totalUsed for billing/spending limit enforcement
     if (operation.apiKeyId && totalCost > 0) {
-      await prisma.apiKey.update({
-        where: { id: operation.apiKeyId },
-        data: { totalUsed: { increment: totalCost } },
-      });
+      await db.update(apiKeys).set({
+        totalUsed: sql`${apiKeys.totalUsed} + ${totalCost}`
+      }).where(eq(apiKeys.id, operation.apiKeyId));
     }
 
     if (job) {
@@ -433,10 +417,9 @@ export async function runPipeline(operationId: string, correlationId?: string, j
         logger,
       );
       if (delivered) {
-        await prisma.operation.update({
-          where: { id: operationId },
-          data: { webhookSentAt: new Date() },
-        });
+        await db.update(operations).set({ 
+          webhookSentAt: new Date() 
+        }).where(eq(operations.id, operationId));
       } else {
         logger.error(`Webhook delivery failed after 3 attempts for ${operationId}`);
       }
@@ -453,21 +436,18 @@ export async function runPipeline(operationId: string, correlationId?: string, j
     const msg = error instanceof Error ? error.message : String(error);
     logger.error(`[PIPELINE_FAILED] Operation ${operationId} failed at step ${stepsResult.length}`, undefined, error);
 
-    await prisma.operation.update({
-      where: { id: operationId },
-      data: {
-        done: true,
-        state: 'FAILED',
-        failedAtStep: stepsResult.length,
-        errorCode: 'PIPELINE_ERROR',
-        errorMessage: msg,
-        stepsResultJson: JSON.stringify(stepsResult),
-        totalInputTokens,
-        totalOutputTokens,
-        totalCostUsd: totalCost,
-        usageBreakdown: JSON.stringify(usageBreakdown),
-      },
-    });
+    await db.update(operations).set({
+      done: true,
+      state: 'FAILED',
+      failedAtStep: stepsResult.length,
+      errorCode: 'PIPELINE_ERROR',
+      errorMessage: msg,
+      stepsResultJson: JSON.stringify(stepsResult),
+      totalInputTokens,
+      totalOutputTokens,
+      totalCostUsd: totalCost,
+      usageBreakdown: JSON.stringify(usageBreakdown),
+    }).where(eq(operations.id, operationId));
 
     if (operation.webhookUrl) {
       const delivered = await sendWebhook(
@@ -476,10 +456,9 @@ export async function runPipeline(operationId: string, correlationId?: string, j
         logger,
       );
       if (delivered) {
-        await prisma.operation.update({
-          where: { id: operationId },
-          data: { webhookSentAt: new Date() },
-        });
+        await db.update(operations).set({ 
+          webhookSentAt: new Date() 
+        }).where(eq(operations.id, operationId));
       } else {
         logger.error(`Failure webhook delivery failed after 3 attempts for ${operationId}`);
       }

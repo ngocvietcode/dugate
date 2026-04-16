@@ -3,7 +3,9 @@
 // Each workflow is a separate file in lib/pipelines/workflows/*.ts
 // This file provides: types, helpers (enqueueSubStep, updateProgress), and the router.
 
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { apiKeys, operations, profileEndpoints } from '@/lib/db/schema';
+import { eq, and, sql } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
 import {
   getWorkflowStepsQueue,
@@ -11,10 +13,10 @@ import {
   type PipelineJobData,
 } from '@/lib/queue/pipeline-queue';
 import type { Job } from 'bullmq';
-import type { Operation } from '@prisma/client';
+import type { Operation } from '@/lib/db/schema';
 
 // Re-export for workflow files
-export { prisma, Logger };
+export { db, Logger };
 export type { Job };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -117,21 +119,19 @@ export async function enqueueSubStep(
 ): Promise<SubStepResult> {
   const subOpId = crypto.randomUUID();
 
-  await prisma.operation.create({
-    data: {
-      id: subOpId,
-      endpointSlug: processorSlug,
-      apiKeyId: ctx.apiKeyId,
-      createdByUserId: ctx.createdByUserId,
-      pipelineJson: JSON.stringify([{ processor: processorSlug, variables }]),
-      filesJson: filesJson,
-      outputFormat: 'json',
-      state: 'RUNNING',
-      done: false,
-      progressPercent: 0,
-      progressMessage: `Sub-step: ${processorSlug}`,
-      deletedAt: new Date(), // hidden from user history
-    },
+  await db.insert(operations).values({
+    id: subOpId,
+    endpointSlug: processorSlug,
+    apiKeyId: ctx.apiKeyId,
+    createdByUserId: ctx.createdByUserId,
+    pipelineJson: JSON.stringify([{ processor: processorSlug, variables }]),
+    filesJson: filesJson,
+    outputFormat: 'json',
+    state: 'RUNNING',
+    done: false,
+    progressPercent: 0,
+    progressMessage: `Sub-step: ${processorSlug}`,
+    deletedAt: new Date(), // hidden from user history
   });
 
   ctx.logger.info(`[WORKFLOW] Enqueued sub-step: ${processorSlug} → subOpId=${subOpId}`);
@@ -150,7 +150,7 @@ export async function enqueueSubStep(
     await job.waitUntilFinished(queueEvents, SUB_STEP_TIMEOUT);
   } catch (err: unknown) {
     // Reload to check if it actually completed despite timeout
-    const checkOp = await prisma.operation.findUnique({ where: { id: subOpId } });
+    const [checkOp] = await db.select().from(operations).where(eq(operations.id, subOpId)).limit(1);
     if (!checkOp || !checkOp.done) {
       const errMsg = err instanceof Error ? err.message : String(err);
       throw new Error(`Sub-step ${processorSlug} timed out after ${SUB_STEP_TIMEOUT / 1000}s: ${errMsg}`);
@@ -158,7 +158,7 @@ export async function enqueueSubStep(
     // If done, continue normally — the timeout was a pub/sub race condition
   }
 
-  const subOp = await prisma.operation.findUnique({ where: { id: subOpId } });
+  const [subOp] = await db.select().from(operations).where(eq(operations.id, subOpId)).limit(1);
   if (!subOp) throw new Error(`Sub-operation ${subOpId} not found after completion`);
   if (subOp.state === 'FAILED') throw new Error(`Sub-step ${processorSlug} failed: ${subOp.errorMessage}`);
 
@@ -181,45 +181,38 @@ export async function enqueueSubStep(
 
 /** Update progress on the PARENT operation + BullMQ job */
 export async function updateProgress(ctx: WorkflowContext, percent: number, message: string) {
-  await prisma.operation.update({
-    where: { id: ctx.operationId },
-    data: {
-      progressPercent: percent,
-      progressMessage: message,
-      stepsResultJson: JSON.stringify(ctx.stepsResult),
-    },
-  });
+  await db.update(operations).set({
+    progressPercent: percent,
+    progressMessage: message,
+    stepsResultJson: JSON.stringify(ctx.stepsResult),
+  }).where(eq(operations.id, ctx.operationId));
   if (ctx.job) await ctx.job.updateProgress(percent);
 }
 
 /** Mark parent operation as SUCCEEDED + send webhook if configured */
 export async function completeWorkflow(ctx: WorkflowContext, outputContent: string | null, extractedData: unknown) {
-  await prisma.operation.update({
-    where: { id: ctx.operationId },
-    data: {
-      done: true,
-      state: 'SUCCEEDED',
-      progressPercent: 100,
-      progressMessage: null,
-      currentStep: ctx.stepsResult.length - 1,
-      outputContent,
-      extractedData: extractedData ? JSON.stringify(extractedData) : null,
-      stepsResultJson: JSON.stringify(ctx.stepsResult),
-      totalInputTokens: ctx.totalInputTokens,
-      totalOutputTokens: ctx.totalOutputTokens,
-      totalCostUsd: ctx.totalCost,
-      modelUsed: null, // Determined by individual connector configs
-    },
-  });
+  await db.update(operations).set({
+    done: true,
+    state: 'SUCCEEDED',
+    progressPercent: 100,
+    progressMessage: null,
+    currentStep: ctx.stepsResult.length - 1,
+    outputContent,
+    extractedData: extractedData ? JSON.stringify(extractedData) : null,
+    stepsResultJson: JSON.stringify(ctx.stepsResult),
+    totalInputTokens: ctx.totalInputTokens,
+    totalOutputTokens: ctx.totalOutputTokens,
+    totalCostUsd: ctx.totalCost,
+    modelUsed: null, // Determined by individual connector configs
+  }).where(eq(operations.id, ctx.operationId));
   if (ctx.job) await ctx.job.updateProgress(100);
   ctx.logger.info(`[WORKFLOW] Completed for ${ctx.operationId}`);
 
   // Update ApiKey.totalUsed for billing/spending limit enforcement
   if (ctx.apiKeyId && ctx.totalCost > 0) {
-    await prisma.apiKey.update({
-      where: { id: ctx.apiKeyId },
-      data: { totalUsed: { increment: ctx.totalCost } },
-    });
+    await db.update(apiKeys).set({
+      totalUsed: sql`${apiKeys.totalUsed} + ${ctx.totalCost}`
+    }).where(eq(apiKeys.id, ctx.apiKeyId));
   }
 
   // Send webhook notification (parity with engine.ts)
@@ -228,21 +221,18 @@ export async function completeWorkflow(ctx: WorkflowContext, outputContent: stri
 
 /** Mark parent operation as WAITING_USER_INPUT (Paused for Human-in-the-Loop) */
 export async function pauseWorkflow(ctx: WorkflowContext, message: string, currentStep: number) {
-  await prisma.operation.update({
-    where: { id: ctx.operationId },
-    data: {
-      done: false,
-      state: 'WAITING_USER_INPUT',
-      progressMessage: message,
-      currentStep, // Save Checkpoint index to resume from there
-      stepsResultJson: JSON.stringify(ctx.stepsResult),
-      
-      // Track usage accumulated so far
-      totalInputTokens: ctx.totalInputTokens,
-      totalOutputTokens: ctx.totalOutputTokens,
-      totalCostUsd: ctx.totalCost,
-    },
-  });
+  await db.update(operations).set({
+    done: false,
+    state: 'WAITING_USER_INPUT',
+    progressMessage: message,
+    currentStep, // Save Checkpoint index to resume from there
+    stepsResultJson: JSON.stringify(ctx.stepsResult),
+    
+    // Track usage accumulated so far
+    totalInputTokens: ctx.totalInputTokens,
+    totalOutputTokens: ctx.totalOutputTokens,
+    totalCostUsd: ctx.totalCost,
+  }).where(eq(operations.id, ctx.operationId));
   // Note: We don't set progressPercent to 100 here since it's waiting
   ctx.logger.info(`[WORKFLOW] Paused at step ${currentStep} for ${ctx.operationId}: ${message}`);
 
@@ -255,20 +245,17 @@ export async function failWorkflow(ctx: WorkflowContext, error: unknown) {
   const msg = error instanceof Error ? error.message : String(error);
   ctx.logger.error(`[WORKFLOW] Failed at step ${ctx.stepsResult.length}: ${msg}`, undefined, error);
 
-  await prisma.operation.update({
-    where: { id: ctx.operationId },
-    data: {
-      done: true,
-      state: 'FAILED',
-      failedAtStep: ctx.stepsResult.length,
-      errorCode: 'WORKFLOW_ERROR',
-      errorMessage: msg,
-      stepsResultJson: JSON.stringify(ctx.stepsResult),
-      totalInputTokens: ctx.totalInputTokens,
-      totalOutputTokens: ctx.totalOutputTokens,
-      totalCostUsd: ctx.totalCost,
-    },
-  });
+  await db.update(operations).set({
+    done: true,
+    state: 'FAILED',
+    failedAtStep: ctx.stepsResult.length,
+    errorCode: 'WORKFLOW_ERROR',
+    errorMessage: msg,
+    stepsResultJson: JSON.stringify(ctx.stepsResult),
+    totalInputTokens: ctx.totalInputTokens,
+    totalOutputTokens: ctx.totalOutputTokens,
+    totalCostUsd: ctx.totalCost,
+  }).where(eq(operations.id, ctx.operationId));
 
   // Send webhook notification (parity with engine.ts)
   await sendWebhook(ctx, 'FAILED', msg);
@@ -291,10 +278,9 @@ async function sendWebhook(ctx: WorkflowContext, state: 'SUCCEEDED' | 'FAILED', 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    await prisma.operation.update({
-      where: { id: ctx.operationId },
-      data: { webhookSentAt: new Date() },
-    });
+    await db.update(operations).set({ 
+      webhookSentAt: new Date() 
+    }).where(eq(operations.id, ctx.operationId));
     ctx.logger.info(`[WORKFLOW] Webhook sent to ${ctx.webhookUrl}`);
   } catch (err) {
     ctx.logger.warn(`[WORKFLOW] Webhook failed for ${ctx.operationId}`, undefined, err);
@@ -311,7 +297,7 @@ export async function createWorkflowContext(
 ): Promise<WorkflowContext | null> {
   const logger = new Logger({ correlationId, operationId }, job);
 
-  const operation = await prisma.operation.findUnique({ where: { id: operationId } });
+  const [operation] = await db.select().from(operations).where(eq(operations.id, operationId)).limit(1);
   if (!operation) {
     logger.error(`Operation ${operationId} not found`);
     return null;
@@ -340,14 +326,9 @@ export async function createWorkflowContext(
   let promptOverrides: Record<string, string> = {};
   if (operation.apiKeyId && operation.endpointSlug) {
     try {
-      const profileEndpoint = await prisma.profileEndpoint.findUnique({
-        where: {
-          apiKeyId_endpointSlug: {
-            apiKeyId: operation.apiKeyId,
-            endpointSlug: operation.endpointSlug,
-          },
-        },
-      });
+      const [profileEndpoint] = await db.select().from(profileEndpoints)
+        .where(and(eq(profileEndpoints.apiKeyId, operation.apiKeyId), eq(profileEndpoints.endpointSlug, operation.endpointSlug)))
+        .limit(1);
       if (profileEndpoint?.parameters) {
         const params = JSON.parse(profileEndpoint.parameters);
         if (params._workflowPrompts?.value && typeof params._workflowPrompts.value === 'object') {

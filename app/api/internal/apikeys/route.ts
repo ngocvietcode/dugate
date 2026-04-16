@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { apiKeys } from '@/lib/db/schema';
+import { eq, inArray, desc } from 'drizzle-orm';
 import crypto from 'crypto';
 import { Logger } from '@/lib/logger';
 import { requireAuth, requireAdmin, getAssignedProfileIds } from '@/lib/auth-guard';
@@ -13,20 +15,19 @@ export async function GET(req: NextRequest) {
 
   try {
     const assignedIds = await getAssignedProfileIds();
-    const whereClause = assignedIds === null ? {} : { id: { in: assignedIds } };
+    const whereCondition = assignedIds === null ? undefined : inArray(apiKeys.id, assignedIds);
 
-    const apiKeys = await prisma.apiKey.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        name: true,
-        status: true,
-        note: true,
-        // keyHash is intentionally excluded — never expose hashed keys
-      }
-    });
-    return NextResponse.json({ success: true, apiKeys });
+    const keys = await db.select({
+      id: apiKeys.id,
+      name: apiKeys.name,
+      status: apiKeys.status,
+      note: apiKeys.note,
+    })
+    .from(apiKeys)
+    .where(whereCondition)
+    .orderBy(desc(apiKeys.createdAt));
+    
+    return NextResponse.json({ success: true, apiKeys: keys });
   } catch (error: any) {
     logger.error('[GET] DB error', {}, error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -47,17 +48,16 @@ export async function PUT(req: NextRequest) {
     if (action === 'rotate') {
       const rawKey = 'dg_' + crypto.randomBytes(32).toString('base64url');
       const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
-      const updatedKey = await prisma.apiKey.update({
-        where: { id },
-        data: { keyHash },
-        select: { id: true, name: true, status: true, note: true },
-      });
+      const [updatedKey] = await db.update(apiKeys)
+        .set({ keyHash })
+        .where(eq(apiKeys.id, id))
+        .returning({ id: apiKeys.id, name: apiKeys.name, status: apiKeys.status, note: apiKeys.note });
       return NextResponse.json({ success: true, apiKey: updatedKey, rawKey });
     } else {
-      const updatedKey = await prisma.apiKey.update({
-        where: { id },
-        data: { note },
-      });
+      const [updatedKey] = await db.update(apiKeys)
+        .set({ note })
+        .where(eq(apiKeys.id, id))
+        .returning();
       return NextResponse.json({ success: true, apiKey: updatedKey });
     }
   } catch (error: any) {
@@ -82,15 +82,12 @@ export async function POST(req: NextRequest) {
     const rawKey = 'dg_' + crypto.randomBytes(32).toString('base64url');
     const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
 
-    const apiKey = await prisma.apiKey.create({
-      data: {
-        name: name.trim(),
-        keyHash,
-        prefix: 'dg_',
-        status: 'active',
-      },
-      select: { id: true, name: true, status: true },
-    });
+    const [apiKey] = await db.insert(apiKeys).values({
+      name: name.trim(),
+      keyHash,
+      prefix: 'dg_',
+      status: 'active',
+    }).returning({ id: apiKeys.id, name: apiKeys.name, status: apiKeys.status });
 
     return NextResponse.json({
       success: true,
@@ -113,15 +110,13 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ success: false, error: 'Thiếu ID' }, { status: 400 });
 
-    const key = await prisma.apiKey.findUnique({ where: { id } });
+    const [key] = await db.select().from(apiKeys).where(eq(apiKeys.id, id)).limit(1);
     if (!key) return NextResponse.json({ success: false, error: 'Không tìm thấy Profile' }, { status: 404 });
     if (key.name === 'Global Profile') {
       return NextResponse.json({ success: false, error: 'Global Profile không được phép xóa' }, { status: 403 });
     }
 
-    await prisma.apiKey.delete({
-      where: { id }
-    });
+    await db.delete(apiKeys).where(eq(apiKeys.id, id));
     return NextResponse.json({ success: true });
   } catch (error: any) {
     logger.error('[DELETE] DB error', {}, error);

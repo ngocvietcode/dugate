@@ -5,7 +5,9 @@
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { userProfileAssignments } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 type GuardResult<T> = T | NextResponse;
 
@@ -54,14 +56,12 @@ export async function requireProfileAccess(
   }
 
   // USER: kiểm tra assignment
-  const assignment = await prisma.userProfileAssignment.findUnique({
-    where: {
-      userId_apiKeyId: {
-        userId: session.user.id,
-        apiKeyId,
-      },
-    },
-  });
+  const [assignment] = await db.select().from(userProfileAssignments).where(
+    and(
+      eq(userProfileAssignments.userId, session.user.id),
+      eq(userProfileAssignments.apiKeyId, apiKeyId)
+    )
+  ).limit(1);
 
   if (!assignment) {
     return NextResponse.json({ error: 'Forbidden — Profile not assigned to this user' }, { status: 403 });
@@ -80,10 +80,9 @@ export async function getAssignedProfileIds(): Promise<string[] | null> {
 
   if (session.user.role === 'ADMIN') return null; // null = no filter
 
-  const assignments = await prisma.userProfileAssignment.findMany({
-    where: { userId: session.user.id },
-    select: { apiKeyId: true },
-  });
+  const assignments = await db.select({ apiKeyId: userProfileAssignments.apiKeyId })
+    .from(userProfileAssignments)
+    .where(eq(userProfileAssignments.userId, session.user.id));
 
   return assignments.map((a) => a.apiKeyId);
 }

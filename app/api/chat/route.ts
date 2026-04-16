@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { externalApiConnections } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { SERVICE_REGISTRY } from '@/lib/endpoints/registry';
 
 export async function POST(request: Request) {
@@ -9,9 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    const connection = await prisma.externalApiConnection.findUnique({
-      where: { slug: 'sys-assistant' }
-    });
+    const [connection] = await db.select().from(externalApiConnections).where(eq(externalApiConnections.slug, 'sys-assistant')).limit(1);
 
     if (!connection) {
       return NextResponse.json({ error: 'sys-assistant not found in Database' }, { status: 500 });

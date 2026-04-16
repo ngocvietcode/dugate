@@ -3,7 +3,7 @@
 // Kept in lib/ (not in a route file) so it can be safely imported by any route
 // without causing Next.js production-build cross-route import errors.
 
-import type { Operation } from '@prisma/client';
+import type { Operation } from '@/lib/db/schema';
 
 function safeParseJson<T>(json: string | null | undefined, fallback: T): T {
   if (!json) return fallback;

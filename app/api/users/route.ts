@@ -3,7 +3,9 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { users } from '@/lib/db/schema';
+import { eq, asc } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { Logger } from '@/lib/logger';
 
@@ -17,12 +19,18 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const users = await prisma.user.findMany({
-    select: { id: true, username: true, role: true, provider: true, email: true, displayName: true, createdAt: true, updatedAt: true },
-    orderBy: { createdAt: 'asc' },
-  });
+  const usersList = await db.select({
+    id: users.id,
+    username: users.username,
+    role: users.role,
+    provider: users.provider,
+    email: users.email,
+    displayName: users.displayName,
+    createdAt: users.createdAt,
+    updatedAt: users.updatedAt,
+  }).from(users).orderBy(asc(users.createdAt));
 
-  return NextResponse.json(users);
+  return NextResponse.json(usersList);
 }
 
 // POST /api/users — create a new user (ADMIN only)
@@ -49,20 +57,17 @@ export async function POST(request: Request) {
     }
 
     // Check duplicate username
-    const existing = await prisma.user.findUnique({ where: { username } });
+    const [existing] = await db.select().from(users).where(eq(users.username, username)).limit(1);
     if (existing) {
       return NextResponse.json({ error: 'Username đã tồn tại' }, { status: 409 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-      data: {
-        username,
-        password: hashedPassword,
-        role: ['ADMIN', 'USER', 'VIEWER'].includes(role) ? role : 'USER',
-      },
-      select: { id: true, username: true, role: true, createdAt: true },
-    });
+    const [user] = await db.insert(users).values({
+      username,
+      password: hashedPassword,
+      role: ['ADMIN', 'USER', 'VIEWER'].includes(role) ? role : 'USER',
+    }).returning({ id: users.id, username: users.username, role: users.role, createdAt: users.createdAt });
 
     return NextResponse.json(user, { status: 201 });
   } catch (err) {

@@ -2,7 +2,9 @@
 // Internal: GET /api/operations/{id} — Operation detail for frontend
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { operations } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { formatOperationResponse } from '@/lib/pipelines/format';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -16,7 +18,7 @@ export async function GET(
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const op = await prisma.operation.findUnique({ where: { id } });
+  const [op] = await db.select().from(operations).where(eq(operations.id, id)).limit(1);
 
   if (!op || op.deletedAt) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -39,7 +41,7 @@ export async function DELETE(
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const op = await prisma.operation.findUnique({ where: { id } });
+  const [op] = await db.select().from(operations).where(eq(operations.id, id)).limit(1);
   
   if (!op || op.deletedAt) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -53,9 +55,6 @@ export async function DELETE(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  await prisma.operation.update({
-    where: { id },
-    data: { deletedAt: new Date() },
-  });
+  await db.update(operations).set({ deletedAt: new Date() }).where(eq(operations.id, id));
   return new NextResponse(null, { status: 204 });
 }

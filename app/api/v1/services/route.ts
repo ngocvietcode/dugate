@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { profileEndpoints } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { getAllEndpointSlugs } from '@/lib/endpoints/registry';
 
 export async function GET(req: NextRequest) {
@@ -20,9 +22,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // Lấy config từ ProfileEndpoint của API Key này, để biết những service nào bị OFF
-    const profileEndpoints = await prisma.profileEndpoint.findMany({ 
-      where: { apiKeyId } 
-    });
+    const endpoints = await db.select().from(profileEndpoints).where(eq(profileEndpoints.apiKeyId, apiKeyId));
 
     const allSlugs = getAllEndpointSlugs();
     
@@ -31,10 +31,10 @@ export async function GET(req: NextRequest) {
 
     for (const ep of allSlugs) {
       // Check if this endpoint is explicitly disabled
-      const dbRecord = profileEndpoints.find((p) => p.endpointSlug === ep.slug);
+      const dbRecord = endpoints.find((p) => p.endpointSlug === ep.slug);
       
       // Check for generic wildcard disable (e.g. 'extract' is off means 'extract:invoice' is off)
-      const genericRecord = profileEndpoints.find((p) => p.endpointSlug === ep.serviceSlug);
+      const genericRecord = endpoints.find((p) => p.endpointSlug === ep.serviceSlug);
 
       if (dbRecord?.enabled === false || genericRecord?.enabled === false) {
          continue; // Bỏ qua vì Admin đã khóa quyền này

@@ -1,7 +1,9 @@
 // lib/storage/dedup.ts
 // Atomic FileCache dedup — handles concurrent uploads of the same file safely.
 
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { fileCaches } from '@/lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
 import type { StorageBackend } from './types';
 
 /**
@@ -26,20 +28,19 @@ export async function dedup(
 ): Promise<DedupResult> {
   // Try upsert: if md5Hash exists → increment refCount, else create
   try {
-    const result = await prisma.fileCache.upsert({
-      where: { md5Hash: md5 },
-      update: {
-        refCount: { increment: 1 },
+    const [result] = await db.insert(fileCaches).values({
+      md5Hash: md5,
+      s3Key,
+      fileName,
+      mimeType,
+      size,
+    }).onConflictDoUpdate({
+      target: fileCaches.md5Hash,
+      set: {
+        refCount: sql`${fileCaches.refCount} + 1`,
         lastAccessedAt: new Date(),
-      },
-      create: {
-        md5Hash: md5,
-        s3Key,
-        fileName,
-        mimeType,
-        size,
-      },
-    });
+      }
+    }).returning();
 
     // If upsert hit the "update" path, the new upload is a duplicate
     if (result.s3Key !== s3Key) {
@@ -50,34 +51,27 @@ export async function dedup(
         return { id: result.id, s3Key: result.s3Key };
       }
       // Canonical object was deleted — adopt the new upload as the canonical copy
-      await prisma.fileCache.update({
-        where: { id: result.id },
-        data: { s3Key },
-      });
+      await db.update(fileCaches).set({ s3Key }).where(eq(fileCaches.id, result.id));
       return { id: result.id, s3Key };
     }
 
     return { id: result.id, s3Key: result.s3Key };
   } catch (err: unknown) {
     // Fallback: unique constraint race (extremely rare with upsert, but be defensive)
-    const isUniqueViolation =
-      err instanceof Error && 'code' in err && (err as { code?: string }).code === 'P2002';
+    const isUniqueViolation = err instanceof Error && err.message.includes('unique constraint');
 
     if (isUniqueViolation) {
-      const existing = await prisma.fileCache.update({
-        where: { md5Hash: md5 },
-        data: { refCount: { increment: 1 }, lastAccessedAt: new Date() },
-      });
+      const [existing] = await db.update(fileCaches).set({ 
+        refCount: sql`${fileCaches.refCount} + 1`, 
+        lastAccessedAt: new Date() 
+      }).where(eq(fileCaches.md5Hash, md5)).returning();
       if (s3Key !== existing.s3Key) {
         const canonicalExists = await backend.exists(existing.s3Key).catch(() => false);
         if (canonicalExists) {
           await backend.delete(s3Key).catch(() => {});
           return { id: existing.id, s3Key: existing.s3Key };
         }
-        await prisma.fileCache.update({
-          where: { id: existing.id },
-          data: { s3Key },
-        });
+        await db.update(fileCaches).set({ s3Key }).where(eq(fileCaches.id, existing.id));
         return { id: existing.id, s3Key };
       }
       return { id: existing.id, s3Key: existing.s3Key };

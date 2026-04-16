@@ -14,7 +14,7 @@ import {
   pauseWorkflow,
   completeWorkflow,
   parseDeep,
-  prisma,
+  db,
 } from '@/lib/pipelines/workflow-engine';
 
 import {

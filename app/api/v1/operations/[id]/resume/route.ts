@@ -1,7 +1,9 @@
 // app/api/v1/operations/[id]/resume/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { operations, profileEndpoints } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { getPipelineQueue } from '@/lib/queue/pipeline-queue';
 import { Logger } from '@/lib/logger';
 
@@ -20,9 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const operationId = params.id;
     const body = await req.json();
 
-    const operation = await prisma.operation.findUnique({
-      where: { id: operationId },
-    });
+    const [operation] = await db.select().from(operations).where(eq(operations.id, operationId)).limit(1);
 
     if (!operation) {
       return NextResponse.json({ error: 'Operation not found' }, { status: 404 });
@@ -48,24 +48,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Determine Queue Priority
     let bullPriority = 10;
     if (operation.apiKeyId && operation.endpointSlug) {
-      const profileEndpoint = await prisma.profileEndpoint.findUnique({
-        where: { apiKeyId_endpointSlug: { apiKeyId: operation.apiKeyId, endpointSlug: operation.endpointSlug } },
-        // @ts-ignore
-        select: { jobPriority: true },
-      });
+      const [profileEndpoint] = await db.select({ jobPriority: profileEndpoints.jobPriority }).from(profileEndpoints).where(
+        and(eq(profileEndpoints.apiKeyId, operation.apiKeyId), eq(profileEndpoints.endpointSlug, operation.endpointSlug))
+      ).limit(1);
       // @ts-ignore
       bullPriority = resolveBullPriority(profileEndpoint?.jobPriority);
     }
 
     // Set state back to RUNNING and update
-    await prisma.operation.update({
-      where: { id: operationId },
-      data: {
-        state: 'RUNNING',
-        progressMessage: 'Đang tiếp tục luồng xử lý do người dùng xác nhận...',
-        stepsResultJson: JSON.stringify(stepsResult)
-      }
-    });
+    await db.update(operations).set({
+      state: 'RUNNING',
+      progressMessage: 'Đang tiếp tục luồng xử lý do người dùng xác nhận...',
+      stepsResultJson: JSON.stringify(stepsResult)
+    }).where(eq(operations.id, operationId));
 
     // Enqueue back to the worker
     const queue = getPipelineQueue();

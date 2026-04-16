@@ -1,7 +1,7 @@
 // lib/pipelines/processors/prompt-resolver.ts
 // Prompt resolution and {{variable}} interpolation for external API calls.
 
-import type { ExternalApiConnection, ExternalApiOverride } from '@prisma/client';
+import type { ExternalApiConnection, ExternalApiOverride } from '@/lib/db/schema';
 
 /**
  * Interpolate {{variable}} placeholders in a template string.

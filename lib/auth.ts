@@ -2,12 +2,9 @@ import { NextAuthOptions, User as NextAuthUser } from "next-auth";
 import { OAuthConfig } from "next-auth/providers/oauth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { PrismaClient } from "@prisma/client";
-
-// Ensure global prisma instance in development
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+import { db } from '@/lib/db';
+import { users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 // Build providers list
 const providers: NextAuthOptions["providers"] = [
@@ -22,9 +19,9 @@ const providers: NextAuthOptions["providers"] = [
         throw new Error("Vui lòng nhập tài khoản và mật khẩu");
       }
 
-      const user = await prisma.user.findUnique({
-        where: { username: credentials.username },
-      });
+      const [user] = await db.select().from(users)
+        .where(eq(users.username, credentials.username))
+        .limit(1);
 
       if (!user) {
         throw new Error("Tài khoản không tồn tại");
@@ -86,9 +83,9 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "oidc") {
         const sub = account.providerAccountId;
 
-        let dbUser = await prisma.user.findUnique({
-          where: { providerSub: sub },
-        });
+        let [dbUser] = await db.select().from(users)
+          .where(eq(users.providerSub, sub))
+          .limit(1);
 
         if (!dbUser) {
           // Check if an existing user matches by email — link instead of duplicate
@@ -96,49 +93,49 @@ export const authOptions: NextAuthOptions = {
           // and could cause unintended account takeover.
           const oidcUsername = (user as NextAuthUser & { username?: string }).username || user.email?.split('@')[0] || sub;
           if (user.email) {
-            dbUser = await prisma.user.findFirst({ where: { email: user.email } }) ?? null;
+            const [foundEmailUser] = await db.select().from(users).where(eq(users.email, user.email)).limit(1);
+            dbUser = foundEmailUser ?? null;
           }
 
           if (dbUser) {
             // Link existing user to OIDC provider
-            dbUser = await prisma.user.update({
-              where: { id: dbUser.id },
-              data: {
+            const [updated] = await db.update(users)
+              .set({
                 provider: 'oidc',
                 providerSub: sub,
                 email: user.email || dbUser.email,
                 displayName: user.name || dbUser.displayName,
-              },
-            });
+              })
+              .where(eq(users.id, dbUser.id))
+              .returning();
+            dbUser = updated;
           } else {
             // JIT provision: create new user with VIEWER role
             let username = oidcUsername;
             let suffix = 1;
-            while (await prisma.user.findUnique({ where: { username } })) {
+            while ((await db.select().from(users).where(eq(users.username, username)).limit(1)).length > 0) {
               username = `${oidcUsername}_${suffix++}`;
             }
 
-            dbUser = await prisma.user.create({
-              data: {
-                username,
-                password: "",
-                role: "VIEWER",
-                provider: "oidc",
-                providerSub: sub,
-                email: user.email || null,
-                displayName: user.name || null,
-              },
-            });
+            const [newUser] = await db.insert(users).values({
+              username,
+              password: "",
+              role: "VIEWER",
+              provider: "oidc",
+              providerSub: sub,
+              email: user.email || null,
+              displayName: user.name || null,
+            }).returning();
+            dbUser = newUser;
           }
         } else {
           // Update display info from IDP on each login
-          await prisma.user.update({
-            where: { id: dbUser.id },
-            data: {
+          await db.update(users)
+            .set({
               email: user.email || dbUser.email,
               displayName: user.name || dbUser.displayName,
-            },
-          });
+            })
+            .where(eq(users.id, dbUser.id));
         }
 
         // Attach DB identity so jwt callback picks it up

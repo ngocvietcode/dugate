@@ -2,7 +2,9 @@
 // GET /api/v1/operations/{id}/download — Download output files
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { operations } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import path from 'path';
 import fs from 'fs/promises';
 import { createReadStream } from 'fs';
@@ -15,7 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const op = await prisma.operation.findUnique({ where: { id } });
+  const [op] = await db.select().from(operations).where(eq(operations.id, id)).limit(1);
 
   if (!op || op.deletedAt) {
     return NextResponse.json(

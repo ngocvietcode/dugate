@@ -3,7 +3,9 @@
 // POST — Upsert ProfileEndpoint config for an apiKeyId + endpointSlug
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { profileEndpoints, externalApiConnections, externalApiOverrides } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { SERVICE_REGISTRY, getAllEndpointSlugs } from '@/lib/endpoints/registry';
 import { encrypt, decrypt } from '@/lib/crypto';
 import { Logger } from '@/lib/logger';
@@ -26,17 +28,15 @@ export async function GET(req: NextRequest) {
   if (guard instanceof NextResponse) return guard;
 
   try {
-    const [profileEndpoints, allExtConnections, allExtOverrides] = await Promise.all([
-      prisma.profileEndpoint.findMany({ where: { apiKeyId } }),
-      prisma.externalApiConnection.findMany({
-        select: { id: true, slug: true, name: true, defaultPrompt: true },
-      }),
-      prisma.externalApiOverride.findMany({ where: { apiKeyId } }),
+    const [profileEndpointsList, allExtConnections, allExtOverrides] = await Promise.all([
+      db.select().from(profileEndpoints).where(eq(profileEndpoints.apiKeyId, apiKeyId)),
+      db.select({ id: externalApiConnections.id, slug: externalApiConnections.slug, name: externalApiConnections.name, defaultPrompt: externalApiConnections.defaultPrompt }).from(externalApiConnections),
+      db.select().from(externalApiOverrides).where(eq(externalApiOverrides.apiKeyId, apiKeyId)),
     ]);
 
     // Flatten SERVICE_REGISTRY into enriched endpoint list
     const enrichedEndpoints = getAllEndpointSlugs().map((endpointDef) => {
-      const dbRecord = profileEndpoints.find((p) => p.endpointSlug === endpointDef.slug);
+      const dbRecord = profileEndpointsList.find((p) => p.endpointSlug === endpointDef.slug);
 
       let dbConnectionsOverride = null;
       try { dbConnectionsOverride = dbRecord?.connectionsOverride ? JSON.parse(dbRecord.connectionsOverride as string) : null; } catch { /* skip corrupt JSON */ }
@@ -133,21 +133,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (!isAdmin) {
-      const existing = await prisma.profileEndpoint.findUnique({
-        where: { apiKeyId_endpointSlug: { apiKeyId, endpointSlug } }
-      });
+      const [existing] = await db.select().from(profileEndpoints).where(and(eq(profileEndpoints.apiKeyId, apiKeyId), eq(profileEndpoints.endpointSlug, endpointSlug))).limit(1);
       if (!existing || !existing.enabled) {
         return NextResponse.json({ error: 'Endpoint is not enabled or does not exist. Users cannot configure disabled endpoints.' }, { status: 403 });
       }
 
       // User can only update parameters and overrides, not core properties
-      const record = await prisma.profileEndpoint.update({
-        where: { apiKeyId_endpointSlug: { apiKeyId, endpointSlug } },
-        data: {
+      const [record] = await db.update(profileEndpoints).set({
           parameters: parameters ? JSON.stringify(parameters) : null,
           connectionsOverride: connectionsOverride ? JSON.stringify(connectionsOverride) : null,
-        },
-      });
+        }).where(and(eq(profileEndpoints.apiKeyId, apiKeyId), eq(profileEndpoints.endpointSlug, endpointSlug))).returning();
       return NextResponse.json(record);
     }
 
@@ -162,13 +157,12 @@ export async function POST(req: NextRequest) {
       jobPriority: VALID_PRIORITIES.includes(jobPriority) ? jobPriority : 'MEDIUM',
     };
 
-    const record = await prisma.profileEndpoint.upsert({
-      where: {
-        apiKeyId_endpointSlug: { apiKeyId, endpointSlug },
-      },
-      update: payload,
-      create: { apiKeyId, endpointSlug, ...payload },
-    });
+    const [record] = await db.insert(profileEndpoints).values({
+      apiKeyId, endpointSlug, ...payload
+    }).onConflictDoUpdate({
+      target: [profileEndpoints.apiKeyId, profileEndpoints.endpointSlug],
+      set: payload
+    }).returning();
 
     return NextResponse.json({ profileEndpoint: record }, { status: 200 });
   } catch (error: unknown) {

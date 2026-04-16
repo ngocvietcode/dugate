@@ -2,8 +2,10 @@
 // ProfileEndpoint loading, parameter merging, and lock enforcement.
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import type { ProfileEndpoint } from '@prisma/client';
+import { db } from '@/lib/db';
+import { profileEndpoints } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
+import type { ProfileEndpoint } from '@/lib/db/schema';
 import type { FileUrlAuthConfig } from '@/lib/file-url-downloader';
 import { decrypt } from '@/lib/crypto';
 
@@ -26,17 +28,18 @@ export async function loadProfileEndpoint(
 ): Promise<ProfileEndpoint | null> {
   if (!apiKeyId) return null;
 
-  const profile = await prisma.profileEndpoint.findUnique({
-    where: { apiKeyId_endpointSlug: { apiKeyId, endpointSlug } },
-  });
+  const [profile] = await db.select().from(profileEndpoints)
+    .where(and(eq(profileEndpoints.apiKeyId, apiKeyId), eq(profileEndpoints.endpointSlug, endpointSlug)))
+    .limit(1);
 
   if (profile) return profile;
 
   // Fallback: service-level profile (e.g. "extract" without sub-case)
   if (endpointSlug !== serviceSlug) {
-    return prisma.profileEndpoint.findUnique({
-      where: { apiKeyId_endpointSlug: { apiKeyId, endpointSlug: serviceSlug } },
-    });
+    const [fallback] = await db.select().from(profileEndpoints)
+      .where(and(eq(profileEndpoints.apiKeyId, apiKeyId), eq(profileEndpoints.endpointSlug, serviceSlug)))
+      .limit(1);
+    return fallback || null;
   }
 
   return null;

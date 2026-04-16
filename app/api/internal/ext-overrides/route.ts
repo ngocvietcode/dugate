@@ -4,7 +4,9 @@
 // DELETE — Xóa override
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { externalApiOverrides, externalApiConnections, profileEndpoints, apiKeys } from '@/lib/db/schema';
+import { eq, and, asc } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
 import { requireProfileAccess } from '@/lib/auth-guard';
 import { getServerSession } from 'next-auth';
@@ -32,18 +34,19 @@ export async function GET(req: NextRequest) {
       if (guard instanceof NextResponse) return guard;
     }
 
-    const overrides = await prisma.externalApiOverride.findMany({
-      where: {
-        ...(connectionId && { connectionId }),
-        ...(apiKeyId && { apiKeyId }),
-      },
-      include: {
-        connection: {
-          select: { id: true, slug: true, name: true },
-        },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+    const conditions = [];
+    if (connectionId) conditions.push(eq(externalApiOverrides.connectionId, connectionId));
+    if (apiKeyId) conditions.push(eq(externalApiOverrides.apiKeyId, apiKeyId));
+
+    const rows = await db.select({
+      override: externalApiOverrides,
+      connection: { id: externalApiConnections.id, slug: externalApiConnections.slug, name: externalApiConnections.name }
+    }).from(externalApiOverrides)
+    .leftJoin(externalApiConnections, eq(externalApiOverrides.connectionId, externalApiConnections.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(asc(externalApiOverrides.createdAt));
+
+    const overrides = rows.map(r => ({ ...r.override, connection: r.connection }));
 
     return NextResponse.json({ success: true, overrides });
   } catch (error: unknown) {
@@ -72,19 +75,19 @@ export async function POST(req: NextRequest) {
     const isAdmin = session?.user?.role === 'ADMIN';
 
     if (!isAdmin) {
-      const existingEndpoint = await prisma.profileEndpoint.findUnique({
-        where: { apiKeyId_endpointSlug: { apiKeyId, endpointSlug } }
-      });
+      const [existingEndpoint] = await db.select().from(profileEndpoints).where(and(eq(profileEndpoints.apiKeyId, apiKeyId), eq(profileEndpoints.endpointSlug, endpointSlug))).limit(1);
       if (!existingEndpoint || !existingEndpoint.enabled) {
         return NextResponse.json({ success: false, error: 'Endpoint is not enabled or does not exist.' }, { status: 403 });
       }
     }
 
     // Verify connection và apiKey tồn tại
-    const [connection, apiKey] = await Promise.all([
-      prisma.externalApiConnection.findUnique({ where: { id: connectionId } }),
-      prisma.apiKey.findUnique({ where: { id: apiKeyId } }),
+    const [connectionResult, apiKeyResult] = await Promise.all([
+      db.select().from(externalApiConnections).where(eq(externalApiConnections.id, connectionId)).limit(1),
+      db.select().from(apiKeys).where(eq(apiKeys.id, apiKeyId)).limit(1),
     ]);
+    const connection = connectionResult[0];
+    const apiKey = apiKeyResult[0];
 
     if (!connection) {
       return NextResponse.json({ success: false, error: 'Connection không tồn tại' }, { status: 404 });
@@ -95,28 +98,29 @@ export async function POST(req: NextRequest) {
 
     // isActive = false → xóa override (về default)
     if (isActive === false) {
-      await prisma.externalApiOverride.deleteMany({
-        where: { connectionId, apiKeyId, endpointSlug, stepId: resolvedStepId },
-      });
+      await db.delete(externalApiOverrides).where(
+        and(
+          eq(externalApiOverrides.connectionId, connectionId),
+          eq(externalApiOverrides.apiKeyId, apiKeyId),
+          eq(externalApiOverrides.endpointSlug, endpointSlug),
+          eq(externalApiOverrides.stepId, resolvedStepId)
+        )
+      );
       return NextResponse.json({ success: true, deleted: true });
     }
 
     // Upsert override
-    const override = await prisma.externalApiOverride.upsert({
-      where: {
-        connectionId_apiKeyId_endpointSlug_stepId: { connectionId, apiKeyId, endpointSlug, stepId: resolvedStepId },
-      },
-      create: {
-        connectionId,
-        apiKeyId,
-        endpointSlug,
-        stepId: resolvedStepId,
-        promptOverride: promptOverride?.trim() ?? null,
-      },
-      update: {
-        promptOverride: promptOverride?.trim() ?? null,
-      },
-    });
+    const payload = {
+      connectionId,
+      apiKeyId,
+      endpointSlug,
+      stepId: resolvedStepId,
+      promptOverride: promptOverride?.trim() ?? null,
+    };
+    const [override] = await db.insert(externalApiOverrides).values(payload).onConflictDoUpdate({
+      target: [externalApiOverrides.connectionId, externalApiOverrides.apiKeyId, externalApiOverrides.endpointSlug, externalApiOverrides.stepId],
+      set: { promptOverride: promptOverride?.trim() ?? null }
+    }).returning();
 
     return NextResponse.json({ success: true, override });
   } catch (error: unknown) {
@@ -141,9 +145,7 @@ export async function DELETE(req: NextRequest) {
     const guard = await requireProfileAccess(apiKeyId);
     if (guard instanceof NextResponse) return guard;
 
-    await prisma.externalApiOverride.deleteMany({
-      where: { connectionId, apiKeyId },
-    });
+    await db.delete(externalApiOverrides).where(and(eq(externalApiOverrides.connectionId, connectionId), eq(externalApiOverrides.apiKeyId, apiKeyId)));
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

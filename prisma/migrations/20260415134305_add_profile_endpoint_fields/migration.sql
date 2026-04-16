@@ -1,2 +1,0 @@
--- RenameIndex
-ALTER INDEX "ExternalApiOverride_connectionId_apiKeyId_endpointSlug_stepId_k" RENAME TO "ExternalApiOverride_connectionId_apiKeyId_endpointSlug_step_key";

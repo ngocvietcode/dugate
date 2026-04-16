@@ -3,7 +3,9 @@
 // DELETE — Delete connection (cascade deletes overrides)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { externalApiConnections } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
 import { requireAdmin } from '@/lib/auth-guard';
 
@@ -22,7 +24,7 @@ export async function PUT(
     const { id } = await params;
     const body = await req.json();
 
-    const existing = await prisma.externalApiConnection.findUnique({ where: { id } });
+    const [existing] = await db.select().from(externalApiConnections).where(eq(externalApiConnections.id, id)).limit(1);
     if (!existing) {
       return NextResponse.json({ success: false, error: 'Connection không tồn tại' }, { status: 404 });
     }
@@ -53,9 +55,7 @@ export async function PUT(
         ? authSecret.trim()
         : existing.authSecret;
 
-    const updated = await prisma.externalApiConnection.update({
-      where: { id },
-      data: {
+    const [updated] = await db.update(externalApiConnections).set({
         ...(name !== undefined && { name: name.trim() }),
         ...(description !== undefined && { description: description?.trim() ?? null }),
         ...(endpointUrl !== undefined && { endpointUrl: endpointUrl.trim() }),
@@ -73,8 +73,7 @@ export async function PUT(
         ...(sessionIdFieldName !== undefined && { sessionIdFieldName: sessionIdFieldName ?? null }),
         ...(timeoutSec !== undefined && { timeoutSec: Number(timeoutSec) }),
         ...(state !== undefined && { state }),
-      },
-    });
+    }).where(eq(externalApiConnections.id, id)).returning();
 
     return NextResponse.json({
       success: true,
@@ -101,13 +100,13 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const existing = await prisma.externalApiConnection.findUnique({ where: { id } });
+    const [existing] = await db.select().from(externalApiConnections).where(eq(externalApiConnections.id, id)).limit(1);
     if (!existing) {
       return NextResponse.json({ success: false, error: 'Connection không tồn tại' }, { status: 404 });
     }
 
     // ExternalApiOverride cascade-deletes via foreign key
-    await prisma.externalApiConnection.delete({ where: { id } });
+    await db.delete(externalApiConnections).where(eq(externalApiConnections.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

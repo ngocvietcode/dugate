@@ -3,7 +3,9 @@
 // DELETE /api/v1/operations/{id} — Soft delete
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { operations } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { formatOperationResponse } from '@/lib/pipelines/format';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +16,7 @@ export async function GET(
 ) {
   const { id } = await params;
   console.log(`[API_OPERATIONS] GET /operations/${id} called`);
-  const op = await prisma.operation.findUnique({ where: { id } });
+  const [op] = await db.select().from(operations).where(eq(operations.id, id)).limit(1);
 
   if (!op || op.deletedAt) {
     return NextResponse.json(
@@ -39,7 +41,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const op = await prisma.operation.findUnique({ where: { id } });
+  const [op] = await db.select().from(operations).where(eq(operations.id, id)).limit(1);
 
   if (!op || op.deletedAt) {
     return NextResponse.json(
@@ -56,10 +58,7 @@ export async function DELETE(
     );
   }
 
-  await prisma.operation.update({
-    where: { id },
-    data: { deletedAt: new Date() },
-  });
+  await db.update(operations).set({ deletedAt: new Date() }).where(eq(operations.id, id));
 
   return new NextResponse(null, { status: 204 });
 }

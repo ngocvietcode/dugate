@@ -8,7 +8,9 @@ import crypto from 'crypto';
 import { normalizeFiles, apiError } from '@/lib/endpoints/runner';
 import { submitPipelineJob } from '@/lib/pipelines/submit';
 import { SERVICE_REGISTRY } from '@/lib/endpoints/registry';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { apiKeys } from '@/lib/db/schema';
+import { eq, asc } from 'drizzle-orm';
 
 export async function POST(req: NextRequest) {
   const correlationId = req.headers.get('x-correlation-id') || crypto.randomUUID();
@@ -51,16 +53,17 @@ export async function POST(req: NextRequest) {
       // Support 3 input formats:
       //   1. Internal UUID  → findUnique by id
       //   2. Raw key string (dg_xxx...) → SHA-256 hash then findUnique by keyHash
-      let existingKey = await prisma.apiKey.findUnique({
-        where: { id: apiKeyId },
-      }).catch(() => null); // Catch UUID parse error if they pass a non-UUID string
+      let existingKey = null;
+      try {
+        [existingKey] = await db.select().from(apiKeys).where(eq(apiKeys.id, apiKeyId)).limit(1);
+      } catch {}
 
       if (!existingKey) {
         // Hash the raw key string (same as auth-key/route.ts) before looking up
         const computedHash = crypto.createHash('sha256').update(apiKeyId).digest('hex');
-        existingKey = await prisma.apiKey.findUnique({
-          where: { keyHash: computedHash },
-        }).catch(() => null);
+        try {
+          [existingKey] = await db.select().from(apiKeys).where(eq(apiKeys.keyHash, computedHash)).limit(1);
+        } catch {}
       }
 
       if (!existingKey) {
@@ -74,10 +77,11 @@ export async function POST(req: NextRequest) {
     if (!apiKeyId) {
       // Fetch system admin API key to link the operation to the admin profile
       // This allows the demo UI to use prompt overrides configured under the admin profile
-      const adminKey = await prisma.apiKey.findFirst({
-        where: { role: 'ADMIN' },
-        orderBy: { createdAt: 'asc' },
-      });
+      const [adminKey] = await db.select()
+        .from(apiKeys)
+        .where(eq(apiKeys.role, 'ADMIN'))
+        .orderBy(asc(apiKeys.createdAt))
+        .limit(1);
       apiKeyId = adminKey?.id || null;
     }
 

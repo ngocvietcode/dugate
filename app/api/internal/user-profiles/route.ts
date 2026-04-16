@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { userProfileAssignments, users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { requireAdmin } from '@/lib/auth-guard';
 import { Logger } from '@/lib/logger';
 
@@ -17,10 +19,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const assignments = await prisma.userProfileAssignment.findMany({
-      where: { userId },
-      select: { apiKeyId: true }
-    });
+    const assignments = await db.select({ apiKeyId: userProfileAssignments.apiKeyId }).from(userProfileAssignments).where(eq(userProfileAssignments.userId, userId));
     
     return NextResponse.json({ 
       success: true, 
@@ -44,21 +43,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify user exists
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!user) {
       return NextResponse.json({ error: 'User không tồn tại' }, { status: 404 });
     }
 
     // Replace assignments in a transaction
-    await prisma.$transaction(async (tx) => {
-      await tx.userProfileAssignment.deleteMany({
-        where: { userId }
-      });
+    await db.transaction(async (tx) => {
+      await tx.delete(userProfileAssignments).where(eq(userProfileAssignments.userId, userId));
 
       if (apiKeyIds.length > 0) {
-        await tx.userProfileAssignment.createMany({
-          data: apiKeyIds.map((id: string) => ({ userId, apiKeyId: id }))
-        });
+        await tx.insert(userProfileAssignments).values(
+          apiKeyIds.map((id: string) => ({ userId, apiKeyId: id }))
+        );
       }
     });
 

@@ -3,7 +3,9 @@
 // POST — Create new connection + auto-create linked Processor
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { externalApiConnections } from '@/lib/db/schema';
+import { eq, asc } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
 import { requireAdmin, requireAuth } from '@/lib/auth-guard';
 
@@ -17,9 +19,7 @@ export async function GET() {
   if (guard instanceof NextResponse) return guard;
 
   try {
-    const connections = await prisma.externalApiConnection.findMany({
-      orderBy: { createdAt: 'asc' },
-    });
+    const connections = await db.select().from(externalApiConnections).orderBy(asc(externalApiConnections.createdAt));
 
     // Mask authSecret — never expose to frontend
     const masked = connections.map((c) => ({
@@ -85,13 +85,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Check slug uniqueness
-    const existing = await prisma.externalApiConnection.findUnique({ where: { slug } });
+    const [existing] = await db.select().from(externalApiConnections).where(eq(externalApiConnections.slug, slug)).limit(1);
     if (existing) {
       return NextResponse.json({ success: false, error: `Slug '${slug}' đã tồn tại` }, { status: 409 });
     }
 
-    const result = await prisma.externalApiConnection.create({
-        data: {
+    const [result] = await db.insert(externalApiConnections).values({
           name: name.trim(),
           slug: slug.trim(),
           description: description?.trim() ?? null,
@@ -110,8 +109,7 @@ export async function POST(req: NextRequest) {
           sessionIdFieldName: sessionIdFieldName ?? null,
           timeoutSec: Number(timeoutSec),
           state,
-        },
-      });
+    }).returning();
 
     return NextResponse.json({
       success: true,

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { apiKeys } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { Logger } from '@/lib/logger';
 import { checkRateLimit, RATE_LIMIT_API_KEY, RATE_LIMIT_IP } from '@/lib/rate-limit';
@@ -32,9 +34,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const computedHash = crypto.createHash('sha256').update(passedKey).digest('hex');
-    const apiKey = await prisma.apiKey.findUnique({
-      where: { keyHash: computedHash }
-    });
+    const [apiKey] = await db.select().from(apiKeys).where(eq(apiKeys.keyHash, computedHash)).limit(1);
 
     if (!apiKey) {
       return NextResponse.json({ valid: false, error: 'Unauthorized: Invalid x-api-key header.' }, { status: 401 });

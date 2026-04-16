@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { db } from '@/lib/db';
+import { sql } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
 import { canMutate } from '@/lib/rbac';
 
@@ -25,15 +25,9 @@ export async function GET(req: NextRequest) {
     else if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
 
     // 1. Time Series Data
-    const timeSeriesRaw = await prisma.$queryRaw<Array<{
-      time_bucket: Date;
-      state: string;
-      request_count: bigint;
-      total_tokens: bigint;
-      total_cost: number;
-    }>>(
+    const timeSeriesRaw = await db.execute(
       resolution === 'hour'
-        ? Prisma.sql`
+        ? sql`
             SELECT 
               DATE_TRUNC('hour', "createdAt") as time_bucket,
               state,
@@ -41,11 +35,11 @@ export async function GET(req: NextRequest) {
               SUM("totalInputTokens" + "totalOutputTokens") as total_tokens,
               SUM("totalCostUsd") as total_cost
             FROM "Operation"
-            WHERE "createdAt" >= ${startDate}
+            WHERE "createdAt" >= ${startDate.toISOString()}::timestamp
             GROUP BY 1, 2
             ORDER BY 1 ASC
           `
-        : Prisma.sql`
+        : sql`
             SELECT 
               DATE_TRUNC('day', "createdAt") as time_bucket,
               state,
@@ -53,63 +47,69 @@ export async function GET(req: NextRequest) {
               SUM("totalInputTokens" + "totalOutputTokens") as total_tokens,
               SUM("totalCostUsd") as total_cost
             FROM "Operation"
-            WHERE "createdAt" >= ${startDate}
+            WHERE "createdAt" >= ${startDate.toISOString()}::timestamp
             GROUP BY 1, 2
             ORDER BY 1 ASC
           `
-    );
+    ) as unknown as Array<{
+      time_bucket: Date;
+      state: string;
+      request_count: bigint | string | number;
+      total_tokens: bigint | string | number;
+      total_cost: number;
+    }>;
 
     // 2. Summary
-    const summaryRaw = await prisma.$queryRaw<Array<{
-      total_requests: bigint;
-      success_count: bigint;
-      total_tokens: bigint;
-      total_cost: number;
-    }>>`
+    const summaryRaw = await db.execute(sql`
       SELECT
         COUNT(id) as total_requests,
         SUM(CASE WHEN state = 'SUCCEEDED' THEN 1 ELSE 0 END) as success_count,
         SUM("totalInputTokens" + "totalOutputTokens") as total_tokens,
         SUM("totalCostUsd") as total_cost
       FROM "Operation"
-      WHERE "createdAt" >= ${startDate}
-    `;
+      WHERE "createdAt" >= ${startDate.toISOString()}::timestamp
+    `) as unknown as Array<{
+      total_requests: bigint | string | number;
+      success_count: bigint | string | number;
+      total_tokens: bigint | string | number;
+      total_cost: number;
+    }>;
 
     // 3. Breakdown by Profile
-    const profileBreakdown = await prisma.$queryRaw<Array<{
-      api_key_id: string;
-      name: string;
-      count: bigint;
-    }>>`
+    const profileBreakdown = await db.execute(sql`
       SELECT 
         COALESCE(o."apiKeyId", 'internal') as api_key_id,
         COALESCE(k.name, 'Internal App') as name,
         COUNT(o.id) as count
       FROM "Operation" o
       LEFT JOIN "ApiKey" k ON o."apiKeyId" = k.id
-      WHERE o."createdAt" >= ${startDate}
+      WHERE o."createdAt" >= ${startDate.toISOString()}::timestamp
       GROUP BY 1, 2
       ORDER BY count DESC
-    `;
+    `) as unknown as Array<{
+      api_key_id: string;
+      name: string;
+      count: bigint | string | number;
+    }>;
 
     // 4. Breakdown by Pipeline/Connector
-    const pipelineBreakdown = await prisma.$queryRaw<Array<{
-      endpoint_slug: string;
-      count: bigint;
-    }>>`
+    const pipelineBreakdown = await db.execute(sql`
       SELECT 
         COALESCE("endpointSlug", 'unknown') as endpoint_slug,
         COUNT(id) as count
       FROM "Operation"
-      WHERE "createdAt" >= ${startDate}
+      WHERE "createdAt" >= ${startDate.toISOString()}::timestamp
       GROUP BY 1
       ORDER BY count DESC
-    `;
+    `) as unknown as Array<{
+      endpoint_slug: string;
+      count: bigint | string | number;
+    }>;
 
     // Server-side aggregate states for stacked bar charts
     const timeMap = new Map<string, any>();
     for (const t of timeSeriesRaw) {
-      const timeStr = t.time_bucket.toISOString();
+      const timeStr = new Date(t.time_bucket).toISOString();
       if (!timeMap.has(timeStr)) {
         timeMap.set(timeStr, { 
           time: timeStr, 

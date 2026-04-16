@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { apiKeys } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 /**
  * @swagger
@@ -18,16 +20,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const apiKey = await prisma.apiKey.findUnique({
-    where: { id: apiKeyId },
-    select: {
-      id: true,
-      name: true,
-      spendingLimit: true,
-      totalUsed: true,
-      status: true,
-    },
-  });
+  const [apiKey] = await db.select({
+    id: apiKeys.id,
+    name: apiKeys.name,
+    spendingLimit: apiKeys.spendingLimit,
+    totalUsed: apiKeys.totalUsed,
+    status: apiKeys.status,
+  }).from(apiKeys).where(eq(apiKeys.id, apiKeyId)).limit(1);
 
   if (!apiKey) {
     return NextResponse.json({ error: 'API key not found' }, { status: 404 });

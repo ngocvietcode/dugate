@@ -3,7 +3,9 @@
 // Trả về: HTTP status, latency, response preview, mapped content
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { externalApiConnections } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(
   req: NextRequest,
@@ -12,7 +14,7 @@ export async function POST(
   try {
     const { id } = await params;
 
-    const connection = await prisma.externalApiConnection.findUnique({ where: { id } });
+    const [connection] = await db.select().from(externalApiConnections).where(eq(externalApiConnections.id, id)).limit(1);
     if (!connection) {
       return NextResponse.json({ success: false, error: 'Connection không tồn tại' }, { status: 404 });
     }
