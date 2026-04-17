@@ -145,7 +145,28 @@ export async function enqueueSubStep(
   const job = await queue.add(`pipeline:${processorSlug}`, jobData, { priority: 5 });
 
   const queueEvents = getWorkflowStepsQueueEvents();
-  const SUB_STEP_TIMEOUT = 120_000;
+
+  // Resolve the connector's configured HTTP timeout from DB so the BullMQ
+  // wait window always exceeds the actual HTTP call (no false timeouts).
+  // Add 30s overhead buffer for queue scheduling + file download + response parsing.
+  const QUEUE_OVERHEAD_MS = 30_000;
+  const DEFAULT_CONNECTOR_TIMEOUT_MS = 300_000; // fallback: 300s
+  let connectorTimeoutMs = DEFAULT_CONNECTOR_TIMEOUT_MS;
+  try {
+    const { externalApiConnections } = await import('@/lib/db/schema');
+    const [conn] = await db.select({ timeoutSec: externalApiConnections.timeoutSec })
+      .from(externalApiConnections)
+      .where(eq(externalApiConnections.slug, processorSlug))
+      .limit(1);
+    if (conn?.timeoutSec) {
+      connectorTimeoutMs = conn.timeoutSec * 1000;
+    }
+  } catch {
+    // Non-fatal: fall back to default
+  }
+  const SUB_STEP_TIMEOUT = connectorTimeoutMs + QUEUE_OVERHEAD_MS;
+  ctx.logger.info(`[WORKFLOW] Sub-step timeout: ${SUB_STEP_TIMEOUT / 1000}s (connector=${connectorTimeoutMs / 1000}s + overhead=${QUEUE_OVERHEAD_MS / 1000}s)`);
+
   try {
     await job.waitUntilFinished(queueEvents, SUB_STEP_TIMEOUT);
   } catch (err: unknown) {

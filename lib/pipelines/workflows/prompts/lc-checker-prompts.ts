@@ -56,23 +56,7 @@ export interface MergedClassifyData {
   logical_documents: LogicalDocument[];
 }
 
-export interface ExtractFileResult {
-  file_name: string;
-  logical_docs: string[];
-  status: 'success';
-  sub_operation_id: string;
-  content: any;
-  extracted_data: unknown;
-}
 
-export interface ExtractFileError {
-  file_name: string;
-  logical_docs: string[];
-  status: 'error';
-  error: string;
-}
-
-export type ExtractResult = ExtractFileResult | ExtractFileError;
 
 export interface LCDiscrepancy {
   id: string;
@@ -115,89 +99,7 @@ const LC_DOCUMENT_CATEGORIES = [
   'Khác',
 ] as const;
 
-/** Map LC document label → extraction fields */
-const LC_EXTRACT_FIELD_MAP: Record<string, string> = {
-  'Letter of Credit': [
-    'Số L/C (LC Number)', 'Ngày mở L/C (Issue Date)', 'Ngày hết hạn (Expiry Date)',
-    'Địa điểm hết hạn (Expiry Place)', 'Ngân hàng phát hành (Issuing Bank)',
-    'Ngân hàng thụ hưởng (Beneficiary Bank)', 'Người thụ hưởng (Beneficiary)',
-    'Người yêu cầu (Applicant)', 'Số tiền L/C (LC Amount)', 'Loại tiền tệ (Currency)',
-    'Điều kiện giao hàng (Incoterms)', 'Cảng bốc (Port of Loading)',
-    'Cảng đích (Port of Discharge)', 'Hàng hóa mô tả (Goods Description)',
-    'Hạn chót giao hàng (Latest Shipment Date)',
-    'Loại L/C (Irrevocable/Revocable, Confirmed/Unconfirmed, Transferable)',
-    'Điều kiện thanh toán (Payment Terms)', 'Chứng từ yêu cầu (Required Documents)',
-  ].join(', '),
 
-  'Bill of Lading': [
-    'Số B/L (B/L Number)', 'Ngày phát hành (Issue Date)', 'Ngày bốc hàng (On Board Date)',
-    'Người gửi hàng (Shipper)', 'Người nhận hàng (Consignee)',
-    'Thông báo (Notify Party)', 'Cảng bốc (Port of Loading)',
-    'Cảng dỡ (Port of Discharge)', 'Mô tả hàng hóa (Goods Description)',
-    'Số container/Marks (Container/Marks)', 'Tên tàu (Vessel Name)',
-    'Voyage', 'Số bản gốc phát hành (Number of Originals)',
-    'Freight (Prepaid/Collect)', 'Ghi chú (Clauses/Remarks)',
-    'Loại vận đơn (On Board/Received for Shipment)',
-  ].join(', '),
-
-  'Commercial Invoice': [
-    'Số Invoice (Invoice Number)', 'Ngày (Invoice Date)',
-    'Người xuất khẩu/Người bán (Exporter/Seller)',
-    'Người nhập khẩu/Người mua (Importer/Buyer)',
-    'Số L/C tham chiếu (LC Reference)', 'Điều kiện giao hàng (Incoterms)',
-    'Mô tả hàng hóa (Goods Description)', 'Số lượng (Quantity)',
-    'Đơn giá (Unit Price)', 'Loại tiền tệ (Currency)',
-    'Tổng giá trị (Total Amount)', 'Thuế (Tax/VAT if any)',
-    'Cảng bốc (Port of Loading)', 'Cảng đích (Port of Destination)',
-    'Ký hiệu và số hiệu (Marks and Numbers)',
-  ].join(', '),
-
-  'Packing List': [
-    'Số Packing List', 'Ngày (Date)', 'Người xuất khẩu (Exporter)',
-    'Người mua (Buyer)', 'Số Invoice tham chiếu (Invoice Reference)',
-    'Mô tả hàng hóa (Goods Description)', 'Số kiện (Number of Packages)',
-    'Loại bao bì (Package Type)', 'Trọng lượng cả bì (Gross Weight)',
-    'Trọng lượng tịnh (Net Weight)', 'Thể tích (Volume/CBM)',
-    'Ký hiệu và số hiệu (Marks and Numbers)',
-  ].join(', '),
-
-  'Bill of Exchange': [
-    'Số hối phiếu (Draft Number)', 'Ngày ký phát (Issue Date)',
-    'Người ký phát (Drawer)', 'Người trả tiền (Drawee)',
-    'Số tiền (Amount)', 'Loại tiền tệ (Currency)',
-    'Kỳ hạn thanh toán (Tenor/Usance)',
-    'Số L/C tham chiếu (LC Reference)',
-    'Điều kiện thanh toán (At sight / Usance)',
-  ].join(', '),
-
-  'Certificate of Origin': [
-    'Số chứng nhận (Certificate Number)', 'Ngày cấp (Date of Issue)',
-    'Cơ quan cấp (Issuing Authority)', 'Nước xuất xứ (Country of Origin)',
-    'Người xuất khẩu (Exporter)', 'Người nhập khẩu (Importer)',
-    'Mô tả hàng hóa (Goods Description)', 'Số lượng (Quantity)',
-    'Trọng lượng (Weight)', 'Tiêu chí xuất xứ (Origin Criterion)',
-    'Số Invoice tham chiếu (Invoice Reference)',
-  ].join(', '),
-
-  'Insurance Certificate': [
-    'Số chứng nhận bảo hiểm (Policy/Certificate Number)',
-    'Ngày phát hành (Issue Date)', 'Người được bảo hiểm (Insured)',
-    'Người thụ hưởng (Beneficiary)', 'Hàng hóa được bảo hiểm (Goods Insured)',
-    'Số tiền bảo hiểm (Insured Amount)', 'Loại tiền tệ (Currency)',
-    'Rủi ro được bảo hiểm (Risks Covered)',
-    'Hành trình (Voyage: From → To)',
-    'Tên tàu/Phương tiện (Vessel/Conveyance)',
-    'Điều kiện bảo hiểm (ICC Clause: A/B/C)',
-  ].join(', '),
-
-  'Inspection Certificate': [
-    'Số chứng nhận kiểm tra (Certificate Number)', 'Ngày kiểm tra (Inspection Date)',
-    'Cơ quan kiểm tra (Inspection Authority)', 'Hàng hóa (Goods Description)',
-    'Số lượng (Quantity)', 'Kết quả kiểm tra (Inspection Result)',
-  ].join(', '),
-};
-
-const DEFAULT_LC_EXTRACT_FIELDS = 'Số hiệu chứng từ, Ngày phát hành, Các bên liên quan, Giá trị, Mô tả hàng hóa, Ghi chú đặc biệt';
 
 // ─── Step 1: Classify ─────────────────────────────────────────────────────────
 
@@ -303,85 +205,20 @@ export function mergeClassifyResults(
   return { allLogicalDocs, mergedClassifyData };
 }
 
-// ─── Step 2: Extract ──────────────────────────────────────────────────────────
 
-export function buildExtractPrompt(
-  docsInFile: LogicalDocument[],
-  fileName: string,
-  promptOverride?: string,
-): Record<string, unknown> {
-  const docSections = docsInFile.map((doc) => {
-    const fields = LC_EXTRACT_FIELD_MAP[doc.label] || DEFAULT_LC_EXTRACT_FIELDS;
-    return `- "${doc.label}" (pages ${doc.pages}): extract [${fields}]`;
-  }).join('\n');
-
-  if (promptOverride) {
-    return {
-      _prompt: interpolatePrompt(promptOverride, {
-        file_name: fileName,
-        doc_sections: docSections,
-      }),
-    };
-  }
-
-  return {
-    _prompt: `You are an expert LC document examiner. Extract all required fields from file "${fileName}".
-
-This file contains ${docsInFile.length} document(s):
-${docSections}
-
-EXTRACTION RULES:
-1. Copy field values EXACTLY as they appear — do NOT translate, summarize, or interpret
-2. Preserve original formatting: dates (e.g. 15 Apr 2025), amounts (e.g. USD 50,000.00), reference numbers
-3. If a field is not found → use null (not empty string)
-4. For descriptions and remarks: copy the FULL TEXT verbatim, do not truncate
-5. Capture any CLAUSES, ENDORSEMENTS, or SPECIAL CONDITIONS in the "special_conditions" array
-6. For Bill of Lading specifically:
-   - Record if it states "CLEAN ON BOARD" or has any remarks about goods/packaging condition
-   - Record the exact on-board date notation (e.g. "Shipped on board 10 Apr 2025")
-   - Record freight payment terms exactly (Freight Prepaid / Freight Collect)
-
-Return ONLY valid JSON (no markdown fences):
-{
-  "file": "${fileName}",
-  "documents": [
-    {
-      "label": "Exact document type label",
-      "pages": "page range",
-      "fields": {
-        "Field Name": "Exact value from document",
-        "Another Field": null
-      },
-      "special_conditions": ["Any clause, endorsement, or special note found verbatim"]
-    }
-  ]
-}`,
-  };
-}
 
 // ─── Step 3: Compliance Check (UCP 600 / ISBP 821 — Self-contained) ──────────
 
 export function buildComplianceCheckPrompt(
-  extractionResults: ExtractResult[],
+  mergedClassifyData: MergedClassifyData,
   promptOverride?: string,
 ): Record<string, unknown> {
-  const successResults = extractionResults.filter(
-    (r): r is ExtractFileResult => r.status === 'success',
-  );
-
-  const extractionSummary = successResults.map(r =>
-    `File "${r.file_name}": ${r.logical_docs?.join(', ') || 'N/A'}`
-  ).join('\n');
-
-  const extractionDetail = JSON.stringify(
-    successResults.map(r => ({ file: r.file_name, data: r.extracted_data })), null, 2,
-  );
+  const classifySummary = JSON.stringify(mergedClassifyData.logical_documents, null, 2);
 
   if (promptOverride) {
     return {
       _prompt: interpolatePrompt(promptOverride, {
-        extraction_summary: extractionSummary,
-        extraction_detail: extractionDetail,
+        classify_summary: classifySummary,
       }),
     };
   }
@@ -390,75 +227,55 @@ export function buildComplianceCheckPrompt(
     _prompt: `You are a senior Documentary Credit (LC) checker with expertise in UCP 600, ISBP 821 (2013 Revision) and eUCP v2.0.
 
 TASK: Examine the presented LC document set for compliance with international standards and internal cross-document consistency.
-You do NOT need the original L/C — apply the rules below as your embedded expert knowledge base.
+You are provided with the ORIGINAL RAW DOCUMENTS explicitly attached to this request. Do NOT rely on summarized data — read the textual content, clauses, conditions, and dates directly from the documents yourself to ensure zero information divergence.
 
-=== EXTRACTED DOCUMENT DATA ===
-Files presented (${successResults.length}):
-${extractionSummary}
+=== CLASSIFICATION OVERVIEW ===
+The attached documents have been mapped as follows:
+${classifySummary}
 
-Full extraction detail:
-${extractionDetail}
+=== COMPREHENSIVE EXAMINATION RULES (UCP 600 / ISBP 821) ===
 
-=== EXAMINATION RULES (UCP 600 / ISBP 821) ===
+[1] COMMERCIAL INVOICE (UCP Art 18, ISBP Sec C)
+- Must appear to be issued by the Beneficiary/Seller and made out to the Applicant/Buyer.
+- Goods description must correspond exactly to the LC (if LC provided) or be consistent with other documents. No contradicting descriptions allowed.
+- Currency must match across all documents.
+- Invoice value must not conflict with Draft or any other document.
+- Must not show over-shipment or under-shipment (unless LC allows tolerance, default is NO tolerance).
 
-GROUP A — DOCUMENT COMPLETENESS [UCP 600 Art. 14]
-A1. List all document types identified in the presented set -> populate "documents_present"
-A2. Flag as ADVISORY if any of these are absent:
-    - Commercial Invoice (ALWAYS required)
-    - Bill of Lading or Airway Bill (required if shipment is involved)
-A3. If Insurance Certificate, Certificate of Origin, or Bill of Exchange exist but appear
-    incomplete, flag as MINOR
+[2] TRANSPORT DOCUMENTS (BILL OF LADING / AIRWAY BILL) (UCP Art 20/23, ISBP Sec E/H)
+- Must indicate the name of the carrier and be signed by the carrier, master, or a named agent.
+- Must indicate that goods have been shipped on board a named vessel at the port of loading on a specific date. On-board notation is mandatory.
+- Port of Loading and Port of Discharge must not contradict other documents.
+- Must NOT be "unclean" (i.e., must not contain detrimental clauses regarding the goods or packaging).
+- Consignee and Notify Party must be consistent with standard practices.
 
-GROUP B — COMMERCIAL INVOICE [UCP 600 Art. 18 / ISBP 821 Section C]
-B1. [MAJOR] Goods description: must be specific and unambiguous [ISBP 821 C1]
-B2. [MINOR] Seller and Buyer names/addresses: must be clearly stated
-B3. [MAJOR] Currency: must be consistent throughout the invoice
-B4. [MAJOR] Amount: must be a positive number in correct format
-B5. [MINOR] If LC reference number appears: must be consistent with other documents
-B6. [MINOR] Incoterms: if stated, must be a valid ICC Incoterm (EXW/FOB/CFR/CIF/DAP)
+[3] INSURANCE DOCUMENTS (UCP Art 28, ISBP Sec K)
+- Must appear to be issued and signed by an insurance company, underwriter, or their agents/proxies.
+- Must indicate the amount of insurance coverage (minimum 110% of CIF/CIP value unless otherwise specified).
+- Risks must be covered at least between the shipment port and discharge port.
+- Date of issue must NOT be later than the date of shipment (on-board date).
 
-GROUP C — BILL OF LADING [UCP 600 Art. 20 / ISBP 821 Section E]
-C1. [MAJOR] On board notation: must show a specific on-board date [Art. 20(a)(ii)]
-C2. [MAJOR] Port of Loading: must be explicitly stated
-C3. [MAJOR] Port of Discharge: must be explicitly stated
-C4. [MAJOR] Consignee: must be "To Order", "To Order of [bank name]", or a named party — NOT blank
-C5. [MAJOR] Cleanliness: B/L MUST NOT contain any clause declaring defective condition
-    of goods or packaging — this triggers UCP 600 Art. 27 (Unclean B/L)
-C6. [MINOR] Number of originals issued must be stated (e.g. "3/3 ORIGINALS")
-C7. [MINOR] Freight terms: Prepaid or Collect must be indicated clearly
-C8. [ADVISORY] Vessel name and voyage number should be present
+[4] CERTIFICATE OF ORIGIN & OTHER CERTS (ISBP Sec L/M)
+- Must be issued by the stated authority or appear to be by a neutral party.
+- Country of origin must not contradict the Invoice.
+- Information must not conflict with the B/L or Invoice (e.g., vessel name, marks, quantities, dates).
 
-GROUP D — CROSS-DOCUMENT CONSISTENCY [UCP 600 Art. 14d / ISBP 821 A18]
-D1. [MAJOR] Goods description must NOT contradict between:
-    Invoice <-> Packing List <-> Bill of Lading <-> Certificate of Origin
-    (different wording is acceptable; outright contradiction is not)
-D2. [MINOR] Quantity must be consistent across documents (+-5% tolerance if applicable)
-D3. [MINOR] Gross/net weight: Packing List and B/L must not contradict each other
-D4. [MAJOR] Date logic: Invoice date must NOT be later than B/L on-board date
-    (goods must be invoiced before or on the date of shipment)
-D5. [MINOR] LC reference number, if on multiple documents, must match exactly
-D6. [MINOR] Goods name must not conflict between any two documents
+[5] CROSS-DOCUMENT CONSISTENCY (UCP Art 14.d)
+- Data in a document, when read in context with the credit, the document itself and international standard banking practice, need not be identical to, but must not conflict with, data in that document, any other stipulated document or the credit.
+- Dates: Invoice date <= Shipment date; Insurance date <= Shipment date; Inspection date <= Shipment date.
+- Weights/Quantities: Must tally exactly across Invoice, Packing List, B/L, and Certificates.
 
-GROUP E — ANCILLARY DOCUMENTS
-E1. Certificate of Origin [ISBP 821 Section L]
-    [MINOR] Country of origin explicitly stated
-    [MINOR] Issuing authority named
-    [MINOR] Goods description must not contradict Invoice
-E2. Insurance Certificate / Policy [UCP 600 Art. 28]
-    [MAJOR] Insured amount >= 110% of CIF invoice value [Art. 28(f)(ii)]
-    [MAJOR] Effective date must not be later than B/L on-board date [Art. 28(e)]
-    [MINOR] Risks covered: at minimum ICC(A) or all-risks equivalent
-E3. Bill of Exchange / Draft
-    [MAJOR] Amount must match Commercial Invoice amount exactly
-    [MINOR] Drawee must be identified (issuing/nominated bank or buyer)
-    [MINOR] Tenor/usance must be clearly stated ("at sight", "60 days after B/L date", etc.)
-E4. Inspection / Phytosanitary Certificate
-    [MINOR] Issue date must not be later than the B/L on-board date
+=== GUARDRAILS & REASONING (MUST FOLLOW) ===
+Before issuing the final verdict, you MUST synthesize a step-by-step reasoning process in the "examination_log" array.
+For EACH document, explicitly state:
+1. What you verified (e.g., Dates, Amounts, Signatures, Clauses).
+2. Whether you found conflicts or missing data objectively.
+Only after documenting your findings step-by-step should you determine the discrepancy severity.
 
 === SEVERITY DEFINITIONS ===
-- MAJOR    -> must cause refusal under UCP 600 Art. 16 unless applicant waives
-- MINOR    -> formal issue; may be acceptable or requires clarification at examiner's discretion
-- ADVISORY -> observation or absent optional element; no automatic refusal
+- MAJOR    -> must cause refusal under UCP 600 Art. 16. (e.g., Unclean B/L, value conflicts, missing mandatory docs, late shipment)
+- MINOR    -> formal issue; may be acceptable or requires clarification at examiner's discretion. (e.g., minor typos, omitted unimportant details)
+- ADVISORY -> observation or absent optional element; no automatic refusal.
 
 verdict logic:
 - "COMPLIANT"  -> zero MAJOR + zero MINOR discrepancies
@@ -473,6 +290,11 @@ recommendation logic:
 === OUTPUT ===
 Return ONLY valid JSON (no markdown fences):
 {
+  "examination_log": [
+    "Step 1: Analyzed Invoice. Value is USD 50,000. Description matches.",
+    "Step 2: Analyzed B/L. Clean on board. Date is 15-Apr-2025.",
+    "Step 3: Cross-check - B/L date is after Invoice date (Pass). Weights match between B/L and PL."
+  ],
   "verdict": "COMPLIANT | DISCREPANT | PENDING",
   "total_discrepancies": 0,
   "major_discrepancies": 0,
@@ -501,7 +323,6 @@ Return ONLY valid JSON (no markdown fences):
 
 export function buildReportPrompt(
   mergedClassifyData: MergedClassifyData,
-  extractionResults: ExtractResult[],
   checkResult: LCCheckResult,
   promptOverride?: string,
 ): Record<string, unknown> {
@@ -515,14 +336,7 @@ export function buildReportPrompt(
       ).join('\n')
     : '*(No discrepancies found)*';
 
-  const successExtracts = extractionResults.filter(
-    (r): r is ExtractFileResult => r.status === 'success',
-  );
-
   const classifySummary = `${mergedClassifyData.files_analyzed} file(s), ${mergedClassifyData.total_logical_documents} document type(s)`;
-  const extractionData = JSON.stringify(
-    successExtracts.map(r => ({ file: r.file_name, data: r.extracted_data })), null, 2,
-  );
 
   const verdictLabel = {
     COMPLIANT: 'HOP LE (COMPLIANT)',
@@ -540,7 +354,6 @@ export function buildReportPrompt(
     return {
       _prompt: interpolatePrompt(promptOverride, {
         classify_summary: classifySummary,
-        extraction_data: extractionData,
         verdict: verdictLabel,
         recommendation: recommendationLabel,
         major_count: String(majorIssues.length),
@@ -563,8 +376,7 @@ Document set: ${classifySummary}
 Documents present: ${(checkResult.documents_present ?? []).join(', ')}
 ${checkResult.documents_missing?.length > 0 ? `Documents not presented: ${checkResult.documents_missing.join(', ')}` : 'All expected documents accounted for.'}
 
-Extracted data:
-${extractionData}
+
 
 Examination result: ${verdictLabel}
 Recommendation: ${recommendationLabel}
@@ -584,9 +396,8 @@ Write a complete, formal LC Checking Report in Vietnamese using EXACTLY these se
 - List each document received: type, reference number, date, issuing party
 - Note any documents not presented
 
-## II. KET QUA BOC TACH DU LIEU
-- Key extracted fields per document type
-- Highlight: amounts, dates, parties, port info, goods description
+## II. DANH SACH CHUNG TU
+- Review the attached files and list their identifiers clearly.
 
 ## III. KET QUA KIEM TRA TUAN THU
 - State overall verdict clearly (HOP LE / CO SAI LECH / CAN XEM XET)

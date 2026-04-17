@@ -19,7 +19,6 @@ import { useWorkflowPolling } from './hooks/useWorkflowPolling';
 import { UploadZone } from '@/app/doc-pipeline/components/UploadZone';
 import { PipelineStepCard } from '@/app/doc-pipeline/components/PipelineStepCard';
 import { CompletionBanner } from '@/app/doc-pipeline/components/CompletionBanner';
-import { JsonEditor } from '@/app/doc-pipeline/components/JsonEditor';
 import { SpinnerIcon, CheckIcon } from '@/app/doc-pipeline/components/Icons';
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -36,8 +35,6 @@ export default function LcCheckerPage() {
 
   const [steps, setSteps] = useState<PipelineStep[]>(getInitialSteps());
 
-  // -- HITL State --
-  const [waitingHitl, setWaitingHitl] = useState<{ stepIdx: number; data: any; jsonStr: string } | null>(null);
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const currentRunningStep = useMemo(
@@ -74,8 +71,8 @@ export default function LcCheckerPage() {
       uiStep.status = 'done';
       uiStep.progress = 100;
 
-      // Steps 0 (Classify) and 1 (OCR) use parallel per-file filesProgress
-      if ((stepIdx === 0 || stepIdx === 1) && Array.isArray(backendStep.sub_results)) {
+      // Step 0 (Classify) uses parallel per-file filesProgress
+      if (stepIdx === 0 && Array.isArray(backendStep.sub_results)) {
         uiStep.filesProgress = (backendStep.sub_results as any[]).map((r, idx) => {
           const name = r.doc_label ?? r.file ?? `Document ${idx + 1}`;
           const outputStr: string | null =
@@ -137,47 +134,9 @@ export default function LcCheckerPage() {
           ? { ...s, status: 'running' as StepStatus, progress: percent }
           : s
       ));
-    },
-    onWaitingForInput: (stepIdx, data) => {
-      setWaitingHitl({
-        stepIdx,
-        data,
-        jsonStr: JSON.stringify(data?.extracted_data || {}, null, 2)
-      });
-      setIsProcessing(false);
-      setSteps(prev => prev.map((s, idx) =>
-        idx === stepIdx ? { ...s, status: 'done', progress: 100 } : s
-      ));
     }
   });
 
-  // ── File handling & Resume ────────────────────────────────────────────────
-  const handleResumePipeline = useCallback(async () => {
-    if (!waitingHitl || !polling.operationId) return;
-    try {
-      setIsProcessing(true);
-      const parsedData = JSON.parse(waitingHitl.jsonStr);
-
-      const res = await fetch(`/api/v1/operations/${polling.operationId}/resume`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          step: waitingHitl.stepIdx,
-          extracted_data: parsedData
-        })
-      });
-
-      if (!res.ok) {
-        throw new Error(await res.text());
-      }
-
-      setWaitingHitl(null);
-      polling.startPolling(polling.operationId);
-    } catch(err) {
-      alert('Lỗi JSON hoặc Lỗi Mạng: ' + (err instanceof Error ? err.message : String(err)));
-      setIsProcessing(false);
-    }
-  }, [waitingHitl, polling]);
 
   const handleAbortPipeline = useCallback(async () => {
     if (!polling.operationId) return;
@@ -189,7 +148,6 @@ export default function LcCheckerPage() {
       // best-effort — ignore network errors
     } finally {
       polling.stopPolling();
-      setWaitingHitl(null);
       setPipelineError('Pipeline đã bị hủy bởi người dùng.');
       setPipelineComplete(true);
       setIsProcessing(false);
@@ -228,7 +186,6 @@ export default function LcCheckerPage() {
 
     setIsProcessing(true);
     setPipelineError(null);
-    setWaitingHitl(null);
     resetPipeline();
 
     setSteps(prev => prev.map((s, idx) =>
@@ -412,57 +369,6 @@ export default function LcCheckerPage() {
                   isLastStep={i === steps.length - 1}
                 />
 
-                {/* HITL Block — inserted AFTER Step 2 (Index 1, OCR) */}
-                {i === 1 && waitingHitl && (
-                  <div className="ml-0 md:ml-14 mb-10 mt-4 relative z-10 animate-in slide-in-from-top-4 duration-500">
-
-                    {/* HITL notice */}
-                    <div className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
-                      <span className="text-2xl mt-0.5">🔍</span>
-                      <div>
-                        <p className="text-sm font-semibold text-amber-400">Xác nhận trước khi kiểm tra UCP 600</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Vui lòng kiểm tra dữ liệu đã bóc tách từ bộ chứng từ. Chỉnh sửa nếu cần, sau đó nhấn <strong>Tiếp tục</strong> để chạy kiểm tra tuân thủ UCP 600 / ISBP 821.
-                        </p>
-                      </div>
-                    </div>
-
-                    <JsonEditor
-                      value={waitingHitl.jsonStr}
-                      onChange={val => setWaitingHitl({ ...waitingHitl, jsonStr: val })}
-                    />
-
-                    <div className="mt-6 flex items-center justify-end gap-3">
-                      {/* Resume button */}
-                      <button
-                        onClick={handleResumePipeline}
-                        disabled={isProcessing}
-                        className="px-8 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-500 transition-all focus:ring-4 focus:ring-amber-500/20 active:scale-95 flex items-center gap-2.5 shadow-xl shadow-amber-900/20 disabled:opacity-50"
-                        id="btn-resume-lc-check"
-                      >
-                        {isProcessing ? <SpinnerIcon className="w-5 h-5 text-white" /> : (
-                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        )}
-                        Xác nhận & Kiểm tra UCP 600
-                      </button>
-
-                      {/* Abort button */}
-                      <button
-                        onClick={handleAbortPipeline}
-                        disabled={isProcessing}
-                        className="px-6 py-3 bg-destructive/10 text-destructive font-semibold rounded-xl hover:bg-destructive/20 transition-all focus:ring-4 focus:ring-destructive/20 active:scale-95 flex items-center gap-2 border border-destructive/30 disabled:opacity-50"
-                        id="btn-abort-lc-check"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <circle cx="12" cy="12" r="10"/>
-                          <line x1="15" y1="9" x2="9" y2="15"/>
-                          <line x1="9" y1="9" x2="15" y2="15"/>
-                        </svg>
-                        Hủy
-                      </button>
-                    </div>
-                  </div>
-                )}
               </React.Fragment>
             ))}
           </div>

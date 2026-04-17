@@ -3,6 +3,7 @@
 // DELETE /api/v1/operations/{id} — Soft delete
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Logger } from '@/lib/logger';
 import { db } from '@/lib/db';
 import { operations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -15,7 +16,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  console.log(`[API_OPERATIONS] GET /operations/${id} called`);
+  new Logger({ service: 'operations_api' }).info(`GET /operations/${id} called`);
   const [op] = await db.select().from(operations).where(eq(operations.id, id)).limit(1);
 
   if (!op || op.deletedAt) {

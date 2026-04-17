@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Logger } from '@/lib/logger';
 import { db } from '@/lib/db';
 import { profileEndpoints } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -74,7 +75,7 @@ export async function GET(req: NextRequest) {
     );
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error('[GET /api/v1/services]', msg);
+    new Logger({ service: 'v1_services_api' }).error('GET services error', undefined, error);
     return NextResponse.json(
       { type: 'https://dugate.vn/errors/internal', title: 'Internal Server Error', status: 500, detail: msg }, 
       { status: 500 }

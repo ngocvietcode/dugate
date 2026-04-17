@@ -3,6 +3,7 @@ import { runEndpoint } from '@/lib/endpoints/runner';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { requireProfileAccess } from '@/lib/auth-guard';
+import { Logger } from '@/lib/logger';
 
 /**
  * Internal route for testing Profile Endpoints synchronously from the Admin UI.
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log(`\n==== [TEST ENDPOINT cURL] ====\n${curlLines.join('\n').replace(/ \\$/, '')}\n==============================\n`);
+    new Logger({ service: 'test_profile_endpoint' }).info(`\n==== [TEST ENDPOINT cURL] ====\n${curlLines.join('\n').replace(/ \\$/, '')}\n==============================\n`);
 
     // Construct a synthetic NextRequest to feed into runEndpoint.
     // We add ?sync=true to force synchronous execution.
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error: Omit<Error, "stack"> | unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error('[Admin Test Endpoint Error]', msg);
+    new Logger({ service: 'test_profile_endpoint' }).error('Admin Test Endpoint Error', undefined, error);
     return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }

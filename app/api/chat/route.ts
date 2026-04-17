@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { Logger } from '@/lib/logger';
 import { db } from '@/lib/db';
 import { externalApiConnections } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
           formData.append(field.key, field.value);
         }
       } catch (e) {
-        console.warn('Invalid staticFormFields', e);
+        new Logger({ service: 'chat_api' }).warn('Invalid staticFormFields', undefined, e);
       }
     }
 
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("[Chat API] External service error:", errText);
+      new Logger({ service: 'chat_api' }).error("[Chat API] External service error:", { errText });
       throw new Error(`Failed to fetch from external service: ${response.status}`);
     }
 
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ response: data.response || "No response" });
 
   } catch (error: any) {
-    console.error("[Chat API] Error:", error);
+    new Logger({ service: 'chat_api' }).error("[Chat API] Error:", undefined, error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

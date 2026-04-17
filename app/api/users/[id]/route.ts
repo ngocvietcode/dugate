@@ -1,6 +1,7 @@
 // app/api/users/[id]/route.ts — Update / Delete user (ADMIN only)
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { Logger } from '@/lib/logger';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -57,7 +58,7 @@ export async function PUT(
 
     return NextResponse.json(user);
   } catch (err) {
-    console.error('[PUT /api/users/:id]', err);
+    new Logger({ service: 'users_api' }).error('PUT /api/users/:id error', undefined, err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -167,16 +167,17 @@ export async function runDisbursement(ctx: WorkflowContext): Promise<void> {
 
         logger.info(`[WORKFLOW] Step 2 raw response for ${file.name}:\n${result.content}`);
 
-        // Clean up double-escaping: Deeply parse recursive stringified content
-        const cleanedResult = parseDeep(result) as { content: unknown; extractedData: unknown; operation: typeof result.operation };
+        // Parse the AI's raw JSON response from result.content.
+        // Do NOT use result.extractedData — that maps to the DB column which is null for ext-data-extractor.
+        const parsedExtracted = parseDeep(result.content);
 
         return {
           file_name: file.name,
           logical_docs: docsForFile.map(d => d.label),
           status: 'success',
           sub_operation_id: result.operation.id,
-          content: cleanedResult.content,
-          extracted_data: cleanedResult.extractedData,
+          content: result.content,
+          extracted_data: parsedExtracted,
         } as ExtractFileResult;
       } catch (e: unknown) {
         const errMsg = e instanceof Error ? e.message : String(e);
@@ -248,7 +249,7 @@ export async function runDisbursement(ctx: WorkflowContext): Promise<void> {
       stepName: 'Soạn Tờ trình',
       processor: 'ext-content-gen',
       sub_operation_id: step4.operation.id,
-      content_preview: step4.content?.substring(0, 2000),
+      content_preview: step4.content ?? null,  // Full content — no truncation (report may be long)
       extracted_data: null,
     });
 

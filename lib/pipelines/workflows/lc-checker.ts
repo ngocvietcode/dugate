@@ -12,7 +12,6 @@ import {
   type WorkflowContext,
   enqueueSubStep,
   updateProgress,
-  pauseWorkflow,
   completeWorkflow,
   parseDeep,
   db,
@@ -22,29 +21,25 @@ import {
   type ClassifyData,
   type ClassifyFileResult,
   type ClassifyResult,
-  type ExtractResult,
-  type ExtractFileResult,
   type LCCheckResult,
   type MergedClassifyData,
   type LogicalDocument,
   buildClassifyPrompt,
   parseClassifyResult,
   mergeClassifyResults,
-  buildExtractPrompt,
   buildComplianceCheckPrompt,
   buildReportPrompt,
 } from './prompts/lc-checker-prompts';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
 
 /** Progress percentage ranges for each step [start, end] */
 const STEP_PROGRESS: Record<number, [number, number]> = {
   0: [5, 25],   // Classify
-  1: [30, 55],  // Extract
-  2: [60, 80],  // Compliance Check
-  3: [85, 95],  // Report
+  1: [30, 80],  // Compliance Check
+  2: [85, 95],  // Report
 };
 
 function stepProgress(stepIdx: number, phase: 'start' | 'end'): number {
@@ -61,8 +56,7 @@ export async function runLcChecker(ctx: WorkflowContext): Promise<void> {
 
   const resumeFromStep = ctx.currentStep;
 
-  // Variables that span across paused states
-  let extractionResults: ExtractResult[] = [];
+
   let mergedClassifyData: MergedClassifyData = {
     files_analyzed: 0,
     total_logical_documents: 0,
@@ -79,12 +73,6 @@ export async function runLcChecker(ctx: WorkflowContext): Promise<void> {
       if (step0) {
         mergedClassifyData = (step0.extracted_data as MergedClassifyData) || mergedClassifyData;
         allLogicalDocs = step0.sub_results?.flatMap((r: any) => r.logical_documents || []) || [];
-      }
-
-      // Load Step 1 data (Extract) — includes any edits made by Human
-      const step1 = ctx.stepsResult.find((s: any) => s.step === 1);
-      if (step1) {
-        extractionResults = (step1.extracted_data as ExtractResult[]) || [];
       }
     } catch (e) {
       logger.warn(`[LC-WORKFLOW] Failed to restore step-specific variables`, undefined, e);
@@ -165,72 +153,16 @@ export async function runLcChecker(ctx: WorkflowContext): Promise<void> {
     await updateProgress(ctx, stepProgress(0, 'end'), `Bước 1 hoàn tất. ${fileCount} file → ${allLogicalDocs.length} loại chứng từ LC.`);
   }
 
-  // ── STEP 2: Parallel Extract (per file) ───────────────────────────────────
+  // ── STEP 2: Compliance Check (UCP 600 / ISBP 821) ─────────────────────────
   if (resumeFromStep <= 1) {
-    logger.info(`[LC-WORKFLOW] Step 2/${TOTAL_STEPS}: Extract ${fileCount} file(s)`);
-    await updateProgress(ctx, stepProgress(1, 'start'), `Bước 2/${TOTAL_STEPS}: Đang bóc tách dữ liệu ${fileCount} chứng từ...`);
+    logger.info(`[LC-WORKFLOW] Step 2/${TOTAL_STEPS}: Compliance check (UCP 600)`);
+    await updateProgress(ctx, stepProgress(1, 'start'), `Bước 2/${TOTAL_STEPS}: Đang kiểm tra tuân thủ UCP 600 / ISBP 821...`);
 
-    const extractPromises = filesData.map(async (file): Promise<ExtractResult> => {
-      const docsForFile = allLogicalDocs.filter(d => d.source_file === file.name);
-      const singleFileJson = JSON.stringify([file]);
-      try {
-        const result = await enqueueSubStep(
-          ctx,
-          'ext-data-extractor',
-          buildExtractPrompt(docsForFile, file.name, promptOverrides.extract),
-          singleFileJson,
-        );
-
-        logger.info(`[LC-WORKFLOW] Step 2 raw response for ${file.name}:\n${result.content}`);
-
-        const cleanedResult = parseDeep(result) as { content: unknown; extractedData: unknown; operation: typeof result.operation };
-
-        return {
-          file_name: file.name,
-          logical_docs: docsForFile.map(d => d.label),
-          status: 'success',
-          sub_operation_id: result.operation.id,
-          content: cleanedResult.content,
-          extracted_data: cleanedResult.extractedData,
-        } as ExtractFileResult;
-      } catch (e: unknown) {
-        const errMsg = e instanceof Error ? e.message : String(e);
-        logger.error(`[LC-WORKFLOW] Extract failed for ${file.name}: ${errMsg}`);
-        return { file_name: file.name, logical_docs: docsForFile.map(d => d.label), status: 'error', error: errMsg };
-      }
-    });
-
-    extractionResults = await Promise.all(extractPromises);
-    const extractSuccess = extractionResults.filter(r => r.status === 'success').length;
-
-    ctx.stepsResult.push({
-      step: 1,
-      stepName: `OCR & Bóc tách chứng từ LC (${fileCount} file)`,
-      processor: 'ext-data-extractor',
-      content_preview: JSON.stringify(extractionResults.map(r => ({
-        file: r.file_name,
-        docs: r.logical_docs,
-        status: r.status,
-      }))),
-      extracted_data: extractionResults,
-      sub_results: extractionResults,
-    });
-    await updateProgress(ctx, stepProgress(1, 'end'), `Bước 2 hoàn tất (${extractSuccess}/${fileCount} file). Chờ xác nhận HITL.`);
-
-    // TRIGGER HITL: PAUSE WORKFLOW — Chờ cán bộ xác nhận dữ liệu OCR trước khi kiểm tra
-    return pauseWorkflow(ctx, 'Vui lòng kiểm tra và xác nhận kết quả bóc tách chứng từ trước khi chạy kiểm tra UCP 600.', 2);
-  }
-
-  // ── STEP 3: Compliance Check (UCP 600 / ISBP 821) ─────────────────────────
-  if (resumeFromStep <= 2) {
-    logger.info(`[LC-WORKFLOW] Step 3/${TOTAL_STEPS}: Compliance check (UCP 600)`);
-    await updateProgress(ctx, stepProgress(2, 'start'), `Bước 3/${TOTAL_STEPS}: Đang kiểm tra tuân thủ UCP 600 / ISBP 821...`);
-
-    const step3 = await enqueueSubStep(
+    const step2 = await enqueueSubStep(
       ctx,
       'ext-fact-verifier',
-      buildComplianceCheckPrompt(extractionResults, promptOverrides.compliance),
-      null,
+      buildComplianceCheckPrompt(mergedClassifyData, promptOverrides.compliance),
+      JSON.stringify(filesData),
     );
 
     let checkResult: LCCheckResult = {
@@ -246,22 +178,22 @@ export async function runLcChecker(ctx: WorkflowContext): Promise<void> {
       recommendation: 'RESERVE_FOR_REVIEW',
     };
 
-    if (step3.content) {
-      checkResult = parseDeep(step3.content) as LCCheckResult;
+    if (step2.content) {
+      checkResult = parseDeep(step2.content) as LCCheckResult;
     }
 
     ctx.stepsResult.push({
-      step: 2,
+      step: 1,
       stepName: 'Kiểm tra tuân thủ UCP 600 / ISBP 821',
       processor: 'ext-fact-verifier',
-      sub_operation_id: step3.operation.id,
-      content_preview: parseDeep(step3.content),
+      sub_operation_id: step2.operation.id,
+      content_preview: parseDeep(step2.content),
       extracted_data: parseDeep(checkResult),
     });
-    await updateProgress(ctx, stepProgress(2, 'end'), `Bước 3 hoàn tất. Verdict: ${checkResult.verdict} — ${checkResult.total_discrepancies} discrepancy.`);
+    await updateProgress(ctx, stepProgress(1, 'end'), `Bước 2 hoàn tất. Verdict: ${checkResult.verdict} — ${checkResult.total_discrepancies} discrepancy.`);
   }
 
-  // ── STEP 4: Report ────────────────────────────────────────────────────────
+  // ── STEP 3: Report ────────────────────────────────────────────────────────
   let finalReport = '';
   let finalCheckResult: LCCheckResult = {
     verdict: 'PENDING',
@@ -276,30 +208,30 @@ export async function runLcChecker(ctx: WorkflowContext): Promise<void> {
     recommendation: 'RESERVE_FOR_REVIEW',
   };
 
-  if (resumeFromStep <= 3) {
-    logger.info(`[LC-WORKFLOW] Step 4/${TOTAL_STEPS}: Generate LC Checking Report`);
-    await updateProgress(ctx, stepProgress(3, 'start'), `Bước 4/${TOTAL_STEPS}: Đang soạn Báo cáo Kiểm tra Chứng từ LC...`);
+  if (resumeFromStep <= 2) {
+    logger.info(`[LC-WORKFLOW] Step 3/${TOTAL_STEPS}: Generate LC Checking Report`);
+    await updateProgress(ctx, stepProgress(2, 'start'), `Bước 3/${TOTAL_STEPS}: Đang soạn Báo cáo Kiểm tra Chứng từ LC...`);
 
-    // Load check result from Step 3 (index 2)
-    finalCheckResult = (ctx.stepsResult.find(s => s.step === 2)?.extracted_data as LCCheckResult) || finalCheckResult;
+    // Load check result from Step 2 (index 1)
+    finalCheckResult = (ctx.stepsResult.find(s => s.step === 1)?.extracted_data as LCCheckResult) || finalCheckResult;
 
-    const step4 = await enqueueSubStep(
+    const step3 = await enqueueSubStep(
       ctx,
       'ext-content-gen',
-      buildReportPrompt(mergedClassifyData, extractionResults, finalCheckResult, promptOverrides.report),
+      buildReportPrompt(mergedClassifyData, finalCheckResult, promptOverrides.report),
       null,
     );
 
     ctx.stepsResult.push({
-      step: 3,
+      step: 2,
       stepName: 'Báo cáo Kiểm tra Chứng từ LC',
       processor: 'ext-content-gen',
-      sub_operation_id: step4.operation.id,
-      content_preview: step4.content?.substring(0, 2000),
+      sub_operation_id: step3.operation.id,
+      content_preview: step3.content ?? null,  // Full content — no truncation (report may be long)
       extracted_data: null,
     });
 
-    finalReport = step4.content || '';
+    finalReport = step3.content || '';
   }
 
   await completeWorkflow(ctx, finalReport, finalCheckResult);

@@ -2,6 +2,7 @@
 // POST /api/settings/s3-test — Test S3 connectivity
 
 import { NextResponse } from 'next/server';
+import { Logger } from '@/lib/logger';
 import { getSetting } from '@/lib/settings';
 import { S3Client, HeadBucketCommand } from '@aws-sdk/client-s3';
 import { requireAdmin } from '@/lib/rbac';
@@ -46,7 +47,7 @@ export async function POST() {
     return NextResponse.json({ ok: true, message: `Connected to bucket "${bucket}" successfully.` });
   } catch (err: unknown) {
     // Log full error server-side, return sanitized message to client
-    console.error('[s3-test] Connection failed:', err);
+    new Logger({ service: 's3_test_api' }).error('Connection failed', undefined, err);
     const msg = err instanceof Error ? err.message : String(err);
     const errName = err instanceof Error ? (err as any).name ?? '' : '';
     const httpStatus = (err as any)?.$metadata?.httpStatusCode;

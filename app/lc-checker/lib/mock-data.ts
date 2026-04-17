@@ -35,19 +35,7 @@ export function getInitialSteps() {
       isParallel: true,
       isCollapsed: false,
     },
-    {
-      id: 'ocr',
-      title: 'OCR & Bóc tách (Song song)',
-      subtitle: 'Trích xuất dữ liệu từ từng chứng từ LC',
-      icon: '🔍',
-      accentColor: 'from-cyan-500 to-blue-600',
-      status: 'pending' as const,
-      progress: 0,
-      output: null,
-      duration: null,
-      isParallel: true,
-      isCollapsed: false,
-    },
+
     {
       id: 'compliance',
       title: 'Kiểm tra Tuân thủ UCP 600',

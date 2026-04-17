@@ -3,6 +3,7 @@
 // Trả về: HTTP status, latency, response preview, mapped content
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Logger } from '@/lib/logger';
 import { db } from '@/lib/db';
 import { externalApiConnections } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -172,7 +173,7 @@ export async function POST(
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error('[ExtConnections Test]', msg);
+    new Logger({ service: 'ext_connections_api' }).error('ExtConnections Test error', undefined, error);
     return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }
