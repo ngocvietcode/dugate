@@ -24,8 +24,8 @@ export function getInitialSteps() {
   return [
     {
       id: 'classify',
-      title: 'AI Classify',
-      subtitle: 'Nhận diện loại chứng từ LC theo chuẩn quốc tế',
+      title: 'AI Classify + OCR',
+      subtitle: 'Phân loại chứng từ LC & OCR full-text song song',
       icon: '🏷️',
       accentColor: 'from-violet-500 to-indigo-600',
       status: 'pending' as const,

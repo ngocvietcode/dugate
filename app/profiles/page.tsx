@@ -2140,10 +2140,10 @@ Viết Tờ trình bằng Markdown.`,
 const LC_CHECKER_STEPS: WorkflowStep[] = [
   {
     key: 'classify',
-    label: 'Bước 1: AI Classify',
+    label: 'Bước 1: AI Classify + OCR',
     icon: '🏷️',
-    connector: 'ext-classifier',
-    description: 'Nhận diện loại chứng từ LC (B/L, Invoice, Packing List, C/O...)',
+    connector: 'ext-classifier + ext-doc-layout',
+    description: 'Phân loại chứng từ LC & OCR full-text song song (ext-classifier + ext-doc-layout)',
     variables: [
       { name: '{{file_name}}', desc: 'Tên file đang xử lý' },
       { name: '{{categories}}', desc: 'Danh sách 13 loại chứng từ LC (tự động)' },
@@ -2185,9 +2185,10 @@ Return ONLY valid JSON (no markdown fences):
     label: 'Bước 2: Kiểm tra Tuân thủ UCP 600',
     icon: '⚖️',
     connector: 'ext-fact-verifier',
-    description: 'Đối chiếu theo UCP 600, ISBP 821 & phát hiện Discrepancy (Truyền Direct File)',
+    description: 'Đối chiếu theo UCP 600, ISBP 821 & phát hiện Discrepancy (Hybrid: OCR text + PDF gốc)',
     variables: [
       { name: '{{classify_summary}}', desc: 'JSON list tài liệu đã được phân loại (Mục lục)' },
+      { name: '{{ocr_full_text}}', desc: 'Toàn bộ text OCR từ ext-doc-layout (primary data source)' },
     ],
     codePromptPreview: `[PROMPT ĐẦY ĐỦ ~400 DÒNG — Xem chi tiết tại: lib/pipelines/workflows/prompts/lc-checker-prompts.ts]
 

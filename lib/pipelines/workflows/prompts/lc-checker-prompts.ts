@@ -5,7 +5,8 @@
 // The _prompt variable bypasses the DB connector template entirely.
 // Connector still provides: API URL, auth, model, timeout, response parsing.
 //
-// Compliance check (Step 3) is SELF-CONTAINED — all UCP 600 / ISBP 821 rules
+// Pipeline: Classify+OCR(parallel) → Compliance Check(hybrid) → Report
+// Compliance check is SELF-CONTAINED — all UCP 600 / ISBP 821 rules
 // are embedded directly into the prompt. No external reference data needed.
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -205,20 +206,80 @@ export function mergeClassifyResults(
   return { allLogicalDocs, mergedClassifyData };
 }
 
+// ─── Step 1B: OCR Full-text (ext-doc-layout) ─────────────────────────────────
 
+/**
+ * Build prompt for ext-doc-layout connector to OCR a PDF into full Markdown.
+ * Smart filtering: instructs the engine to focus on essential LC document
+ * content and skip boilerplate/template/regulatory pages.
+ */
+export function buildOcrPrompt(
+  fileName: string,
+  classifyHint?: string,
+): Record<string, unknown> {
+  return {
+    _prompt: `You are a high-precision Document OCR Engine specialized in trade finance documents.
+
+FILE: "${fileName}"
+${classifyHint ? `DOCUMENT TYPE HINT: ${classifyHint}` : ''}
+
+Your task is to convert this document into clean, structured Markdown text.
+
+=== CRITICAL RULES ===
+
+1. VERBATIM FIDELITY: Transcribe ALL text exactly as it appears. Do NOT paraphrase, summarize, or alter any content.
+
+2. SMART PAGE FILTERING — Skip pages that contain ONLY:
+   - General terms & conditions / Điều kiện chung
+   - Pre-printed regulatory boilerplate / Quy định chung in sẵn
+   - Blank pages or separator pages
+   - Standard template instructions not filled in
+   For skipped pages, insert: "[PAGE X: Skipped — general terms/template]"
+
+3. MUST KEEP — Always transcribe pages containing:
+   - Filled-in data fields (names, amounts, dates, addresses, account numbers)
+   - Handwritten annotations, stamps, or signatures (describe as [SIGNATURE], [STAMP: text], [HANDWRITTEN: text])
+   - On-board notations, endorsements, amendments
+   - Any clause with specific transaction details (L/C number, vessel name, port names)
+   - Tables with cargo/quantity/weight data
+
+4. TABLE INTEGRITY: Convert tabular data to Markdown tables exactly matching rows and columns. Do NOT flatten tables into paragraphs.
+
+5. STRUCTURE PRESERVATION:
+   - Use # H1, ## H2 for document section headers
+   - Preserve field labels: "Consignee: XYZ Corp"
+   - Mark checkbox fields: [x] checked, [ ] unchecked
+   - Preserve page boundaries with: "--- PAGE X ---"
+
+6. SPECIAL CHARACTERS: For ambiguous OCR characters, transcribe your best reading. If truly illegible, use [illegible].
+
+Output the full Markdown transcription now. Begin directly with the content.`,
+  };
+}
 
 // ─── Step 2: Compliance Check (UCP 600 / ISBP 821 — Full Rules Base) ─────────
 
 export function buildComplianceCheckPrompt(
   mergedClassifyData: MergedClassifyData,
+  ocrTexts?: Map<string, string>,
   promptOverride?: string,
 ): Record<string, unknown> {
   const classifySummary = JSON.stringify(mergedClassifyData.logical_documents, null, 2);
+
+  // Build OCR text block if available
+  let ocrSection = '';
+  if (ocrTexts && ocrTexts.size > 0) {
+    const blocks = Array.from(ocrTexts.entries())
+      .map(([fileName, text]) => `--- FILE: ${fileName} ---\n${text}`)
+      .join('\n\n');
+    ocrSection = `\n\n=== OCR FULL-TEXT (PRIMARY DATA SOURCE) ===\nDưới đây là toàn bộ nội dung text đã được OCR từ các file đính kèm.\nSử dụng dữ liệu này làm nguồn chính để kiểm tra compliance.\nChỉ tham chiếu file PDF gốc đính kèm khi cần xác minh: chữ ký, con dấu, stamp ngày, hoặc thông tin bất định trong text.\n\n${blocks}`;
+  }
 
   if (promptOverride) {
     return {
       _prompt: interpolatePrompt(promptOverride, {
         classify_summary: classifySummary,
+        ocr_full_text: ocrSection,
       }),
     };
   }
@@ -231,6 +292,7 @@ You are provided with the ORIGINAL RAW DOCUMENTS explicitly attached to this req
 === CLASSIFICATION OVERVIEW ===
 The attached documents have been mapped as follows:
 ${classifySummary}
+${ocrSection}
 
 <!-- ======================================== -->
 <!-- PHẦN 0: SIÊU QUY TẮC (META-RULES)       -->

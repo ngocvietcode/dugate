@@ -2,11 +2,9 @@
 // Workflow: Kiểm tra Bộ Chứng từ LC (Letter of Credit)
 //
 // DAG:
-//   Step 1: N files → classify per file  [song song]
-//   Step 2: N files → extract per file   [song song]
-//            ↓ HITL pause — cán bộ xác nhận dữ liệu OCR
-//   Step 3: aggregate → compliance check [tuần tự, self-contained UCP 600]
-//   Step 4: generate report              [tuần tự]
+//   Step 1: N files → classify + OCR per file  [song song]
+//   Step 2: aggregate → compliance check        [tuần tự, hybrid: OCR text + PDF gốc]
+//   Step 3: generate report                     [tuần tự]
 
 import {
   type WorkflowContext,
@@ -25,6 +23,7 @@ import {
   type MergedClassifyData,
   type LogicalDocument,
   buildClassifyPrompt,
+  buildOcrPrompt,
   parseClassifyResult,
   mergeClassifyResults,
   buildComplianceCheckPrompt,
@@ -37,8 +36,8 @@ const TOTAL_STEPS = 3;
 
 /** Progress percentage ranges for each step [start, end] */
 const STEP_PROGRESS: Record<number, [number, number]> = {
-  0: [5, 25],   // Classify
-  1: [30, 80],  // Compliance Check
+  0: [5, 35],   // Classify + OCR (parallel but more work)
+  1: [40, 80],  // Compliance Check
   2: [85, 95],  // Report
 };
 
@@ -64,54 +63,109 @@ export async function runLcChecker(ctx: WorkflowContext): Promise<void> {
     logical_documents: [],
   };
   let allLogicalDocs: LogicalDocument[] = [];
+  const ocrTexts = new Map<string, string>();
 
   // Restore step-specific variables if resuming from a checkpoint
   if (resumeFromStep > 0 && ctx.stepsResult.length > 0) {
     try {
-      // Load Step 0 data (Classify)
+      // Load Step 0 data (Classify + OCR)
       const step0 = ctx.stepsResult.find((s: any) => s.step === 0);
       if (step0) {
         mergedClassifyData = (step0.extracted_data as MergedClassifyData) || mergedClassifyData;
         allLogicalDocs = step0.sub_results?.flatMap((r: any) => r.logical_documents || []) || [];
+        // Restore OCR texts
+        const ocrData = step0.ocr_texts as Record<string, string> | undefined;
+        if (ocrData) {
+          for (const [k, v] of Object.entries(ocrData)) {
+            ocrTexts.set(k, v);
+          }
+        }
       }
     } catch (e) {
       logger.warn(`[LC-WORKFLOW] Failed to restore step-specific variables`, undefined, e);
     }
   }
 
-  // ── STEP 1: Parallel Classify (per file) ──────────────────────────────────
+  // ── STEP 1: Parallel Classify + OCR (per file) ────────────────────────────
   if (resumeFromStep <= 0) {
-    logger.info(`[LC-WORKFLOW] Step 1/${TOTAL_STEPS}: Classify ${fileCount} file(s)`);
-    await updateProgress(ctx, stepProgress(0, 'start'), `Bước 1/${TOTAL_STEPS}: Đang phân loại ${fileCount} chứng từ LC...`);
+    logger.info(`[LC-WORKFLOW] Step 1/${TOTAL_STEPS}: Classify + OCR ${fileCount} file(s)`);
+    await updateProgress(ctx, stepProgress(0, 'start'), `Bước 1/${TOTAL_STEPS}: Đang phân loại & OCR ${fileCount} chứng từ LC...`);
 
-    const classifyPromises = filesData.map(async (file): Promise<ClassifyResult> => {
+    const classifyAndOcrPromises = filesData.map(async (file): Promise<{ classify: ClassifyResult; ocrText: string }> => {
       const singleFileJson = JSON.stringify([file]);
-      try {
-        const result = await enqueueSubStep(
-          ctx,
-          'ext-classifier',
-          buildClassifyPrompt(file.name, promptOverrides.classify),
-          singleFileJson,
-        );
+      let classifyResult: ClassifyResult;
+      let ocrText = '';
 
-        logger.info(`[LC-WORKFLOW] Step 1 raw response for ${file.name}:\n${result.content}`);
+      // Run classify + OCR in parallel for each file
+      const [classifyResponse, ocrResponse] = await Promise.allSettled([
+        // 1A: Classify
+        (async () => {
+          const result = await enqueueSubStep(
+            ctx,
+            'ext-classifier',
+            buildClassifyPrompt(file.name, promptOverrides.classify),
+            singleFileJson,
+          );
+          logger.info(`[LC-WORKFLOW] Step 1A classify response for ${file.name}:\n${result.content}`);
+          return result;
+        })(),
+        // 1B: OCR Full-text
+        (async () => {
+          const result = await enqueueSubStep(
+            ctx,
+            'ext-doc-layout',
+            buildOcrPrompt(file.name),
+            singleFileJson,
+          );
+          logger.info(`[LC-WORKFLOW] Step 1B OCR response for ${file.name}: ${(result.content || '').length} chars`);
+          return result;
+        })(),
+      ]);
 
-        const { classifyData, logicalDocs } = parseClassifyResult(result.content, file.name);
-        return {
-          fileName: file.name,
-          classifyData: parseDeep(classifyData) as ClassifyData,
-          logicalDocs,
-          subOperationId: result.operation.id,
-          status: 'success',
-        };
-      } catch (e: unknown) {
-        const errMsg = e instanceof Error ? e.message : String(e);
+      // Process classify result
+      if (classifyResponse.status === 'fulfilled') {
+        try {
+          const { classifyData, logicalDocs } = parseClassifyResult(classifyResponse.value.content, file.name);
+          classifyResult = {
+            fileName: file.name,
+            classifyData: parseDeep(classifyData) as ClassifyData,
+            logicalDocs,
+            subOperationId: classifyResponse.value.operation.id,
+            status: 'success',
+          };
+        } catch (e: unknown) {
+          const errMsg = e instanceof Error ? e.message : String(e);
+          logger.error(`[LC-WORKFLOW] Classify parse failed for ${file.name}: ${errMsg}`);
+          classifyResult = { fileName: file.name, classifyData: {}, logicalDocs: [], subOperationId: '', status: 'error', error: errMsg };
+        }
+      } else {
+        const errMsg = classifyResponse.reason?.message || String(classifyResponse.reason);
         logger.error(`[LC-WORKFLOW] Classify failed for ${file.name}: ${errMsg}`);
-        return { fileName: file.name, classifyData: {}, logicalDocs: [], subOperationId: '', status: 'error', error: errMsg };
+        classifyResult = { fileName: file.name, classifyData: {}, logicalDocs: [], subOperationId: '', status: 'error', error: errMsg };
+      }
+
+      // Process OCR result
+      if (ocrResponse.status === 'fulfilled' && ocrResponse.value.content) {
+        ocrText = ocrResponse.value.content;
+      } else {
+        const reason = ocrResponse.status === 'rejected' ? ocrResponse.reason?.message : 'empty response';
+        logger.warn(`[LC-WORKFLOW] OCR failed/empty for ${file.name}: ${reason}. Compliance check will rely on PDF only.`);
+      }
+
+      return { classify: classifyResult, ocrText };
+    });
+
+    const results = await Promise.all(classifyAndOcrPromises);
+    const classifyResults = results.map(r => r.classify);
+
+    // Collect OCR texts
+    results.forEach(r => {
+      const fileName = r.classify.fileName;
+      if (r.ocrText) {
+        ocrTexts.set(fileName, r.ocrText);
       }
     });
 
-    const classifyResults = await Promise.all(classifyPromises);
     const successfulClassifies = classifyResults.filter(
       (r): r is ClassifyFileResult => r.status === 'success',
     );
@@ -130,14 +184,16 @@ export async function runLcChecker(ctx: WorkflowContext): Promise<void> {
 
     ctx.stepsResult.push({
       step: 0,
-      stepName: `Phân loại chứng từ LC (${fileCount} file)`,
-      processor: 'ext-classifier',
+      stepName: `Phân loại & OCR chứng từ LC (${fileCount} file)`,
+      processor: 'ext-classifier + ext-doc-layout',
       content_preview: JSON.stringify(classifyResults.map(r => ({
         file: r.fileName,
         status: r.status,
         docs: r.status === 'success' ? r.logicalDocs.length : 0,
+        ocr_chars: ocrTexts.get(r.fileName)?.length ?? 0,
       }))),
       extracted_data: mergedClassifyData,
+      ocr_texts: Object.fromEntries(ocrTexts),
       sub_results: classifyResults.map((r, idx) => ({
         doc_id: `classify-${idx}-${r.fileName}`,
         doc_label: r.fileName,
@@ -150,7 +206,11 @@ export async function runLcChecker(ctx: WorkflowContext): Promise<void> {
         logical_documents: r.status === 'success' ? r.logicalDocs : [],
       })),
     });
-    await updateProgress(ctx, stepProgress(0, 'end'), `Bước 1 hoàn tất. ${fileCount} file → ${allLogicalDocs.length} loại chứng từ LC.`);
+
+    const ocrSummary = ocrTexts.size > 0
+      ? ` OCR: ${ocrTexts.size} file(s), ${Array.from(ocrTexts.values()).reduce((sum, t) => sum + t.length, 0)} chars.`
+      : ' OCR: không có dữ liệu (sẽ dùng PDF trực tiếp).';
+    await updateProgress(ctx, stepProgress(0, 'end'), `Bước 1 hoàn tất. ${fileCount} file → ${allLogicalDocs.length} loại chứng từ LC.${ocrSummary}`);
   }
 
   // ── STEP 2: Compliance Check (UCP 600 / ISBP 821) ─────────────────────────
@@ -161,8 +221,8 @@ export async function runLcChecker(ctx: WorkflowContext): Promise<void> {
     const step2 = await enqueueSubStep(
       ctx,
       'ext-fact-verifier',
-      buildComplianceCheckPrompt(mergedClassifyData, promptOverrides.compliance),
-      JSON.stringify(filesData),
+      buildComplianceCheckPrompt(mergedClassifyData, ocrTexts, promptOverrides.compliance),
+      JSON.stringify(filesData),  // PDF gốc vẫn đính kèm (visual backup cho chữ ký/dấu)
     );
 
     let checkResult: LCCheckResult = {

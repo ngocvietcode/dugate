@@ -29,6 +29,7 @@ export interface WorkflowStepResult {
   content_preview?: unknown;    // Can be string, object, or null
   extracted_data?: unknown;
   sub_results?: unknown[];
+  ocr_texts?: Record<string, string>;  // OCR full-text per file (Hybrid pipeline)
 }
 
 export interface SubStepResult {
