@@ -2140,43 +2140,38 @@ Viết Tờ trình bằng Markdown.`,
 const LC_CHECKER_STEPS: WorkflowStep[] = [
   {
     key: 'classify',
-    label: 'Bước 1: AI Classify + OCR',
-    icon: '🏷️',
-    connector: 'ext-classifier + ext-doc-layout',
-    description: 'Phân loại chứng từ LC & OCR full-text song song (ext-classifier + ext-doc-layout)',
+    label: 'Bước 1: OCR Full-text',
+    icon: '📝',
+    connector: 'ext-doc-layout',
+    description: 'Chuyển đổi PDF → Markdown text. Lọc page thừa (template/boilerplate).',
     variables: [
       { name: '{{file_name}}', desc: 'Tên file đang xử lý' },
-      { name: '{{categories}}', desc: 'Danh sách 13 loại chứng từ LC (tự động)' },
     ],
-    codePromptPreview: `You are an expert in international trade finance and documentary credits (LC).
-Task: identify and classify ALL document types present in the file "{{file_name}}".
+    codePromptPreview: `You are a high-precision Document OCR Engine specialized in trade finance documents.
 
-For EACH logical document detected, return:
-- id: unique key, e.g. "ld-1", "ld-2"
-- label: EXACT name from the allowed categories below
-- pages: page range, e.g. "1-3", "4", "all"
-- confidence: 0.0–1.0
+FILE: "{{file_name}}"
 
-ALLOWED CATEGORIES (use EXACTLY these labels):
-Letter of Credit, Bill of Lading, Commercial Invoice, Packing List, Bill of Exchange, Certificate of Origin, Insurance Certificate, Inspection Certificate, Phytosanitary Certificate, Customs Declaration, Airway Bill, Draft, Khác
+=== CRITICAL RULES ===
 
-CLASSIFICATION RULES:
-- "Letter of Credit" = the L/C instrument itself (MT700, L/C form, Swift)
-- "Bill of Lading" = ocean B/L; use "Airway Bill" for air transport AWB
-- "Bill of Exchange" and "Draft" are both hối phiếu — use "Bill of Exchange"
-- A single PDF may contain MULTIPLE document types on different pages — list each separately
-- Use "Khác" only if no category matches
-- Do NOT merge separate documents into one entry
+1. VERBATIM FIDELITY: Transcribe ALL text exactly as it appears.
 
-Return ONLY valid JSON (no markdown fences):
-{
-  "document_type": "Primary document type in this file",
-  "confidence": 0.95,
-  "logical_documents": [
-    { "id": "ld-1", "label": "Commercial Invoice", "pages": "1-2", "confidence": 0.97 },
-    { "id": "ld-2", "label": "Packing List", "pages": "3", "confidence": 0.95 }
-  ]
-}`,
+2. SMART PAGE FILTERING — Skip pages that contain ONLY:
+   - General terms & conditions / Điều kiện chung
+   - Pre-printed regulatory boilerplate
+   - Blank pages or separator pages
+   For skipped pages, insert: "[PAGE X: Skipped — general terms/template]"
+
+3. MUST KEEP — Always transcribe pages containing:
+   - Filled-in data fields (names, amounts, dates, addresses)
+   - Handwritten annotations, stamps, or signatures
+   - On-board notations, endorsements, amendments
+   - Tables with cargo/quantity/weight data
+
+4. TABLE INTEGRITY: Convert tabular data to Markdown tables.
+
+5. STRUCTURE: Use # H1, ## H2. Preserve "--- PAGE X ---" boundaries.
+
+6. SPECIAL CHARACTERS: If truly illegible, use [illegible].`,
     hasDynamicSections: false,
   },
 

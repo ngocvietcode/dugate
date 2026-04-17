@@ -260,25 +260,25 @@ Output the full Markdown transcription now. Begin directly with the content.`,
 // ─── Step 2: Compliance Check (UCP 600 / ISBP 821 — Full Rules Base) ─────────
 
 export function buildComplianceCheckPrompt(
-  mergedClassifyData: MergedClassifyData,
+  fileCount: number,
   ocrTexts?: Map<string, string>,
   promptOverride?: string,
 ): Record<string, unknown> {
-  const classifySummary = JSON.stringify(mergedClassifyData.logical_documents, null, 2);
-
   // Build OCR text block if available
   let ocrSection = '';
   if (ocrTexts && ocrTexts.size > 0) {
     const blocks = Array.from(ocrTexts.entries())
       .map(([fileName, text]) => `--- FILE: ${fileName} ---\n${text}`)
       .join('\n\n');
-    ocrSection = `\n\n=== OCR FULL-TEXT (PRIMARY DATA SOURCE) ===\nDưới đây là toàn bộ nội dung text đã được OCR từ các file đính kèm.\nSử dụng dữ liệu này làm nguồn chính để kiểm tra compliance.\nChỉ tham chiếu file PDF gốc đính kèm khi cần xác minh: chữ ký, con dấu, stamp ngày, hoặc thông tin bất định trong text.\n\n${blocks}`;
+    ocrSection = `\n=== OCR FULL-TEXT (PRIMARY DATA SOURCE) ===\nDưới đây là toàn bộ nội dung text đã được OCR từ ${ocrTexts.size} file đính kèm.\nSử dụng dữ liệu này làm nguồn chính để kiểm tra compliance.\nChỉ tham chiếu file PDF gốc đính kèm khi cần xác minh: chữ ký, con dấu, stamp ngày, hoặc thông tin bất định trong text.\n\n${blocks}`;
   }
+
+  const fileSummary = `${fileCount} file(s) submitted for examination.`;
 
   if (promptOverride) {
     return {
       _prompt: interpolatePrompt(promptOverride, {
-        classify_summary: classifySummary,
+        file_summary: fileSummary,
         ocr_full_text: ocrSection,
       }),
     };
@@ -287,12 +287,13 @@ export function buildComplianceCheckPrompt(
   return {
     _prompt: `You are a senior Documentary Credit (LC) checker. You have expert-level knowledge of UCP 600, ISBP 821 (2013 Revision), and eUCP v2.0. Your SOLE task is to examine the attached document set for compliance.
 
-You are provided with the ORIGINAL RAW DOCUMENTS explicitly attached to this request. Read the textual content, clauses, conditions, signatures, stamps, and dates directly from the documents. Do NOT rely on any summarized or pre-extracted data.
-
-=== CLASSIFICATION OVERVIEW ===
-The attached documents have been mapped as follows:
-${classifySummary}
+=== DOCUMENT SET ===
+${fileSummary}
 ${ocrSection}
+
+You must FIRST identify what type of document each file contains (L/C, Invoice, B/L, Insurance, C/O, Packing List, Draft, etc.) from the OCR text and/or attached PDF files.
+Then apply the full compliance check rules below.
+If PDF files are attached alongside OCR text, use the OCR text as PRIMARY source and refer to the PDF only for visual verification (signatures, stamps, endorsements).
 
 <!-- ======================================== -->
 <!-- PHẦN 0: SIÊU QUY TẮC (META-RULES)       -->
@@ -738,10 +739,10 @@ Return ONLY valid JSON (no markdown fences):
   };
 }
 
-// ─── Step 4: Report ───────────────────────────────────────────────────────────
+// ─── Step 3: Report ───────────────────────────────────────────────────────────
 
 export function buildReportPrompt(
-  mergedClassifyData: MergedClassifyData,
+  fileCount: number,
   checkResult: LCCheckResult,
   promptOverride?: string,
 ): Record<string, unknown> {
@@ -755,7 +756,7 @@ export function buildReportPrompt(
       ).join('\n')
     : '*(No discrepancies found)*';
 
-  const classifySummary = `${mergedClassifyData.files_analyzed} file(s), ${mergedClassifyData.total_logical_documents} document type(s)`;
+  const classifySummary = `${fileCount} file(s), documents identified by examiner`;
 
   const verdictLabel = {
     COMPLIANT: 'HOP LE (COMPLIANT)',

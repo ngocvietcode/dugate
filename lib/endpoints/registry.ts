@@ -387,7 +387,7 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
       },
       'lc-checker': {
         displayName: 'Kiểm tra Bộ Chứng từ LC',
-        description: 'Kiểm tra bộ chứng từ Letter of Credit theo chuẩn quốc tế UCP 600, ISBP 821. Classify+OCR (song song) → Compliance Check (Hybrid: OCR text + PDF gốc) → LC Checking Report.',
+        description: 'Kiểm tra bộ chứng từ Letter of Credit theo chuẩn quốc tế UCP 600, ISBP 821. OCR Full-text → Compliance Check (Hybrid: OCR text + PDF gốc) → LC Checking Report.',
         parameters: {},
         connections: [],
         isWorkflow: true,

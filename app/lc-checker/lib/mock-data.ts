@@ -24,9 +24,9 @@ export function getInitialSteps() {
   return [
     {
       id: 'classify',
-      title: 'AI Classify + OCR',
-      subtitle: 'Phân loại chứng từ LC & OCR full-text song song',
-      icon: '🏷️',
+      title: 'OCR Full-text',
+      subtitle: 'Chuyển đổi PDF → Markdown text (ext-doc-layout)',
+      icon: '📝',
       accentColor: 'from-violet-500 to-indigo-600',
       status: 'pending' as const,
       progress: 0,
