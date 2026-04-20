@@ -407,9 +407,10 @@ export async function runWorkflow(
   const ctx = await createWorkflowContext(operationId, correlationId, job);
   if (!ctx) return;
 
-  // Extract workflow name from job name: "pipeline:workflows:disbursement" → "disbursement"
+  // Extract workflow name from job name: "pipeline:workflows:disbursement [Profile]" → "disbursement"
   const jobName = job?.name || '';
-  const workflowName = jobName.replace('pipeline:workflows:', '');
+  const workflowNameRaw = jobName.replace('pipeline:workflows:', '');
+  const workflowName = workflowNameRaw.split(' ')[0];
 
   const handler = WORKFLOW_REGISTRY[workflowName];
   if (!handler) {

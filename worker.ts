@@ -42,8 +42,9 @@ console.log(`[Worker] Redis: ${redisUrl}`);
 // ─── Job processor ────────────────────────────────────────────────────────────
 
 async function processJob(job: Job<PipelineJobData>) {
-  const { operationId, correlationId, type } = job.data;
-  console.log(`[Worker] Processing job ${job.id} (${job.name}) → operationId=${operationId}`);
+  const { operationId, correlationId, type, profileName } = job.data;
+  const profileStr = profileName ? ` [Profile: ${profileName}]` : '';
+  console.log(`[Worker] Processing job ${job.id} (${job.name})${profileStr} → operationId=${operationId}`);
 
   // Use explicit type field; fall back to job name inspection for legacy jobs
   const isWorkflow = type === 'workflow' || job.name.includes('workflows:');

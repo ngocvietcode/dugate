@@ -135,9 +135,15 @@ export async function submitPipelineJob(
   }
 
   // ── 3b. Spending limit check ──────────────────────────────────────────────
+  let profileName = 'Unknown Profile';
   if (apiKeyId) {
-    const [key] = await db.select({ spendingLimit: apiKeys.spendingLimit, totalUsed: apiKeys.totalUsed })
+    const [key] = await db.select({ spendingLimit: apiKeys.spendingLimit, totalUsed: apiKeys.totalUsed, name: apiKeys.name })
       .from(apiKeys).where(eq(apiKeys.id, apiKeyId)).limit(1);
+    
+    if (key) {
+      profileName = key.name;
+    }
+
     if (key && key.spendingLimit > 0 && key.totalUsed >= key.spendingLimit) {
       return {
         ok: false,
@@ -316,12 +322,13 @@ export async function submitPipelineJob(
 
   // ── 7. Enqueue to BullMQ Worker ────────────────────────────────────────────
   const queue = getPipelineQueue();
-  const jobName = `pipeline:${endpointSlug ?? 'unknown'}`;
+  const jobName = apiKeyId ? `pipeline:${endpointSlug ?? 'unknown'} [${profileName}]` : `pipeline:${endpointSlug ?? 'unknown'}`;
   const isWorkflowJob = endpointSlug?.startsWith('workflows:') ?? false;
   const jobData: PipelineJobData = {
     operationId,
     correlationId,
     type: isWorkflowJob ? 'workflow' : 'pipeline',
+    profileName: apiKeyId ? profileName : undefined,
     // Deferred file_urls for async mode — worker will download before running pipeline
     // Skip if URLs are being forwarded (already stored in filesJson as isRemoteUrl)
     ...(hasPendingFileUrls && !executeSync && !forwardUrls ? {

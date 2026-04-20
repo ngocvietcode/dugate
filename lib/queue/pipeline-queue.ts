@@ -85,6 +85,8 @@ export interface PipelineJobData {
   correlationId?: string;
   /** Explicit job type — avoids fragile job.name string matching */
   type?: 'pipeline' | 'workflow';
+  /** Profile name associated with this job for logging/monitoring */
+  profileName?: string;
   /** Pending file URLs to download at start of pipeline (deferred from submit for async mode) */
   pendingFileUrls?: import('@/lib/file-url-downloader').FileUrlEntry[];
   pendingFileUrlAuthConfig?: import('@/lib/file-url-downloader').FileUrlAuthConfig;
