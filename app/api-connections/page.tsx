@@ -586,6 +586,7 @@ export default function ApiConnectionsPage() {
                     <option value="DISABLED">🚫 DISABLED</option>
                   </select>
                 </div>
+
               </FormSection>
 
               {/* ═══ SECTION 2: Endpoint ═══════════════════════════════════ */}

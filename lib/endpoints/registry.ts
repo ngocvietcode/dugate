@@ -392,6 +392,13 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
         connections: [],
         isWorkflow: true,
       },
+      'doc-compare': {
+        displayName: 'So sánh Văn bản Nâng cao',
+        description: 'So sánh 2 văn bản quy trình/quy định nâng cao: OCR → Phân tích Mục lục → So sánh từng mục (phát hiện thêm/xóa/sửa mục) → Báo cáo So sánh chi tiết.',
+        parameters: {},
+        connections: [],
+        isWorkflow: true,
+      },
     },
   },
 };

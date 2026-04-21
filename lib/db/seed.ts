@@ -269,6 +269,39 @@ const CONNECTORS = [
     responseContentPath: 'response',
     defaultPrompt: `<role>\nYou are the Official Interactive Support Assistant for the DUGate system. You act as a friendly, knowledgeable guide for users trying to utilize DUGate's document understanding features.\n</role>\n\n<core_directive>\nListen to the user's requirements and advise them on which DUGate features/connectors they should use to accomplish their goal. You DO NOT execute actions and DO NOT return JSON. You only provide clear, conversational guidance.\n</core_directive>\n\n<anti_hallucination_rules>\n1. FEATURE CONFINEMENT: Only suggest features that exist in the provided list of DUGate Connectors. If DUGate cannot do it, explicitly say so.\n2. NO EXECUTION PROMISES: Never pretend that you have "completed the task" or "processed the file." You must instruct the user to navigate to the correct feature in the DUGate interface.\n3. TONE AND STYLE: Be extremely concise, polite, and helpful. Use Vietnamese by default.\n</anti_hallucination_rules>\n\nAvailable DUGate capabilities: {{available_routes_json}}\n\nUser request: "{{user_chat_message}}"\n\nRespond conversationally advising the user on which feature(s) they should use in the system to complete their goal.`,
   },
+  // ── Prompt Wizard ────────────────────────────────────────────────────────
+  {
+    slug: 'ext-prompt-wizard',
+    name: 'Prompt Upgrade Wizard',
+    description: 'LLM connector dành riêng cho Prompt Wizard — nhận meta-prompt và trả về prompt được nâng cấp. Trỏ tới LLM thật khi deploy production.',
+    httpMethod: 'POST',
+    promptFieldName: 'query',
+    fileFieldName: 'files',
+    authType: 'API_KEY_HEADER',
+    authKeyHeader: 'x-api-key',
+    authSecret: 'DUMMY_SECRET_KEY',
+    timeoutSec: 120,
+    state: 'ENABLED',
+    staticFormFields: null,
+    responseContentPath: 'content',
+    defaultPrompt: 'Bạn là chuyên gia viết system prompt cho AI pipeline. Viết lại prompt được cung cấp để cải thiện chất lượng output.',
+  },
+  {
+    slug: 'ext-doc-compare',
+    name: 'Document Structure Comparator',
+    description: 'Phân tích cấu trúc mục lục và so sánh từng mục giữa 2 văn bản. Dùng cho: workflows:doc-compare (bước 2 và 3).',
+    httpMethod: 'POST',
+    promptFieldName: 'query',
+    fileFieldName: 'files',
+    authType: 'API_KEY_HEADER',
+    authKeyHeader: 'x-api-key',
+    authSecret: 'DUMMY_SECRET_KEY',
+    timeoutSec: 180,
+    state: 'ENABLED',
+    staticFormFields: JSON.stringify([{ key: 'model', value: 'gemini-1.5-pro' }]),
+    responseContentPath: 'content',
+    defaultPrompt: 'Phân tích cấu trúc mục lục và so sánh nội dung từng mục giữa 2 văn bản theo hướng dẫn trong prompt.',
+  },
 ];
 
 const ALL_ENDPOINT_SLUGS = [
@@ -278,6 +311,7 @@ const ALL_ENDPOINT_SLUGS = [
   'transform:convert', 'transform:translate', 'transform:rewrite', 'transform:redact', 'transform:template',
   'generate:summary', 'generate:outline', 'generate:report', 'generate:email', 'generate:minutes', 'generate:qa',
   'compare:diff', 'compare:semantic', 'compare:version',
+  'workflows:disbursement', 'workflows:lc-checker', 'workflows:doc-compare',
 ];
 
 async function main() {

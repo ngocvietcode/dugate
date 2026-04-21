@@ -389,10 +389,12 @@ export async function createWorkflowContext(
 
 import { runDisbursement } from '@/lib/pipelines/workflows/disbursement';
 import { runLcChecker } from '@/lib/pipelines/workflows/lc-checker';
+import { runDocCompare } from '@/lib/pipelines/workflows/doc-compare';
 
 const WORKFLOW_REGISTRY: Record<string, (ctx: WorkflowContext) => Promise<void>> = {
   disbursement: runDisbursement,
   'lc-checker': runLcChecker,
+  'doc-compare': runDocCompare,
 };
 
 /**

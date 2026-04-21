@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import {
   Loader2, CheckCircle, Plus, Copy,
-  Settings, Save, Key, ChevronRight, ChevronDown, FileText, PlugZap, Trash2, Code, FlaskConical, Zap, XCircle, GripVertical, X
+  Settings, Save, Key, ChevronRight, ChevronDown, FileText, PlugZap, Trash2, Code, FlaskConical, Zap, XCircle, GripVertical, X, Wand2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -789,6 +789,12 @@ function ProfileEndpointCard({
     }
     return ensureStepIds(raw as ConnStep[]);
   });
+  // Prompt Wizard state — keyed by overrideKey (stepId)
+  const [wizardOpen, setWizardOpen]       = useState<Record<string, boolean>>({});
+  const [wizardProblem, setWizardProblem] = useState<Record<string, string>>({});
+  const [wizardLoading, setWizardLoading] = useState<Record<string, boolean>>({});
+  const [wizardResult, setWizardResult]   = useState<Record<string, string>>({});
+
   // Test Endpoint Modal State
   const [showTestModal, setShowTestModal] = useState(false);
   const [testFiles, setTestFiles] = useState<File[]>([]);
@@ -870,6 +876,10 @@ function ProfileEndpointCard({
     setFileUrlAuthConfig(endpoint.fileUrlAuthConfig ?? { type: 'none' });
     setAllowedFileExtensions(endpoint.allowedFileExtensions || '');
     setIsFileUrlAuthOpen(false);
+    setWizardOpen({});
+    setWizardProblem({});
+    setWizardLoading({});
+    setWizardResult({});
   }, [apiKeyId, endpoint.slug]);
 
   // Generate cURL preview
@@ -1919,15 +1929,132 @@ function ProfileEndpointCard({
                               {/* Prompt override */}
                               {isOverridden ? (
                                 <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
-                                  <label className="text-xs font-bold flex items-center gap-1 text-violet-600 dark:text-violet-400">
-                                    Prompt Override Content <span className="font-normal text-muted-foreground mr-1">— Mapping output:</span> <code className="bg-muted px-1.5 py-0.5 rounded text-foreground">{`{{input_content}}`}</code>
-                                  </label>
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold flex items-center gap-1 text-violet-600 dark:text-violet-400">
+                                      Prompt Override Content <span className="font-normal text-muted-foreground mr-1">— Mapping output:</span> <code className="bg-muted px-1.5 py-0.5 rounded text-foreground">{`{{input_content}}`}</code>
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => setWizardOpen(prev => ({ ...prev, [overrideKey]: !prev[overrideKey] }))}
+                                      className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors ${wizardOpen[overrideKey] ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-700' : 'bg-background border-border text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                                      title="Nâng cấp prompt với AI"
+                                    >
+                                      <Wand2 className="w-3.5 h-3.5" />
+                                      AI Wizard
+                                    </button>
+                                  </div>
                                   <textarea
                                     value={overrideValue ?? ''}
                                     onChange={(e) => setExtOverridesState(prev => ({ ...prev, [overrideKey]: e.target.value }))}
                                     className="w-full text-sm font-mono p-3 rounded-lg border border-violet-200 dark:border-violet-900 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 bg-violet-50/10 dark:bg-violet-950/20 outline-none leading-relaxed shadow-inner min-h-[140px]"
                                     placeholder="Nhập prompt override cho bước này (sử dụng biến {{input_content}} để ghép với dữ liệu đầu ra từ bước trước)..."
                                   />
+
+                                  {/* ── Prompt Wizard Panel ── */}
+                                  {wizardOpen[overrideKey] && (
+                                    <div className="animate-in slide-in-from-top-2 duration-200 border border-violet-200 dark:border-violet-800 rounded-xl bg-violet-50/40 dark:bg-violet-950/20 p-4 space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <Wand2 className="w-4 h-4 text-violet-500 shrink-0" />
+                                        <span className="text-sm font-bold text-violet-700 dark:text-violet-300">Prompt Wizard</span>
+                                        <span className="text-xs text-muted-foreground">— Mô tả vấn đề để AI viết lại prompt tốt hơn</span>
+                                      </div>
+
+                                      <div>
+                                        <label className="text-xs font-semibold text-foreground block mb-1">
+                                          Vấn đề đang gặp <span className="text-muted-foreground font-normal">(tuỳ chọn)</span>
+                                        </label>
+                                        <textarea
+                                          value={wizardProblem[overrideKey] ?? ''}
+                                          onChange={e => setWizardProblem(prev => ({ ...prev, [overrideKey]: e.target.value }))}
+                                          rows={3}
+                                          className="w-full text-sm p-3 rounded-lg border border-border focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 bg-background outline-none leading-relaxed resize-none"
+                                          placeholder="VD: Model hay bỏ sót trường 'ngày ký', output JSON bị thiếu dấu ngoặc, prompt quá dài gây chậm..."
+                                        />
+                                      </div>
+
+                                      <div className="flex justify-end">
+                                        <button
+                                          type="button"
+                                          disabled={wizardLoading[overrideKey]}
+                                          onClick={async () => {
+                                            setWizardLoading(prev => ({ ...prev, [overrideKey]: true }));
+                                            setWizardResult(prev => ({ ...prev, [overrideKey]: '' }));
+                                            try {
+                                              const res = await fetch('/api/internal/prompt-wizard', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                  currentPrompt: overrideValue ?? '',
+                                                  problem: wizardProblem[overrideKey] ?? '',
+                                                  metadata: {
+                                                    endpointName: endpoint.displayName,
+                                                    endpointSlug: endpoint.slug,
+                                                    connectorName: cData.name,
+                                                    connectorSlug: cData.slug,
+                                                    stepIndex: idx,
+                                                  },
+                                                }),
+                                              });
+                                              const data = await res.json();
+                                              if (data.success) {
+                                                setWizardResult(prev => ({ ...prev, [overrideKey]: data.upgradedPrompt }));
+                                              } else {
+                                                toast.error(data.error ?? 'Lỗi không xác định');
+                                              }
+                                            } catch {
+                                              toast.error('Lỗi kết nối khi gọi Prompt Wizard');
+                                            } finally {
+                                              setWizardLoading(prev => ({ ...prev, [overrideKey]: false }));
+                                            }
+                                          }}
+                                          className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        >
+                                          {wizardLoading[overrideKey]
+                                            ? <><Loader2 className="w-4 h-4 animate-spin" /> Đang nâng cấp...</>
+                                            : <><Wand2 className="w-4 h-4" /> Nâng cấp Prompt</>}
+                                        </button>
+                                      </div>
+
+                                      {/* Result */}
+                                      {wizardResult[overrideKey] && (
+                                        <div className="space-y-2 animate-in fade-in duration-200">
+                                          <div className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                                            <span className="text-xs font-bold text-green-700 dark:text-green-400">Prompt được nâng cấp:</span>
+                                          </div>
+                                          <pre className="text-xs font-mono bg-background border border-border rounded-lg p-3 whitespace-pre-wrap leading-relaxed max-h-64 overflow-y-auto text-foreground">
+                                            {wizardResult[overrideKey]}
+                                          </pre>
+                                          <div className="flex items-center justify-end gap-2 pt-1">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setWizardOpen(prev => ({ ...prev, [overrideKey]: false }));
+                                                setWizardResult(prev => ({ ...prev, [overrideKey]: '' }));
+                                              }}
+                                              className="px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent hover:border-border rounded-lg transition-colors"
+                                            >
+                                              Huỷ
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setExtOverridesState(prev => ({ ...prev, [overrideKey]: wizardResult[overrideKey] }));
+                                                setWizardOpen(prev => ({ ...prev, [overrideKey]: false }));
+                                                setWizardResult(prev => ({ ...prev, [overrideKey]: '' }));
+                                                toast.success('Đã áp dụng prompt mới! Nhớ bấm Lưu Toàn bộ Thiết lập.');
+                                              }}
+                                              className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm transition-colors"
+                                            >
+                                              <CheckCircle className="w-3.5 h-3.5" />
+                                              Áp dụng Prompt Này
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
                                   <div className="bg-muted p-3 mt-3 rounded-lg border border-border">
                                     <details>
                                       <summary className="text-xs font-semibold text-muted-foreground cursor-pointer outline-none w-fit hover:underline">Xem Default Prompt gốc (Tham khảo)</summary>
