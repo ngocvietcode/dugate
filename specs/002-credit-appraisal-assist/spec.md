@@ -1,6 +1,7 @@
 # Spec 002: App Hỗ trợ thẩm định tín dụng SME (`credit-appraisal-assist`)
 
 - **Trạng thái**: Draft — chờ trả lời câu hỏi Critical (§9)
+- **Sắp viết lại**: lõi Integrity thay bằng Loan Application Context — xem [LAC_INTEGRATION §8](../../docs/enterprise/LAC_INTEGRATION.md#8-ảnh-hưởng-tới-spec-002); chờ chốt LAC-1..LAC-4
 - **Tầng**: Apps ([ADR-0002](../../docs/adr/0002-core-apps-layering.md)), chạy trên Temporal ([ADR-0001](../../docs/adr/0001-temporal-orchestration.md))
 - **Thay thế**: spec 001 (phần nền tảng Apps được gộp vào Phase A của spec này)
 
