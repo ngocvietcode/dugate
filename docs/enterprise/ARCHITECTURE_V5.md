@@ -284,11 +284,14 @@ Chuyển từng workflow sau feature flag `ORCHESTRATOR_<slug>=bullmq|temporal`;
 
 ---
 
-## 10. Quyết định mở (cần chủ dự án chốt trước Phase 1)
+## 10. Quyết định
 
-1. **Hạ tầng**: on-prem Kubernetes/OpenShift hay private cloud? Temporal self-host (đề xuất) hay được phép Temporal Cloud?
-2. **LLM**: có được gửi tài liệu khách hàng tới Gemini/OpenAI không, hay bắt buộc model on-prem (vLLM/…)? → quyết định mức PII redaction & egress.
+**Đã chốt (2026-10-25):**
+- D1. Temporal **self-host on-prem** (Kubernetes/OpenShift của ngân hàng, persistence PostgreSQL). Không dùng Temporal Cloud.
+- D2. Chính sách LLM ngoài **chưa xác định** → thiết kế hỗ trợ cả hai: connector có `dataClassification`, policy egress + PII redaction cấu hình được; chốt khi có ý kiến ATTT.
+- D3. Tái cấu trúc monorepo **sau khi Temporal ổn định** (Phase 3). Phase 1–2 đặt code ở `lib/temporal/` + lint ranh giới module.
+
+**Còn mở (cần chốt trước Phase 1):**
 3. **CSDL**: giữ PostgreSQL hay chuẩn ngân hàng là Oracle? (Temporal hỗ trợ PostgreSQL/MySQL/Cassandra, không hỗ trợ Oracle.)
-4. **Tái cấu trúc repo** thành monorepo (`apps/` + `packages/`) ngay Phase 0 hay sau khi Temporal ổn định?
 5. **Số liệu NFR**: khối lượng hồ sơ, RPO/RTO, thời gian lưu trữ.
 6. **Phiên bản Next.js**: giữ 14 trong giai đoạn chuyển đổi (đề xuất) hay nâng cấp song song?

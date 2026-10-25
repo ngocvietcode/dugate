@@ -48,8 +48,8 @@ Workflow hiện chạy trên engine BullMQ tự viết (`lib/pipelines/workflow-
 ## 7. Câu hỏi mở
 | # | Câu hỏi | Mức độ | Trả lời |
 |---|---|---|---|
-| 1 | Temporal self-host hay Temporal Cloud? (ảnh hưởng FR-1, mTLS) | Critical | |
+| 1 | Temporal self-host hay Temporal Cloud? (ảnh hưởng FR-1, mTLS) | Critical | Self-host on-prem (ARCHITECTURE_V5 D1) |
 | 2 | Dùng chung Postgres với app (schema/DB riêng) hay instance riêng cho Temporal? | High | Đề xuất: DB riêng trên cùng instance ở dev, instance riêng ở prod |
 | 3 | Operation projection: cập nhật qua activity (đề xuất) hay đọc trực tiếp từ Temporal Query khi poll? | High | |
 | 4 | Storage S3 backend: activity tải file từ S3 về tmp như `engine.ts` hiện làm, hay connector nhận presigned URL? | Medium | |
-| 5 | Ở Phase 1 có tách `apps/`/`packages/` không, hay để `lib/temporal/` rồi tách sau? | Medium | Đề xuất: `lib/temporal/` + lint ranh giới |
+| 5 | Ở Phase 1 có tách `apps/`/`packages/` không, hay để `lib/temporal/` rồi tách sau? | Medium | `lib/temporal/` + lint ranh giới; tách ở Phase 3 (D3) |
