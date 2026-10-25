@@ -1,3 +1,8 @@
 # Tham số chính sách (lac-rules §8). provisional: true
 cic_max_age_days: 30        # owner: Quản lý rủi ro — R-CIC-AGE
 fin_tolerance: 0.10         # owner: Quản lý rủi ro — R-INCOME, ghi đè mức C1
+# Tín hiệu chéo vùng (lac-rules §7) — ngưỡng đề xuất, chờ Quản lý rủi ro chốt
+ltv_cap: 0.70               # trần LTV của chính sách sản phẩm
+ltv_margin: 0.01            # R-X-LTV-MARGIN: trong 1 điểm % dưới trần
+plan_cogs_max: 0.50         # R-X-PLAN-COGS: hàng nhập / giá vốn năm   (owner: QLRR, BU)
+loan_revenue_max: 1.0       # R-X-LOAN-REVENUE: số vay / doanh thu năm

@@ -20,14 +20,13 @@ LINK_SKIP = {"HAS_DOCUMENT", "MENTIONS"}  # lần nhắc người xuất riêng 
 
 
 def build_lac(data: dict, ref_date: date | None = None, config: Config | None = None,
-              cic_max_age: int | None = None, phase1: dict | None = None,
-              signals: list | None = None, metrics: list | None = None) -> dict:
+              cic_max_age: int | None = None, interest_rate: float | None = None) -> dict:
+    from lac.phase1 import phase1_gate
+    from lac.signals import compute_metrics, compute_signals
     cfg = config or load_config()
     v = Validator(data, ref_date, cic_max_age, cfg).run()
-    if phase1 is None:
-        from lac.phase1 import phase1_gate
-        phase1 = phase1_gate(v)
-    return lac_from_validator(v, phase1=phase1, signals=signals, metrics=metrics)
+    metrics = compute_metrics(v, interest_rate)
+    return lac_from_validator(v, phase1=phase1_gate(v), signals=compute_signals(v, metrics), metrics=metrics)
 
 
 def lac_from_validator(v: Validator, phase1: dict | None = None, signals: list | None = None,
@@ -69,6 +68,9 @@ def lac_from_validator(v: Validator, phase1: dict | None = None, signals: list |
     disc = jsonable(v.disc)
     rest = [x for x in disc if x["class"] != "N"]
     ctx = v.branch2_context()
+    if metrics or signals:
+        from lac.signals import render_branch2_extra
+        ctx += "\n" + render_branch2_extra(metrics or [], signals or [])
     return {
         "schema": "lac", "version": SCHEMA_VERSION,
         "case": {"id": c.get("case_id"), "product": c.get("product"), "segment": c.get("segment"),
@@ -104,9 +106,10 @@ def main():
     ap.add_argument("--ref-date", type=date.fromisoformat, default=None)
     ap.add_argument("--cic-max-age", type=int, default=None)
     ap.add_argument("--config", default=None, help="sản phẩm@version, vd pp-hkd-secured@0.1.0")
+    ap.add_argument("--interest-rate", type=float, default=None, help="lãi suất năm dạng số (vd 0.1) nếu LOS cung cấp")
     a = ap.parse_args()
     cfg = load_config(*a.config.split("@")) if a.config else load_config()
-    lac = build_lac(load(a.input), a.ref_date, cfg, a.cic_max_age)
+    lac = build_lac(load(a.input), a.ref_date, cfg, a.cic_max_age, a.interest_rate)
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(dumps(lac), encoding="utf-8")
     s = lac["stats"]

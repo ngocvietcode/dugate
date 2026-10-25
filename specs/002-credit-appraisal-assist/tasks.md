@@ -44,7 +44,7 @@
   - Phụ thuộc: L6 (Q2 cho checklist thật)
   - Kiểm chứng: fixture CIC của vợ/chồng → mục CIC `THIẾU` với "cần CIC của người vay"
 
-- [ ] **L9 — Tín hiệu chéo vùng R-X-* + lớp chỉ số**
+- [x] **L9 — Tín hiệu chéo vùng R-X-* + lớp chỉ số**
   - File: `lac/signals.py`, `lac/metrics.py`, tests theo bảng tính đối chứng (AC-6)
   - Phụ thuộc: L6
   - Kiểm chứng: T# và chỉ số khớp đối chứng; DSCR thiếu lãi suất → "chưa tính được"
