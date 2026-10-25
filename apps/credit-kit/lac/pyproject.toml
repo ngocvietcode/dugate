@@ -1,0 +1,22 @@
+[project]
+name = "dugate-lac"
+version = "0.1.0"
+description = "Loan Application Context: dựng graph hồ sơ vay và quy tắc giá trị chuẩn / sai lệch (tất định)"
+requires-python = ">=3.10"
+dependencies = [
+  "networkx>=3.2",
+]
+
+[project.optional-dependencies]
+draw = ["matplotlib>=3.8"]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["lac"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

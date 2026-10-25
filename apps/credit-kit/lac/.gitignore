@@ -1,0 +1,9 @@
+# Hồ sơ thật và kết quả chạy trên hồ sơ thật KHÔNG được commit (constitution §1–2, spec 002 NFR-6)
+cases/
+out/
+*.png
+*.svg
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.venv/

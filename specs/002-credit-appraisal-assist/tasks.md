@@ -5,7 +5,7 @@
 
 ## Phase L — `credit-kit/lac` (Python)
 
-- [ ] **L1 — Đưa PoC vào repo nguyên trạng + chạy được**
+- [x] **L1 — Đưa PoC vào repo nguyên trạng + chạy được**
   - File: `apps/credit-kit/lac/{pyproject.toml,README.md,CLAUDE.md}`, `lac/graph.py`, `lac/validate.py`, `lac/draw.py` (copy PoC, chỉ đổi import), `.gitignore` (`cases/`, `out/`)
   - Kiểm chứng: `python -m lac.validate <fixture> -o /tmp/out` chạy không lỗi; output gồm `facts.json`, `discrepancies.json`, `branch2_context.md`
 
