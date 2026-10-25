@@ -173,9 +173,10 @@
     "discrepancy": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "rule", "class", "subclass", "criticality", "severity", "fields", "title", "detail", "observations", "canonical", "status", "to_branch2", "note"],
+      "required": ["id", "key", "rule", "class", "subclass", "criticality", "severity", "fields", "title", "detail", "observations", "canonical", "status", "to_branch2", "note"],
       "properties": {
         "id": {"$ref": "#/$defs/discId"},
+        "key": {"type": "string", "pattern": "^[0-9a-f]{12}$", "description": "khoá ổn định qua các lần dựng lại (lac.review.disc_key)"},
         "rule": {"type": "string", "pattern": "^R-[A-Z0-9-]+$"},
         "class": {"enum": ["N", "A", "B", "C", "A|B"]},
         "subclass": {"type": "string", "pattern": "^(N|[ABC]\\d)$"},

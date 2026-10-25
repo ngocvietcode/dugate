@@ -21,11 +21,14 @@ LINK_SKIP = {"HAS_DOCUMENT", "MENTIONS"}  # lần nhắc người xuất riêng 
 
 
 def build_lac(data: dict, ref_date: date | None = None, config: Config | None = None,
-              cic_max_age: int | None = None, interest_rate: float | None = None) -> dict:
+              cic_max_age: int | None = None, interest_rate: float | None = None,
+              overrides: dict | None = None) -> dict:
     from lac.phase1 import phase1_gate
+    from lac.review import ReviewedValidator
     from lac.signals import compute_metrics, compute_signals
     cfg = config or load_config()
-    v = Validator(data, ref_date, cic_max_age, cfg).run()
+    v = (ReviewedValidator(data, ref_date, cic_max_age, cfg, overrides) if overrides
+         else Validator(data, ref_date, cic_max_age, cfg)).run()
     metrics = compute_metrics(v, interest_rate)
     return lac_from_validator(v, phase1=phase1_gate(v), signals=compute_signals(v, metrics), metrics=metrics)
 
@@ -66,7 +69,8 @@ def lac_from_validator(v: Validator, phase1: dict | None = None, signals: list |
         attrs = {k: jsonable(val) for k, val in e.items() if k not in ("rel", "src") and val is not None}
         links.append({"source": u, "target": w, "type": e["rel"], "sources": list(e.get("src", [])),
                       "attrs": attrs})
-    disc = jsonable(v.disc)
+    from lac.review import disc_key
+    disc = [{**x, "key": disc_key(x["rule"], x["fields"], x["title"])} for x in jsonable(v.disc)]
     rest = [x for x in disc if x["class"] != "N"]
     ctx = v.branch2_context()
     if metrics or signals:

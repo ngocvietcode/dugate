@@ -1,0 +1,25 @@
+{
+ "comment": "Test vector AES-GCM payload codec — khoá TEST ONLY, không dùng ở môi trường thật",
+ "keys": "test1:VEVTVC1PTkxZLUtFWS1ub3QtZm9yLXByb2QtMDAwMSE=",
+ "key_id": "test1",
+ "plain": {
+  "metadata": {
+   "encoding": "json/plain"
+  },
+  "data_utf8": "{\"lac\":\"xin chào\"}"
+ },
+ "from_python": {
+  "metadata": {
+   "encryption-key-id": "dGVzdDE=",
+   "encoding": "YmluYXJ5L2VuY3J5cHRlZA=="
+  },
+  "data_b64": "AAECAwQFBgcICQoLrk6/qquEzIb70WK0fVAztXbT2OlWcI/ABtB66rRWb9tlyRlik/llwRqLXAkBBymDIrK+Eb2wopCsMPIeuA=="
+ },
+ "from_typescript": {
+  "metadata": {
+   "encoding": "YmluYXJ5L2VuY3J5cHRlZA==",
+   "encryption-key-id": "dGVzdDE="
+  },
+  "data_b64": "giLE82XElsy9+X/sCBghRgz3cj8Y/UXK3KTzxETF/balJq2B3KlGsvhlgOFwYDyjXwYpkLKlKRj53KEXkppT+NjswkiuVeb+CA=="
+ }
+}

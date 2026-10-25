@@ -59,7 +59,7 @@
   - Phụ thuộc: L7, L8, L9
   - Kiểm chứng: chạy trên fixture → bảng chỉ số; chạy thật ở môi trường LAC-4
 
-- [ ] **L12 — Worker Temporal Python**
+- [x] **L12 — Worker Temporal Python**
   - File: `lac/worker.py` (activities `phase1_gate`, `build_validate`, `rebuild`; task queue `credit-lac-py`; payload codec)
   - Phụ thuộc: A1, L8, L9
   - Kiểm chứng: test với Temporal test server; AC-12

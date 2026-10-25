@@ -88,10 +88,12 @@ def strip_honorific(s: str) -> str:
 # ============================================================================ validator
 
 class Validator:
+    graph_cls = CaseGraph  # lớp con (lac.review) thay để áp xác nhận của người cho liên kết
+
     def __init__(self, data: dict, ref_date: date | None, cic_max_age: int | None = None,
                  config: Config | None = None):
         self.cfg = config or load_config()
-        self.cg = CaseGraph(data, self.cfg)
+        self.cg = self.graph_cls(data, self.cfg)
         self.G = self.cg.build()
         self.d = data
         c = data.get("case", {})
