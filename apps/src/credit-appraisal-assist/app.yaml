@@ -1,0 +1,19 @@
+# Manifest App (LAYERED_ARCHITECTURE §9). Spec: specs/002-credit-appraisal-assist
+name: credit-appraisal-assist
+version: 0.1.0
+owner: Khối Tín dụng (BU) — chờ chốt
+product: PP-HKD-SECURED            # v1: vay hộ kinh doanh có TSBĐ (LAC-1)
+input: ./schema.ts#Context
+output: ./schema.ts#Result
+coreCapabilities:
+  - generate:qa                    # nhánh 2 tạm thời, tới khi Core có prompt template (C2)
+  - operations:get                 # đọc đầu ra DU v5 theo coreOperationId (LAC-3)
+workers:
+  - task_queue: dugate-apps        # workflow + activity TypeScript
+  - task_queue: credit-lac-py      # lớp LAC Python (lacBuild)
+promptRefs: [caa-branch2@1]
+review:
+  modes: [DELEGATED, EMBEDDED, NONE]
+  requiredRoles: [CREDIT_APPRAISER, CREDIT_DATA_REVIEWER]
+  timeout: 10 days                 # chờ đơn vị chốt
+outcomes: [PENDING_SUPPLEMENT, PROVISIONAL, ELIGIBLE_TO_SUBMIT]   # trạng thái hồ sơ, KHÔNG phải quyết định cho vay
