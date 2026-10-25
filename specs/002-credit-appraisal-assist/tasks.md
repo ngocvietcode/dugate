@@ -54,7 +54,7 @@
   - Phụ thuộc: L9
   - Kiểm chứng: R-CROSS-DOC, R-ARITH chạy trên vùng mới; snapshot cập nhật có review
 
-- [ ] **L11 — Script đo trên hồ sơ thật (ngoài repo)**
+- [x] **L11 — Script đo trên hồ sơ thật (ngoài repo)** (chạy thật chờ LAC-4)
   - File: `apps/credit-kit/lac/scripts/measure.py` (đọc thư mục ngoài repo, xuất bảng LAC §7.2, không ghi dữ liệu người ra log)
   - Phụ thuộc: L7, L8, L9
   - Kiểm chứng: chạy trên fixture → bảng chỉ số; chạy thật ở môi trường LAC-4
