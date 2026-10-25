@@ -6,12 +6,14 @@ export const DISCRIMINATOR: Record<CoreService, string> = {
 export type CoreService = 'ingest' | 'extract' | 'analyze' | 'transform' | 'generate' | 'compare';
 
 export interface FileUrlEntry { url: string; filename?: string; mime_type?: string }
+export interface InlineFile { name: string; content: string; type: string }
 
 export interface SubmitRequest {
   service: CoreService;
   sub: string;                       // giá trị discriminator, vd extract: 'custom'
   params?: Record<string, string>;   // tham số form khác (schema, fields, categories...)
   fileUrls?: FileUrlEntry[];
+  files?: InlineFile[];              // file nhỏ do App tạo (vd bản trích LAC), gửi multipart files[]
   idempotencyKey: string;
   correlationId?: string;
 }
@@ -76,6 +78,7 @@ export class CoreClient {
     form.set(DISCRIMINATOR[r.service], r.sub);
     for (const [k, v] of Object.entries(r.params ?? {})) form.set(k, v);
     if (r.fileUrls?.length) form.set('file_urls', JSON.stringify(r.fileUrls));
+    for (const f of r.files ?? []) form.append('files[]', new Blob([f.content], { type: f.type }), f.name);
     return this.call(`${this.o.baseUrl}/api/v1/docs/${r.service}`, {
       method: 'POST', body: form,
       headers: this.headers({ 'idempotency-key': r.idempotencyKey, ...(r.correlationId ? { 'x-correlation-id': r.correlationId } : {}) }),

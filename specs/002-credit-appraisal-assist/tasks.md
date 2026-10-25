@@ -66,7 +66,9 @@
 
 ## Phase A — Khung Apps (TS)
 
-Giữ nguyên **T-A1 … T-A8** của bản trước (workspace + Temporal dev, lint ranh giới, contract, DB `apps`, `core-client` + `callCore`, projection/audit/webhook, workflow-kit review + maker-checker, server + worker). Bổ sung:
+- [x] **T-A1..T-A8** (workspace + Temporal dev, lint ranh giới, contract, DB `apps`, `core-client` + `callCore`, projection/audit/webhook, workflow-kit review + maker-checker, server + worker) — `apps/` là dự án npm riêng (không đụng build Core); thêm Payload Codec AES-GCM dùng chung TS/Python.
+
+Bổ sung:
 
 - [x] **A9 — Sinh Zod từ `lac.schema.json` + kiểm khớp trong CI**
   - Phụ thuộc: L6, T-A3
@@ -74,10 +76,10 @@ Giữ nguyên **T-A1 … T-A8** của bản trước (workspace + Temporal dev, 
 
 ## Phase B — App
 
-- [ ] **B1 — Schema context/output, app.yaml** (FR-1..FR-3)
-- [ ] **B2 — Workflow: GĐ1 → trích xuất → LAC** (gọi Core + activity Python; STRICT/TRIAL) — phụ thuộc L12, T-A5
-- [ ] **B3 — Nhánh 2: prompt ref + gọi Core + verify trích dẫn & con số** (FR-20..FR-23, AC-8) — phụ thuộc Core C2/C7–C9 hoặc mock
-- [ ] **B4 — Bước ghép + chạy lại một phần** (FR-24..FR-26, AC-9, AC-10) — hàm thuần + workflow test
-- [ ] **B5 — Nhánh 1: ReviewTask theo X#, hành động, Update `reclassify`** (FR-15..FR-19, AC-11) — phụ thuộc T-A7
-- [ ] **B6 — Màn hình nhánh 1** — phụ thuộc Q1, Core C6/C12
-- [ ] **B7 — E2E với mock-service + fixture giả lập** (AC-1..AC-12)
+- [x] **B1 — Schema context/output, app.yaml** (FR-1..FR-3)
+- [x] **B2 — Workflow: GĐ1 → trích xuất → LAC** (gọi Core + activity Python; STRICT/TRIAL) — phụ thuộc L12, T-A5
+- [x] **B3 — Nhánh 2: prompt ref + gọi Core + verify trích dẫn & con số** (FR-20..FR-23, AC-8) — phụ thuộc Core C2/C7–C9 hoặc mock
+- [x] **B4 — Bước ghép + chạy lại một phần** (FR-24..FR-26, AC-9, AC-10) — hàm thuần + workflow test
+- [x] **B5 — Nhánh 1: ReviewTask theo X#, hành động, Update `submitDecision`** (FR-15..FR-19, AC-11) — phụ thuộc T-A7
+- [ ] **B6 — Màn hình nhánh 1** — CHẶN: chờ Q1 (LOS deep-link) và Core C6 (trang/bbox), C12 (đọc lại vùng ảnh); API đã đủ cho LOS tự hiển thị (DELEGATED)
+- [x] **B7 — E2E với Core giả + fixture giả lập** (AC-1, AC-3, AC-8..AC-12; AC-13 chờ LAC-4) + replay test offline

@@ -21,8 +21,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ['test/**/*.ts'],
+    rules: { '@typescript-eslint/no-explicit-any': 'off' }, // test đọc JSON động từ API
+  },
+  {
     // Code chạy trong sandbox workflow của Temporal: chỉ logic tất định (constitution §10)
-    files: ['src/**/workflow.ts', 'src/**/workflows/**/*.ts', 'src/platform/workflow-kit/**/*.ts', 'src/**/merge.ts',
+    files: ['src/**/workflow.ts', 'src/**/workflows/**/*.ts', 'src/platform/workflow-kit/**/*.ts', 'src/**/merge.ts', 'src/**/findings.ts',
       'src/**/verify.ts'],
     rules: {
       '@typescript-eslint/no-restricted-imports': ['error', {

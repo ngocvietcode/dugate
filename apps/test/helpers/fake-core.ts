@@ -1,13 +1,14 @@
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-export interface FakeOp { id: string; key: string; form: Record<string, string>; service: string; polls: number;
-  state: 'RUNNING' | 'SUCCEEDED' | 'FAILED'; result?: unknown }
+export interface FakeOp { id: string; key: string; form: Record<string, string>; files: Record<string, string>; service: string;
+  polls: number; state: 'RUNNING' | 'SUCCEEDED' | 'FAILED'; result?: unknown }
 
 /** Core giả cho test: /api/v1/docs/:service (multipart) và /api/v1/operations/:id, idempotency theo header. */
 export async function startFakeCore(opts: {
   apiKey?: string;
-  respond?: (service: string, form: Record<string, string>) => { content?: string; extracted_data?: unknown } | 'FAIL';
+  respond?: (service: string, form: Record<string, string>, files: Record<string, string>) =>
+    { content?: string; extracted_data?: unknown } | 'FAIL';
   pollsUntilDone?: number;
   rejectStatus?: number;
 } = {}) {
@@ -23,13 +24,18 @@ export async function startFakeCore(opts: {
       if (opts.rejectStatus) return send(opts.rejectStatus, { detail: 'rejected' });
       const chunks: Buffer[] = [];
       for await (const c of req) chunks.push(c as Buffer);
-      const form = Object.fromEntries(await new Response(Buffer.concat(chunks), { headers: { 'content-type': String(req.headers['content-type']) } })
-        .formData().then((f) => [...f.entries()].map(([k, v]) => [k, String(v)])));
+      const fd = await new Response(Buffer.concat(chunks), { headers: { 'content-type': String(req.headers['content-type']) } }).formData();
+      const form: Record<string, string> = {};
+      const files: Record<string, string> = {};
+      for (const [k, v] of fd.entries()) {
+        if (typeof v === 'string') form[k] = v; else files[v.name] = await v.text();
+      }
       const key = String(req.headers['idempotency-key'] ?? '');
       if (key && byKey.has(key)) return send(200, view(ops.get(byKey.get(key)!)!));
       const id = `op_${++n}`;
-      const r = opts.respond?.(m[1], form) ?? { content: 'ok' };
-      ops.set(id, { id, key, form, service: m[1], polls: 0, state: r === 'FAIL' ? 'FAILED' : 'RUNNING', result: r === 'FAIL' ? undefined : r });
+      const r = opts.respond?.(m[1], form, files) ?? { content: 'ok' };
+      ops.set(id, { id, key, form, files, service: m[1], polls: 0, state: r === 'FAIL' ? 'FAILED' : 'RUNNING',
+        result: r === 'FAIL' ? undefined : r });
       if (key) byKey.set(key, id);
       return send(202, view(ops.get(id)!));
     }
@@ -48,5 +54,9 @@ export async function startFakeCore(opts: {
     ...(op.state === 'FAILED' ? { error: { code: 'X', message: 'connector failed' } } : {}) });
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
   const { port } = server.address() as AddressInfo;
-  return { url: `http://127.0.0.1:${port}`, ops, close: () => new Promise<void>((r) => server.close(() => r())) };
+  /** Tạo sẵn một Operation đã xong (vd đầu ra DU v5 của hồ sơ). */
+  const seed = (id: string, extracted: unknown) => {
+    ops.set(id, { id, key: '', form: {}, files: {}, service: 'seed', polls: 0, state: 'SUCCEEDED', result: { extracted_data: extracted } });
+  };
+  return { url: `http://127.0.0.1:${port}`, ops, seed, close: () => new Promise<void>((r) => server.close(() => r())) };
 }

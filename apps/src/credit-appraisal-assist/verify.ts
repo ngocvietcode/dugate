@@ -47,7 +47,10 @@ export function buildVerifyContext(lac: Lac): VerifyContext {
   };
 }
 
-const UNITS: [RegExp, number][] = [[/^\s*(tỷ|ty)\b/i, 1e9], [/^\s*(triệu|trieu|tr)\b/i, 1e6], [/^\s*(nghìn|nghin|ngàn)\b/i, 1e3]];
+// \b của JS chỉ hiểu chữ ASCII ("tỷ" kết thúc bằng ký tự không phải \w) -> dùng lookahead Unicode
+const END = '(?![\\p{L}\\p{N}])';
+const UNITS: [RegExp, number][] = [[new RegExp(`^\\s*(tỷ|ty)${END}`, 'iu'), 1e9],
+  [new RegExp(`^\\s*(triệu|trieu|tr)${END}`, 'iu'), 1e6], [new RegExp(`^\\s*(nghìn|nghin|ngàn)${END}`, 'iu'), 1e3]];
 
 /** Các cách đọc số có thể của một token (định dạng VN "1.670.000.000", "69,98%", hoặc kiểu "0.6998"). */
 export function readings(token: string): { value: number; decimals: number }[] {

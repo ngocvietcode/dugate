@@ -1,5 +1,5 @@
 import { ApplicationFailure, Context, sleep } from '@temporalio/activity';
-import { CoreClient, CoreClientError, type CoreService, type FileUrlEntry, operationId } from '../core-client';
+import { CoreClient, CoreClientError, type CoreService, type FileUrlEntry, type InlineFile, operationId } from '../core-client';
 
 export interface CallCoreInput {
   runId: string;
@@ -8,6 +8,7 @@ export interface CallCoreInput {
   sub: string;
   params?: Record<string, string>;
   fileUrls?: FileUrlEntry[];
+  files?: InlineFile[];
   correlationId?: string;
 }
 
@@ -32,7 +33,7 @@ export function createCoreActivities(client: CoreClient, opts: { pollMs?: number
       try {
         if (!opId) {
           const op = await client.submit({ service: input.service, sub: input.sub, params: input.params,
-            fileUrls: input.fileUrls, idempotencyKey: key, correlationId: input.correlationId ?? input.runId });
+            fileUrls: input.fileUrls, files: input.files, idempotencyKey: key, correlationId: input.correlationId ?? input.runId });
           opId = operationId(op);
         }
         for (;;) {

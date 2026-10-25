@@ -50,6 +50,12 @@ describe('verify (FR-22, FR-23)', () => {
     expect(verifyConclusion(bad, ctx).join()).toMatch(/ngày 2019-01-01/);
   });
 
+  it('đơn vị tỷ/triệu trong câu văn (ký tự có dấu)', () => {
+    const k = { id: 'K4', text: 'Doanh thu năm 1,5 tỷ (F33), giá vốn 1.050 triệu.', fields: ['F33'], conflicts: [], signals: [] };
+    expect(verifyConclusion(k, ctx)).toEqual([]);
+    expect(verifyConclusion({ ...k, text: 'Doanh thu năm 1,7 tỷ (F33).' }, ctx).join()).toMatch(/con số 1,7/);
+  });
+
   it('bóc JSON trong ```json', () => {
     expect(parseConclusions('Kết quả:\n```json\n[{"id":"K1"}]\n```', null)).toEqual([{ id: 'K1' }]);
     expect(parseConclusions(null, { conclusions: [{ id: 'K2' }] })).toEqual([{ id: 'K2' }]);
@@ -101,8 +107,11 @@ describe('task, quyết định, ghép (FR-15..17, FR-24)', () => {
     const task = reviewTasks(income, 'r').find((x) => x.kind === 'DISCREPANCY')!;
     const o = emptyOverrides();
     const ledger: Record<string, Resolution> = {};
-    applyDecision(o, ledger, dec(task.taskId, { action: 'CORRECT_VALUE', value: 'ANNUAL', reason: 'ảnh ghi /năm' }), task, income,
-      income.facts.find((f) => f.field === 'financial_info.total_income_period')!.id);
+    const field = income.facts.find((f) => f.field === 'financial_info.total_income_period')!.id;
+    const d = dec(task.taskId, { action: 'CORRECT_VALUE', value: 'ANNUAL', reason: 'ảnh ghi /năm' });
+    expect(decisionViolation(d, task, income)).toMatch(/cần chỉ rõ field/);
+    expect(decisionViolation({ ...d, field }, task, income)).toBeNull();
+    applyDecision(o, ledger, { ...d, field }, task, income);
     expect(o.facts[0]).toMatchObject({ entity: 'L1', field: 'financial_info.total_income_period', value: 'ANNUAL', by: 'cv02' });
     expect(o.discrepancies[0]).toMatchObject({ key: task.ref, class: 'A' });
     expect(ledger[task.ref]).toBe('RESOLVED');

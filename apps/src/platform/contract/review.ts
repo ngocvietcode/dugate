@@ -28,6 +28,7 @@ export const ReviewDecisionBody = z.object({
   action: DecisionAction,
   newClass: z.enum(['A', 'B', 'C']).optional(),
   value: z.unknown().optional(),
+  field: z.string().regex(/^F\d+$/).optional().describe('CORRECT_VALUE: mã F# được sửa'),
   reason: z.string().min(3, 'bắt buộc ghi lý do'),
 });
 export type ReviewDecisionBody = z.infer<typeof ReviewDecisionBody>;

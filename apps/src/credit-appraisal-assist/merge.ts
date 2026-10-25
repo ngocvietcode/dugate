@@ -46,8 +46,9 @@ export function decisionViolation(d: DecisionInput, task: TaskSpec | undefined, 
     case 'CORRECT_VALUE': {
       if (d.value === undefined) return 'CORRECT_VALUE cần value';
       if (!['A', 'A|B', 'C'].includes(x.class)) return 'chỉ sửa giá trị cho lỗi đọc (A) hoặc nghi lỗi đọc';
+      if (d.field) return lac.facts.some((f) => f.id === d.field) ? null : `${d.field} không tồn tại`;
       const fs = x.fields.filter((f) => f.startsWith('F'));
-      return fs.length >= 1 ? null : 'sai lệch không gắn với thông tin F# nào để sửa';
+      return fs.length === 1 ? null : 'cần chỉ rõ field (F#) được sửa';
     }
     case 'REQUEST_SUPPLEMENT': return ['B', 'A|B'].includes(x.class) ? null : 'chỉ yêu cầu bổ sung cho lỗi lập hồ sơ (B)';
     default: return `hành động ${d.action} không áp dụng cho sai lệch`;
@@ -55,8 +56,7 @@ export function decisionViolation(d: DecisionInput, task: TaskSpec | undefined, 
 }
 
 /** Quyết định -> override cho LAC + trạng thái xử lý của sai lệch. */
-export function applyDecision(o: Overrides, ledger: Record<string, Resolution>, d: DecisionInput, task: TaskSpec, lac: Lac,
-  correctField?: string): void {
+export function applyDecision(o: Overrides, ledger: Record<string, Resolution>, d: DecisionInput, task: TaskSpec, lac: Lac): void {
   const by = d.actor.userId;
   if (task.kind === 'PERSON_LINK') {
     const [doc, idx] = task.ref.split('#');
@@ -74,7 +74,7 @@ export function applyDecision(o: Overrides, ledger: Record<string, Resolution>, 
     case 'CONFIRM': ledger[x.key] = 'RESOLVED'; break;
     case 'RECLASSIFY': reclass(d.newClass!); ledger[x.key] = d.newClass === 'B' ? 'SUPPLEMENT_REQUESTED' : 'RESOLVED'; break;
     case 'CORRECT_VALUE': {
-      const fid = correctField ?? x.fields.find((f) => f.startsWith('F'))!;
+      const fid = d.field ?? x.fields.find((f) => f.startsWith('F'))!;
       const f = lac.facts.find((y) => y.id === fid)!;
       o.facts = o.facts.filter((y) => !(y.entity === f.entity && y.field === f.field));
       o.facts.push({ entity: f.entity, field: f.field, value: d.value, reason: d.reason, by });
