@@ -5,3 +5,6 @@ node_modules
 uploads
 outputs
 coverage
+
+# Tầng Apps là dự án riêng, có Dockerfile riêng (apps/Dockerfile)
+apps/

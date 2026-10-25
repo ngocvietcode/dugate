@@ -9,6 +9,8 @@ module.exports = {
       tsconfig: 'tsconfig.json'
     }]
   },
+  // apps/ là dự án riêng (tầng Apps, ADR-0002) với test runner riêng
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/apps/'],
   testMatch: [
     '**/tests/e2e/**/*.test.ts'
   ],

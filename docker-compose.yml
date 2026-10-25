@@ -102,5 +102,21 @@ services:
       start_period: 20s
     restart: unless-stopped
 
+  # ── Tầng Apps (ADR-0002) — chỉ chạy khi bật profile: docker compose --profile apps up -d ──
+  # Dev: Temporal CLI dev server (persistence SQLite trong volume). Production: Temporal cluster
+  # self-host với PostgreSQL (ARCHITECTURE_V5 D1, Phase 4) — không dùng cấu hình này.
+  temporal:
+    image: temporalio/temporal:1.5.1
+    profiles: ["apps"]
+    command: ["server", "start-dev", "--ip", "0.0.0.0", "--db-filename", "/data/temporal.db",
+              "--namespace", "apps-dev"]
+    ports:
+      - "7233:7233"   # gRPC
+      - "8233:8233"   # Temporal UI
+    volumes:
+      - temporaldata:/data
+    restart: unless-stopped
+
 volumes:
+  temporaldata:
   pgdata:
