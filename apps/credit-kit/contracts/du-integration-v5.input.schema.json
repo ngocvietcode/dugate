@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dugate.local/contracts/du-integration-v5.input.json",
+  "title": "Đầu vào LAC: phần LAC đọc từ đầu ra DU `dugate.loan-appraisal.integration` 5.0",
+  "description": "Chỉ mô tả các khoá lớp LAC thực sự đọc (lac.graph / lac.validate). Các khoá khác (findings, checks, checks_summary, decision, financials, notes) bị bỏ qua. Có thể bọc trong {result: {extracted_data: ...}}. Nguồn sinh của định dạng này chờ chốt ở LAC-3.",
+  "type": "object",
+  "required": ["case", "documents"],
+  "properties": {
+    "case": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string"},
+        "completed_at": {"type": "string"},
+        "profile": {
+          "type": "object",
+          "properties": {
+            "segment": {"type": "string"}, "product": {"type": "string"},
+            "product_name": {"type": "string"}, "flow": {"type": "string"}
+          }
+        }
+      }
+    },
+    "parties": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"type": "string"},
+          "name": {"type": "string"},
+          "identifiers": {"type": "array", "items": {"type": "object", "required": ["type", "value"],
+                          "properties": {"type": {"type": "string"}, "value": {"type": "string"}}}},
+          "fields": {"type": "array", "items": {"$ref": "#/$defs/field"}}
+        }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"type": "string"},
+          "identifiers": {"type": "array", "items": {"type": "object", "required": ["type", "value"]}},
+          "fields": {"type": "array", "items": {"$ref": "#/$defs/field"}}
+        }
+      }
+    },
+    "documents": {
+      "type": "object",
+      "required": ["records"],
+      "properties": {
+        "items": {"type": "array", "items": {"type": "object", "required": ["key"],
+                  "properties": {"key": {"type": "string"}, "required": {"type": ["boolean", "null"]}}}},
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["doc", "item", "fields"],
+            "properties": {
+              "doc": {"type": "string", "description": "loại chứng từ: id_card, qr_code_info, vneid, marriage_certificate, loan_application, purchase_list, income_statement, land_use_certificate, valuation_certificate, cic, ..."},
+              "item": {"type": "string", "description": "mục checklist"},
+              "party": {"type": ["string", "null"]},
+              "asset": {"type": ["string", "null"]},
+              "fields": {"type": "array", "items": {"$ref": "#/$defs/field"}}
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "field": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\d+\\]|\\.[A-Za-z_][A-Za-z0-9_]*)*$"},
+        "value": {},
+        "status": {"enum": ["AGREED", "SINGLE_SOURCE", "CONFLICT"]},
+        "candidates": {"type": "array"}
+      }
+    }
+  }
+}

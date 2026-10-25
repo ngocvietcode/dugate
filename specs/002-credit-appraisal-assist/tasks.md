@@ -34,7 +34,7 @@
   - Phụ thuộc: L5
   - Kiểm chứng: output mọi fixture validate theo schema; FR-14
 
-- [ ] **L7 — Adapter đầu vào DU** (chặn bởi LAC-3 cho adapter Core)
+- [x] **L7 — Adapter đầu vào DU** (adapter DU v5 xong; adapter Core chờ LAC-3)
   - File: `lac/adapters/du_integration_v5.py` (+ adapter Core khi chốt)
   - Phụ thuộc: L6
   - Kiểm chứng: fixture DU v5 → input LAC → snapshot không đổi

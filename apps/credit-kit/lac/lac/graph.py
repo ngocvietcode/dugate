@@ -792,8 +792,8 @@ class CaseGraph:
 # ----------------------------------------------------------------------------- main
 
 def load(path: Path) -> dict:
-    raw = json.loads(path.read_text(encoding="utf-8"))
-    return raw.get("result", {}).get("extracted_data", raw)
+    from lac.adapters.du_integration_v5 import to_lac_input  # kiểm cấu trúc đầu vào DU v5
+    return to_lac_input(json.loads(path.read_text(encoding="utf-8")))
 
 
 def main():
