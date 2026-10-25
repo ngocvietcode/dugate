@@ -1,0 +1,38 @@
+// SINH TỰ ĐỘNG từ credit-kit/contracts/lac.schema.json — không sửa tay. Chạy: npm run gen:lac-zod
+/* eslint-disable */
+import { z } from "zod"
+
+export const LacSchema = z.object({ "schema": z.literal("lac"), "version": z.literal("1.0"), "case": z.object({ "id": z.union([z.string(), z.null()]), "product": z.union([z.string(), z.null()]), "segment": z.union([z.string(), z.null()]), "flow": z.union([z.string(), z.null()]), "ref_date": z.string().date(), "config": z.object({ "product": z.string(), "version": z.string(), "status": z.enum(["DRAFT","APPROVED"]) }).strict(), "phase1": z.any().superRefine((x, ctx) => {
+    const schemas = [z.null(), z.object({ "status": z.enum(["COMPLETE","INCOMPLETE"]), "items": z.array(z.object({ "key": z.string(), "group": z.string(), "required": z.boolean(), "status": z.enum(["PASS","REVIEW","MISSING"]), "docs": z.array(z.string().regex(new RegExp("^(D\\d+|case\\.[a-z_]+)$"))), "reasons": z.array(z.string()), "subject": z.union([z.string(), z.null()]) }).strict()) }).strict()];
+    const { errors, failed } = schemas.reduce<{
+      errors: z.core.$ZodIssue[];
+      failed: number;
+    }>(
+      ({ errors, failed }, schema) =>
+        ((result) =>
+          result.error
+            ? {
+                errors: [...errors, ...result.error.issues],
+                failed: failed + 1,
+              }
+            : { errors, failed })(
+          schema.safeParse(x),
+        ),
+      { errors: [], failed: 0 },
+    );
+    const passed = schemas.length - failed;
+    if (passed !== 1) {
+      ctx.addIssue(errors.length ? {
+        path: [],
+        code: "invalid_union",
+        errors: [errors],
+        message: "Invalid input: Should pass single schema. Passed " + passed,
+      } : {
+        path: [],
+        code: "custom",
+        errors: [errors],
+        message: "Invalid input: Should pass single schema. Passed " + passed,
+      });
+    }
+  }) }).strict(), "documents": z.array(z.object({ "id": z.string().regex(new RegExp("^(D\\d+|case\\.[a-z_]+)$")), "doc_type": z.string(), "title": z.union([z.string(), z.null()]), "date": z.union([z.string().date(), z.null()]), "checklist_items": z.array(z.object({ "key": z.string(), "required": z.union([z.boolean(), z.null()]) }).strict()) }).strict()), "entities": z.array(z.object({ "id": z.string().regex(new RegExp("^(P|U|B|A|L|G|I)\\d+$")), "kind": z.enum(["party","business","asset","loan_request","funding_plan","institution"]), "entity_type": z.union([z.string(), z.null()]).optional(), "name": z.union([z.string(), z.null()]).optional(), "roles": z.array(z.object({ "role": z.union([z.string(), z.null()]), "role_raw": z.union([z.string(), z.null()]).optional(), "doc": z.string().regex(new RegExp("^(D\\d+|case\\.[a-z_]+)$")) }).strict()).optional(), "src": z.union([z.string(), z.null()]).optional() }).strict()), "mentions": z.array(z.object({ "doc": z.string().regex(new RegExp("^(D\\d+|case\\.[a-z_]+)$")), "idx": z.number().int(), "party": z.string(), "role": z.union([z.string(), z.null()]), "confidence": z.enum(["cao","trung bình","không xác định"]), "score": z.union([z.number().int(), z.null()]), "evidence": z.array(z.string()), "against": z.array(z.any()) }).strict()), "links": z.array(z.object({ "source": z.string(), "target": z.string(), "type": z.string(), "sources": z.array(z.string()), "attrs": z.record(z.string(), z.any()) }).strict()), "facts": z.array(z.object({ "id": z.string().regex(new RegExp("^F\\d+$")), "entity": z.string(), "field": z.string(), "group": z.string(), "value": z.any().describe("Giá trị trường: chuỗi, số, bool, địa chỉ {full_text,...}, mảng, hoặc {one_of:[...]} khi DU đọc ra nhiều ứng viên"), "status": z.enum(["ok","chưa xác định","không có nguồn chứng từ"]), "rule": z.union([z.string(), z.null()]), "sources": z.array(z.string()), "criticality": z.enum(["K1","K2","K3"]), "flags": z.array(z.string().regex(new RegExp("^X\\d{2,}:(A|B|C|A\\|B)$"))), "observations": z.array(z.object({ "value": z.any().describe("Giá trị trường: chuỗi, số, bool, địa chỉ {full_text,...}, mảng, hoặc {one_of:[...]} khi DU đọc ra nhiều ứng viên"), "doc": z.string(), "tier": z.number(), "historical": z.boolean(), "note": z.string().optional() }).strict()) }).strict()), "discrepancies": z.array(z.object({ "id": z.string().regex(new RegExp("^X\\d{2,}$")), "key": z.string().regex(new RegExp("^[0-9a-f]{12}$")).describe("khoá ổn định qua các lần dựng lại (lac.review.disc_key)"), "rule": z.string().regex(new RegExp("^R-[A-Z0-9-]+$")), "class": z.enum(["N","A","B","C","A|B"]), "subclass": z.string().regex(new RegExp("^(N|[ABC]\\d)$")), "criticality": z.enum(["K1","K2","K3"]), "severity": z.enum(["S1","S2","S3","S4"]), "fields": z.array(z.string()).min(1), "title": z.string(), "detail": z.string(), "observations": z.array(z.object({ "value": z.string(), "docs": z.array(z.string()) })), "canonical": z.union([z.string(), z.null()]), "status": z.string(), "to_branch2": z.boolean(), "note": z.union([z.string(), z.null()]) }).strict()), "signals": z.array(z.object({ "id": z.string().regex(new RegExp("^T\\d+$")), "rule": z.string().regex(new RegExp("^R-X-[A-Z-]+$")), "title": z.string(), "detail": z.string(), "fields": z.array(z.string()), "discrepancies": z.array(z.string().regex(new RegExp("^X\\d{2,}$"))), "metrics": z.array(z.string()), "threshold": z.union([z.number(), z.string(), z.null()]) }).strict()), "metrics": z.array(z.object({ "id": z.string().regex(new RegExp("^M-[A-Z0-9-]+$")), "name": z.string(), "formula": z.string(), "status": z.enum(["computed","not_computable"]), "value": z.union([z.number(), z.null()]), "inputs": z.array(z.object({ "name": z.string(), "fact": z.union([z.string(), z.null()]), "value": z.union([z.number(), z.null()]) }).strict()), "missing": z.array(z.string()), "flags": z.array(z.string()) }).strict()), "zones": z.object({ "financials": z.array(z.object({ "entity": z.string(), "metric": z.enum(["revenue","cogs","gross_profit","total_cost","net_profit","declared_income","existing_debt_payment"]), "fact": z.string().regex(new RegExp("^F\\d+$")), "value": z.number(), "period": z.enum(["ANNUAL","MONTHLY","QUARTERLY","UNKNOWN"]), "annualized": z.union([z.number(), z.null()]), "source_type": z.union([z.string().describe("SELF_DECLARED | TAX | BANK_STATEMENT | ACCOUNTING | CONTRACT | INVOICE | OTHER | MIXED"), z.null().describe("SELF_DECLARED | TAX | BANK_STATEMENT | ACCOUNTING | CONTRACT | INVOICE | OTHER | MIXED")]).describe("SELF_DECLARED | TAX | BANK_STATEMENT | ACCOUNTING | CONTRACT | INVOICE | OTHER | MIXED"), "sources": z.array(z.string()), "flags": z.array(z.string()) }).strict()), "funding_plans": z.array(z.object({ "id": z.string().regex(new RegExp("^G\\d+$")), "loan": z.union([z.string(), z.null()]), "total_fact": z.union([z.string(), z.null()]), "total": z.union([z.number(), z.null()]), "items_sum": z.number(), "items": z.array(z.record(z.string(), z.any())), "sources": z.array(z.string()), "source_type": z.union([z.string(), z.null()]) }).strict()) }).strict(), "branch2": z.object({ "markdown": z.string(), "approx_tokens": z.number().int().gte(0) }).strict(), "stats": z.object({ "facts": z.number().int(), "discrepancies": z.number().int().describe("không tính loại N"), "n_variants": z.number().int(), "by_severity": z.record(z.string(), z.number().int()), "by_class": z.record(z.string(), z.number().int()), "to_branch2": z.number().int(), "unresolved_mentions": z.number().int() }).strict() }).strict().describe("Đầu ra lớp LAC (apps/credit-kit/lac). Nguồn sự thật cho contract giữa worker Python và App TypeScript. Xem docs/enterprise/LAC_INTEGRATION.md và docs/credit/lac-rules.md.")
+export type Lac = z.infer<typeof LacSchema>

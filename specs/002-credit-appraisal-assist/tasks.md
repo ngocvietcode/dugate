@@ -68,7 +68,7 @@
 
 Giữ nguyên **T-A1 … T-A8** của bản trước (workspace + Temporal dev, lint ranh giới, contract, DB `apps`, `core-client` + `callCore`, projection/audit/webhook, workflow-kit review + maker-checker, server + worker). Bổ sung:
 
-- [ ] **A9 — Sinh Zod từ `lac.schema.json` + kiểm khớp trong CI**
+- [x] **A9 — Sinh Zod từ `lac.schema.json` + kiểm khớp trong CI**
   - Phụ thuộc: L6, T-A3
   - Kiểm chứng: đổi schema mà không sinh lại → CI fail
 
