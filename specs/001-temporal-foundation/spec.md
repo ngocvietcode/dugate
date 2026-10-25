@@ -1,6 +1,6 @@
 # Spec 001: Temporal foundation + pilot `doc-compare`
 
-- **Trạng thái**: Draft (chờ quyết định mở ở ARCHITECTURE_V5 §10)
+- **Trạng thái**: Draft — **cần viết lại theo ADR-0002**: pilot thành App `contract-compare` ở tầng Apps, gọi Core qua API công khai; phụ thuộc Core C3 (expose `ext-doc-compare`) và C5 (role `APP`). Xem LAYERED_ARCHITECTURE §10
 - **Liên quan**: [ADR-0001](../../docs/adr/0001-temporal-orchestration.md), [ARCHITECTURE_V5 Phase 1](../../docs/enterprise/ARCHITECTURE_V5.md#6-lộ-trình-chuyển-đổi-strangler--không-big-bang)
 
 ## 1. Bối cảnh & vấn đề

@@ -7,6 +7,7 @@
 | Quyết định nền tảng | [ADR-0001: Temporal làm orchestration engine](../adr/0001-temporal-orchestration.md) |
 | Quy tắc bất biến | [docs/constitution.md](../constitution.md) |
 | Feature đầu tiên | [specs/001-temporal-foundation](../../specs/001-temporal-foundation/spec.md) |
+| **Điều chỉnh** | [LAYERED_ARCHITECTURE](LAYERED_ARCHITECTURE.md) (ADR-0002): dugate tách thành **Core** + **Apps**; Temporal chỉ ở tầng Apps. Khi mâu thuẫn, LAYERED_ARCHITECTURE §10 thắng |
 
 ---
 

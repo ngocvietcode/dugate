@@ -18,4 +18,5 @@ Template:
 
 | ADR | Tiêu đề | Trạng thái |
 |---|---|---|
-| [0001](0001-temporal-orchestration.md) | Dùng Temporal làm orchestration engine | Proposed |
+| [0001](0001-temporal-orchestration.md) | Dùng Temporal làm orchestration engine (phạm vi: tầng Apps — xem 0002) | Proposed |
+| [0002](0002-core-apps-layering.md) | Tách Core và Apps; Apps cung cấp workflow như service | Proposed |

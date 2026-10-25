@@ -3,6 +3,7 @@
 - **Trạng thái**: Proposed
 - **Ngày**: 2026-10-25
 - **Liên quan**: [ARCHITECTURE_V5](../enterprise/ARCHITECTURE_V5.md)
+- **Điều chỉnh phạm vi bởi**: [ADR-0002](0002-core-apps-layering.md) — Temporal chỉ dùng ở tầng Apps; pipeline cấu hình của Core giữ mô hình Operation hiện tại
 
 ## Bối cảnh
 
