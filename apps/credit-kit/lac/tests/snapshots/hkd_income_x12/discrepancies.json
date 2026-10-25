@@ -1,0 +1,232 @@
+[
+ {
+  "rule": "R-INCOME",
+  "class": "C",
+  "subclass": "C1",
+  "criticality": "K2",
+  "severity": "S2",
+  "fields": [
+   "F65",
+   "F37"
+  ],
+  "title": "Thu nhập: đơn vay 300.000.000/MONTHLY (= 3.600.000.000/năm), bảng kê lợi nhuận 300.000.000/năm",
+  "detail": "lệch 12 lần",
+  "observations": [
+   {
+    "value": "300.000.000 MONTHLY",
+    "docs": [
+     "D6"
+    ]
+   },
+   {
+    "value": "300.000.000 ANNUAL",
+    "docs": [
+     "D8"
+    ]
+   }
+  ],
+  "canonical": "300.000.000/năm (giá trị thận trọng, bảng kê đứng trước đơn vay)",
+  "status": "chờ xác nhận (cần ảnh hoặc người)",
+  "to_branch2": true,
+  "note": "đúng hệ số 12: có thể là lỗi bóc tách kỳ (A3); chưa có ảnh nên giữ C",
+  "id": "X01"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K3",
+  "severity": "S4",
+  "fields": [
+   "F10"
+  ],
+  "title": "P1.id_issue_place: D5 ghi «Cục Cảnh sát quản lý hành chính về trật tự xã hội», giá trị chuẩn «BỘ CÔNG AN»",
+  "detail": "giá trị cũ trên chứng từ thuộc thời kỳ trước",
+  "observations": [
+   {
+    "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "BỘ CÔNG AN",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X02"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K3",
+  "severity": "S4",
+  "fields": [
+   "F17"
+  ],
+  "title": "P2.id_issue_date: D5 ghi «2020-11-11», giá trị chuẩn «2023-05-10»",
+  "detail": "giá trị cũ trên chứng từ thuộc thời kỳ trước",
+  "observations": [
+   {
+    "value": "2020-11-11",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "2023-05-10",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X03"
+ },
+ {
+  "rule": "R-NORM",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K2",
+  "severity": "S4",
+  "fields": [
+   "F18"
+  ],
+  "title": "P2.permanent_address: 2 cách viết cùng giá trị",
+  "detail": "bằng nhau sau chuẩn hoá",
+  "observations": [
+   {
+    "value": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội",
+    "docs": [
+     "D4"
+    ]
+   },
+   {
+    "value": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X04"
+ },
+ {
+  "rule": "R-NORM",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K1",
+  "severity": "S4",
+  "fields": [
+   "F41"
+  ],
+  "title": "A1.identifiers.certificate_number: 2 cách viết cùng giá trị",
+  "detail": "bằng nhau sau chuẩn hoá",
+  "observations": [
+   {
+    "value": "AB 123456",
+    "docs": [
+     "D9"
+    ]
+   },
+   {
+    "value": "AB123456",
+    "docs": [
+     "D6",
+     "D10"
+    ]
+   }
+  ],
+  "canonical": "AB 123456",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X05"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K3",
+  "severity": "S4",
+  "fields": [
+   "F5"
+  ],
+  "title": "P1.id_issue_date: D5 ghi «2021-03-01», giá trị chuẩn «2024-08-20»",
+  "detail": "giá trị cũ trên chứng từ thuộc thời kỳ trước",
+  "observations": [
+   {
+    "value": "2021-03-01",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "2024-08-20",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X06"
+ },
+ {
+  "rule": "R-NORM",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K2",
+  "severity": "S4",
+  "fields": [
+   "F6"
+  ],
+  "title": "P1.permanent_address: 2 cách viết cùng giá trị",
+  "detail": "bằng nhau sau chuẩn hoá",
+  "observations": [
+   {
+    "value": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội",
+    "docs": [
+     "D1",
+     "D2",
+     "D3"
+    ]
+   },
+   {
+    "value": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội",
+    "docs": [
+     "D5",
+     "D6",
+     "D8"
+    ]
+   }
+  ],
+  "canonical": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X07"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K3",
+  "severity": "S4",
+  "fields": [
+   "F7"
+  ],
+  "title": "P1.id_type: D5 ghi «CCCD», giá trị chuẩn «CAN_CUOC»",
+  "detail": "giá trị cũ trên chứng từ thuộc thời kỳ trước",
+  "observations": [
+   {
+    "value": "CCCD",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "CAN_CUOC",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X08"
+ }
+]

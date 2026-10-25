@@ -1,0 +1,1373 @@
+{
+ "directed": true,
+ "multigraph": true,
+ "graph": {},
+ "nodes": [
+  {
+   "kind": "case",
+   "case_id": "SYN-HKD-0005",
+   "segment": "HKD",
+   "product": "PP-HKD-SECURED",
+   "product_name": "Vay hộ kinh doanh có TSBĐ (giả lập)",
+   "flow": "FAST",
+   "id": "CASE"
+  },
+  {
+   "kind": "document",
+   "doc_type": "id_card",
+   "title": "CĂN CƯỚC",
+   "number": "001192012345",
+   "issuer": "BỘ CÔNG AN",
+   "issue_date": "2024-08-20",
+   "issue_place": null,
+   "items": [
+    "legal_id_card"
+   ],
+   "id": "D1"
+  },
+  {
+   "kind": "document",
+   "doc_type": "qr_code_info",
+   "title": null,
+   "number": null,
+   "issuer": null,
+   "issue_date": null,
+   "issue_place": null,
+   "items": [
+    "legal_qr_code_info"
+   ],
+   "id": "D2"
+  },
+  {
+   "kind": "document",
+   "doc_type": "vneid",
+   "title": "Thông tin cá nhân",
+   "number": null,
+   "issuer": null,
+   "issue_date": null,
+   "issue_place": null,
+   "items": [
+    "legal_vneid"
+   ],
+   "id": "D3"
+  },
+  {
+   "kind": "document",
+   "doc_type": "id_card",
+   "title": "CĂN CƯỚC CÔNG DÂN",
+   "number": "001090054321",
+   "issuer": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+   "issue_date": "2023-05-10",
+   "issue_place": null,
+   "items": [
+    "legal_id_card"
+   ],
+   "id": "D4"
+  },
+  {
+   "kind": "document",
+   "doc_type": "marriage_certificate",
+   "title": "GIẤY CHỨNG NHẬN KẾT HÔN",
+   "number": null,
+   "issuer": null,
+   "issue_date": "2023-04-15",
+   "issue_place": null,
+   "items": [
+    "legal_marriage_certificate"
+   ],
+   "id": "D5"
+  },
+  {
+   "kind": "document",
+   "doc_type": "loan_application",
+   "title": "GIẤY ĐỀ NGHỊ VAY VỐN CÓ TÀI SẢN BẢO ĐẢM",
+   "number": null,
+   "issuer": null,
+   "issue_date": "2026-10-01",
+   "issue_place": null,
+   "items": [
+    "loan_plan_loan_application"
+   ],
+   "id": "D6"
+  },
+  {
+   "kind": "document",
+   "doc_type": "purchase_list",
+   "title": "BẢNG KÊ DANH MỤC HÀNG HOÁ CẦN NHẬP",
+   "number": null,
+   "issuer": null,
+   "issue_date": "2026-10-01",
+   "issue_place": null,
+   "items": [
+    "loan_plan_purchase_list"
+   ],
+   "id": "D7"
+  },
+  {
+   "kind": "document",
+   "doc_type": "income_statement",
+   "title": "BẢNG KÊ THU NHẬP",
+   "number": null,
+   "issuer": null,
+   "issue_date": "2026-10-01",
+   "issue_place": null,
+   "items": [
+    "income_general_income_statement"
+   ],
+   "id": "D8"
+  },
+  {
+   "kind": "document",
+   "doc_type": "land_use_certificate",
+   "title": "GIẤY CHỨNG NHẬN QUYỀN SỬ DỤNG ĐẤT",
+   "number": null,
+   "issuer": null,
+   "issue_date": "2021-06-01",
+   "issue_place": null,
+   "items": [
+    "collateral_real_estate_certificate"
+   ],
+   "id": "D9"
+  },
+  {
+   "kind": "document",
+   "doc_type": "valuation_certificate",
+   "title": "CHỨNG THƯ THẨM ĐỊNH GIÁ",
+   "number": null,
+   "issuer": "Công ty Thẩm định giá Mẫu",
+   "issue_date": "2026-09-25",
+   "issue_place": null,
+   "items": [
+    "collateral_valuation_certificate"
+   ],
+   "id": "D10"
+  },
+  {
+   "kind": "document",
+   "doc_type": "cic",
+   "title": "BÁO CÁO CHI TIẾT QUAN HỆ TÍN DỤNG",
+   "number": null,
+   "issuer": "Trung tâm Thông tin tín dụng Quốc gia",
+   "issue_date": null,
+   "issue_place": null,
+   "items": [
+    "credit_cic_report"
+   ],
+   "id": "D11"
+  },
+  {
+   "kind": "party",
+   "entity_type": "INDIVIDUAL",
+   "name": "TRẦN THỊ MAI",
+   "national_id": "001192012345",
+   "obs": {
+    "date_of_birth": [
+     [
+      "1992-03-14",
+      "D1"
+     ],
+     [
+      "1992-03-14",
+      "D2"
+     ],
+     [
+      "1992-03-14",
+      "D3"
+     ],
+     [
+      "1992-03-14",
+      "D5"
+     ],
+     [
+      "1992-03-14",
+      "D6"
+     ],
+     [
+      "1992-03-14",
+      "D7"
+     ],
+     [
+      "1992-03-14",
+      "D8"
+     ]
+    ],
+    "gender": [
+     [
+      "FEMALE",
+      "D1"
+     ],
+     [
+      "FEMALE",
+      "D2"
+     ],
+     [
+      "FEMALE",
+      "D3"
+     ],
+     [
+      "FEMALE",
+      "D5"
+     ],
+     [
+      "FEMALE",
+      "D6"
+     ],
+     [
+      "FEMALE",
+      "D7"
+     ],
+     [
+      "FEMALE",
+      "D8"
+     ]
+    ],
+    "nationality": [
+     [
+      "Việt Nam",
+      "D1"
+     ],
+     [
+      "Việt Nam",
+      "D3"
+     ],
+     [
+      "Việt Nam",
+      "D5"
+     ],
+     [
+      "Việt Nam",
+      "D6"
+     ]
+    ],
+    "id_issue_date": [
+     [
+      "2024-08-20",
+      "D1"
+     ],
+     [
+      "2024-08-20",
+      "D2"
+     ],
+     [
+      "2021-03-01",
+      "D5"
+     ],
+     [
+      "2024-08-20",
+      "D6"
+     ],
+     [
+      "2024-08-20",
+      "D7"
+     ],
+     [
+      "2024-08-20",
+      "D8"
+     ]
+    ],
+    "permanent_address": [
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "D1"
+     ],
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "D2"
+     ],
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "D3"
+     ],
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "D5"
+     ],
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "D6"
+     ],
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "D8"
+     ]
+    ],
+    "id_issue_place": [
+     [
+      {
+       "one_of": [
+        "BỘ CÔNG AN",
+        "CỤC CẢNH SÁT QUẢN LÝ HÀNH CHÍNH VỀ TRẬT TỰ XÃ HỘI"
+       ]
+      },
+      "D1"
+     ],
+     [
+      "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+      "D5"
+     ],
+     [
+      "BỘ CÔNG AN",
+      "D6"
+     ],
+     [
+      "Cục Cảnh sát QLHC về TTXH",
+      "D7"
+     ],
+     [
+      "BỘ CÔNG AN",
+      "D8"
+     ]
+    ],
+    "id_type": [
+     [
+      "CCCD",
+      "D2"
+     ],
+     [
+      "CAN_CUOC",
+      "D3"
+     ],
+     [
+      "CCCD",
+      "D5"
+     ],
+     [
+      "CCCD",
+      "D6"
+     ],
+     [
+      "CCCD",
+      "D8"
+     ]
+    ],
+    "previous_id_numbers": [
+     [
+      "012345678",
+      "D2"
+     ],
+     [
+      "012345678",
+      "D6"
+     ],
+     [
+      "012345678",
+      "D11"
+     ]
+    ],
+    "phone_number": [
+     [
+      "0912000001",
+      "D3"
+     ],
+     [
+      "0912000001",
+      "D6"
+     ],
+     [
+      "0912000001",
+      "D7"
+     ]
+    ],
+    "current_address": [
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "D6"
+     ],
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "D11"
+     ]
+    ],
+    "marital_status": [
+     [
+      "MARRIED",
+      "D6"
+     ]
+    ]
+   },
+   "roles": [
+    [
+     "HOLDER",
+     null,
+     "D1"
+    ],
+    [
+     "HOLDER",
+     null,
+     "D2"
+    ],
+    [
+     "HOLDER",
+     null,
+     "D3"
+    ],
+    [
+     "WIFE",
+     null,
+     "D5"
+    ],
+    [
+     "BORROWER",
+     null,
+     "D6"
+    ],
+    [
+     "CUSTOMER",
+     null,
+     "D7"
+    ],
+    [
+     "CUSTOMER",
+     null,
+     "D8"
+    ],
+    [
+     "OWNER",
+     null,
+     "D9"
+    ],
+    [
+     "HOLDER",
+     null,
+     "D11"
+    ]
+   ],
+   "id": "P1"
+  },
+  {
+   "kind": "party",
+   "entity_type": "INDIVIDUAL",
+   "name": "LÊ VĂN HÙNG",
+   "national_id": "001090054321",
+   "obs": {
+    "date_of_birth": [
+     [
+      "1990-07-02",
+      "D4"
+     ],
+     [
+      "1990-07-02",
+      "D5"
+     ],
+     [
+      "1990-07-02",
+      "D6"
+     ]
+    ],
+    "gender": [
+     [
+      "MALE",
+      "D4"
+     ],
+     [
+      "MALE",
+      "D5"
+     ],
+     [
+      "MALE",
+      "D6"
+     ]
+    ],
+    "nationality": [
+     [
+      "Việt Nam",
+      "D4"
+     ],
+     [
+      "Việt Nam",
+      "D5"
+     ]
+    ],
+    "id_issue_date": [
+     [
+      "2023-05-10",
+      "D4"
+     ],
+     [
+      "2020-11-11",
+      "D5"
+     ],
+     [
+      "2023-05-10",
+      "D6"
+     ]
+    ],
+    "permanent_address": [
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "D4"
+     ],
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "D5"
+     ]
+    ],
+    "id_type": [
+     [
+      "CCCD",
+      "D5"
+     ],
+     [
+      "CCCD",
+      "D6"
+     ]
+    ],
+    "id_issue_place": [
+     [
+      "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+      "D5"
+     ],
+     [
+      "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+      "D6"
+     ]
+    ],
+    "current_address": [
+     [
+      {
+       "street": "Số 8 Ngõ 12 Phố Hoa",
+       "ward": "Phường Mai Dịch",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Số 8 Ngõ 12 Phố Hoa, Phường Mai Dịch, Thành phố Hà Nội"
+      },
+      "D6"
+     ]
+    ],
+    "phone_number": [
+     [
+      "0912000002",
+      "D6"
+     ]
+    ],
+    "marital_status": [
+     [
+      "MARRIED",
+      "D6"
+     ]
+    ]
+   },
+   "roles": [
+    [
+     "HOLDER",
+     null,
+     "D4"
+    ],
+    [
+     "HUSBAND",
+     null,
+     "D5"
+    ],
+    [
+     "SPOUSE",
+     null,
+     "D6"
+    ]
+   ],
+   "id": "P2"
+  },
+  {
+   "kind": "asset",
+   "asset_type": "real_estate",
+   "certificate_number": "AB123456",
+   "obs": {
+    "asset_type": [
+     [
+      "real_estate",
+      "D9"
+     ]
+    ],
+    "identifiers.certificate_number": [
+     [
+      "AB 123456",
+      "D9"
+     ],
+     [
+      "AB123456",
+      "D10"
+     ]
+    ],
+    "identifiers.certificate_book_number": [
+     [
+      "CS 0001",
+      "D9"
+     ]
+    ],
+    "identifiers.land_parcel_number": [
+     [
+      "101",
+      "D9"
+     ]
+    ],
+    "identifiers.map_sheet_number": [
+     [
+      "7",
+      "D9"
+     ]
+    ],
+    "address": [
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "D9"
+     ]
+    ],
+    "description": [
+     [
+      "Thửa đất số: 101; tờ bản đồ số: 7",
+      "D9"
+     ]
+    ],
+    "land_area_m2": [
+     [
+      120.5,
+      "D9"
+     ]
+    ],
+    "land_use_purpose": [
+     [
+      "Đất ở tại nông thôn 120,5m2",
+      "D9"
+     ]
+    ],
+    "land_use_term_raw": [
+     [
+      {
+       "one_of": [
+        "Đất ở tại nông thôn: Lâu dài",
+        "Lâu dài"
+       ]
+      },
+      "D9"
+     ]
+    ],
+    "ownership_form": [
+     [
+      "Sử dụng chung",
+      "D9"
+     ]
+    ],
+    "owner_party_indexes[0]": [
+     [
+      0,
+      "D9"
+     ]
+    ],
+    "asset_value": [
+     [
+      1600000000,
+      "D10"
+     ]
+    ]
+   },
+   "case_value": null,
+   "id": "A1"
+  },
+  {
+   "kind": "loan_request",
+   "src": "D6",
+   "attrs": {
+    "loan_info.borrower_type": "Hộ kinh doanh",
+    "loan_info.requested_amount": 800000000,
+    "loan_info.bank_proposed_amount": 800000000,
+    "loan_info.loan_term_months": 36,
+    "loan_info.interest_rate_code": "HKD-STD",
+    "loan_info.interest_rate_raw": "Theo biểu lãi suất HKD-STD",
+    "loan_info.loan_purposes[0]": "Bổ sung vốn lưu động kinh doanh",
+    "loan_info.loan_purpose_detail": "Nhập hàng tạp hoá",
+    "loan_info.loan_purpose_categories[0]": "WORKING_CAPITAL",
+    "loan_info.disbursement_method": "Chuyển khoản",
+    "loan_info.principal_repayment_method": "Trả gốc cuối kỳ",
+    "loan_info.interest_repayment_method": "Trả lãi hàng tháng",
+    "financial_info.total_income": 300000000,
+    "financial_info.total_income_period": "ANNUAL",
+    "financial_info.repayment_source": "Lợi nhuận từ kinh doanh",
+    "financial_info.has_existing_debt": false,
+    "financial_info.existing_monthly_debt_payment": 0,
+    "officer_info.branch": "Chi nhánh Mẫu",
+    "officer_info.decision_date": "2026-10-01",
+    "collateral_summary.notes[0]": "GCN QSDĐ số AB123456"
+   },
+   "id": "L1"
+  },
+  {
+   "kind": "business",
+   "name": "Hộ Kinh Doanh Trần Thị Mai",
+   "obs": {
+    "business_name": [
+     [
+      "Hộ Kinh Doanh Trần Thị Mai",
+      "D6"
+     ],
+     [
+      "Hộ Kinh Doanh Trần Thị Mai",
+      "D8"
+     ]
+    ],
+    "business_line": [
+     [
+      "Bán lẻ tạp hoá",
+      "D6"
+     ],
+     [
+      "Bán lẻ tạp hoá",
+      "D8"
+     ]
+    ],
+    "business_address": [
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "D6"
+     ],
+     [
+      {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "D8"
+     ]
+    ],
+    "registration_number": [
+     [
+      "0100000001",
+      "D6"
+     ]
+    ],
+    "operating_time_raw": [
+     [
+      "36 tháng",
+      "D8"
+     ]
+    ],
+    "premises_type_raw": [
+     [
+      "Thuê",
+      "D8"
+     ]
+    ],
+    "premises_area_m2": [
+     [
+      40,
+      "D8"
+     ]
+    ],
+    "net_revenue_annual": [
+     [
+      1500000000,
+      "D8"
+     ]
+    ],
+    "cogs_annual": [
+     [
+      1050000000,
+      "D8"
+     ]
+    ],
+    "gross_profit_annual": [
+     [
+      450000000,
+      "D8"
+     ]
+    ],
+    "total_cost_annual": [
+     [
+      150000000,
+      "D8"
+     ]
+    ],
+    "net_profit_annual": [
+     [
+      300000000,
+      "D8"
+     ]
+    ],
+    "income_type": [
+     [
+      "household_business",
+      "D8"
+     ]
+    ],
+    "source_label_raw": [
+     [
+      "Thu nhập từ hoạt động kinh doanh của hộ kinh doanh",
+      "D8"
+     ]
+    ]
+   },
+   "id": "B1"
+  },
+  {
+   "kind": "funding_plan",
+   "src": "D7",
+   "total": 800000000,
+   "items": [
+    {
+     "item_no": 1,
+     "item_name": "Gạo đóng túi 5kg",
+     "unit": "túi",
+     "quantity": 2000,
+     "unit_price": 100000,
+     "amount": 200000000
+    },
+    {
+     "item_no": 2,
+     "item_name": "Dầu ăn 2l",
+     "unit": "chai",
+     "quantity": 4000,
+     "unit_price": 75000,
+     "amount": 300000000
+    },
+    {
+     "item_no": 3,
+     "item_name": "Nước giải khát thùng 24",
+     "unit": "thùng",
+     "quantity": 1500,
+     "unit_price": 200000,
+     "amount": 300000000
+    }
+   ],
+   "id": "G1"
+  },
+  {
+   "kind": "institution",
+   "name": "Ngân hàng Mẫu",
+   "id": "I1"
+  }
+ ],
+ "edges": [
+  {
+   "rel": "HAS_DOCUMENT",
+   "source": "CASE",
+   "target": "D1",
+   "key": 0
+  },
+  {
+   "rel": "HAS_DOCUMENT",
+   "source": "CASE",
+   "target": "D2",
+   "key": 0
+  },
+  {
+   "rel": "HAS_DOCUMENT",
+   "source": "CASE",
+   "target": "D3",
+   "key": 0
+  },
+  {
+   "rel": "HAS_DOCUMENT",
+   "source": "CASE",
+   "target": "D4",
+   "key": 0
+  },
+  {
+   "rel": "HAS_DOCUMENT",
+   "source": "CASE",
+   "target": "D5",
+   "key": 0
+  },
+  {
+   "rel": "HAS_DOCUMENT",
+   "source": "CASE",
+   "target": "D6",
+   "key": 0
+  },
+  {
+   "rel": "HAS_DOCUMENT",
+   "source": "CASE",
+   "target": "D7",
+   "key": 0
+  },
+  {
+   "rel": "HAS_DOCUMENT",
+   "source": "CASE",
+   "target": "D8",
+   "key": 0
+  },
+  {
+   "rel": "HAS_DOCUMENT",
+   "source": "CASE",
+   "target": "D9",
+   "key": 0
+  },
+  {
+   "rel": "HAS_DOCUMENT",
+   "source": "CASE",
+   "target": "D10",
+   "key": 0
+  },
+  {
+   "rel": "HAS_DOCUMENT",
+   "source": "CASE",
+   "target": "D11",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 0,
+   "role": "HOLDER",
+   "role_raw": null,
+   "confidence": "cao",
+   "evidence": [
+    "số CCCD",
+    "ngày sinh",
+    "giới tính"
+   ],
+   "against": [
+    [
+     "P2",
+     [
+      "số CCCD khác",
+      "ngày sinh khác",
+      "giới tính khác"
+     ]
+    ]
+   ],
+   "source": "D1",
+   "target": "P1",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 0,
+   "role": "HOLDER",
+   "role_raw": null,
+   "confidence": "cao",
+   "evidence": [
+    "ngày sinh",
+    "giới tính",
+    "ngày cấp giấy tờ",
+    "địa chỉ (đầy đủ)"
+   ],
+   "against": [
+    [
+     "P2",
+     [
+      "ngày sinh khác",
+      "giới tính khác"
+     ]
+    ]
+   ],
+   "source": "D2",
+   "target": "P1",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 0,
+   "role": "HOLDER",
+   "role_raw": null,
+   "confidence": "cao",
+   "evidence": [
+    "ngày sinh",
+    "giới tính",
+    "SĐT",
+    "địa chỉ (đầy đủ)"
+   ],
+   "against": [
+    [
+     "P2",
+     [
+      "ngày sinh khác",
+      "giới tính khác"
+     ]
+    ]
+   ],
+   "source": "D3",
+   "target": "P1",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 0,
+   "role": "HOLDER",
+   "role_raw": null,
+   "confidence": "cao",
+   "evidence": [
+    "số CCCD",
+    "ngày sinh",
+    "giới tính"
+   ],
+   "against": [
+    [
+     "P1",
+     [
+      "số CCCD khác",
+      "ngày sinh khác",
+      "giới tính khác"
+     ]
+    ]
+   ],
+   "source": "D4",
+   "target": "P2",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 0,
+   "role": "WIFE",
+   "role_raw": null,
+   "confidence": "cao",
+   "evidence": [
+    "ngày sinh",
+    "giới tính",
+    "địa chỉ (đầy đủ)"
+   ],
+   "against": [
+    [
+     "P2",
+     [
+      "ngày sinh khác",
+      "giới tính khác"
+     ]
+    ]
+   ],
+   "source": "D5",
+   "target": "P1",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 1,
+   "role": "HUSBAND",
+   "role_raw": null,
+   "confidence": "cao",
+   "evidence": [
+    "ngày sinh",
+    "giới tính",
+    "địa chỉ (đầy đủ)"
+   ],
+   "against": [],
+   "source": "D5",
+   "target": "P2",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 0,
+   "role": "BORROWER",
+   "role_raw": null,
+   "confidence": "cao",
+   "evidence": [
+    "ngày sinh",
+    "giới tính",
+    "số CMND cũ",
+    "ngày cấp giấy tờ",
+    "địa chỉ (đầy đủ)"
+   ],
+   "against": [
+    [
+     "P2",
+     [
+      "ngày sinh khác",
+      "giới tính khác"
+     ]
+    ]
+   ],
+   "source": "D6",
+   "target": "P1",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 1,
+   "role": "SPOUSE",
+   "role_raw": null,
+   "confidence": "cao",
+   "evidence": [
+    "ngày sinh",
+    "giới tính",
+    "ngày cấp giấy tờ"
+   ],
+   "against": [],
+   "source": "D6",
+   "target": "P2",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 0,
+   "role": "CUSTOMER",
+   "role_raw": null,
+   "confidence": "cao",
+   "evidence": [
+    "ngày sinh",
+    "giới tính",
+    "SĐT",
+    "ngày cấp giấy tờ"
+   ],
+   "against": [
+    [
+     "P2",
+     [
+      "ngày sinh khác",
+      "giới tính khác"
+     ]
+    ]
+   ],
+   "source": "D7",
+   "target": "P1",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 0,
+   "role": "CUSTOMER",
+   "role_raw": null,
+   "confidence": "cao",
+   "evidence": [
+    "ngày sinh",
+    "giới tính",
+    "ngày cấp giấy tờ",
+    "địa chỉ (đầy đủ)"
+   ],
+   "against": [
+    [
+     "P2",
+     [
+      "ngày sinh khác",
+      "giới tính khác"
+     ]
+    ]
+   ],
+   "source": "D8",
+   "target": "P1",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 0,
+   "role": "OWNER",
+   "role_raw": null,
+   "confidence": "trung bình",
+   "evidence": [
+    "cùng số GCN, chủ sở hữu theo D6 «Bà TRẦN THỊ MAI»"
+   ],
+   "against": [],
+   "source": "D9",
+   "target": "P1",
+   "key": 0
+  },
+  {
+   "rel": "EVIDENCES",
+   "src": [
+    "D9"
+   ],
+   "source": "D9",
+   "target": "A1",
+   "key": 0
+  },
+  {
+   "rel": "EVIDENCES",
+   "src": [
+    "D10"
+   ],
+   "source": "D10",
+   "target": "A1",
+   "key": 0
+  },
+  {
+   "rel": "MENTIONS",
+   "idx": 0,
+   "role": "HOLDER",
+   "role_raw": null,
+   "confidence": "cao",
+   "evidence": [
+    "số CMND cũ",
+    "địa chỉ (đầy đủ)"
+   ],
+   "against": [],
+   "source": "D11",
+   "target": "P1",
+   "key": 0
+  },
+  {
+   "rel": "SPOUSE",
+   "src": [
+    "D5",
+    "D6"
+   ],
+   "registration_date": "2023-04-15",
+   "place": "UBND Xã Tân Lập",
+   "source": "P1",
+   "target": "P2",
+   "key": 0
+  },
+  {
+   "rel": "APPLIES_FOR",
+   "src": [
+    "D6"
+   ],
+   "source": "P1",
+   "target": "L1",
+   "key": 0
+  },
+  {
+   "rel": "OWNS",
+   "src": [
+    "D6"
+   ],
+   "owner_names_raw": "Bà TRẦN THỊ MAI",
+   "collateral_type_raw": "Quyền sử dụng đất",
+   "source": "P1",
+   "target": "A1",
+   "key": 0
+  },
+  {
+   "rel": "OWNS",
+   "src": [
+    "D9"
+   ],
+   "ownership_form": "Sử dụng chung",
+   "is_current_owner": null,
+   "ownership_source": null,
+   "source": "P1",
+   "target": "A1",
+   "key": 1
+  },
+  {
+   "rel": "OWNS_BUSINESS",
+   "src": [
+    "D6"
+   ],
+   "source": "P1",
+   "target": "B1",
+   "key": 0
+  },
+  {
+   "rel": "OWNS_BUSINESS",
+   "src": [
+    "D8"
+   ],
+   "source": "P1",
+   "target": "B1",
+   "key": 1
+  },
+  {
+   "rel": "SUBMITS",
+   "src": [
+    "D7"
+   ],
+   "source": "P1",
+   "target": "G1",
+   "key": 0
+  },
+  {
+   "rel": "CIC_QUERIED_BY",
+   "src": [
+    "D11"
+   ],
+   "dates": [
+    "2026-10-10"
+   ],
+   "source": "P1",
+   "target": "I1",
+   "key": 0
+  },
+  {
+   "rel": "PARTICIPATES",
+   "role": "SPOUSE",
+   "src": [
+    "D6"
+   ],
+   "source": "P2",
+   "target": "L1",
+   "key": 0
+  },
+  {
+   "rel": "SECURED_BY",
+   "src": [
+    "D6"
+   ],
+   "matched_by": "số GCN AB123456",
+   "usage": "COLLATERAL",
+   "source": "L1",
+   "target": "A1",
+   "key": 0
+  },
+  {
+   "rel": "FOR_BUSINESS",
+   "src": [
+    "D6"
+   ],
+   "source": "L1",
+   "target": "B1",
+   "key": 0
+  },
+  {
+   "rel": "USE_OF_FUNDS",
+   "src": [
+    "D7"
+   ],
+   "matched_by": "cùng người vay",
+   "source": "L1",
+   "target": "G1",
+   "key": 0
+  }
+ ]
+}

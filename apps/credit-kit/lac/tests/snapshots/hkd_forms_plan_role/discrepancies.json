@@ -1,0 +1,308 @@
+[
+ {
+  "rule": "R-FORM",
+  "class": "A|B",
+  "subclass": "B2",
+  "criticality": "K1",
+  "severity": "S1",
+  "fields": [
+   "D7.signature"
+  ],
+  "title": "D7 income_statement: không thấy chữ ký khách hàng, ngày lập/ký",
+  "detail": "có thể chứng từ thiếu thật (B2) hoặc bản trích xuất bỏ sót (A5)",
+  "observations": [],
+  "canonical": null,
+  "status": "chờ xác nhận (cần ảnh hoặc người)",
+  "to_branch2": false,
+  "note": "thiếu chữ ký bên vay là mức chặn; hạ mức nếu ảnh có chữ ký",
+  "id": "X01"
+ },
+ {
+  "rule": "R-REQUIRED",
+  "class": "B",
+  "subclass": "B6",
+  "criticality": "K1",
+  "severity": "S1",
+  "fields": [
+   "checklist.collateral_valuation_certificate"
+  ],
+  "title": "Thiếu chứng từ bắt buộc: collateral_valuation_certificate",
+  "detail": "",
+  "observations": [],
+  "canonical": null,
+  "status": "chốt theo quy tắc",
+  "to_branch2": false,
+  "note": null,
+  "id": "X02"
+ },
+ {
+  "rule": "R-SOURCE",
+  "class": "B",
+  "subclass": "B6",
+  "criticality": "K2",
+  "severity": "S2",
+  "fields": [
+   "F51"
+  ],
+  "title": "A1.asset_value = 1.150.000.000 không có chứng từ nguồn",
+  "detail": "không có trong bản ghi chứng từ nào",
+  "observations": [],
+  "canonical": "1.150.000.000",
+  "status": "chốt theo quy tắc",
+  "to_branch2": false,
+  "note": null,
+  "id": "X03"
+ },
+ {
+  "rule": "R-CROSS-DOC",
+  "class": "C",
+  "subclass": "C3",
+  "criticality": "K2",
+  "severity": "S2",
+  "fields": [
+   "F53",
+   "F72"
+  ],
+  "title": "Tổng phương án vốn 850.000.000 ≠ số tiền vay 800.000.000",
+  "detail": "",
+  "observations": [],
+  "canonical": null,
+  "status": "chờ xác nhận (cần ảnh hoặc người)",
+  "to_branch2": true,
+  "note": null,
+  "id": "X04"
+ },
+ {
+  "rule": "R-ARITH",
+  "class": "A|B",
+  "subclass": "B3",
+  "criticality": "K2",
+  "severity": "S2",
+  "fields": [
+   "G1.items[2]"
+  ],
+  "title": "G1 dòng 2: 4.000 × 75.000 = 300.000.000 ≠ 350.000.000",
+  "detail": "",
+  "observations": [],
+  "canonical": null,
+  "status": "chờ xác nhận (cần ảnh hoặc người)",
+  "to_branch2": false,
+  "note": null,
+  "id": "X05"
+ },
+ {
+  "rule": "R-SOURCE",
+  "class": "B",
+  "subclass": "B6",
+  "criticality": "K2",
+  "severity": "S2",
+  "fields": [
+   "P2.identity_documents"
+  ],
+  "title": "P2 có vai trò CO_BORROWER, SPOUSE nhưng hồ sơ không có CCCD/Căn cước/VNeID",
+  "detail": "thông tin nhân thân chỉ đến từ chứng từ bậc 2–3",
+  "observations": [],
+  "canonical": null,
+  "status": "chốt theo quy tắc",
+  "to_branch2": false,
+  "note": "nâng S1 nếu xác định là người đồng vay",
+  "id": "X06"
+ },
+ {
+  "rule": "R-ROLE",
+  "class": "C",
+  "subclass": "C2",
+  "criticality": "K2",
+  "severity": "S2",
+  "fields": [
+   "P2.role"
+  ],
+  "title": "P2: vai trò khác nhau giữa các chứng từ: SPOUSE [D5]; CO_BORROWER [D7]",
+  "detail": "vai trò quyết định nghĩa vụ và bộ chứng từ bắt buộc",
+  "observations": [
+   {
+    "value": "SPOUSE",
+    "docs": [
+     "D5"
+    ]
+   },
+   {
+    "value": "CO_BORROWER",
+    "docs": [
+     "D7"
+    ]
+   }
+  ],
+  "canonical": "SPOUSE (giấy đề nghị vay là bậc 1 cho đề nghị vay)",
+  "status": "chờ xác nhận (cần ảnh hoặc người)",
+  "to_branch2": true,
+  "note": null,
+  "id": "X07"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "A|B",
+  "subclass": "B4",
+  "criticality": "K3",
+  "severity": "S3",
+  "fields": [
+   "F18"
+  ],
+  "title": "P2.id_issue_date: D5 ghi «2023-05-10», giá trị chuẩn «2020-11-11»",
+  "detail": "thông tin giấy tờ trên chứng từ không khớp giấy tờ gốc",
+  "observations": [
+   {
+    "value": "2023-05-10",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "2020-11-11",
+  "status": "chờ xác nhận (cần ảnh hoặc người)",
+  "to_branch2": false,
+  "note": null,
+  "id": "X08"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K3",
+  "severity": "S4",
+  "fields": [
+   "F10"
+  ],
+  "title": "P1.id_issue_place: D4 ghi «Cục Cảnh sát quản lý hành chính về trật tự xã hội», giá trị chuẩn «BỘ CÔNG AN»",
+  "detail": "giá trị cũ trên chứng từ thuộc thời kỳ trước",
+  "observations": [
+   {
+    "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+    "docs": [
+     "D4"
+    ]
+   }
+  ],
+  "canonical": "BỘ CÔNG AN",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X09"
+ },
+ {
+  "rule": "R-NORM",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K1",
+  "severity": "S4",
+  "fields": [
+   "F40"
+  ],
+  "title": "A1.identifiers.certificate_number: 2 cách viết cùng giá trị",
+  "detail": "bằng nhau sau chuẩn hoá",
+  "observations": [
+   {
+    "value": "AB 123456",
+    "docs": [
+     "D8"
+    ]
+   },
+   {
+    "value": "AB123456",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "AB 123456",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X10"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K3",
+  "severity": "S4",
+  "fields": [
+   "F5"
+  ],
+  "title": "P1.id_issue_date: D4 ghi «2021-03-01», giá trị chuẩn «2024-08-20»",
+  "detail": "giá trị cũ trên chứng từ thuộc thời kỳ trước",
+  "observations": [
+   {
+    "value": "2021-03-01",
+    "docs": [
+     "D4"
+    ]
+   }
+  ],
+  "canonical": "2024-08-20",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X11"
+ },
+ {
+  "rule": "R-NORM",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K2",
+  "severity": "S4",
+  "fields": [
+   "F6"
+  ],
+  "title": "P1.permanent_address: 2 cách viết cùng giá trị",
+  "detail": "bằng nhau sau chuẩn hoá",
+  "observations": [
+   {
+    "value": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội",
+    "docs": [
+     "D1",
+     "D2",
+     "D3"
+    ]
+   },
+   {
+    "value": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội",
+    "docs": [
+     "D4",
+     "D5",
+     "D7"
+    ]
+   }
+  ],
+  "canonical": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X12"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K3",
+  "severity": "S4",
+  "fields": [
+   "F7"
+  ],
+  "title": "P1.id_type: D4 ghi «CCCD», giá trị chuẩn «CAN_CUOC»",
+  "detail": "giá trị cũ trên chứng từ thuộc thời kỳ trước",
+  "observations": [
+   {
+    "value": "CCCD",
+    "docs": [
+     "D4"
+    ]
+   }
+  ],
+  "canonical": "CAN_CUOC",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X13"
+ }
+]

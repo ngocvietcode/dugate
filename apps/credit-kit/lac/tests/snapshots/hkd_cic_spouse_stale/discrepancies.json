@@ -1,0 +1,254 @@
+[
+ {
+  "rule": "R-CIC-SUBJECT",
+  "class": "B",
+  "subclass": "B6",
+  "criticality": "K1",
+  "severity": "S1",
+  "fields": [
+   "CIC@D11.subject"
+  ],
+  "title": "Báo cáo CIC D11 thuộc P2, không phải người vay P1; người vay chưa có CIC",
+  "detail": "liên kết trung bình: địa chỉ (đầy đủ) · loại P1: CMND cũ 012987654 ≠ 012345678",
+  "observations": [],
+  "canonical": "CIC gắn cho P2",
+  "status": "chờ xác nhận (liên kết danh tính mức trung bình)",
+  "to_branch2": false,
+  "note": "mức liên kết trung bình: cần người xác nhận",
+  "id": "X01"
+ },
+ {
+  "rule": "R-CIC-AGE",
+  "class": "B",
+  "subclass": "B5",
+  "criticality": "K1",
+  "severity": "S1",
+  "fields": [
+   "F75"
+  ],
+  "title": "CIC D11 lập 2026-07-01, đã 114 ngày tính đến 2026-10-23",
+  "detail": "vượt 30 ngày (tham số mặc định, chờ QLRR chốt)",
+  "observations": [],
+  "canonical": null,
+  "status": "chốt theo quy tắc",
+  "to_branch2": false,
+  "note": null,
+  "id": "X02"
+ },
+ {
+  "rule": "R-DATE",
+  "class": "A|B",
+  "subclass": "A2",
+  "criticality": "K3",
+  "severity": "S3",
+  "fields": [
+   "CIC@D11.queried_institutions"
+  ],
+  "title": "1 lượt tra cứu CIC có ngày sau ngày lập báo cáo 2026-07-01",
+  "detail": "Ngân hàng Mẫu 2026-12-03",
+  "observations": [],
+  "canonical": null,
+  "status": "chờ xác nhận (cần ảnh hoặc người)",
+  "to_branch2": false,
+  "note": null,
+  "id": "X03"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K3",
+  "severity": "S4",
+  "fields": [
+   "F10"
+  ],
+  "title": "P1.id_issue_place: D5 ghi «Cục Cảnh sát quản lý hành chính về trật tự xã hội», giá trị chuẩn «BỘ CÔNG AN»",
+  "detail": "giá trị cũ trên chứng từ thuộc thời kỳ trước",
+  "observations": [
+   {
+    "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "BỘ CÔNG AN",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X04"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K3",
+  "severity": "S4",
+  "fields": [
+   "F17"
+  ],
+  "title": "P2.id_issue_date: D5 ghi «2020-11-11», giá trị chuẩn «2023-05-10»",
+  "detail": "giá trị cũ trên chứng từ thuộc thời kỳ trước",
+  "observations": [
+   {
+    "value": "2020-11-11",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "2023-05-10",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X05"
+ },
+ {
+  "rule": "R-NORM",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K2",
+  "severity": "S4",
+  "fields": [
+   "F18"
+  ],
+  "title": "P2.permanent_address: 2 cách viết cùng giá trị",
+  "detail": "bằng nhau sau chuẩn hoá",
+  "observations": [
+   {
+    "value": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội",
+    "docs": [
+     "D4"
+    ]
+   },
+   {
+    "value": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X06"
+ },
+ {
+  "rule": "R-NORM",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K1",
+  "severity": "S4",
+  "fields": [
+   "F42"
+  ],
+  "title": "A1.identifiers.certificate_number: 2 cách viết cùng giá trị",
+  "detail": "bằng nhau sau chuẩn hoá",
+  "observations": [
+   {
+    "value": "AB 123456",
+    "docs": [
+     "D9"
+    ]
+   },
+   {
+    "value": "AB123456",
+    "docs": [
+     "D6",
+     "D10"
+    ]
+   }
+  ],
+  "canonical": "AB 123456",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X07"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K3",
+  "severity": "S4",
+  "fields": [
+   "F5"
+  ],
+  "title": "P1.id_issue_date: D5 ghi «2021-03-01», giá trị chuẩn «2024-08-20»",
+  "detail": "giá trị cũ trên chứng từ thuộc thời kỳ trước",
+  "observations": [
+   {
+    "value": "2021-03-01",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "2024-08-20",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X08"
+ },
+ {
+  "rule": "R-NORM",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K2",
+  "severity": "S4",
+  "fields": [
+   "F6"
+  ],
+  "title": "P1.permanent_address: 2 cách viết cùng giá trị",
+  "detail": "bằng nhau sau chuẩn hoá",
+  "observations": [
+   {
+    "value": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội",
+    "docs": [
+     "D1",
+     "D2",
+     "D3"
+    ]
+   },
+   {
+    "value": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội",
+    "docs": [
+     "D5",
+     "D6",
+     "D8"
+    ]
+   }
+  ],
+  "canonical": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X09"
+ },
+ {
+  "rule": "R-CROSS",
+  "class": "N",
+  "subclass": "N",
+  "criticality": "K3",
+  "severity": "S4",
+  "fields": [
+   "F7"
+  ],
+  "title": "P1.id_type: D5 ghi «CCCD», giá trị chuẩn «CAN_CUOC»",
+  "detail": "giá trị cũ trên chứng từ thuộc thời kỳ trước",
+  "observations": [
+   {
+    "value": "CCCD",
+    "docs": [
+     "D5"
+    ]
+   }
+  ],
+  "canonical": "CAN_CUOC",
+  "status": "tự đóng",
+  "to_branch2": false,
+  "note": null,
+  "id": "X10"
+ }
+]

@@ -9,12 +9,12 @@
   - File: `apps/credit-kit/lac/{pyproject.toml,README.md,CLAUDE.md}`, `lac/graph.py`, `lac/validate.py`, `lac/draw.py` (copy PoC, chỉ đổi import), `.gitignore` (`cases/`, `out/`)
   - Kiểm chứng: `python -m lac.validate <fixture> -o /tmp/out` chạy không lỗi; output gồm `facts.json`, `discrepancies.json`, `branch2_context.md`
 
-- [ ] **L2 — Fixture giả lập**
+- [x] **L2 — Fixture giả lập**
   - File: `tests/fixtures/make_synthetic.py`, `tests/fixtures/hkd_*.json` (≥ 5 hồ sơ: CIC sai chủ thể, thu nhập ×12, địa chỉ 4 cách viết, giấy tờ cũ/mới, tự khai lệch bậc 1, thiếu chữ ký, LTV sát trần)
   - Phụ thuộc: L1
   - Kiểm chứng: script sinh lại fixture giống hệt; grep không có số định danh/SĐT có thật (danh sách chặn)
 
-- [ ] **L3 — Snapshot + test tất định (khoá hành vi PoC)**
+- [x] **L3 — Snapshot + test tất định (khoá hành vi PoC)**
   - File: `tests/test_snapshot.py`, `tests/test_determinism.py`, `tests/snapshots/`
   - Phụ thuộc: L2
   - Kiểm chứng: `pytest` xanh; chạy 2 lần cho output byte-identical (AC-7)

@@ -1,0 +1,1286 @@
+{
+ "case": {
+  "id": "SYN-HKD-0005",
+  "completed_at": "2026-10-23",
+  "profile": {
+   "segment": "HKD",
+   "product": "PP-HKD-SECURED",
+   "product_name": "Vay hộ kinh doanh có TSBĐ (giả lập)",
+   "flow": "FAST"
+  }
+ },
+ "parties": [
+  {
+   "id": "party-1",
+   "type": "INDIVIDUAL",
+   "name": "TRẦN THỊ MAI",
+   "identifiers": [
+    {
+     "type": "NATIONAL_ID",
+     "value": "001192012345"
+    }
+   ],
+   "fields": [
+    {
+     "path": "date_of_birth",
+     "value": "1992-03-14",
+     "status": "AGREED"
+    },
+    {
+     "path": "gender",
+     "value": "FEMALE",
+     "status": "AGREED"
+    }
+   ]
+  },
+  {
+   "id": "party-2",
+   "type": "INDIVIDUAL",
+   "name": "LÊ VĂN HÙNG",
+   "identifiers": [
+    {
+     "type": "NATIONAL_ID",
+     "value": "001090054321"
+    }
+   ],
+   "fields": [
+    {
+     "path": "date_of_birth",
+     "value": "1990-07-02",
+     "status": "AGREED"
+    },
+    {
+     "path": "gender",
+     "value": "MALE",
+     "status": "AGREED"
+    }
+   ]
+  }
+ ],
+ "assets": [
+  {
+   "id": "asset-1",
+   "type": "real_estate",
+   "identifiers": [
+    {
+     "type": "CERTIFICATE_NUMBER",
+     "value": "AB123456"
+    }
+   ],
+   "fields": [
+    {
+     "path": "asset_type",
+     "value": "real_estate",
+     "status": "AGREED"
+    }
+   ]
+  }
+ ],
+ "documents": {
+  "items": [
+   {
+    "key": "legal_id_card",
+    "required": true
+   },
+   {
+    "key": "legal_qr_code_info",
+    "required": false
+   },
+   {
+    "key": "legal_vneid",
+    "required": false
+   },
+   {
+    "key": "legal_marriage_certificate",
+    "required": true
+   },
+   {
+    "key": "loan_plan_loan_application",
+    "required": true
+   },
+   {
+    "key": "loan_plan_purchase_list",
+    "required": true
+   },
+   {
+    "key": "income_general_income_statement",
+    "required": true
+   },
+   {
+    "key": "collateral_real_estate_certificate",
+    "required": true
+   },
+   {
+    "key": "collateral_valuation_certificate",
+    "required": true
+   },
+   {
+    "key": "credit_cic_report",
+    "required": true
+   }
+  ],
+  "records": [
+   {
+    "doc": "id_card",
+    "item": "legal_id_card",
+    "party": "party-1",
+    "fields": [
+     {
+      "path": "legal_info.document_title",
+      "value": "CĂN CƯỚC",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.document_number",
+      "value": "001192012345",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issuing_authority",
+      "value": "BỘ CÔNG AN",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issue_date",
+      "value": "2024-08-20",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.valid_until",
+      "value": "2032-03-14",
+      "status": "AGREED"
+     },
+     {
+      "path": "card_info.place_of_birth_registration",
+      "value": "Xã Tân Lập, Thành phố Hà Nội",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].party_role",
+      "value": "HOLDER",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].date_of_birth",
+      "value": "1992-03-14",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].gender",
+      "value": "FEMALE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].nationality",
+      "value": "Việt Nam",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_date",
+      "value": "2024-08-20",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].permanent_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_place",
+      "value": null,
+      "status": "CONFLICT",
+      "candidates": [
+       "BỘ CÔNG AN",
+       "CỤC CẢNH SÁT QUẢN LÝ HÀNH CHÍNH VỀ TRẬT TỰ XÃ HỘI"
+      ]
+     }
+    ]
+   },
+   {
+    "doc": "qr_code_info",
+    "item": "legal_qr_code_info",
+    "party": "party-1",
+    "fields": [
+     {
+      "path": "parties[0].party_role",
+      "value": "HOLDER",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].date_of_birth",
+      "value": "1992-03-14",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].gender",
+      "value": "FEMALE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_type",
+      "value": "CCCD",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_date",
+      "value": "2024-08-20",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].previous_id_numbers[0]",
+      "value": "012345678",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].permanent_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     }
+    ]
+   },
+   {
+    "doc": "vneid",
+    "item": "legal_vneid",
+    "party": "party-1",
+    "fields": [
+     {
+      "path": "legal_info.document_title",
+      "value": "Thông tin cá nhân",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].party_role",
+      "value": "HOLDER",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].date_of_birth",
+      "value": "1992-03-14",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].gender",
+      "value": "FEMALE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].nationality",
+      "value": "Việt Nam",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_type",
+      "value": "CAN_CUOC",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].permanent_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].phone_number",
+      "value": "0912000001",
+      "status": "AGREED"
+     }
+    ]
+   },
+   {
+    "doc": "id_card",
+    "item": "legal_id_card",
+    "party": "party-2",
+    "fields": [
+     {
+      "path": "legal_info.document_title",
+      "value": "CĂN CƯỚC CÔNG DÂN",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.document_number",
+      "value": "001090054321",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issuing_authority",
+      "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issue_date",
+      "value": "2023-05-10",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.valid_until",
+      "value": "2030-07-02",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].party_role",
+      "value": "HOLDER",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].date_of_birth",
+      "value": "1990-07-02",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].gender",
+      "value": "MALE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].nationality",
+      "value": "Việt Nam",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_date",
+      "value": "2023-05-10",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].permanent_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     }
+    ]
+   },
+   {
+    "doc": "marriage_certificate",
+    "item": "legal_marriage_certificate",
+    "party": "party-1",
+    "fields": [
+     {
+      "path": "legal_info.document_title",
+      "value": "GIẤY CHỨNG NHẬN KẾT HÔN",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issue_date",
+      "value": "2023-04-15",
+      "status": "AGREED"
+     },
+     {
+      "path": "registration_date",
+      "value": "2023-04-15",
+      "status": "AGREED"
+     },
+     {
+      "path": "place_of_registration",
+      "value": "UBND Xã Tân Lập",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].party_role",
+      "value": "WIFE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].date_of_birth",
+      "value": "1992-03-14",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].gender",
+      "value": "FEMALE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].nationality",
+      "value": "Việt Nam",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_type",
+      "value": "CCCD",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_date",
+      "value": "2021-03-01",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_place",
+      "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].permanent_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].party_role",
+      "value": "HUSBAND",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].date_of_birth",
+      "value": "1990-07-02",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].gender",
+      "value": "MALE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].nationality",
+      "value": "Việt Nam",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].id_type",
+      "value": "CCCD",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].id_issue_date",
+      "value": "2020-11-11",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].id_issue_place",
+      "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].permanent_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     }
+    ]
+   },
+   {
+    "doc": "loan_application",
+    "item": "loan_plan_loan_application",
+    "party": "party-1",
+    "fields": [
+     {
+      "path": "legal_info.document_title",
+      "value": "GIẤY ĐỀ NGHỊ VAY VỐN CÓ TÀI SẢN BẢO ĐẢM",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issue_date",
+      "value": "2026-10-01",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.signatories[0].full_name",
+      "value": "TRẦN THỊ MAI",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.signatories[0].sign_date",
+      "value": "2026-10-01",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].party_role",
+      "value": "BORROWER",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].date_of_birth",
+      "value": "1992-03-14",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].gender",
+      "value": "FEMALE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].nationality",
+      "value": "Việt Nam",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_type",
+      "value": "CCCD",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_date",
+      "value": "2024-08-20",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_place",
+      "value": "BỘ CÔNG AN",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].permanent_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].current_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].previous_id_numbers[0]",
+      "value": "012345678",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].phone_number",
+      "value": "0912000001",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].party_role",
+      "value": "SPOUSE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].date_of_birth",
+      "value": "1990-07-02",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].gender",
+      "value": "MALE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].id_type",
+      "value": "CCCD",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].id_issue_date",
+      "value": "2023-05-10",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].id_issue_place",
+      "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].current_address",
+      "value": {
+       "street": "Số 8 Ngõ 12 Phố Hoa",
+       "ward": "Phường Mai Dịch",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Số 8 Ngõ 12 Phố Hoa, Phường Mai Dịch, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[1].phone_number",
+      "value": "0912000002",
+      "status": "AGREED"
+     },
+     {
+      "path": "party_details[0].marital_status",
+      "value": "MARRIED",
+      "status": "AGREED"
+     },
+     {
+      "path": "party_details[1].relationship_to_borrower",
+      "value": "SPOUSE",
+      "status": "AGREED"
+     },
+     {
+      "path": "party_details[1].marital_status",
+      "value": "MARRIED",
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.borrower_type",
+      "value": "Hộ kinh doanh",
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.requested_amount",
+      "value": 800000000,
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.bank_proposed_amount",
+      "value": 800000000,
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.loan_term_months",
+      "value": 36,
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.interest_rate_code",
+      "value": "HKD-STD",
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.interest_rate_raw",
+      "value": "Theo biểu lãi suất HKD-STD",
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.loan_purposes[0]",
+      "value": "Bổ sung vốn lưu động kinh doanh",
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.loan_purpose_detail",
+      "value": "Nhập hàng tạp hoá",
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.loan_purpose_categories[0]",
+      "value": "WORKING_CAPITAL",
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.disbursement_method",
+      "value": "Chuyển khoản",
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.principal_repayment_method",
+      "value": "Trả gốc cuối kỳ",
+      "status": "AGREED"
+     },
+     {
+      "path": "loan_info.interest_repayment_method",
+      "value": "Trả lãi hàng tháng",
+      "status": "AGREED"
+     },
+     {
+      "path": "financial_info.total_income",
+      "value": 300000000,
+      "status": "AGREED"
+     },
+     {
+      "path": "financial_info.total_income_period",
+      "value": "ANNUAL",
+      "status": "AGREED"
+     },
+     {
+      "path": "financial_info.repayment_source",
+      "value": "Lợi nhuận từ kinh doanh",
+      "status": "AGREED"
+     },
+     {
+      "path": "financial_info.has_existing_debt",
+      "value": false,
+      "status": "AGREED"
+     },
+     {
+      "path": "financial_info.existing_monthly_debt_payment",
+      "value": 0,
+      "status": "AGREED"
+     },
+     {
+      "path": "officer_info.branch",
+      "value": "Chi nhánh Mẫu",
+      "status": "AGREED"
+     },
+     {
+      "path": "officer_info.decision_date",
+      "value": "2026-10-01",
+      "status": "AGREED"
+     },
+     {
+      "path": "business_info.business_name",
+      "value": "Hộ Kinh Doanh Trần Thị Mai",
+      "status": "AGREED"
+     },
+     {
+      "path": "business_info.business_line",
+      "value": "Bán lẻ tạp hoá",
+      "status": "AGREED"
+     },
+     {
+      "path": "business_info.business_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     },
+     {
+      "path": "business_info.registration_number",
+      "value": "0100000001",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].identifiers.certificate_number",
+      "value": "AB123456",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].usage_context_hint",
+      "value": "COLLATERAL",
+      "status": "AGREED"
+     },
+     {
+      "path": "asset_details[0].owner_party_indexes[0]",
+      "value": 0,
+      "status": "AGREED"
+     },
+     {
+      "path": "asset_details[0].owner_names_raw",
+      "value": "Bà TRẦN THỊ MAI",
+      "status": "AGREED"
+     },
+     {
+      "path": "asset_details[0].collateral_type_raw",
+      "value": "Quyền sử dụng đất",
+      "status": "AGREED"
+     },
+     {
+      "path": "collateral_summary.notes[0]",
+      "value": "GCN QSDĐ số AB123456",
+      "status": "AGREED"
+     }
+    ]
+   },
+   {
+    "doc": "purchase_list",
+    "item": "loan_plan_purchase_list",
+    "party": "party-1",
+    "fields": [
+     {
+      "path": "legal_info.document_title",
+      "value": "BẢNG KÊ DANH MỤC HÀNG HOÁ CẦN NHẬP",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issue_date",
+      "value": "2026-10-01",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.signatories[0].full_name",
+      "value": "TRẦN THỊ MAI",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.signatories[0].sign_date",
+      "value": "2026-10-01",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].party_role",
+      "value": "CUSTOMER",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].date_of_birth",
+      "value": "1992-03-14",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].gender",
+      "value": "FEMALE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_date",
+      "value": "2024-08-20",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_place",
+      "value": "Cục Cảnh sát QLHC về TTXH",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].phone_number",
+      "value": "0912000001",
+      "status": "AGREED"
+     },
+     {
+      "path": "funding_plan.total_amount",
+      "value": 800000000,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[0].item_no",
+      "value": 1,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[0].item_name",
+      "value": "Gạo đóng túi 5kg",
+      "status": "AGREED"
+     },
+     {
+      "path": "items[0].unit",
+      "value": "túi",
+      "status": "AGREED"
+     },
+     {
+      "path": "items[0].quantity",
+      "value": 2000,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[0].unit_price",
+      "value": 100000,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[0].amount",
+      "value": 200000000,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[1].item_no",
+      "value": 2,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[1].item_name",
+      "value": "Dầu ăn 2l",
+      "status": "AGREED"
+     },
+     {
+      "path": "items[1].unit",
+      "value": "chai",
+      "status": "AGREED"
+     },
+     {
+      "path": "items[1].quantity",
+      "value": 4000,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[1].unit_price",
+      "value": 75000,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[1].amount",
+      "value": 300000000,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[2].item_no",
+      "value": 3,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[2].item_name",
+      "value": "Nước giải khát thùng 24",
+      "status": "AGREED"
+     },
+     {
+      "path": "items[2].unit",
+      "value": "thùng",
+      "status": "AGREED"
+     },
+     {
+      "path": "items[2].quantity",
+      "value": 1500,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[2].unit_price",
+      "value": 200000,
+      "status": "AGREED"
+     },
+     {
+      "path": "items[2].amount",
+      "value": 300000000,
+      "status": "AGREED"
+     }
+    ]
+   },
+   {
+    "doc": "income_statement",
+    "item": "income_general_income_statement",
+    "party": "party-1",
+    "fields": [
+     {
+      "path": "legal_info.document_title",
+      "value": "BẢNG KÊ THU NHẬP",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issue_date",
+      "value": "2026-10-01",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.signatories[0].full_name",
+      "value": "TRẦN THỊ MAI",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.signatories[0].sign_date",
+      "value": "2026-10-01",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].party_role",
+      "value": "CUSTOMER",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].date_of_birth",
+      "value": "1992-03-14",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].gender",
+      "value": "FEMALE",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_type",
+      "value": "CCCD",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_date",
+      "value": "2024-08-20",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].id_issue_place",
+      "value": "BỘ CÔNG AN",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].permanent_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].income_type",
+      "value": "household_business",
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].source_label_raw",
+      "value": "Thu nhập từ hoạt động kinh doanh của hộ kinh doanh",
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].household_business.business_name",
+      "value": "Hộ Kinh Doanh Trần Thị Mai",
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].household_business.business_line",
+      "value": "Bán lẻ tạp hoá",
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].household_business.business_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].household_business.operating_time_raw",
+      "value": "36 tháng",
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].household_business.premises_type_raw",
+      "value": "Thuê",
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].household_business.premises_area_m2",
+      "value": 40,
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].household_business.net_revenue_annual",
+      "value": 1500000000,
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].household_business.cogs_annual",
+      "value": 1050000000,
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].household_business.gross_profit_annual",
+      "value": 450000000,
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].household_business.total_cost_annual",
+      "value": 150000000,
+      "status": "AGREED"
+     },
+     {
+      "path": "income_sources[0].household_business.net_profit_annual",
+      "value": 300000000,
+      "status": "AGREED"
+     }
+    ]
+   },
+   {
+    "doc": "land_use_certificate",
+    "item": "collateral_real_estate_certificate",
+    "party": "party-1",
+    "fields": [
+     {
+      "path": "legal_info.document_title",
+      "value": "GIẤY CHỨNG NHẬN QUYỀN SỬ DỤNG ĐẤT",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issue_date",
+      "value": "2021-06-01",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].party_role",
+      "value": "OWNER",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].asset_type",
+      "value": "real_estate",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].identifiers.certificate_number",
+      "value": "AB 123456",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].identifiers.certificate_book_number",
+      "value": "CS 0001",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].identifiers.land_parcel_number",
+      "value": "101",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].identifiers.map_sheet_number",
+      "value": "7",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].description",
+      "value": "Thửa đất số: 101; tờ bản đồ số: 7",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].land_area_m2",
+      "value": 120.5,
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].land_use_purpose",
+      "value": "Đất ở tại nông thôn 120,5m2",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].land_use_term_raw",
+      "value": null,
+      "status": "CONFLICT",
+      "candidates": [
+       "Đất ở tại nông thôn: Lâu dài",
+       "Lâu dài"
+      ]
+     },
+     {
+      "path": "asset_details[0].ownership_form",
+      "value": "Sử dụng chung",
+      "status": "AGREED"
+     },
+     {
+      "path": "asset_details[0].owner_party_indexes[0]",
+      "value": 0,
+      "status": "AGREED"
+     }
+    ]
+   },
+   {
+    "doc": "valuation_certificate",
+    "item": "collateral_valuation_certificate",
+    "party": "party-1",
+    "fields": [
+     {
+      "path": "legal_info.document_title",
+      "value": "CHỨNG THƯ THẨM ĐỊNH GIÁ",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issue_date",
+      "value": "2026-09-25",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issuing_authority",
+      "value": "Công ty Thẩm định giá Mẫu",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].identifiers.certificate_number",
+      "value": "AB123456",
+      "status": "AGREED"
+     },
+     {
+      "path": "assets[0].asset_value",
+      "value": 1600000000,
+      "status": "AGREED"
+     }
+    ]
+   },
+   {
+    "doc": "cic",
+    "item": "credit_cic_report",
+    "party": "party-1",
+    "fields": [
+     {
+      "path": "legal_info.document_title",
+      "value": "BÁO CÁO CHI TIẾT QUAN HỆ TÍN DỤNG",
+      "status": "AGREED"
+     },
+     {
+      "path": "legal_info.issuing_authority",
+      "value": "Trung tâm Thông tin tín dụng Quốc gia",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].party_role",
+      "value": "HOLDER",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].previous_id_numbers[0]",
+      "value": "012345678",
+      "status": "AGREED"
+     },
+     {
+      "path": "parties[0].current_address",
+      "value": {
+       "street": "Thôn Đông",
+       "ward": "Xã Tân Lập",
+       "district": "Huyện Đan Phượng",
+       "province": "Thành phố Hà Nội",
+       "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+      },
+      "status": "AGREED"
+     },
+     {
+      "path": "reports[0].report_datetime",
+      "value": "2026-10-10T09:00:00+07:00",
+      "status": "AGREED"
+     },
+     {
+      "path": "reports[0].cic_code",
+      "value": "9000000001",
+      "status": "AGREED"
+     },
+     {
+      "path": "reports[0].current_debt_group_raw",
+      "value": "Hiện tại khách hàng không có dư nợ vay tại các TCTD.",
+      "status": "AGREED"
+     },
+     {
+      "path": "reports[0].bad_debt_5y.has_records",
+      "value": false,
+      "status": "AGREED"
+     },
+     {
+      "path": "reports[0].bad_debt_5y.records_raw",
+      "value": "Không có nợ xấu 5 năm.",
+      "status": "AGREED"
+     },
+     {
+      "path": "reports[0].queried_institutions_1y_count",
+      "value": 1,
+      "status": "AGREED"
+     },
+     {
+      "path": "reports[0].queried_institutions[0].institution",
+      "value": "Ngân hàng Mẫu",
+      "status": "AGREED"
+     },
+     {
+      "path": "reports[0].queried_institutions[0].query_date",
+      "value": "2026-10-10",
+      "status": "AGREED"
+     }
+    ]
+   }
+  ]
+ }
+}

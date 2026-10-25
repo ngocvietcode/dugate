@@ -1,0 +1,2242 @@
+[
+ {
+  "id": "F1",
+  "entity": "P1",
+  "field": "name",
+  "group": "identity",
+  "value": "TRẦN THỊ MAI",
+  "status": "không có nguồn chứng từ",
+  "rule": "thẩm quyền (bậc 9)",
+  "sources": [
+   "case.parties"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "TRẦN THỊ MAI",
+    "doc": "case.parties",
+    "tier": 9,
+    "historical": false,
+    "note": "tên lấy từ case.parties, bản ghi chứng từ không có họ tên"
+   }
+  ]
+ },
+ {
+  "id": "F2",
+  "entity": "P1",
+  "field": "date_of_birth",
+  "group": "identity",
+  "value": "1992-03-14",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D1",
+   "D2",
+   "D3",
+   "D5",
+   "D6",
+   "D7",
+   "D8"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "1992-03-14",
+    "doc": "D1",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "1992-03-14",
+    "doc": "D2",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "1992-03-14",
+    "doc": "D3",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "1992-03-14",
+    "doc": "D5",
+    "tier": 2,
+    "historical": false
+   },
+   {
+    "value": "1992-03-14",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "1992-03-14",
+    "doc": "D7",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "1992-03-14",
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F3",
+  "entity": "P1",
+  "field": "gender",
+  "group": "identity",
+  "value": "FEMALE",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D1",
+   "D2",
+   "D3",
+   "D5",
+   "D6",
+   "D7",
+   "D8"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "FEMALE",
+    "doc": "D1",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "FEMALE",
+    "doc": "D2",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "FEMALE",
+    "doc": "D3",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "FEMALE",
+    "doc": "D5",
+    "tier": 2,
+    "historical": false
+   },
+   {
+    "value": "FEMALE",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "FEMALE",
+    "doc": "D7",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "FEMALE",
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F4",
+  "entity": "P1",
+  "field": "nationality",
+  "group": "identity",
+  "value": "Việt Nam",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D1",
+   "D3",
+   "D5",
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Việt Nam",
+    "doc": "D1",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "Việt Nam",
+    "doc": "D3",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "Việt Nam",
+    "doc": "D5",
+    "tier": 2,
+    "historical": false
+   },
+   {
+    "value": "Việt Nam",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F5",
+  "entity": "P1",
+  "field": "id_issue_date",
+  "group": "id_doc",
+  "value": "2024-08-20",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D1",
+   "D2",
+   "D6",
+   "D7",
+   "D8"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "2024-08-20",
+    "doc": "D1",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "2024-08-20",
+    "doc": "D2",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "2021-03-01",
+    "doc": "D5",
+    "tier": 2,
+    "historical": true
+   },
+   {
+    "value": "2024-08-20",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "2024-08-20",
+    "doc": "D7",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "2024-08-20",
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F6",
+  "entity": "P1",
+  "field": "permanent_address",
+  "group": "residence",
+  "value": {
+   "street": "Thôn Đông",
+   "ward": "Tân Lập",
+   "province": "Hà Nội",
+   "full_text": "Thôn Đông, Tân Lập, Hà Nội"
+  },
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D1",
+   "D2",
+   "D3",
+   "D5",
+   "D6",
+   "D8"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Xã Tân Lập",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+    },
+    "doc": "D1",
+    "tier": 2,
+    "historical": true
+   },
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Xã Tân Lập",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+    },
+    "doc": "D2",
+    "tier": 2,
+    "historical": false
+   },
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Tân Lập",
+     "province": "Hà Nội",
+     "full_text": "Thôn Đông, Tân Lập, Hà Nội"
+    },
+    "doc": "D3",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Xã Tân Lập",
+     "district": "Huyện Đan Phượng",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+    },
+    "doc": "D5",
+    "tier": 2,
+    "historical": true
+   },
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Xã Tân Lập",
+     "district": "Huyện Đan Phượng",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+    },
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": {
+     "street": "THÔN ĐÔNG",
+     "ward": "XÃ TÂN LẬP",
+     "district": "HUYỆN ĐAN PHƯỢNG",
+     "province": "TP HÀ NỘI",
+     "full_text": "THÔN ĐÔNG, XÃ TÂN LẬP, HUYỆN ĐAN PHƯỢNG, TP HÀ NỘI"
+    },
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F7",
+  "entity": "P1",
+  "field": "id_type",
+  "group": "id_doc",
+  "value": "CAN_CUOC",
+  "status": "ok",
+  "rule": "thẩm quyền (in trên mặt thẻ)",
+  "sources": [
+   "D1",
+   "D2",
+   "D3",
+   "D6",
+   "D8"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "CAN_CUOC",
+    "doc": "D2",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "CAN_CUOC",
+    "doc": "D3",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "CCCD",
+    "doc": "D5",
+    "tier": 2,
+    "historical": true
+   },
+   {
+    "value": "CAN_CUOC",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "CAN_CUOC",
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "CAN_CUOC",
+    "doc": "D1",
+    "tier": 0,
+    "historical": false,
+    "note": "suy từ tiêu đề mặt thẻ"
+   }
+  ]
+ },
+ {
+  "id": "F8",
+  "entity": "P1",
+  "field": "previous_id_numbers",
+  "group": "identity",
+  "value": "012345678",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D2",
+   "D6",
+   "D11"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "012345678",
+    "doc": "D2",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "012345678",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "012345678",
+    "doc": "D11",
+    "tier": 2,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F9",
+  "entity": "P1",
+  "field": "phone_number",
+  "group": "contact",
+  "value": "0912000001",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 2)",
+  "sources": [
+   "D3",
+   "D6",
+   "D7"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "0912000001",
+    "doc": "D3",
+    "tier": 2,
+    "historical": false
+   },
+   {
+    "value": "0912000001",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "0912000001",
+    "doc": "D7",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F10",
+  "entity": "P1",
+  "field": "id_issue_place",
+  "group": "id_doc",
+  "value": "BỘ CÔNG AN",
+  "status": "ok",
+  "rule": "thẩm quyền (in trên mặt thẻ)",
+  "sources": [
+   "D1",
+   "D6",
+   "D7",
+   "D8"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+    "doc": "D5",
+    "tier": 2,
+    "historical": true
+   },
+   {
+    "value": "BỘ CÔNG AN",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "BỘ CÔNG AN",
+    "doc": "D7",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "BỘ CÔNG AN",
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "BỘ CÔNG AN",
+    "doc": "D1",
+    "tier": 0,
+    "historical": false,
+    "note": "cơ quan cấp in trên thẻ"
+   }
+  ]
+ },
+ {
+  "id": "F11",
+  "entity": "P1",
+  "field": "current_address",
+  "group": "residence",
+  "value": {
+   "street": "Thôn Đông",
+   "ward": "Xã Tân Lập",
+   "district": "Huyện Đan Phượng",
+   "province": "Thành phố Hà Nội",
+   "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+  },
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D6",
+   "D11"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Xã Tân Lập",
+     "district": "Huyện Đan Phượng",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+    },
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Xã Tân Lập",
+     "district": "Huyện Đan Phượng",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+    },
+    "doc": "D11",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F12",
+  "entity": "P1",
+  "field": "marital_status",
+  "group": "marital",
+  "value": "MARRIED",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": "MARRIED",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F13",
+  "entity": "P2",
+  "field": "name",
+  "group": "identity",
+  "value": "LÊ VĂN HÙNG",
+  "status": "không có nguồn chứng từ",
+  "rule": "thẩm quyền (bậc 9)",
+  "sources": [
+   "case.parties"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "LÊ VĂN HÙNG",
+    "doc": "case.parties",
+    "tier": 9,
+    "historical": false,
+    "note": "tên lấy từ case.parties, bản ghi chứng từ không có họ tên"
+   }
+  ]
+ },
+ {
+  "id": "F14",
+  "entity": "P2",
+  "field": "date_of_birth",
+  "group": "identity",
+  "value": "1990-07-02",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D4",
+   "D5",
+   "D6"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "1990-07-02",
+    "doc": "D4",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "1990-07-02",
+    "doc": "D5",
+    "tier": 2,
+    "historical": false
+   },
+   {
+    "value": "1990-07-02",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F15",
+  "entity": "P2",
+  "field": "gender",
+  "group": "identity",
+  "value": "MALE",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D4",
+   "D5",
+   "D6"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "MALE",
+    "doc": "D4",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "MALE",
+    "doc": "D5",
+    "tier": 2,
+    "historical": false
+   },
+   {
+    "value": "MALE",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F16",
+  "entity": "P2",
+  "field": "nationality",
+  "group": "identity",
+  "value": "Việt Nam",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D4",
+   "D5"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Việt Nam",
+    "doc": "D4",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "Việt Nam",
+    "doc": "D5",
+    "tier": 2,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F17",
+  "entity": "P2",
+  "field": "id_issue_date",
+  "group": "id_doc",
+  "value": "2023-05-10",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D4",
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "2023-05-10",
+    "doc": "D4",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "2020-11-11",
+    "doc": "D5",
+    "tier": 2,
+    "historical": true
+   },
+   {
+    "value": "2023-05-10",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F18",
+  "entity": "P2",
+  "field": "permanent_address",
+  "group": "residence",
+  "value": {
+   "street": "Thôn Đông",
+   "ward": "Xã Tân Lập",
+   "district": "Huyện Đan Phượng",
+   "province": "Thành phố Hà Nội",
+   "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+  },
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 2)",
+  "sources": [
+   "D4",
+   "D5"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Xã Tân Lập",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+    },
+    "doc": "D4",
+    "tier": 2,
+    "historical": true
+   },
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Xã Tân Lập",
+     "district": "Huyện Đan Phượng",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Thôn Đông, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội"
+    },
+    "doc": "D5",
+    "tier": 2,
+    "historical": true
+   }
+  ]
+ },
+ {
+  "id": "F19",
+  "entity": "P2",
+  "field": "id_type",
+  "group": "id_doc",
+  "value": "CCCD",
+  "status": "ok",
+  "rule": "thẩm quyền (in trên mặt thẻ)",
+  "sources": [
+   "D4",
+   "D5",
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "CCCD",
+    "doc": "D5",
+    "tier": 2,
+    "historical": true
+   },
+   {
+    "value": "CCCD",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "CCCD",
+    "doc": "D4",
+    "tier": 0,
+    "historical": false,
+    "note": "suy từ tiêu đề mặt thẻ"
+   }
+  ]
+ },
+ {
+  "id": "F20",
+  "entity": "P2",
+  "field": "id_issue_place",
+  "group": "id_doc",
+  "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+  "status": "ok",
+  "rule": "thẩm quyền (in trên mặt thẻ)",
+  "sources": [
+   "D4",
+   "D5",
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+    "doc": "D5",
+    "tier": 2,
+    "historical": true
+   },
+   {
+    "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   },
+   {
+    "value": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+    "doc": "D4",
+    "tier": 0,
+    "historical": false,
+    "note": "cơ quan cấp in trên thẻ"
+   }
+  ]
+ },
+ {
+  "id": "F21",
+  "entity": "P2",
+  "field": "current_address",
+  "group": "residence",
+  "value": {
+   "street": "Số 8 Ngõ 12 Phố Hoa",
+   "ward": "Phường Mai Dịch",
+   "province": "Thành phố Hà Nội",
+   "full_text": "Số 8 Ngõ 12 Phố Hoa, Phường Mai Dịch, Thành phố Hà Nội"
+  },
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": {
+     "street": "Số 8 Ngõ 12 Phố Hoa",
+     "ward": "Phường Mai Dịch",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Số 8 Ngõ 12 Phố Hoa, Phường Mai Dịch, Thành phố Hà Nội"
+    },
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F22",
+  "entity": "P2",
+  "field": "phone_number",
+  "group": "contact",
+  "value": "0912000002",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "0912000002",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F23",
+  "entity": "P2",
+  "field": "marital_status",
+  "group": "marital",
+  "value": "MARRIED",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": "MARRIED",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F24",
+  "entity": "P1",
+  "field": "national_id",
+  "group": "identity",
+  "value": "001192012345",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D1"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "001192012345",
+    "doc": "D1",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F25",
+  "entity": "P2",
+  "field": "national_id",
+  "group": "identity",
+  "value": "001090054321",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D4"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "001090054321",
+    "doc": "D4",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F26",
+  "entity": "B1",
+  "field": "business_name",
+  "group": "business",
+  "value": "Hộ Kinh Doanh Trần Thị Mai",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D6",
+   "D8"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Hộ Kinh Doanh Trần Thị Mai",
+    "doc": "D6",
+    "tier": 3.5,
+    "historical": false
+   },
+   {
+    "value": "Hộ Kinh Doanh Trần Thị Mai",
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F27",
+  "entity": "B1",
+  "field": "business_line",
+  "group": "business",
+  "value": "Bán lẻ tạp hoá",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D6",
+   "D8"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Bán lẻ tạp hoá",
+    "doc": "D6",
+    "tier": 3.5,
+    "historical": false
+   },
+   {
+    "value": "Bán lẻ tạp hoá",
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F28",
+  "entity": "B1",
+  "field": "business_address",
+  "group": "business",
+  "value": {
+   "street": "Thôn Đông",
+   "ward": "Xã Tân Lập",
+   "province": "Thành phố Hà Nội",
+   "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+  },
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D6",
+   "D8"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Xã Tân Lập",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+    },
+    "doc": "D6",
+    "tier": 3.5,
+    "historical": false
+   },
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Xã Tân Lập",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+    },
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F29",
+  "entity": "B1",
+  "field": "registration_number",
+  "group": "business",
+  "value": "0100000001",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3.5)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": "0100000001",
+    "doc": "D6",
+    "tier": 3.5,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F30",
+  "entity": "B1",
+  "field": "operating_time_raw",
+  "group": "business",
+  "value": "36 tháng",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D8"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "36 tháng",
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F31",
+  "entity": "B1",
+  "field": "premises_type_raw",
+  "group": "business",
+  "value": "Thuê",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D8"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Thuê",
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F32",
+  "entity": "B1",
+  "field": "premises_area_m2",
+  "group": "business",
+  "value": 40,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D8"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": 40,
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F33",
+  "entity": "B1",
+  "field": "net_revenue_annual",
+  "group": "income",
+  "value": 1500000000,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D8"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": 1500000000,
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F34",
+  "entity": "B1",
+  "field": "cogs_annual",
+  "group": "income",
+  "value": 1050000000,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D8"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": 1050000000,
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F35",
+  "entity": "B1",
+  "field": "gross_profit_annual",
+  "group": "income",
+  "value": 450000000,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D8"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": 450000000,
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F36",
+  "entity": "B1",
+  "field": "total_cost_annual",
+  "group": "income",
+  "value": 150000000,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D8"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": 150000000,
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F37",
+  "entity": "B1",
+  "field": "net_profit_annual",
+  "group": "income",
+  "value": 300000000,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D8"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": 300000000,
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F38",
+  "entity": "B1",
+  "field": "income_type",
+  "group": "business",
+  "value": "household_business",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D8"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "household_business",
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F39",
+  "entity": "B1",
+  "field": "source_label_raw",
+  "group": "business",
+  "value": "Thu nhập từ hoạt động kinh doanh của hộ kinh doanh",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 3)",
+  "sources": [
+   "D8"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Thu nhập từ hoạt động kinh doanh của hộ kinh doanh",
+    "doc": "D8",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F40",
+  "entity": "A1",
+  "field": "asset_type",
+  "group": "asset",
+  "value": "real_estate",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D9"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "real_estate",
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F41",
+  "entity": "A1",
+  "field": "identifiers.certificate_number",
+  "group": "asset",
+  "value": "AB 123456",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6",
+   "D9",
+   "D10"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "AB 123456",
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "AB123456",
+    "doc": "D10",
+    "tier": 1,
+    "historical": false
+   },
+   {
+    "value": "AB123456",
+    "doc": "D6",
+    "tier": 3,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F42",
+  "entity": "A1",
+  "field": "identifiers.certificate_book_number",
+  "group": "asset",
+  "value": "CS 0001",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D9"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "CS 0001",
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F43",
+  "entity": "A1",
+  "field": "identifiers.land_parcel_number",
+  "group": "asset",
+  "value": "101",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D9"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "101",
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F44",
+  "entity": "A1",
+  "field": "identifiers.map_sheet_number",
+  "group": "asset",
+  "value": "7",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D9"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": "7",
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F45",
+  "entity": "A1",
+  "field": "address",
+  "group": "asset",
+  "value": {
+   "street": "Thôn Đông",
+   "ward": "Xã Tân Lập",
+   "province": "Thành phố Hà Nội",
+   "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+  },
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D9"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": {
+     "street": "Thôn Đông",
+     "ward": "Xã Tân Lập",
+     "province": "Thành phố Hà Nội",
+     "full_text": "Thôn Đông, Xã Tân Lập, Thành phố Hà Nội"
+    },
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F46",
+  "entity": "A1",
+  "field": "description",
+  "group": "asset",
+  "value": "Thửa đất số: 101; tờ bản đồ số: 7",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D9"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Thửa đất số: 101; tờ bản đồ số: 7",
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F47",
+  "entity": "A1",
+  "field": "land_area_m2",
+  "group": "asset",
+  "value": 120.5,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D9"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": 120.5,
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F48",
+  "entity": "A1",
+  "field": "land_use_purpose",
+  "group": "asset",
+  "value": "Đất ở tại nông thôn 120,5m2",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D9"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Đất ở tại nông thôn 120,5m2",
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F49",
+  "entity": "A1",
+  "field": "land_use_term_raw",
+  "group": "asset",
+  "value": "Đất ở tại nông thôn: Lâu dài",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D9"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Đất ở tại nông thôn: Lâu dài",
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F50",
+  "entity": "A1",
+  "field": "ownership_form",
+  "group": "asset",
+  "value": "Sử dụng chung",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D9"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Sử dụng chung",
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F51",
+  "entity": "A1",
+  "field": "owner_party_indexes[0]",
+  "group": "asset",
+  "value": 0,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D9"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": 0,
+    "doc": "D9",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F52",
+  "entity": "A1",
+  "field": "asset_value",
+  "group": "asset",
+  "value": 1600000000,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D10"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": 1600000000,
+    "doc": "D10",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F53",
+  "entity": "L1",
+  "field": "loan_info.borrower_type",
+  "group": "loan",
+  "value": "Hộ kinh doanh",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Hộ kinh doanh",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F54",
+  "entity": "L1",
+  "field": "loan_info.requested_amount",
+  "group": "loan",
+  "value": 800000000,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": 800000000,
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F55",
+  "entity": "L1",
+  "field": "loan_info.bank_proposed_amount",
+  "group": "loan",
+  "value": 800000000,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": 800000000,
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F56",
+  "entity": "L1",
+  "field": "loan_info.loan_term_months",
+  "group": "loan",
+  "value": 36,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K1",
+  "flags": [],
+  "observations": [
+   {
+    "value": 36,
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F57",
+  "entity": "L1",
+  "field": "loan_info.interest_rate_code",
+  "group": "loan",
+  "value": "HKD-STD",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "HKD-STD",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F58",
+  "entity": "L1",
+  "field": "loan_info.interest_rate_raw",
+  "group": "loan",
+  "value": "Theo biểu lãi suất HKD-STD",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Theo biểu lãi suất HKD-STD",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F59",
+  "entity": "L1",
+  "field": "loan_info.loan_purposes[0]",
+  "group": "loan",
+  "value": "Bổ sung vốn lưu động kinh doanh",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Bổ sung vốn lưu động kinh doanh",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F60",
+  "entity": "L1",
+  "field": "loan_info.loan_purpose_detail",
+  "group": "loan",
+  "value": "Nhập hàng tạp hoá",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Nhập hàng tạp hoá",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F61",
+  "entity": "L1",
+  "field": "loan_info.loan_purpose_categories[0]",
+  "group": "loan",
+  "value": "WORKING_CAPITAL",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "WORKING_CAPITAL",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F62",
+  "entity": "L1",
+  "field": "loan_info.disbursement_method",
+  "group": "loan",
+  "value": "Chuyển khoản",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Chuyển khoản",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F63",
+  "entity": "L1",
+  "field": "loan_info.principal_repayment_method",
+  "group": "loan",
+  "value": "Trả gốc cuối kỳ",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Trả gốc cuối kỳ",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F64",
+  "entity": "L1",
+  "field": "loan_info.interest_repayment_method",
+  "group": "loan",
+  "value": "Trả lãi hàng tháng",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Trả lãi hàng tháng",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F65",
+  "entity": "L1",
+  "field": "financial_info.total_income",
+  "group": "loan",
+  "value": 300000000,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": 300000000,
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F66",
+  "entity": "L1",
+  "field": "financial_info.total_income_period",
+  "group": "loan",
+  "value": "ANNUAL",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "ANNUAL",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F67",
+  "entity": "L1",
+  "field": "financial_info.repayment_source",
+  "group": "loan",
+  "value": "Lợi nhuận từ kinh doanh",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Lợi nhuận từ kinh doanh",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F68",
+  "entity": "L1",
+  "field": "financial_info.has_existing_debt",
+  "group": "loan",
+  "value": false,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": false,
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F69",
+  "entity": "L1",
+  "field": "financial_info.existing_monthly_debt_payment",
+  "group": "loan",
+  "value": 0,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": 0,
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F70",
+  "entity": "L1",
+  "field": "officer_info.branch",
+  "group": "loan",
+  "value": "Chi nhánh Mẫu",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Chi nhánh Mẫu",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F71",
+  "entity": "L1",
+  "field": "officer_info.decision_date",
+  "group": "loan",
+  "value": "2026-10-01",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "2026-10-01",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F72",
+  "entity": "L1",
+  "field": "collateral_summary.notes[0]",
+  "group": "loan",
+  "value": "GCN QSDĐ số AB123456",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D6"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "GCN QSDĐ số AB123456",
+    "doc": "D6",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F73",
+  "entity": "G1",
+  "field": "funding_plan.total",
+  "group": "plan",
+  "value": 800000000,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 2)",
+  "sources": [
+   "D7"
+  ],
+  "criticality": "K2",
+  "flags": [],
+  "observations": [
+   {
+    "value": 800000000,
+    "doc": "D7",
+    "tier": 2,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F74",
+  "entity": "CIC@D11",
+  "field": "report_datetime",
+  "group": "credit",
+  "value": "2026-10-10T09:00:00+07:00",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D11"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "2026-10-10T09:00:00+07:00",
+    "doc": "D11",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F75",
+  "entity": "CIC@D11",
+  "field": "cic_code",
+  "group": "credit",
+  "value": "9000000001",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D11"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "9000000001",
+    "doc": "D11",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F76",
+  "entity": "CIC@D11",
+  "field": "current_debt_group_raw",
+  "group": "credit",
+  "value": "Hiện tại khách hàng không có dư nợ vay tại các TCTD.",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D11"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Hiện tại khách hàng không có dư nợ vay tại các TCTD.",
+    "doc": "D11",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F77",
+  "entity": "CIC@D11",
+  "field": "bad_debt_5y.has_records",
+  "group": "credit",
+  "value": false,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D11"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": false,
+    "doc": "D11",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F78",
+  "entity": "CIC@D11",
+  "field": "bad_debt_5y.records_raw",
+  "group": "credit",
+  "value": "Không có nợ xấu 5 năm.",
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D11"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": "Không có nợ xấu 5 năm.",
+    "doc": "D11",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ },
+ {
+  "id": "F79",
+  "entity": "CIC@D11",
+  "field": "queried_institutions_1y_count",
+  "group": "credit",
+  "value": 1,
+  "status": "ok",
+  "rule": "thẩm quyền (bậc 1)",
+  "sources": [
+   "D11"
+  ],
+  "criticality": "K3",
+  "flags": [],
+  "observations": [
+   {
+    "value": 1,
+    "doc": "D11",
+    "tier": 1,
+    "historical": false
+   }
+  ]
+ }
+]
