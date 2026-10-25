@@ -24,7 +24,7 @@
   - Phụ thuộc: L3
   - Kiểm chứng: snapshot L3 không đổi; đổi `params.yaml` cic_max_age 30→120 làm mất X# R-CIC-AGE trên fixture tương ứng
 
-- [ ] **L5 — Test theo quy tắc R-***
+- [x] **L5 — Test theo quy tắc R-***
   - File: `tests/test_rules_*.py` (mỗi R-* ≥ 1 case dương, 1 case âm), AC-2..AC-5
   - Phụ thuộc: L4
   - Kiểm chứng: `pytest -k rules` xanh; coverage `validate.py` ≥ 80%
