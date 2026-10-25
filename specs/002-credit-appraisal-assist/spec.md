@@ -1,238 +1,175 @@
-# Spec 002: App Hỗ trợ thẩm định tín dụng SME (`credit-appraisal-assist`)
+# Spec 002: App Hỗ trợ thẩm định — Vay hộ kinh doanh có TSBĐ (`credit-appraisal-assist`)
 
-- **Trạng thái**: Draft — chờ trả lời câu hỏi Critical (§9)
-- **Sắp viết lại**: lõi Integrity thay bằng Loan Application Context — xem [LAC_INTEGRATION §8](../../docs/enterprise/LAC_INTEGRATION.md#8-ảnh-hưởng-tới-spec-002); chờ chốt LAC-1..LAC-4
-- **Tầng**: Apps ([ADR-0002](../../docs/adr/0002-core-apps-layering.md)), chạy trên Temporal ([ADR-0001](../../docs/adr/0001-temporal-orchestration.md))
-- **Thay thế**: spec 001 (phần nền tảng Apps được gộp vào Phase A của spec này)
+- **Trạng thái**: Draft v2 — viết lại theo Loan Application Context; chờ trả lời câu hỏi Critical (§9)
+- **Tầng**: Apps ([ADR-0002](../../docs/adr/0002-core-apps-layering.md)); orchestration Temporal ([ADR-0001](../../docs/adr/0001-temporal-orchestration.md)); LLM qua AIHub ([ADR-0003](../../docs/adr/0003-llm-via-aihub.md))
+- **Lõi nghiệp vụ**: Loan Application Context — [LAC_INTEGRATION](../../docs/enterprise/LAC_INTEGRATION.md), quy tắc gốc [docs/credit/lac-rules.md](../../docs/credit/lac-rules.md)
+- **Quyết định đã chốt**: LAC-1 — v1 là **vay hộ kinh doanh có TSBĐ**, SME doanh nghiệp là v2 bằng cấu hình; LAC-2 — lớp LAC **giữ Python + NetworkX**, chạy như worker Temporal Python
 
 ## 1. Bối cảnh & vấn đề
 
-Chuyên viên thẩm định (CVTĐ) khối SME mất phần lớn thời gian cho việc **đọc, nhập lại số liệu và đối chiếu** bộ hồ sơ (BCTC nhiều năm, tờ khai thuế, đăng ký doanh nghiệp, nghị quyết vay vốn, phương án kinh doanh, hồ sơ tài sản bảo đảm, báo cáo CIC…) trước khi bắt đầu phần việc cần chuyên môn: đánh giá và đề xuất.
+Quy trình hiện tại trên DU: tiếp nhận → phân loại & trích xuất → đối chiếu checklist → kiểm tra chính sách (một phần bằng AI đọc toàn bộ ~15.000 token dữ liệu thô) → khuyến nghị. AI tự gom thông tin về từng người, tự chọn giá trị, tự đối chiếu, trả đạt/không đạt mà không chỉ ra căn cứ. Hệ quả trên hồ sơ thử của PoC: báo cáo CIC của người khác vẫn được chấm PASS nhân thân; thu nhập lệch 12 lần không được báo; địa chỉ khác cách viết do sáp nhập bị báo lệch nhầm.
 
-App tự động hóa phần đọc–nhập–đối chiếu–tính toán–soạn nháp, **có bằng chứng tới từng con số**, để CVTĐ tập trung vào đánh giá. **Quyết định cấp tín dụng không thuộc App**: phê duyệt theo thẩm quyền vẫn thực hiện trên LOS.
+App này đưa **LAC** — lớp tất định dựng hồ sơ chuẩn hoá — vào giữa trích xuất và thẩm định, rồi chạy hai nhánh soát dữ liệu và thẩm định AI song song, ghép bằng code. **Phê duyệt không thuộc App**: chuyên viên tín dụng và cấp có thẩm quyền quyết định trên LOS.
 
 ## 2. Phạm vi
 
 ### Trong phạm vi (v1)
-- Khách hàng doanh nghiệp SME, khoản vay mới (hạn mức vốn lưu động hoặc vay trung dài hạn theo món).
-- Phân loại & kiểm tra **đầy đủ** bộ hồ sơ theo checklist sản phẩm.
-- Trích xuất số liệu có bằng chứng; CVTĐ soát/sửa.
-- Kiểm tra **tính nhất quán** (nội bộ BCTC, giữa các năm, BCTC ↔ tờ khai thuế, pháp lý giữa các tài liệu, TSBĐ).
-- Tính **chỉ tiêu tài chính** và **nhu cầu vốn** bằng code xác định.
-- Đối chiếu **chính sách tín dụng** (ngưỡng có version) → danh sách ngoại lệ.
-- Soạn **dự thảo tờ trình thẩm định** (các phần định lượng từ số liệu đã soát; phần diễn giải do AI viết, đánh dấu là dự thảo).
+- Sản phẩm **vay hộ kinh doanh có tài sản bảo đảm là quyền sử dụng đất** (chính sách PP-HKD-SECURED, luồng FAST).
+- Giai đoạn 1 · Consistency: cổng đủ hồ sơ với điều kiện **đúng loại, đúng người, còn hiệu lực**.
+- Giai đoạn 2 · Integrity: dựng LAC, giá trị chuẩn, sai lệch N/A/B/C, mức S1–S4, tín hiệu chéo vùng T#, chỉ số tính sẵn.
+- Nhánh 1 soát dữ liệu (HITL) và nhánh 2 thẩm định AI, chạy song song; bước ghép và chạy lại một phần.
+- Kết quả trả LOS: trạng thái hồ sơ, kết luận K# có trích dẫn, sai lệch X#, tín hiệu T#, chỉ số, `lac.json`.
 
 ### Ngoài phạm vi
-- Phê duyệt, từ chối, chấm điểm xếp hạng tín dụng nội bộ chính thức (XHTD do LOS/hệ thống xếp hạng sở hữu — App chỉ nhận kết quả qua `context` nếu có).
-- Truy vấn CIC, core banking, hệ thống xếp hạng, hệ thống quản lý TSBĐ (L6: chỉ nhận qua `context` hoặc tài liệu).
-- Tính giới hạn cấp tín dụng theo nhóm khách hàng liên quan (cần dữ liệu dư nợ toàn hệ thống — chỉ kiểm tra nếu `context` cung cấp số liệu).
-- Định giá TSBĐ (App đọc chứng thư thẩm định giá, không định giá).
-- Khách hàng cá nhân, doanh nghiệp lớn, tài trợ dự án (phiên bản sau).
+- Quyết định cho vay/từ chối, xếp hạng tín dụng nội bộ chính thức.
+- Truy vấn CIC, core banking, hệ thống TSBĐ (L6: chỉ nhận qua `context` hoặc chứng từ).
+- Định giá tài sản (App đọc chứng thư/biên bản định giá, không định giá).
+- SME doanh nghiệp (v2, cấu hình theo LAC_INTEGRATION §7), vay tiêu dùng, graph liên hồ sơ.
+- Dự thảo tờ trình (để spec sau, dùng LAC + K# làm đầu vào).
 
 ## 3. Tác nhân
 
-| Tác nhân | Vai trò với App |
+| Tác nhân | Vai trò |
 |---|---|
-| LOS (hệ thống gọi) | Start run với `context` + URL tài liệu ECM; nhận sự kiện; giữ user task, quyết định |
-| CV QHKH (maker hồ sơ) | Người lập hồ sơ trên LOS — `makerUserId` |
-| CV thẩm định (CVTĐ) | Soát/sửa số liệu trích xuất trên workbench; xác nhận hoàn tất soát |
-| Khối Quản lý rủi ro / Chính sách | Sở hữu & phê duyệt `CreditPolicyRuleSet` (version) |
-| Kiểm toán nội bộ | Đọc audit, truy vết bằng chứng |
+| LOS | Start run, nhận sự kiện, giữ user task và quyết định |
+| RM (maker) | Lập hồ sơ; nhận yêu cầu bổ sung khi cổng GĐ1 hoặc sai lệch B chặn |
+| Chuyên viên soát dữ liệu / thẩm định (checker) | Xử lý nhánh 1: xác nhận phân loại, đọc lại vùng ảnh, sửa lỗi A; đọc kết quả nhánh 2 |
+| Quản lý rủi ro, Sản phẩm, BU, Pháp chế | Sở hữu và duyệt cấu hình có version (lac-rules §8) |
+| Kiểm toán nội bộ | Truy vết K# → F#/X# → chứng từ |
 
-## 4. Luồng nghiệp vụ
+## 4. Luồng
 
-```
-LOS ──start──▶ [A] Validate context + kiểm kê file
-               [B] Phân loại tài liệu (per file, song song)        → Core analyze:classify
-               [C] Kiểm tra đầy đủ hồ sơ (checklist theo sản phẩm)  → rule (code)
-                    └─ thiếu tài liệu bắt buộc → finding MISSING_DOCUMENT (không dừng run)
-               [D] Trích xuất theo loại tài liệu (song song)        → Core extract:custom (schema có _evidence)
-               [E] Chuẩn hóa (đơn vị, kỳ, dấu) + cờ độ tin cậy        → code
-               [F] ⏸ REVIEW_EXTRACTION — CVTĐ soát/sửa số liệu     → event run.review_required
-                    (bắt buộc với BCTC & tờ khai; mode DELEGATED/EMBEDDED)
-               [G] Kiểm tra nhất quán                               → rule (code)
-               [H] Tính chỉ tiêu tài chính & nhu cầu vốn             → code (decimal)
-               [I] Đối chiếu chính sách tín dụng (RuleSet version)   → rule (code)
-               [J] Soạn dự thảo tờ trình                              → template (code) + Core generate:report (diễn giải)
-               [K] Kiểm tra số liệu trong phần diễn giải             → code (mọi con số phải có trong dữ liệu đã soát)
-LOS ◀─run.completed── findings + metrics + extracted + memo draft
-```
+Chi tiết ở [LAC_INTEGRATION §3](../../docs/enterprise/LAC_INTEGRATION.md#3-luồng-app-trên-temporal). Tóm tắt:
 
-Nguyên tắc: **AI đọc & viết; code tính & kết luận.** Không có chỉ tiêu, ngưỡng, hay kết luận đạt/không đạt nào do LLM sinh ra.
+1. Core tách trang, phân loại, lập thẻ chứng từ.
+2. **Cổng GĐ1** (Python LAC): thiếu, sai người hoặc hết hiệu lực → kết thúc sớm, trả RM danh sách cần bổ sung (chế độ chạy thử vẫn chạy tiếp, gắn nhãn "hồ sơ chưa đủ").
+3. Core trích xuất đầy đủ trường.
+4. **Dựng LAC + validate** (Python LAC).
+5. **Nhánh 1** (HITL, theo X#) ∥ **Nhánh 2** (AIHub qua Core, trên bản trích LAC).
+6. **Ghép** (code): trạng thái hồ sơ; khi nhánh 1 đổi phân loại hoặc giá trị → dựng lại LAC phần ảnh hưởng, chạy lại K# liên quan.
 
 ## 5. Yêu cầu chức năng
 
 ### 5.1 Đầu vào
 | ID | Yêu cầu |
 |---|---|
-| FR-1 | `POST /apps/v1/credit-appraisal-assist/runs` theo Workflow Service Contract (LAYERED_ARCHITECTURE §5). Idempotent theo `(caller, app, requestId)` |
-| FR-2 | `context` bắt buộc: `applicant` (tên, MST, ngành VSIC, ngày thành lập, người đại diện theo pháp luật), `request` (sản phẩm, số tiền, loại tiền, mục đích, thời hạn, phương thức cho vay, lãi suất dự kiến), `collaterals[]` (loại, mô tả, chủ sở hữu khai báo), `policy` (`ruleSetId`, `version`). Tùy chọn: `internalRating`, `existingExposure`, `cicSummary` |
-| FR-3 | Thiếu trường bắt buộc / sai kiểu → 400 với danh sách lỗi; **không** tự đi lấy dữ liệu (L6) |
-| FR-4 | Tài liệu qua `documents[].url` (ECM); tối đa 50 file / 500 trang mỗi run (cấu hình) |
+| FR-1 | `POST /apps/v1/credit-appraisal-assist/runs` theo Workflow Service Contract; idempotent theo `(caller, app, requestId)` |
+| FR-2 | `context` bắt buộc: `product` (mã chính sách + version cấu hình), `businessRef` (mã hồ sơ LOS), `referenceDate`. Tùy chọn: `interestRate` dạng số, `assetValuation` (giá trị + ngày + nguồn nếu LOS có), `mode` (`STRICT` \| `TRIAL`) |
+| FR-3 | Tài liệu qua `documents[].url` (ECM). Thông tin người, khoản vay, tài sản lấy **từ chứng từ**; App không tự đi lấy (L6) |
 
-### 5.2 Phân loại & đầy đủ hồ sơ
+### 5.2 Giai đoạn 1 · Consistency
 | ID | Yêu cầu |
 |---|---|
-| FR-5 | Phân loại vào danh mục cố định (Phụ lục A); một file có thể chứa nhiều tài liệu logic (theo trang) |
-| FR-6 | Checklist bắt buộc/tùy chọn theo `request.product` lưu trong RuleSet; thiếu → finding `MISSING_DOCUMENT` (HIGH nếu bắt buộc) |
-| FR-7 | Tài liệu hết hiệu lực (vd. chứng thư thẩm định giá quá hạn, CIC quá số ngày quy định) → `EXPIRED_DOCUMENT` |
+| FR-4 | Tách và gộp chứng từ: một chứng từ dùng cho nhiều mục checklist chỉ giữ một lần (hash ảnh + hash nội dung) |
+| FR-5 | Mỗi mục checklist của sản phẩm nhận `ĐẠT` / `CẦN RÀ SOÁT` / `THIẾU`, xét đủ ba điều kiện đúng loại, đúng người (đối chiếu chủ thể trên thẻ chứng từ với người vay và người liên quan), còn hiệu lực; áp quy tắc chứng từ thay thế |
+| FR-6 | `STRICT`: có mục bắt buộc `THIẾU` → không chạy GĐ2, `outcome = PENDING_SUPPLEMENT`, danh sách nêu rõ **chứng từ của ai**. `TRIAL`: chạy tiếp, gắn nhãn |
 
-### 5.3 Trích xuất & soát
-| ID | Yêu cầu |
-|---|---|
-| FR-8 | Mỗi loại tài liệu có schema trích xuất (Phụ lục B); **mỗi trường** kèm `_evidence: { documentId, page, quote }` |
-| FR-9 | Chuẩn hóa đơn vị (đồng / nghìn / triệu theo ghi chú "Đơn vị tính" trên BCTC), kỳ báo cáo, số âm trong ngoặc |
-| FR-10 | Điểm soát `REVIEW_EXTRACTION`: CVTĐ xem từng trường cạnh bằng chứng, sửa giá trị (ghi lý do), xác nhận. Trường có độ tin cậy thấp hoặc không có bằng chứng được đánh dấu bắt buộc xem |
-| FR-11 | Người xác nhận soát ≠ `makerUserId`; có role `CREDIT_APPRAISER` (từ IdP) |
-| FR-12 | Quá hạn soát (mặc định 10 ngày làm việc — cấu hình) → `run.failed` reason `REVIEW_TIMEOUT` |
-
-### 5.4 Kiểm tra nhất quán (rule code, mỗi rule có id/version + test)
-| ID | Kiểm tra |
-|---|---|
-| CON-1 | BCĐKT: Tổng tài sản = Tổng nguồn vốn (dung sai cấu hình) cho từng năm |
-| CON-2 | Số đầu kỳ năm N = số cuối kỳ năm N-1 cho các khoản chính |
-| CON-3 | Lợi nhuận sau thuế KQKD khớp biến động LNST chưa phân phối (cảnh báo nếu lệch, có chia cổ tức) |
-| CON-4 | Doanh thu BCTC so với doanh thu trên tờ khai thuế GTGT/TNDN cùng kỳ — lệch quá ngưỡng → finding |
-| CON-5 | Tên DN, MST, người đại diện thống nhất giữa ĐKDN, BCTC, nghị quyết, hợp đồng, `context.applicant` |
-| CON-6 | Nghị quyết/biên bản của cấp có thẩm quyền theo điều lệ chấp thuận vay với số tiền ≥ `request.amount`, đúng mục đích, còn hiệu lực |
-| CON-7 | Ngành nghề trên ĐKDN phù hợp mục đích vay — **AI gợi ý, đánh dấu `NEEDS_JUDGMENT`**, không kết luận |
-| CON-8 | TSBĐ: chủ sở hữu trên giấy tờ khớp khai báo; giá trị theo chứng thư; ngày chứng thư còn hiệu lực |
-
-### 5.5 Chỉ tiêu tài chính (code, số thập phân chính xác)
-| ID | Chỉ tiêu |
-|---|---|
-| FIN-1 | Thanh khoản: hệ số thanh toán hiện hành, nhanh |
-| FIN-2 | Đòn bẩy: Nợ phải trả / Vốn chủ sở hữu, Nợ vay / Tổng tài sản |
-| FIN-3 | Sinh lời: biên LN gộp, ROS, ROA, ROE |
-| FIN-4 | Hoạt động: vòng quay hàng tồn kho, phải thu, phải trả; vòng quay vốn lưu động |
-| FIN-5 | Tăng trưởng doanh thu, LNST qua các năm |
-| FIN-6 | Nhu cầu vốn lưu động = chi phí hoạt động kế hoạch / vòng quay VLĐ − vốn tự có − vốn vay TCTD khác (theo công thức trong RuleSet) |
-| FIN-7 | Trung dài hạn: tỷ lệ vốn tự có tham gia; DSCR theo dòng tiền phương án |
-| FIN-8 | TSBĐ: LTV = dư nợ đề xuất / giá trị TSBĐ được tính theo tỷ lệ cho vay tối đa của từng loại tài sản |
-
-Mỗi chỉ tiêu lưu công thức, các giá trị đầu vào (đã soát) và trỏ được về bằng chứng của từng đầu vào.
-
-### 5.6 Chính sách tín dụng
-| ID | Yêu cầu |
-|---|---|
-| FR-13 | `CreditPolicyRuleSet` có version, trạng thái DRAFT → APPROVED (maker-checker); run dùng đúng version trong `context.policy` và chỉ chấp nhận version APPROVED |
-| FR-14 | Mỗi rule: ngưỡng theo ngành/sản phẩm (vd. hệ số thanh toán hiện hành ≥ x, Nợ/VCSH ≤ y, DSCR ≥ z, LTV ≤ t, số năm hoạt động ≥ n, LNST dương k năm gần nhất) → finding `POLICY_EXCEPTION` kèm giá trị thực tế, ngưỡng, rule id/version |
-
-### 5.7 Dự thảo tờ trình
-| ID | Yêu cầu |
-|---|---|
-| FR-15 | Tờ trình theo mẫu (cấu hình theo ngân hàng): thông tin KH, pháp lý, tình hình tài chính, phương án vay, TSBĐ, rủi ro & ngoại lệ, đề xuất của CVTĐ (để trống) |
-| FR-16 | Bảng số liệu & chỉ tiêu do template điền từ dữ liệu đã soát (không qua LLM) |
-| FR-17 | Phần diễn giải (nhận xét tài chính, đánh giá phương án) do AI soạn, gắn nhãn "Dự thảo AI — CVTĐ chịu trách nhiệm hiệu chỉnh" |
-| FR-18 | Guard: mọi con số trong phần diễn giải phải khớp một giá trị trong dữ liệu đã soát/chỉ tiêu (sau chuẩn hóa); không khớp → đoạn bị loại và ghi finding `NARRATIVE_NUMBER_UNVERIFIED` |
-| FR-19 | Xuất `.docx` và `.md`; LOS/CVTĐ tự hiệu chỉnh & lưu ECM |
-
-### 5.8 Đầu ra
-| ID | Yêu cầu |
-|---|---|
-| FR-20 | `outcome` ∈ `NO_EXCEPTIONS` \| `EXCEPTIONS_FOUND` \| `INCOMPLETE` — mô tả trạng thái hồ sơ, **không** phải đề xuất cho vay/từ chối |
-| FR-21 | `findings[]`, `metrics[]`, `extracted`, `memo` (ref), `trace` (core operations, prompt versions, ruleSet version, model) |
-| FR-22 | Sự kiện `run.review_required`, `run.completed`, `run.failed` tới callback (HMAC) |
-
-## 6. Yêu cầu phi chức năng & tuân thủ
-
-| ID | Yêu cầu | Liên quan |
+### 5.3 Giai đoạn 2 · Integrity (Python LAC, tất định)
+| ID | Yêu cầu | Quy tắc gốc |
 |---|---|---|
-| NFR-1 | Thời gian xử lý máy (không tính chờ soát) p95 ≤ 15 phút cho 30 file / 300 trang | |
-| NFR-2 | Không mất/lặp bước khi restart worker; gọi Core idempotent theo `runId+stepKey` | Constitution §11 |
-| NFR-3 | Tiền & chỉ tiêu tính bằng decimal, làm tròn theo quy định trong RuleSet | §9 |
-| NFR-4 | Audit: start, mỗi sửa đổi (trước/sau/lý do/người), xác nhận soát, ruleSet version dùng | §8 |
-| NFR-5 | PII (CCCD người đại diện, số tài khoản) không log; LLM chỉ qua AIHub (chính sách dữ liệu do AIHub quản trị) | §2, ADR-0003 |
-| NFR-6 | Dữ liệu làm việc có TTL (L5); bản cuối do LOS lưu ECM | L5 |
-| NFR-7 | Chất lượng trích xuất trên golden set: ≥ 95% trường BCTC chính đúng sau chuẩn hóa (trước soát) — ngưỡng chốt với nghiệp vụ | §16 |
-| NFR-8 | Khung pháp lý tham chiếu (Pháp chế xác nhận): Luật Các TCTD 2024, Thông tư 39/2016/TT-NHNN và sửa đổi về cho vay, quy định nội bộ về thẩm định | |
+| FR-7 | Dựng graph `MultiDiGraph`: node chứng từ, người, hộ kinh doanh, tài sản, khoản vay, phương án vốn, tổ chức tra cứu CIC; cạnh mang chứng từ nguồn và thông tin liên kết | LAC_INTEGRATION §2; lac-rules §3.1 |
+| FR-8 | Gán từng lần nhắc người bằng điểm bằng chứng; ngưỡng 2 điểm + hơn ứng viên thứ hai ≥ 2; mức cao ≥ 4; không đạt → người chưa xác định U# | lac-rules §3.1 |
+| FR-9 | Chọn giá trị chuẩn: chuẩn hoá → hiệu lực thời gian → bậc thẩm quyền → đa số nguồn độc lập; mỗi thông tin một mã F# kèm nguồn, bậc, quy tắc đã dùng | lac-rules §3.2–3.6 |
+| FR-10 | Phát hiện sai lệch theo danh mục R-* (R-CROSS, R-NORM, R-ONEOF, R-INCOME, R-ROLE, R-CROSS-DOC, R-CIC-SUBJECT, R-CIC-AGE, R-DATE, R-ID-FORMAT, R-ID-EXPIRY, R-FORMAT, R-ARITH, R-FORM, R-NAME, R-SOURCE, R-REQUIRED); mỗi X# có loại, độ trọng yếu, mức, trạng thái `chốt theo quy tắc` / `chờ xác nhận` | lac-rules §4–6 |
+| FR-11 | Tín hiệu chéo vùng R-X-* (MARITAL-ASSET, LTV-MARGIN, PLAN-COGS, BULLET, LOAN-REVENUE, INCOME-USE, METRIC-INPUT) sinh T# kèm số liệu và công thức; không có mức S, không chặn | lac-rules §7 |
+| FR-12 | Lớp chỉ số: LTV, DSCR, số vay/doanh thu năm, phương án/giá vốn năm, gốc cuối kỳ/lợi nhuận cả kỳ, biên lợi nhuận; thiếu đầu vào → "chưa tính được" + đầu vào thiếu; thông tin có C → giá trị thận trọng + cờ | lac-rules §7 |
+| FR-13 | Không bao giờ tự sửa số tiền, số định danh, chủ sở hữu khi có lệch thật; nghi ngờ thì xếp C | lac-rules §1 |
+| FR-14 | Xuất `lac.json` theo JSON Schema có version (LAC_INTEGRATION P2), gồm facts, links, discrepancies, signals, metrics, phase1, sources, và bản trích cho nhánh 2 | LAC §8.2 |
+
+### 5.4 Nhánh 1 · Soát dữ liệu (HITL)
+| ID | Yêu cầu |
+|---|---|
+| FR-15 | Tạo ReviewTask theo X#, ưu tiên S1 → S2 → S3; N tự đóng (chỉ hiện ở phụ lục) |
+| FR-16 | Mỗi X# hiển thị giá trị theo từng nguồn, giá trị chuẩn, quy tắc, và vùng ảnh (khi Core có bbox — C6) |
+| FR-17 | Hành động: xác nhận phân loại; đổi phân loại (A↔B↔C, A\|B → A hoặc B); sửa giá trị lỗi A (bắt buộc lý do); yêu cầu RM bổ sung (B); xác nhận liên kết người mức trung bình |
+| FR-18 | Đọc lại vùng ảnh qua Core (C12) khi chuyên viên yêu cầu |
+| FR-19 | Người xử lý ≠ maker; role từ IdP; mọi hành động ghi audit trước/sau |
+
+### 5.5 Nhánh 2 · Thẩm định AI
+| ID | Yêu cầu |
+|---|---|
+| FR-20 | Đầu vào là bản trích LAC (giá trị chuẩn, liên kết, chỉ số, mâu thuẫn C, T#, giới hạn dữ liệu); không nhận biến thể A/B |
+| FR-21 | Gọi AIHub qua Core (`generate` hoặc `analyze` với prompt template có version — C2); đầu ra JSON `[{id: K#, text, fields: [F#], conflicts: [X#], signals: [T#]}]` |
+| FR-22 | Code kiểm đầu ra: mọi F#/X#/T# trích dẫn phải tồn tại; mỗi con số trong `text` phải khớp một giá trị F# hoặc chỉ số sau chuẩn hoá; vi phạm → loại K# đó, ghi lỗi, không tự sửa |
+| FR-23 | K# không được chứa đề xuất cho vay/từ chối (kiểm bằng danh sách cụm từ + schema) |
+
+### 5.6 Bước ghép (code, trong workflow)
+| ID | Yêu cầu |
+|---|---|
+| FR-24 | Còn S1 chưa xử lý → `PENDING_SUPPLEMENT`; K# trích F# đang vướng S2 → K# gắn `PROVISIONAL` kèm điều kiện; không còn S1 và không K# vướng S2 → `ELIGIBLE_TO_SUBMIT` |
+| FR-25 | Nhánh 1 đổi phân loại hoặc giá trị: C → A/B rút mâu thuẫn; A/B → C thêm mâu thuẫn; giá trị chuẩn đổi → tính lại chỉ số và T# liên quan; **chỉ chạy lại K# có trích F# bị ảnh hưởng** |
+| FR-26 | Mỗi lần ghép phát sự kiện cập nhật trạng thái cho LOS (`run.updated`) |
+
+### 5.7 Cấu hình
+| ID | Yêu cầu |
+|---|---|
+| FR-27 | Toàn bộ bảng ở lac-rules §8 (hiệu lực CIC, ngưỡng lệch tài chính, chứng từ cũ, LTV margin, PLAN-COGS, LOAN-REVENUE, điểm gán người, mã tỉnh CCCD, mốc đổi thẻ, K1–K3, bảng thẩm quyền, nhóm nguồn) và checklist sản phẩm nằm trong file cấu hình có version, tách khỏi code |
+| FR-28 | Version cấu hình DRAFT → APPROVED (maker-checker); run chỉ dùng version APPROVED và ghi version vào `lac.json` |
+
+## 6. Yêu cầu phi chức năng
+
+| ID | Yêu cầu |
+|---|---|
+| NFR-1 | Lớp LAC tất định: cùng đầu vào + cùng version cấu hình → cùng `lac.json` (byte-identical sau sắp xếp khoá) |
+| NFR-2 | Lớp LAC ≤ 1 giây/hồ sơ (PoC ~15 ms); không gọi mạng |
+| NFR-3 | Không mất/lặp bước khi restart worker (TS hoặc Python); gọi Core idempotent |
+| NFR-4 | Không log giá trị trường của người (họ tên, số định danh, SĐT, địa chỉ); log F#/X# và hash |
+| NFR-5 | Bản trích nhánh 2 ≤ 25% kích thước JSON DU (PoC: 17%); đo bằng tokenizer thật của model AIHub |
+| NFR-6 | Test và CI chỉ dùng hồ sơ giả lập; dữ liệu thật chỉ ở môi trường được phê duyệt (LAC-4) |
 
 ## 7. Phụ thuộc
 
-| Phụ thuộc | Cần cho | Ghi chú |
+| Phụ thuộc | Cần cho | Trạng thái |
 |---|---|---|
-| Khung Apps (Temporal dev, contract, core-client, workbench khung) | Mọi thứ | Phase A của spec này |
-| Core C5 — role `APP` | Gọi Core với hạn mức riêng | Có thể dùng key STANDARD ở dev |
-| Core C2 — prompt template `prompt_ref` | Phân loại tốt hơn & diễn giải tờ trình theo từng phần | v1 tạm dùng `categories`/`schema` và override prompt theo profile (cơ chế `ExternalApiOverride` đã có) |
-| Core C4 — document handle | Không OCR lại mỗi bước | Hiệu năng; không chặn v1 |
-| Core C6 — evidence bbox | Tô vùng trên trang | v1 dùng `page + quote` trong schema |
-| Core C7–C9 — connector AIHub (body JSON, OAuth2/mTLS, model + request id) | Chạy với AIHub thật | Phụ thuộc đặc tả API AIHub (AIHUB_INTEGRATION §6); dev dùng mock-service |
-| Mẫu tờ trình, checklist, RuleSet ban đầu | §5.2, §5.6, §5.7 | **Nghiệp vụ cung cấp** |
-| Golden set ≥ 20 hồ sơ SME ẩn danh | NFR-7 | **Nghiệp vụ cung cấp** |
+| Khung Apps (Phase A) | Mọi thứ | Kế hoạch |
+| Core C6 mở rộng (trang, bbox, độ tin cậy, `status`, `candidates` theo trường) | FR-16, phân loại A/B | Cần DU |
+| Core C11 (họ tên trong mọi bản ghi, chủ thể trên thẻ chứng từ) | FR-5, FR-8 | Cần DU |
+| Core C12 (đọc lại vùng ảnh) | FR-18 | Cần DU |
+| Core C2 (prompt template) + C7–C9 (connector AIHub) | FR-21 | Cần Core + đặc tả AIHub |
+| Contract đầu ra DU `dugate.loan-appraisal.integration 5.0` | FR-7 | LAC-3 |
+| Cấu hình đã chốt (lac-rules §8) | FR-27 | Các đơn vị chốt; dùng giá trị tạm khi dev |
 
 ## 8. Acceptance criteria
 
-- [ ] AC-1: Run với bộ hồ sơ mẫu đầy đủ → phân loại đúng 100% tài liệu bắt buộc trong bộ mẫu; checklist không báo thiếu.
-- [ ] AC-2: Bỏ BCTC năm gần nhất khỏi bộ mẫu → finding `MISSING_DOCUMENT` HIGH; run vẫn tới bước soát.
-- [ ] AC-3: Mỗi trường trích xuất hiển thị trên workbench có trang + trích dẫn; trường thiếu bằng chứng được đánh dấu bắt buộc xem.
-- [ ] AC-4: Người xác nhận soát trùng `makerUserId` → bị từ chối (403), run vẫn chờ.
-- [ ] AC-5: Bộ BCTC có TS ≠ NV vượt dung sai → `CON-1` finding với giá trị hai vế và bằng chứng.
-- [ ] AC-6: Tất cả FIN-* khớp bảng tính đối chứng do nghiệp vụ lập cho bộ mẫu (sai số 0 sau làm tròn).
-- [ ] AC-7: Đổi `policy.version` → ngoại lệ thay đổi đúng theo ngưỡng mới; version DRAFT bị từ chối khi start.
-- [ ] AC-8: Chèn con số bịa vào phần diễn giải (test) → đoạn bị loại, có `NARRATIVE_NUMBER_UNVERIFIED`.
-- [ ] AC-9: Kill worker trong bước trích xuất → khởi động lại, run tiếp tục; Core ghi nhận không có Operation trùng cho cùng `stepKey`.
-- [ ] AC-10: Output không chứa trường/ngôn ngữ "đề xuất cho vay/từ chối"; `outcome` chỉ thuộc tập FR-20.
-- [ ] AC-11: Audit truy vết được: giá trị cuối của một chỉ tiêu → đầu vào → sửa đổi của CVTĐ (nếu có) → bằng chứng gốc.
+Trên bộ fixture giả lập (≥ 5 hồ sơ, mỗi hồ sơ cài sẵn các tình huống dưới):
+
+- [ ] AC-1: Cổng GĐ1 phát hiện CIC đúng loại, còn hạn nhưng **của vợ/chồng** người vay → mục CIC `THIẾU`, nêu "cần CIC của người vay"; `STRICT` dừng trước GĐ2.
+- [ ] AC-2: Bốn cách viết một địa chỉ (có/không cấp huyện, có/không tiền tố) → một F#, sai lệch loại N, không đi sang nhánh 2.
+- [ ] AC-3: Thu nhập 180 tr/tháng trên đơn vay, 180 tr/năm trên bảng kê → X# loại C1 mức S2, giá trị chuẩn thận trọng, có trong bản trích nhánh 2.
+- [ ] AC-4: Giấy kết hôn cũ ghi thẻ cũ, thẻ mới cấp sau → N (giá trị thời kỳ trước), không báo lệch.
+- [ ] AC-5: Hai chứng từ tự khai cùng ghi một giá trị sai, giấy tờ bậc 1 ghi khác → giá trị chuẩn theo bậc 1 (đa số tự khai không thắng).
+- [ ] AC-6: Mọi T# và chỉ số khớp bảng tính đối chứng của fixture; DSCR thiếu lãi suất số → "chưa tính được: thiếu lãi suất".
+- [ ] AC-7: NFR-1 — chạy LAC hai lần cho cùng đầu vào → `lac.json` giống hệt.
+- [ ] AC-8: K# trích F# không tồn tại hoặc chứa con số không có trong LAC → bị loại (FR-22).
+- [ ] AC-9: Còn S1 → `PENDING_SUPPLEMENT`; xử lý hết S1, còn S2 trên F# được K# trích → `PROVISIONAL`; xử lý hết → `ELIGIBLE_TO_SUBMIT`.
+- [ ] AC-10: Nhánh 1 hạ X# thu nhập từ C xuống A3 và sửa giá trị → chỉ K# trích F# thu nhập chạy lại (kiểm bằng số lần gọi Core), các K# khác giữ nguyên.
+- [ ] AC-11: Người xử lý nhánh 1 trùng maker → 403.
+- [ ] AC-12: Kill worker Python trong lúc dựng LAC → Temporal retry, workflow tiếp tục, không trùng kết quả.
+- [ ] AC-13 (đo thật, LAC-4): trên 50–100 hồ sơ đã thẩm định, đo theo LAC §7.2; mục tiêu tỷ lệ sửa sai trên K1 = 0.
 
 ## 9. Câu hỏi mở
 
-| # | Câu hỏi | Mức độ | Đề xuất |
+| # | Câu hỏi | Mức độ | Ghi chú |
 |---|---|---|---|
-| Q1 | Hệ thống gọi là LOS nào; LOS có hiển thị deep-link workbench không (L2, L3)? | Critical | `DELEGATED` + deep-link; dev dùng `EMBEDDED` |
-| Q2 | Ai cung cấp & phê duyệt checklist, RuleSet ngưỡng chính sách, công thức nhu cầu vốn (L4)? | Critical | Khối QLRR sở hữu; App lưu version + maker-checker |
-| Q3 | Mẫu tờ trình thẩm định SME hiện hành của ngân hàng? | Critical | Cần file mẫu |
-| Q4 | ~~Có được gửi BCTC/hồ sơ KH tới LLM ngoài không (D2)?~~ | — | **Đã trả lời**: LLM qua VPBank AIHub bằng connector (ADR-0003) |
-| Q9 | AIHub có nhận PDF/ảnh (OCR/vision) và structured JSON output không (AIHUB A3, A6)? | Critical | Quyết định bước ingest/extract có cần engine OCR riêng |
-| Q5 | Có golden set hồ sơ ẩn danh không? Bao nhiêu? | High | ≥ 20 bộ, có bảng tính đối chứng |
-| Q6 | BCTC dạng nào phổ biến: PDF scan, PDF số, XML từ HTKK/eTax? | High | Hỗ trợ PDF scan + PDF số; XML là phase sau (chính xác 100%) |
-| Q7 | Một run cho một khoản vay hay cho cả phương án nhiều khoản/hạn mức? | Medium | Một `request` / run |
-| Q8 | Có cần lần soát thứ hai (cấp kiểm soát thẩm định) trong App hay trên LOS? | Medium | Trên LOS |
+| LAC-3 | Đầu ra DU `dugate.loan-appraisal.integration 5.0` sinh ở đâu, có thuộc Core không? | Critical | Quyết định adapter đầu vào FR-7 |
+| LAC-4 | Môi trường nào được chạy hồ sơ thật để đo? | Critical | AC-13 |
+| Q1 | LOS nào gọi App; LOS có mở deep-link màn hình nhánh 1 không? | Critical | FR-15–17 |
+| Q2 | Checklist chính thức PP-HKD-SECURED (8 mục, 5 nhóm) và quy tắc chứng từ thay thế | Critical | FR-5; do Sản phẩm cung cấp |
+| Q3 | Quy tắc với vợ/chồng người vay: vai trò, chữ ký, giấy tờ bắt buộc | High | BU; ảnh hưởng R-ROLE, R-SOURCE, R-X-MARITAL-ASSET |
+| Q4 | Chế độ mặc định khi GĐ1 chưa đủ: `STRICT` hay `TRIAL`? | Medium | Đề xuất `STRICT` ở production |
+| Q5 | Ai được đổi phân loại C → A/B ở nhánh 1 (chuyên viên soát hay cấp kiểm soát)? | High | Ảnh hưởng FR-17, FR-19 |
 
----
+## Phụ lục — Loại chứng từ v1 (theo PoC; Sản phẩm chốt ở Q2)
 
-## Phụ lục A — Danh mục tài liệu v1
-
-| Mã | Tài liệu | Bắt buộc (mặc định) |
-|---|---|---|
-| `LEGAL_ERC` | Giấy chứng nhận đăng ký doanh nghiệp | ✔ |
-| `LEGAL_CHARTER` | Điều lệ công ty | ✔ |
-| `LEGAL_RESOLUTION` | Nghị quyết/Biên bản HĐTV/ĐHĐCĐ/HĐQT về vay vốn, thế chấp | ✔ |
-| `LEGAL_REP_ID` | Giấy tờ tùy thân người đại diện theo pháp luật | ✔ |
-| `FIN_BS` | Bảng cân đối kế toán (theo năm) | ✔ 2 năm gần nhất |
-| `FIN_IS` | Báo cáo kết quả kinh doanh (theo năm) | ✔ 2 năm gần nhất |
-| `FIN_CF` | Báo cáo lưu chuyển tiền tệ | |
-| `FIN_NOTES` | Thuyết minh BCTC | |
-| `FIN_AUDIT` | Báo cáo kiểm toán | theo RuleSet |
-| `TAX_VAT` / `TAX_CIT` | Tờ khai thuế GTGT / quyết toán TNDN | ✔ (một trong hai) |
-| `PLAN_BUSINESS` | Phương án kinh doanh / dự án đầu tư, kế hoạch trả nợ | ✔ |
-| `CONTRACT_INPUT` / `CONTRACT_OUTPUT` | Hợp đồng mua vào / bán ra chứng minh phương án | |
-| `BANK_STATEMENT` | Sao kê tài khoản | |
-| `CIC_REPORT` | Báo cáo thông tin tín dụng CIC | ✔ |
-| `COL_TITLE` | Giấy chứng nhận QSDĐ/QSH tài sản, đăng ký xe… | ✔ nếu có TSBĐ |
-| `COL_VALUATION` | Chứng thư thẩm định giá | ✔ nếu có TSBĐ |
-| `OTHER` | Khác | |
-
-## Phụ lục B — Schema trích xuất (ví dụ `FIN_BS`)
-
-```jsonc
-{
-  "period_end": "2025-12-31",
-  "unit": "VND | THOUSAND_VND | MILLION_VND",
-  "lines": {
-    "current_assets":        { "value": "…", "_evidence": { "page": 1, "quote": "…" } },
-    "cash":                  { "value": "…", "_evidence": {…} },
-    "short_term_receivables":{ "value": "…", "_evidence": {…} },
-    "inventories":           { "value": "…", "_evidence": {…} },
-    "non_current_assets":    { "value": "…", "_evidence": {…} },
-    "total_assets":          { "value": "…", "_evidence": {…} },
-    "current_liabilities":   { "value": "…", "_evidence": {…} },
-    "short_term_borrowings": { "value": "…", "_evidence": {…} },
-    "long_term_liabilities": { "value": "…", "_evidence": {…} },
-    "long_term_borrowings":  { "value": "…", "_evidence": {…} },
-    "owners_equity":         { "value": "…", "_evidence": {…} },
-    "total_resources":       { "value": "…", "_evidence": {…} }
-  },
-  "comparative_period": { /* số đầu năm, cùng cấu trúc */ }
-}
-```
-Mã dòng ánh xạ theo mẫu B01-DN (TT 200/2014) và B01-DNN (TT 133/2016) — bảng ánh xạ là dữ liệu cấu hình, có test.
+| `doc_type` | Chứng từ | Nhóm checklist | Nhóm nguồn độc lập |
+|---|---|---|---|
+| `id_card` | CCCD / Căn cước | Pháp lý | Dân cư |
+| `qr_code_info` | Thông tin QR trên thẻ | Pháp lý (thay thế) | Dân cư |
+| `vneid` | VNeID | Pháp lý (thay xác nhận cư trú) | Dân cư |
+| `marriage_certificate` | Giấy chứng nhận kết hôn | Pháp lý | Riêng |
+| `loan_application` | Giấy đề nghị vay kiêm phương án sử dụng vốn | Phương án vay | Tự khai |
+| `purchase_list` | Bảng kê hàng hoá cần nhập | Phương án vay (thay hợp đồng) | Tự khai |
+| `income_statement` | Bảng kê thu nhập | Nguồn thu nhập | Tự khai |
+| `land_use_certificate` | GCN quyền sử dụng đất | Tài sản bảo đảm | Riêng |
+| `valuation_certificate` | Chứng thư / biên bản định giá | Tài sản bảo đảm | Riêng |
+| `cic` | Báo cáo CIC | Quan hệ tín dụng | Riêng |

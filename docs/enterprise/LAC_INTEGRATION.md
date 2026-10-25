@@ -157,15 +157,19 @@ Bảng thẩm quyền (Quy tắc §3.4), độ trọng yếu K1–K3 và checkli
 | Dự thảo tờ trình | Giữ; đầu vào là LAC + K# |
 | RuleSet chính sách có version | Gộp với cấu hình LAC (P1) |
 
-Spec 002 sẽ được viết lại theo bảng trên sau khi chốt §9.
+Spec 002 đã được viết lại theo bảng trên (Draft v2).
 
 ---
 
-## 9. Quyết định cần chốt
+## 9. Quyết định
+
+**Đã chốt (2026-10-25):**
+- **LAC-1 → Hộ kinh doanh trước.** v1 của App là vay hộ kinh doanh có TSBĐ (PP-HKD-SECURED); SME doanh nghiệp là v2 **bằng cấu hình** theo §7.
+- **LAC-2 → Giữ Python + NetworkX.** Lớp LAC chạy như worker Temporal Python (task queue `credit-lac-py`); xem lại việc port TS sau khi có số đo (cần ADR mới).
+
+**Còn mở:**
 
 | # | Câu hỏi | Đề xuất |
 |---|---|---|
-| LAC-1 | Phạm vi v1 của App: HKD có TSBĐ (có PoC) hay SME doanh nghiệp (BCTC)? | HKD v1, SME v2 |
-| LAC-2 | Giữ Python + NetworkX làm worker Temporal hay port sang TypeScript? | Giữ Python tới khi có số đo |
 | LAC-3 | Đầu ra DU `dugate.loan-appraisal.integration 5.0` đang được sinh ở đâu? Có thuộc Core không? | Cần thông tin |
 | LAC-4 | Môi trường nào được phép chạy 50–100 hồ sơ thật để đo? | UAT nội bộ VPBank, có phê duyệt dữ liệu |

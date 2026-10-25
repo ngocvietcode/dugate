@@ -1,90 +1,83 @@
-# Tasks 002: `credit-appraisal-assist`
+# Tasks 002 v2: `credit-appraisal-assist` (HKD có TSBĐ, lõi LAC)
 
-> Chỉ bắt đầu `/implement` khi spec **Approved** (Q1–Q4 có trả lời; Phase A có thể bắt đầu sớm vì không phụ thuộc Q1–Q4 trừ Q1 cho T-A8).
-> Mỗi task: một phiên agent, có lệnh kiểm chứng.
+> `/implement` lấy task đầu tiên chưa tick mà phụ thuộc đã xong. Phase L bắt đầu được ngay (không cần Q1–Q5, LAC-3 chỉ chặn L7). Phase A độc lập với Phase L.
+> Mỗi task: một phiên agent, có lệnh kiểm chứng. Không đưa dữ liệu hồ sơ thật vào repo.
 
-## Phase A — Khung Apps
+## Phase L — `credit-kit/lac` (Python)
 
-- [ ] **T-A1 — Workspace `apps/` + Temporal dev**
-  - File: `package.json` (workspaces), `apps/package.json`, `apps/tsconfig.json`, `apps/CLAUDE.md`, `docker-compose.yml` (+`temporal`, `temporal-ui`), `.env.example`
-  - Kiểm chứng: `docker compose up -d temporal temporal-ui` → UI `:8233`; `npm -w apps run typecheck` xanh; `npm run build` của Core không đổi
+- [ ] **L1 — Đưa PoC vào repo nguyên trạng + chạy được**
+  - File: `apps/credit-kit/lac/{pyproject.toml,README.md,CLAUDE.md}`, `lac/graph.py`, `lac/validate.py`, `lac/draw.py` (copy PoC, chỉ đổi import), `.gitignore` (`cases/`, `out/`)
+  - Kiểm chứng: `python -m lac.validate <fixture> -o /tmp/out` chạy không lỗi; output gồm `facts.json`, `discrepancies.json`, `branch2_context.md`
 
-- [ ] **T-A2 — Lint ranh giới tầng**
-  - File: ESLint config cho `apps/**` (cấm import `@/lib/**`, `../lib/**`), cho `apps/**/workflow.ts` và `workflow-kit/**` (cấm I/O)
-  - Phụ thuộc: T-A1
-  - Kiểm chứng: file thử import `@/lib/db` trong `apps/` → lint fail
+- [ ] **L2 — Fixture giả lập**
+  - File: `tests/fixtures/make_synthetic.py`, `tests/fixtures/hkd_*.json` (≥ 5 hồ sơ: CIC sai chủ thể, thu nhập ×12, địa chỉ 4 cách viết, giấy tờ cũ/mới, tự khai lệch bậc 1, thiếu chữ ký, LTV sát trần)
+  - Phụ thuộc: L1
+  - Kiểm chứng: script sinh lại fixture giống hệt; grep không có số định danh/SĐT có thật (danh sách chặn)
 
-- [ ] **T-A3 — Contract (Zod)**
-  - File: `apps/platform/contract/*.ts` + test
-  - Kiểm chứng: `npm -w apps test -- contract` xanh; schema export JSON Schema cho tài liệu
+- [ ] **L3 — Snapshot + test tất định (khoá hành vi PoC)**
+  - File: `tests/test_snapshot.py`, `tests/test_determinism.py`, `tests/snapshots/`
+  - Phụ thuộc: L2
+  - Kiểm chứng: `pytest` xanh; chạy 2 lần cho output byte-identical (AC-7)
 
-- [ ] **T-A4 — DB schema `apps`**
-  - File: `apps/platform/db/schema.ts` (`AppRun`, `ReviewTask`, `Finding`, `AppAuditEvent` hash-chain, `RuleSetVersion`), migration
-  - Kiểm chứng: migration chạy trên DB dev; test append-only (UPDATE/DELETE `AppAuditEvent` bị từ chối)
+- [ ] **L4 — Tách cấu hình khỏi code**
+  - File: `apps/credit-kit/config/pp-hkd-secured/0.1.0/*.yaml`, `lac/config.py` (loader + schema), sửa `graph.py`/`validate.py` đọc từ config
+  - Phụ thuộc: L3
+  - Kiểm chứng: snapshot L3 không đổi; đổi `params.yaml` cic_max_age 30→120 làm mất X# R-CIC-AGE trên fixture tương ứng
 
-- [ ] **T-A5 — `core-client` + activity `callCore`**
-  - File: `apps/platform/core-client/index.ts`, `apps/platform/activities/core.ts` + test với mock-service
-  - Kiểm chứng: gọi 2 lần cùng `runId:stepKey` → 1 Operation ở Core; lỗi 4xx → `ApplicationFailure` non-retryable
+- [ ] **L5 — Test theo quy tắc R-***
+  - File: `tests/test_rules_*.py` (mỗi R-* ≥ 1 case dương, 1 case âm), AC-2..AC-5
+  - Phụ thuộc: L4
+  - Kiểm chứng: `pytest -k rules` xanh; coverage `validate.py` ≥ 80%
 
-- [ ] **T-A6 — Activities projection / audit / webhook**
-  - File: `apps/platform/activities/{projection,audit,webhook}.ts`, `security/hmac.ts` + test
-  - Kiểm chứng: webhook có header chữ ký HMAC đúng; retry khi 5xx
+- [ ] **L6 — Contract `lac.json`**
+  - File: `apps/credit-kit/contracts/lac.schema.json`, `lac/export.py` (gộp facts/discrepancies/graph/branch2 thành `lac.json`), sinh Pydantic
+  - Phụ thuộc: L5
+  - Kiểm chứng: output mọi fixture validate theo schema; FR-14
 
-- [ ] **T-A7 — workflow-kit: chờ soát + progress + maker-checker**
-  - File: `apps/platform/workflow-kit/{review,progress}.ts`, `security/maker-checker.ts`, workflow test mẫu
-  - Kiểm chứng: time-skipping test: decision từ maker bị từ chối; quá hạn → `REVIEW_TIMEOUT`
+- [ ] **L7 — Adapter đầu vào DU** (chặn bởi LAC-3 cho adapter Core)
+  - File: `lac/adapters/du_integration_v5.py` (+ adapter Core khi chốt)
+  - Phụ thuộc: L6
+  - Kiểm chứng: fixture DU v5 → input LAC → snapshot không đổi
 
-- [ ] **T-A8 — Server `/apps/v1/*` + worker**
-  - File: `apps/server.ts`, `apps/worker.ts`, auth (OIDC token / client credentials)
-  - Phụ thuộc: T-A3..T-A7 (Q1 cho deep-link)
-  - Kiểm chứng: start → run hiện trên Temporal UI; `GET /runs/{id}` trả projection; cancel hoạt động
+- [ ] **L8 — Giai đoạn 1 (cổng đủ hồ sơ)**
+  - File: `lac/phase1.py`, `config/.../checklist.yaml`, tests (AC-1)
+  - Phụ thuộc: L6 (Q2 cho checklist thật)
+  - Kiểm chứng: fixture CIC của vợ/chồng → mục CIC `THIẾU` với "cần CIC của người vay"
+
+- [ ] **L9 — Tín hiệu chéo vùng R-X-* + lớp chỉ số**
+  - File: `lac/signals.py`, `lac/metrics.py`, tests theo bảng tính đối chứng (AC-6)
+  - Phụ thuộc: L6
+  - Kiểm chứng: T# và chỉ số khớp đối chứng; DSCR thiếu lãi suất → "chưa tính được"
+
+- [ ] **L10 — Vùng Phương án vốn và Tài chính có kỳ + loại nguồn**
+  - File: `graph.py`, `validate.py`, schema, tests
+  - Phụ thuộc: L9
+  - Kiểm chứng: R-CROSS-DOC, R-ARITH chạy trên vùng mới; snapshot cập nhật có review
+
+- [ ] **L11 — Script đo trên hồ sơ thật (ngoài repo)**
+  - File: `apps/credit-kit/lac/scripts/measure.py` (đọc thư mục ngoài repo, xuất bảng LAC §7.2, không ghi dữ liệu người ra log)
+  - Phụ thuộc: L7, L8, L9
+  - Kiểm chứng: chạy trên fixture → bảng chỉ số; chạy thật ở môi trường LAC-4
+
+- [ ] **L12 — Worker Temporal Python**
+  - File: `lac/worker.py` (activities `phase1_gate`, `build_validate`, `rebuild`; task queue `credit-lac-py`; payload codec)
+  - Phụ thuộc: A1, L8, L9
+  - Kiểm chứng: test với Temporal test server; AC-12
+
+## Phase A — Khung Apps (TS)
+
+Giữ nguyên **T-A1 … T-A8** của bản trước (workspace + Temporal dev, lint ranh giới, contract, DB `apps`, `core-client` + `callCore`, projection/audit/webhook, workflow-kit review + maker-checker, server + worker). Bổ sung:
+
+- [ ] **A9 — Sinh Zod từ `lac.schema.json` + kiểm khớp trong CI**
+  - Phụ thuộc: L6, T-A3
+  - Kiểm chứng: đổi schema mà không sinh lại → CI fail
 
 ## Phase B — App
 
-- [ ] **T-B1 — Schema context/output + doc-types + app.yaml**
-  - File: `apps/credit-appraisal-assist/{schema,doc-types}.ts`, `app.yaml`, `README.md`
-  - Kiểm chứng: context thiếu `applicant.taxCode` → 400 với đường dẫn lỗi (FR-3)
-
-- [ ] **T-B2 — Normalize + decimal**
-  - File: `normalize.ts` + test (đơn vị nghìn/triệu, số trong ngoặc, dấu phân cách VN)
-  - Kiểm chứng: bảng ≥ 20 case xanh
-
-- [ ] **T-B3 — Schema trích xuất & mapping BCTC**
-  - File: `extraction/*.ts` (B01-DN, B01-DNN, B02, thuế, pháp lý, TSBĐ) + test mapping
-  - Kiểm chứng: fixture JSON trích xuất → object chuẩn hóa đúng
-
-- [ ] **T-B4 — Rules completeness + consistency (CON-1..CON-8)**
-  - File: `rules/completeness.ts`, `rules/consistency/*.ts` + test
-  - Phụ thuộc: T-B2, T-B3
-  - Kiểm chứng: AC-2, AC-5 ở mức unit; CON-7 luôn trả `NEEDS_JUDGMENT`, không PASS/FAIL
-
-- [ ] **T-B5 — Metrics FIN-1..FIN-8**
-  - File: `metrics/*.ts` + test theo bảng tính đối chứng (fixture)
-  - Kiểm chứng: AC-6 trên fixture giả lập
-
-- [ ] **T-B6 — Policy RuleSet + đánh giá**
-  - File: `rules/policy.ts`, seed RuleSet mẫu (DRAFT/APPROVED), maker-checker phê duyệt version
-  - Kiểm chứng: AC-7
-
-- [ ] **T-B7 — Workflow**
-  - File: `workflow.ts`, `workflow.test.ts`, `histories/`
-  - Phụ thuộc: T-A7, T-B1..T-B6
-  - Kiểm chứng: workflow test toàn luồng với Core mock; replay test xanh; AC-4, AC-9 (mức test)
-
-- [ ] **T-B8 — Memo + narrative guard**
-  - File: `memo/{template.md,render.ts,narrative-guard.ts}` + test, xuất docx
-  - Phụ thuộc: T-B5 (Q3 cho mẫu thật)
-  - Kiểm chứng: AC-8; bảng số trong memo = metrics
-
-- [ ] **T-B9 — Workbench soát**
-  - File: theo P6
-  - Phụ thuộc: T-A8, T-B7 (Q1)
-  - Kiểm chứng: AC-3; sửa giá trị yêu cầu lý do; audit trước/sau
-
-- [ ] **T-B10 — Mock-service SME + E2E**
-  - File: `mock-service/` (response classify/extract cho fixture), `apps/test/e2e/credit-appraisal.e2e.test.ts`
-  - Kiểm chứng: AC-1, AC-10, AC-11 end-to-end với mock
-
-- [ ] **T-B11 — Eval golden set** (chờ Q5)
-  - File: `apps/scripts/eval.ts`
-  - Kiểm chứng: báo cáo độ chính xác theo trường; NFR-7
+- [ ] **B1 — Schema context/output, app.yaml** (FR-1..FR-3)
+- [ ] **B2 — Workflow: GĐ1 → trích xuất → LAC** (gọi Core + activity Python; STRICT/TRIAL) — phụ thuộc L12, T-A5
+- [ ] **B3 — Nhánh 2: prompt ref + gọi Core + verify trích dẫn & con số** (FR-20..FR-23, AC-8) — phụ thuộc Core C2/C7–C9 hoặc mock
+- [ ] **B4 — Bước ghép + chạy lại một phần** (FR-24..FR-26, AC-9, AC-10) — hàm thuần + workflow test
+- [ ] **B5 — Nhánh 1: ReviewTask theo X#, hành động, Update `reclassify`** (FR-15..FR-19, AC-11) — phụ thuộc T-A7
+- [ ] **B6 — Màn hình nhánh 1** — phụ thuộc Q1, Core C6/C12
+- [ ] **B7 — E2E với mock-service + fixture giả lập** (AC-1..AC-12)
