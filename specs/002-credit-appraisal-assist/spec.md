@@ -141,7 +141,7 @@ Mỗi chỉ tiêu lưu công thức, các giá trị đầu vào (đã soát) v�
 | NFR-2 | Không mất/lặp bước khi restart worker; gọi Core idempotent theo `runId+stepKey` | Constitution §11 |
 | NFR-3 | Tiền & chỉ tiêu tính bằng decimal, làm tròn theo quy định trong RuleSet | §9 |
 | NFR-4 | Audit: start, mỗi sửa đổi (trước/sau/lý do/người), xác nhận soát, ruleSet version dùng | §8 |
-| NFR-5 | PII (CCCD người đại diện, số tài khoản) không log; che khi gửi LLM ngoài nếu policy egress yêu cầu (D2) | §2, D2 |
+| NFR-5 | PII (CCCD người đại diện, số tài khoản) không log; LLM chỉ qua AIHub (chính sách dữ liệu do AIHub quản trị) | §2, ADR-0003 |
 | NFR-6 | Dữ liệu làm việc có TTL (L5); bản cuối do LOS lưu ECM | L5 |
 | NFR-7 | Chất lượng trích xuất trên golden set: ≥ 95% trường BCTC chính đúng sau chuẩn hóa (trước soát) — ngưỡng chốt với nghiệp vụ | §16 |
 | NFR-8 | Khung pháp lý tham chiếu (Pháp chế xác nhận): Luật Các TCTD 2024, Thông tư 39/2016/TT-NHNN và sửa đổi về cho vay, quy định nội bộ về thẩm định | |
@@ -155,6 +155,7 @@ Mỗi chỉ tiêu lưu công thức, các giá trị đầu vào (đã soát) v�
 | Core C2 — prompt template `prompt_ref` | Phân loại tốt hơn & diễn giải tờ trình theo từng phần | v1 tạm dùng `categories`/`schema` và override prompt theo profile (cơ chế `ExternalApiOverride` đã có) |
 | Core C4 — document handle | Không OCR lại mỗi bước | Hiệu năng; không chặn v1 |
 | Core C6 — evidence bbox | Tô vùng trên trang | v1 dùng `page + quote` trong schema |
+| Core C7–C9 — connector AIHub (body JSON, OAuth2/mTLS, model + request id) | Chạy với AIHub thật | Phụ thuộc đặc tả API AIHub (AIHUB_INTEGRATION §6); dev dùng mock-service |
 | Mẫu tờ trình, checklist, RuleSet ban đầu | §5.2, §5.6, §5.7 | **Nghiệp vụ cung cấp** |
 | Golden set ≥ 20 hồ sơ SME ẩn danh | NFR-7 | **Nghiệp vụ cung cấp** |
 
@@ -179,7 +180,8 @@ Mỗi chỉ tiêu lưu công thức, các giá trị đầu vào (đã soát) v�
 | Q1 | Hệ thống gọi là LOS nào; LOS có hiển thị deep-link workbench không (L2, L3)? | Critical | `DELEGATED` + deep-link; dev dùng `EMBEDDED` |
 | Q2 | Ai cung cấp & phê duyệt checklist, RuleSet ngưỡng chính sách, công thức nhu cầu vốn (L4)? | Critical | Khối QLRR sở hữu; App lưu version + maker-checker |
 | Q3 | Mẫu tờ trình thẩm định SME hiện hành của ngân hàng? | Critical | Cần file mẫu |
-| Q4 | Có được gửi BCTC/hồ sơ KH tới LLM ngoài không (D2)? | Critical | Chưa xác định → thiết kế hỗ trợ cả hai, pilot chỉ dùng mock/on-prem |
+| Q4 | ~~Có được gửi BCTC/hồ sơ KH tới LLM ngoài không (D2)?~~ | — | **Đã trả lời**: LLM qua VPBank AIHub bằng connector (ADR-0003) |
+| Q9 | AIHub có nhận PDF/ảnh (OCR/vision) và structured JSON output không (AIHUB A3, A6)? | Critical | Quyết định bước ingest/extract có cần engine OCR riêng |
 | Q5 | Có golden set hồ sơ ẩn danh không? Bao nhiêu? | High | ≥ 20 bộ, có bảng tính đối chứng |
 | Q6 | BCTC dạng nào phổ biến: PDF scan, PDF số, XML từ HTKK/eTax? | High | Hỗ trợ PDF scan + PDF số; XML là phase sau (chính xác 100%) |
 | Q7 | Một run cho một khoản vay hay cho cả phương án nhiều khoản/hạn mức? | Medium | Một `request` / run |

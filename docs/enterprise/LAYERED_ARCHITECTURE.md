@@ -46,7 +46,7 @@ Một câu: **hệ thống ngân hàng hỏi — Apps kiểm tra và trả lời
 └──────────────┬───────────────────────────────────────────────────────────────┘
                │ ③ connector (multipart / HTTP)
                ▼
-        AI / DU engines: OCR, layout, LLM (on-prem hoặc đã phê duyệt)
+        VPBank AIHub (LLM — ADR-0003) + engine OCR/layout nếu cần
 ```
 
 **Luật phụ thuộc một chiều**: Tầng 0 → Apps → Core → Engines. Core không gọi Apps. Apps không gọi Engine trực tiếp. Apps không truy cập DB của Core hay DB của hệ thống ngân hàng.

@@ -289,7 +289,7 @@ Chuyển từng workflow sau feature flag `ORCHESTRATOR_<slug>=bullmq|temporal`;
 
 **Đã chốt (2026-10-25):**
 - D1. Temporal **self-host on-prem** (Kubernetes/OpenShift của ngân hàng, persistence PostgreSQL). Không dùng Temporal Cloud.
-- D2. Chính sách LLM ngoài **chưa xác định** → thiết kế hỗ trợ cả hai: connector có `dataClassification`, policy egress + PII redaction cấu hình được; chốt khi có ý kiến ATTT.
+- D2. ~~Chính sách LLM ngoài chưa xác định~~ → **Giải quyết bởi ADR-0003**: mọi lời gọi LLM đi qua VPBank AIHub bằng connector; chính sách dữ liệu ra model bên ngoài do AIHub quản trị. Xem [AIHUB_INTEGRATION](AIHUB_INTEGRATION.md).
 - D3. Tái cấu trúc monorepo **sau khi Temporal ổn định** (Phase 3). Phase 1–2 đặt code ở `lib/temporal/` + lint ranh giới module.
 
 **Còn mở (cần chốt trước Phase 1):**

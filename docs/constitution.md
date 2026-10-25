@@ -32,6 +32,7 @@ Trạng thái: **DRAFT** cùng ARCHITECTURE_V5. Các điều đánh dấu *(v5)*
 14. Cấu hình (pipeline steps, prompt version, connector) được resolve **một lần** khi start và truyền vào input workflow; workflow không đọc cấu hình động giữa chừng.
 
 ## IV. AI
+- AI-0. Mọi lời gọi LLM đi qua VPBank AIHub bằng `ExternalApiConnection` của Core (ADR-0003); không thêm SDK/HTTP gọi trực tiếp nhà cung cấp LLM.
 15. Mỗi lời gọi AI lưu: connector, model, prompt version, hash input/output, token, chi phí.
 16. Prompt mặc định nằm trong file `*prompts.ts` dạng hàm thuần, có unit test; thay đổi prompt dùng cho production cần eval trên golden set (khi bộ eval đã có).
 17. Kết quả AI không tự động là quyết định cuối với nghiệp vụ tín dụng/thanh toán — phải có điểm HITL hoặc quy tắc kiểm tra xác định được mô tả trong spec.
