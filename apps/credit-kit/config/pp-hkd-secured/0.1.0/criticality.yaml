@@ -1,0 +1,17 @@
+# Độ trọng yếu và ma trận mức độ (lac-rules §5). owner: Quản lý rủi ro, Sản phẩm. provisional: true
+# K1: sai là sai người / tài sản / hợp đồng. K2: sai là đổi kết quả đánh giá. Còn lại K3.
+k1: [national_id, date_of_birth, gender, previous_id_numbers, name, cic_subject, signature,
+     loan_info.requested_amount, loan_info.bank_proposed_amount, loan_info.loan_term_months, owner]
+k1_prefixes: ["identifiers."]
+# income_attrs (authority.yaml) được cộng vào K2
+k2: [permanent_address, current_address, marital_status, role, registration_number, business_address,
+     asset_value, land_area_m2, land_use_term_raw, land_use_purpose, ownership_form,
+     financial_info.total_income, financial_info.has_existing_debt, financial_info.existing_monthly_debt_payment,
+     loan_info.loan_purpose_detail, loan_info.principal_repayment_method, funding_plan.total,
+     identity_documents, arithmetic]
+
+severity_order: [S1, S2, S3, S4]
+severity_base:
+  A: {K1: S2, K2: S3, K3: S3}
+  B: {K1: S1, K2: S2, K3: S3}
+  C: {K1: S1, K2: S2, K3: S3}

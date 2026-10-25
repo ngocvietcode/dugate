@@ -1,0 +1,12 @@
+# Điểm bằng chứng gán người (lac-rules §3.1). owner: Kiến trúc, sau khi đo trên 50–100 hồ sơ. provisional: true
+scores:
+  national_id:   {match: 5, mismatch: -6}
+  date_of_birth: {match: 4, mismatch: -6}
+  previous_id:   {match: 4, mismatch: -3}
+  phone:         {match: 3}
+  id_issue_date: {match: 2}
+  address:       {match: 2}
+  gender:        {match: 1, mismatch: -4}
+min_score: 2           # gán khi đạt từ ngưỡng này ...
+min_margin: 2          # ... và hơn ứng viên thứ hai ít nhất chừng này
+high_confidence: 4     # từ mức này là liên kết "cao"

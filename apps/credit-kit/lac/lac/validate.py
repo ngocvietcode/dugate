@@ -26,117 +26,33 @@ from collections import OrderedDict, defaultdict
 from datetime import date
 from pathlib import Path
 
+from lac.config import Config, load_config
 from lac.graph import (CaseGraph, OneOf, approx_tokens, flatten, fmt, is_address,
                        jsonable, load, norm_id, norm_text, strip_accents, value_key)
 
 # ============================================================================ CẤU HÌNH QUY TẮC
-
-# Nhóm nguồn độc lập: các chứng từ cùng nhóm chỉ tính là MỘT phiếu khi lấy đa số
-SOURCE_GROUP = {"id_card": "dan_cu", "qr_code_info": "dan_cu", "vneid": "dan_cu",
-                "loan_application": "tu_khai", "purchase_list": "tu_khai", "income_statement": "tu_khai"}
-
-# Nhóm field của người
-PARTY_FIELD_GROUP = {
-    "date_of_birth": "identity", "gender": "identity", "nationality": "identity",
-    "national_id": "identity", "previous_id_numbers": "identity",
-    "id_type": "id_doc", "id_issue_date": "id_doc", "id_issue_place": "id_doc",
-    "permanent_address": "residence", "current_address": "residence",
-    "marital_status": "marital", "phone_number": "contact",
-}
-# Bậc thẩm quyền theo nhóm field × loại chứng từ (số nhỏ = mạnh hơn; mặc định 3 = tự khai)
-TIERS = {
-    "identity": {"id_card": 1, "qr_code_info": 1, "vneid": 1, "marriage_certificate": 2,
-                 "land_use_certificate": 2, "cic": 2},
-    "id_doc": {"id_card": 1, "qr_code_info": 1, "vneid": 1, "marriage_certificate": 2,
-               "land_use_certificate": 2, "cic": 2},
-    "residence": {"vneid": 1, "residence_confirmation": 1, "id_card": 2, "qr_code_info": 2,
-                  "marriage_certificate": 2},
-    "marital": {"marriage_certificate": 1, "marital_status_confirmation": 1},
-    "contact": {"vneid": 2},
-    "business": {"household_business_registration": 1, "tax_notice": 2, "income_statement": 3,
-                 "loan_application": 3.5},
-    "income": {"tax_return": 1, "bank_statement": 1, "accounting_books": 2, "income_statement": 3,
-               "loan_application": 3.5},
-    "asset": {"land_use_certificate": 1, "valuation_certificate": 1, "loan_application": 3},
-    "loan": {"loan_application": 1},
-    "plan": {"goods_purchase_contract": 1, "invoice": 1, "purchase_list": 2, "loan_application": 3},
-    "credit": {"cic": 1, "loan_application": 3},
-}
-INCOME_ATTRS = {"net_revenue_annual", "cogs_annual", "gross_profit_annual", "total_cost_annual",
-                "net_profit_annual"}
-BUSINESS_SYNONYM = {"actual_address": "business_address"}
-
-# Thuộc tính thay đổi theo thời gian -> chứng từ cũ ghi giá trị cũ là lịch sử, không phải lệch
-TEMPORAL = {"id_type", "id_issue_date", "id_issue_place", "permanent_address", "current_address",
-            "marital_status", "phone_number"}
-STALE_DAYS = 365          # chứng từ cũ hơn mức này coi là thời kỳ trước (với cư trú, hôn nhân, SĐT)
-
-# Độ trọng yếu field
-K1 = {"national_id", "date_of_birth", "gender", "previous_id_numbers", "name", "cic_subject",
-      "signature", "loan_info.requested_amount", "loan_info.bank_proposed_amount",
-      "loan_info.loan_term_months", "owner"}
-K1_PREFIX = ("identifiers.",)
-K2 = {"permanent_address", "current_address", "marital_status", "role", "registration_number",
-      "business_address", "asset_value", "land_area_m2", "land_use_term_raw", "land_use_purpose",
-      "ownership_form", "financial_info.total_income", "financial_info.has_existing_debt",
-      "financial_info.existing_monthly_debt_payment", "loan_info.loan_purpose_detail",
-      "loan_info.principal_repayment_method", "funding_plan.total", "identity_documents",
-      "arithmetic"} | INCOME_ATTRS
-
-# Mã tỉnh trên số CCCD (3 chữ số đầu = nơi đăng ký khai sinh, theo danh mục 63 tỉnh trước sáp nhập)
-PROVINCE_CODES = {
-    "001": "Hà Nội", "002": "Hà Giang", "004": "Cao Bằng", "006": "Bắc Kạn", "008": "Tuyên Quang",
-    "010": "Lào Cai", "011": "Điện Biên", "012": "Lai Châu", "014": "Sơn La", "015": "Yên Bái",
-    "017": "Hòa Bình", "019": "Thái Nguyên", "020": "Lạng Sơn", "022": "Quảng Ninh", "024": "Bắc Giang",
-    "025": "Phú Thọ", "026": "Vĩnh Phúc", "027": "Bắc Ninh", "030": "Hải Dương", "031": "Hải Phòng",
-    "033": "Hưng Yên", "034": "Thái Bình", "035": "Hà Nam", "036": "Nam Định", "037": "Ninh Bình",
-    "038": "Thanh Hóa", "040": "Nghệ An", "042": "Hà Tĩnh", "044": "Quảng Bình", "045": "Quảng Trị",
-    "046": "Thừa Thiên Huế", "048": "Đà Nẵng", "049": "Quảng Nam", "051": "Quảng Ngãi", "052": "Bình Định",
-    "054": "Phú Yên", "056": "Khánh Hòa", "058": "Ninh Thuận", "060": "Bình Thuận", "062": "Kon Tum",
-    "064": "Gia Lai", "066": "Đắk Lắk", "067": "Đắk Nông", "068": "Lâm Đồng", "070": "Bình Phước",
-    "072": "Tây Ninh", "074": "Bình Dương", "075": "Đồng Nai", "077": "Bà Rịa - Vũng Tàu",
-    "079": "Hồ Chí Minh", "080": "Long An", "082": "Tiền Giang", "083": "Bến Tre", "084": "Trà Vinh",
-    "086": "Vĩnh Long", "087": "Đồng Tháp", "089": "An Giang", "091": "Kiên Giang", "092": "Cần Thơ",
-    "093": "Hậu Giang", "094": "Sóc Trăng", "095": "Bạc Liêu", "096": "Cà Mau",
-}
-PROVINCE_BY_NAME = {norm_text(v): k for k, v in PROVINCE_CODES.items()}
-
-# Từ điển viết tắt (áp trên chuỗi đã bỏ dấu, chữ thường)
-ABBREV = [(r"\bcs\b", "canh sat"), (r"\bqlhc\b", "quan ly hanh chinh"), (r"\bttxh\b", "trat tu xa hoi"),
-          (r"\bbca\b", "bo cong an"), (r"\bubnd\b", "uy ban nhan dan"), (r"\btp\b", "thanh pho")]
-
-SELF_DECLARED = {"loan_application", "purchase_list", "income_statement"}
-LOAN_DOCS = {"loan_application", "income_statement", "purchase_list"}
-ROLE_CANON = {"BORROWER": "BORROWER", "CUSTOMER": "BORROWER", "CO_BORROWER": "CO_BORROWER",
-              "SPOUSE": "SPOUSE", "GUARANTOR": "GUARANTOR"}
-FIN_TOLERANCE = 0.10      # lệch số tài chính quá 10% -> C (tham số chờ QLRR chốt)
-
-SEV_ORDER = ["S1", "S2", "S3", "S4"]
-SEV_BASE = {"A": {"K1": "S2", "K2": "S3", "K3": "S3"},
-            "B": {"K1": "S1", "K2": "S2", "K3": "S3"},
-            "C": {"K1": "S1", "K2": "S2", "K3": "S3"}}
-
+# Hằng số quy tắc nằm trong apps/credit-kit/config/<product>/<version>/*.yaml (lac.config).
 
 # ============================================================================ helpers
 
-def crit(attr: str) -> str:
-    if attr in K1 or attr.startswith(K1_PREFIX):
+def crit(attr: str, cfg: Config) -> str:
+    if attr in cfg.k1 or attr.startswith(cfg.k1_prefixes):
         return "K1"
-    if attr in K2:
+    if attr in cfg.k2:
         return "K2"
     return "K3"
 
 
-def severity(cls: str, k: str, resolved=True) -> str:
+def severity(cls: str, k: str, cfg: Config, resolved=True) -> str:
     if cls == "N":
         return "S4"
     vals = []
     for part in cls.split("|"):
-        s = SEV_BASE[part][k]
+        s = cfg.severity_base[part][k]
         if part == "A" and k == "K2" and not resolved:
             s = "S2"
         vals.append(s)
-    return min(vals, key=SEV_ORDER.index)
+    return min(vals, key=cfg.severity_order.index)
 
 
 def to_date(s) -> date | None:
@@ -148,10 +64,10 @@ def to_date(s) -> date | None:
         return None
 
 
-def expand(s) -> str:
+def expand(s, cfg: Config) -> str:
     t = norm_text(s)
-    for pat, rep in ABBREV:
-        t = re.sub(pat, rep, t)
+    for pat, rep in cfg.abbrev:
+        t = pat.sub(rep, t)
     return t
 
 
@@ -172,13 +88,15 @@ def strip_honorific(s: str) -> str:
 # ============================================================================ validator
 
 class Validator:
-    def __init__(self, data: dict, ref_date: date | None, cic_max_age: int):
-        self.cg = CaseGraph(data)
+    def __init__(self, data: dict, ref_date: date | None, cic_max_age: int | None = None,
+                 config: Config | None = None):
+        self.cfg = config or load_config()
+        self.cg = CaseGraph(data, self.cfg)
         self.G = self.cg.build()
         self.d = data
         c = data.get("case", {})
         self.ref = ref_date or to_date(c.get("completed_at")) or date.today()
-        self.cic_max_age = cic_max_age
+        self.cic_max_age = cic_max_age if cic_max_age is not None else self.cfg.cic_max_age_days
         self.facts: "OrderedDict[tuple, dict]" = OrderedDict()
         self.disc: list[dict] = []
         self.doc_dates = {code: self._doc_date(doc) for code, doc in self.cg.docs.items()}
@@ -205,7 +123,7 @@ class Validator:
     def tier(self, group, code, override=None):
         if override is not None:
             return override
-        return TIERS.get(group, {}).get(self.dtype(code), 3)
+        return self.cfg.tiers.get(group, {}).get(self.dtype(code), self.cfg.default_tier)
 
     def add_fact(self, entity, attr, group, value, code, tier=None, note=None):
         key = (entity, attr)
@@ -225,7 +143,7 @@ class Validator:
                 self.add_fact(n, "name", "identity", x["name"], "case.parties", tier=9,
                               note="tên lấy từ case.parties, bản ghi chứng từ không có họ tên")
             for attr, obs in x["obs"].items():
-                group = PARTY_FIELD_GROUP.get(attr, "other")
+                group = self.cfg.party_field_groups.get(attr, "other")
                 for v, code in obs:
                     self.add_fact(n, attr, group, v, code)
         for mt in self.cg.mentions:
@@ -244,8 +162,8 @@ class Validator:
         # hộ kinh doanh
         for b in self.cg.businesses:
             for attr, obs in G.nodes[b]["obs"].items():
-                a = BUSINESS_SYNONYM.get(attr, attr)
-                group = "income" if a in INCOME_ATTRS else "business"
+                a = self.cfg.business_synonyms.get(attr, attr)
+                group = "income" if a in self.cfg.income_attrs else "business"
                 for v, code in obs:
                     self.add_fact(b, a, group, v, code)
         # tài sản
@@ -286,7 +204,7 @@ class Validator:
         return None
 
     def is_hist(self, f, o):
-        if f["attr"] not in TEMPORAL:
+        if f["attr"] not in self.cfg.temporal_attrs:
             return False
         d = self.doc_dates.get(o["doc"])
         if d is None:
@@ -297,7 +215,7 @@ class Validator:
         anc = self.anchor(f)
         if anc:
             return d < anc
-        return (self.ref - d).days > STALE_DAYS
+        return (self.ref - d).days > self.cfg.stale_days
 
     def choose(self, f):
         attr = f["attr"]
@@ -321,7 +239,7 @@ class Validator:
                 ck = next(iter(cands))
                 f["rule"] = "thẩm quyền (in trên mặt thẻ)" if best == 0 else f"thẩm quyền (bậc {best:g})"
             else:
-                votes = {k: len({SOURCE_GROUP.get(self.dtype(o["doc"]), o["doc"])
+                votes = {k: len({self.cfg.source_groups.get(self.dtype(o["doc"]), o["doc"])
                                  for o in pool if key(o["v"]) == k}) for k in cands}
                 top = max(votes.values())
                 win = [k for k, c in votes.items() if c == top]
@@ -339,7 +257,7 @@ class Validator:
                 rep = max(grp, key=lambda o: (-o["tier"], len(fmt(o["v"]))))
                 f["canonical"], f["canonical_key"] = rep["v"], ck
                 # chỉ có nguồn tự khai nhưng chứng từ cũ ghi khác -> chưa xác minh được giá trị hiện tại
-                if attr in TEMPORAL and best >= 3 and any(o["hist"] and key(o["v"]) != ck for o in plain):
+                if attr in self.cfg.temporal_attrs and best >= 3 and any(o["hist"] and key(o["v"]) != ck for o in plain):
                     f["status"] = "chưa xác định"
                     f["rule"] = "giá trị hiện tại chỉ có nguồn tự khai, chứng từ cũ ghi khác"
         # chỉ có giá trị nhiều ứng viên
@@ -375,7 +293,7 @@ class Validator:
                   else "chốt theo quy tắc")
         self.disc.append({
             "rule": rule, "class": cls, "subclass": sub, "criticality": k,
-            "severity": sev or severity(cls, k, resolved), "fields": fields, "title": title,
+            "severity": sev or severity(cls, k, self.cfg, resolved), "fields": fields, "title": title,
             "detail": detail, "observations": obs or [], "canonical": canonical,
             "status": status, "to_branch2": cls == "C", "note": note})
 
@@ -388,7 +306,7 @@ class Validator:
     def cross_source(self, f):
         attr, fid = f["attr"], f["id"]
         key = lambda v: value_key(attr, v)  # noqa: E731
-        k = crit(attr)
+        k = crit(attr, self.cfg)
         canon = f["canonical"]
         if f["status"] == "chưa xác định" and len(f["obs"]) > 1:
             cls, sub = ("B", "B6") if f["group"] in ("identity", "id_doc", "residence", "marital") else ("C", "C1")
@@ -417,7 +335,7 @@ class Validator:
             ov = self.obs_view(f, os_)
             if hist:
                 self.add("R-CROSS", "N", "N", k, [fid], title, "giá trị cũ trên chứng từ thuộc thời kỳ trước", ov, fmt(canon))
-            elif isinstance(v, str) and isinstance(canon, str) and (expand(v) in expand(canon) or expand(canon) in expand(v)):
+            elif isinstance(v, str) and isinstance(canon, str) and (expand(v, self.cfg) in expand(canon, self.cfg) or expand(canon, self.cfg) in expand(v, self.cfg)):
                 self.add("R-CROSS", "N", "N", k, [fid], title, "viết tắt hoặc rút gọn của cùng giá trị", ov, fmt(canon))
             elif t1:
                 self.add("R-CROSS", "A", "A4", k, [fid], title,
@@ -468,7 +386,7 @@ class Validator:
                     continue
                 stmt = f["canonical"]
                 ratio = annual / stmt
-                if abs(ratio - 1) <= FIN_TOLERANCE:
+                if abs(ratio - 1) <= self.cfg.fin_tolerance:
                     continue
                 note = ("đúng hệ số 12: có thể là lỗi bóc tách kỳ (A3); chưa có ảnh nên giữ C" if
                         abs(ratio - 12) < 0.01 or abs(ratio - 1 / 12) < 0.001 else None)
@@ -484,8 +402,8 @@ class Validator:
         roles = defaultdict(lambda: defaultdict(list))
         for mt in self.cg.mentions:
             t = self.cg.docs[mt["doc"]]["type"]
-            if t in LOAN_DOCS and mt["role"] in ROLE_CANON:
-                roles[mt["party"]][ROLE_CANON[mt["role"]]].append(mt["doc"])
+            if t in self.cfg.loan_docs and mt["role"] in self.cfg.role_canon:
+                roles[mt["party"]][self.cfg.role_canon[mt["role"]]].append(mt["doc"])
         for p, rs in roles.items():
             if len(rs) > 1:
                 canon = next((r for r, ds in rs.items()
@@ -534,7 +452,7 @@ class Validator:
             if not re.fullmatch(r"\d{12}", nid):
                 problems.append("không đủ 12 chữ số")
             else:
-                if nid[:3] not in PROVINCE_CODES:
+                if nid[:3] not in self.cfg.province_codes:
                     problems.append(f"mã tỉnh {nid[:3]} không có trong danh mục")
                 g = int(nid[3])
                 if dob:
@@ -550,7 +468,7 @@ class Validator:
                     doc = self.cg.docs[mt["doc"]]
                     if mt["party"] == n and doc["type"] == "id_card":
                         pob = ((doc["data"].get("card_info") or {}).get("place_of_birth_registration") or "")
-                        code = PROVINCE_BY_NAME.get(norm_text(pob.split(",")[-1]))
+                        code = self.cfg.province_by_name.get(norm_text(pob.split(",")[-1]))
                         if code and code != nid[:3]:
                             problems.append(f"mã tỉnh {nid[:3]} ≠ nơi đăng ký khai sinh {pob} ({code})")
             if problems:
@@ -598,7 +516,7 @@ class Validator:
             elif attr == "registration_number" and not re.fullmatch(r"\d{10}(\d{3})?", s):
                 bad = "không phải 10 hoặc 13 chữ số"
             if bad:
-                self.add("R-FORMAT", "A|B", "A1", crit(attr), [f["id"]], f"{ent}.{attr} «{v}» {bad}")
+                self.add("R-FORMAT", "A|B", "A1", crit(attr, self.cfg), [f["id"]], f"{ent}.{attr} «{v}» {bad}")
 
     def rule_arithmetic(self):
         for gid in self.cg.plans:
@@ -644,7 +562,7 @@ class Validator:
         """Chứng từ tự khai phải có chữ ký người vay và ngày; tên người ký khớp người vay."""
         bname = self.G.nodes[self.borrower]["name"] if self.borrower else None
         for code, doc in self.cg.docs.items():
-            if doc["type"] not in SELF_DECLARED:
+            if doc["type"] not in self.cfg.self_declared:
                 continue
             li = doc["data"].get("legal_info") or {}
             sigs = [s for s in li.get("signatories") or [] if s]
@@ -684,7 +602,7 @@ class Validator:
         # tài sản: giá trị không có chứng từ nguồn
         for (ent, attr), f in self.facts.items():
             if f["status"] == "không có nguồn chứng từ" and attr != "name":
-                self.add("R-SOURCE", "B", "B6", crit(attr), [f["id"]],
+                self.add("R-SOURCE", "B", "B6", crit(attr, self.cfg), [f["id"]],
                          f"{ent}.{attr} = {fmt(f['canonical'])} không có chứng từ nguồn",
                          f["obs"][0].get("note") or "", canonical=fmt(f["canonical"]))
         # người tham gia khoản vay nhưng không có giấy tờ nhân thân bậc 1
@@ -694,8 +612,8 @@ class Validator:
             t = self.cg.docs[mt["doc"]]["type"]
             if t in ("id_card", "vneid", "qr_code_info"):
                 has_t1[mt["party"]] = True
-            if t in LOAN_DOCS and mt["role"] in ROLE_CANON:
-                involved[mt["party"]].add(ROLE_CANON[mt["role"]])
+            if t in self.cfg.loan_docs and mt["role"] in self.cfg.role_canon:
+                involved[mt["party"]].add(self.cfg.role_canon[mt["role"]])
         for p, rs in involved.items():
             if not has_t1[p]:
                 self.add("R-SOURCE", "B", "B6", "K2", [f"{p}.identity_documents"],
@@ -729,7 +647,7 @@ class Validator:
         self.rule_dates()
         self.rule_forms()
         self.rule_sources()
-        self.disc.sort(key=lambda x: (SEV_ORDER.index(x["severity"]), x["class"] == "N", x["fields"]))
+        self.disc.sort(key=lambda x: (self.cfg.severity_order.index(x["severity"]), x["class"] == "N", x["fields"]))
         for i, x in enumerate(self.disc, 1):
             x["id"] = f"X{i:02d}"
         by_field = {f["id"]: f for f in self.facts.values()}
@@ -745,7 +663,7 @@ class Validator:
         for f in self.facts.values():
             out.append({"id": f["id"], "entity": f["entity"], "field": f["attr"], "group": f["group"],
                         "value": jsonable(f["canonical"]), "status": f["status"], "rule": f["rule"],
-                        "sources": f["sources"], "criticality": crit(f["attr"]), "flags": f["flags"],
+                        "sources": f["sources"], "criticality": crit(f["attr"], self.cfg), "flags": f["flags"],
                         "observations": [{"value": jsonable(o["v"]), "doc": o["doc"], "tier": o["tier"],
                                           "historical": o.get("hist", False), **({"note": o["note"]} if o["note"] else {})}
                                          for o in f["obs"]]})
@@ -757,7 +675,7 @@ class Validator:
         rest = [x for x in self.disc if x["class"] != "N"]
         cnt = lambda key: ", ".join(f"{k} {v}" for k, v in sorted(  # noqa: E731
             defaultdict(int, {k: sum(1 for x in rest if x[key] == k) for k in {x[key] for x in rest}}).items(),
-            key=lambda kv: (SEV_ORDER.index(kv[0]) if kv[0] in SEV_ORDER else kv[0])))
+            key=lambda kv: (self.cfg.severity_order.index(kv[0]) if kv[0] in self.cfg.severity_order else kv[0])))
         L = [f"# Điểm lệch hồ sơ {c['case_id']}",
              f"Ngày tham chiếu {self.ref} · chỉ dựa trên JSON, chưa đọc ảnh · {len(rest)} điểm cần xử lý "
              f"({cnt('severity')}) · theo loại: {cnt('class')} · {len(n_items)} biến thể không phải lỗi (N)",
@@ -890,9 +808,11 @@ def main():
     ap.add_argument("-o", "--out", type=Path, default=Path("."))
     ap.add_argument("--ref-date", type=date.fromisoformat, default=None,
                     help="ngày tham chiếu (mặc định: case.completed_at)")
-    ap.add_argument("--cic-max-age", type=int, default=30, help="số ngày hiệu lực CIC (mặc định 30)")
+    ap.add_argument("--cic-max-age", type=int, default=None, help="số ngày hiệu lực CIC (mặc định theo cấu hình)")
+    ap.add_argument("--config", default=None, help="sản phẩm@version, vd pp-hkd-secured@0.1.0")
     a = ap.parse_args()
-    v = Validator(load(a.input), a.ref_date, a.cic_max_age).run()
+    cfg = load_config(*a.config.split("@")) if a.config else load_config()
+    v = Validator(load(a.input), a.ref_date, a.cic_max_age, cfg).run()
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out / "facts.json").write_text(json.dumps(v.facts_json(), ensure_ascii=False, indent=1), encoding="utf-8")
     (a.out / "discrepancies.json").write_text(json.dumps(jsonable(v.disc), ensure_ascii=False, indent=1),

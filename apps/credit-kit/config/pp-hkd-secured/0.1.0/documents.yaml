@@ -1,0 +1,9 @@
+# Phân loại chứng từ và vai trò. owner: Sản phẩm. provisional: true
+self_declared: [loan_application, purchase_list, income_statement]   # chứng từ tự khai (R-FORM)
+loan_docs: [loan_application, income_statement, purchase_list]       # chứng từ của khoản vay (R-ROLE, R-SOURCE)
+role_canon:
+  BORROWER: BORROWER
+  CUSTOMER: BORROWER
+  CO_BORROWER: CO_BORROWER
+  SPOUSE: SPOUSE
+  GUARANTOR: GUARANTOR

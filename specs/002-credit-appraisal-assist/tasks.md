@@ -19,7 +19,7 @@
   - Phụ thuộc: L2
   - Kiểm chứng: `pytest` xanh; chạy 2 lần cho output byte-identical (AC-7)
 
-- [ ] **L4 — Tách cấu hình khỏi code**
+- [x] **L4 — Tách cấu hình khỏi code**
   - File: `apps/credit-kit/config/pp-hkd-secured/0.1.0/*.yaml`, `lac/config.py` (loader + schema), sửa `graph.py`/`validate.py` đọc từ config
   - Phụ thuộc: L3
   - Kiểm chứng: snapshot L3 không đổi; đổi `params.yaml` cic_max_age 30→120 làm mất X# R-CIC-AGE trên fixture tương ứng

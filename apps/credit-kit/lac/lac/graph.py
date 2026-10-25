@@ -173,7 +173,11 @@ def approx_tokens(s: str) -> int:
 # ----------------------------------------------------------------------------- graph builder
 
 class CaseGraph:
-    def __init__(self, data: dict):
+    def __init__(self, data: dict, config=None):
+        if config is None:
+            from lac.config import load_config  # import muộn: config.py dùng helper của module này
+            config = load_config()
+        self.cfg = config
         self.d = data
         self.G = nx.MultiDiGraph()
         self.docs: "OrderedDict[str, dict]" = OrderedDict()   # code -> {type, items, data}
@@ -285,39 +289,40 @@ class CaseGraph:
         return prev, nat
 
     def _score(self, mt, pid):
+        w = self.cfg.identity.w
         m, pr = mt["data"], self.profiles[pid]
         s, ev, neg = 0, [], []
         prev, nat = self._mention_ids(mt)
         if nat:
             if nat & pr["national_id"]:
-                s += 5; ev.append("số CCCD")
+                s += w("national_id"); ev.append("số CCCD")
             elif pr["national_id"]:
-                s -= 6; neg.append("số CCCD khác")
+                s += w("national_id", "mismatch"); neg.append("số CCCD khác")
         if m.get("date_of_birth") and pr["dob"]:
             if m["date_of_birth"] in pr["dob"]:
-                s += 4; ev.append("ngày sinh")
+                s += w("date_of_birth"); ev.append("ngày sinh")
             else:
-                s -= 6; neg.append("ngày sinh khác")
+                s += w("date_of_birth", "mismatch"); neg.append("ngày sinh khác")
         if m.get("gender") and pr["gender"]:
             if m["gender"] in pr["gender"]:
-                s += 1; ev.append("giới tính")
+                s += w("gender"); ev.append("giới tính")
             else:
-                s -= 4; neg.append("giới tính khác")
+                s += w("gender", "mismatch"); neg.append("giới tính khác")
         if prev:
             if prev & pr["prev_id"] or prev & pr["national_id"]:
-                s += 4; ev.append("số CMND cũ")
+                s += w("previous_id"); ev.append("số CMND cũ")
             elif pr["prev_id"]:
-                s -= 3; neg.append(f"CMND cũ {'/'.join(sorted(prev))} ≠ {'/'.join(sorted(pr['prev_id']))}")
+                s += w("previous_id", "mismatch"); neg.append(f"CMND cũ {'/'.join(sorted(prev))} ≠ {'/'.join(sorted(pr['prev_id']))}")
         if m.get("phone_number") and m["phone_number"] in pr["phone"]:
-            s += 3; ev.append("SĐT")
+            s += w("phone"); ev.append("SĐT")
         if m.get("id_issue_date") and m["id_issue_date"] in pr["id_issue_date"]:
-            s += 2; ev.append("ngày cấp giấy tờ")
+            s += w("id_issue_date"); ev.append("ngày cấp giấy tờ")
         for key in ("permanent_address", "current_address"):
             a = m.get(key)
             if is_address(a):
                 hit = next((addr_match(a, b) for b in pr["addresses"] if addr_match(a, b)), None)
                 if hit:
-                    s += 2; ev.append(f"địa chỉ ({'đầy đủ' if hit == 'full' else 'khớp số nhà/đường'})")
+                    s += w("address"); ev.append(f"địa chỉ ({'đầy đủ' if hit == 'full' else 'khớp số nhà/đường'})")
                     break
         return s, ev, neg
 
@@ -352,12 +357,13 @@ class CaseGraph:
                     continue
                 (s1, ev, _), p1 = scored[0]
                 s2 = scored[1][0][0] if len(scored) > 1 else 0
-                if s1 >= 2 and s1 - s2 >= 2 and (best_round is None or s1 > best_round[0]):
+                idc = self.cfg.identity
+                if s1 >= idc.min_score and s1 - s2 >= idc.min_margin and (best_round is None or s1 > best_round[0]):
                     best_round = (s1, mt, p1, ev, [(p, sc[2]) for sc, p in scored[1:] if sc[2]])
             if best_round:
                 s1, mt, p1, ev, against = best_round
                 mt.update(party=p1, score=s1, evidence=ev, against=against,
-                          confidence="cao" if s1 >= 4 else "trung bình")
+                          confidence="cao" if s1 >= self.cfg.identity.high_confidence else "trung bình")
                 self._absorb(mt, p1)
                 changed = True
         # chủ sở hữu trên GCN không có thuộc tính nhận dạng: nối qua chứng từ khác cùng số GCN

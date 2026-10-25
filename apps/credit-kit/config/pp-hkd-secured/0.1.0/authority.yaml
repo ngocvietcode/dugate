@@ -1,0 +1,47 @@
+# Bậc thẩm quyền và nhóm nguồn độc lập (lac-rules §3.4, §3.5). owner: Sản phẩm. provisional: true
+# Số nhỏ = mạnh hơn; loại chứng từ không có trong bảng của nhóm -> bậc mặc định (tự khai).
+default_tier: 3
+
+# Các chứng từ cùng nhóm chỉ tính MỘT phiếu khi lấy đa số
+source_groups:
+  id_card: dan_cu
+  qr_code_info: dan_cu
+  vneid: dan_cu
+  loan_application: tu_khai
+  purchase_list: tu_khai
+  income_statement: tu_khai
+
+# Nhóm thông tin của người
+party_field_groups:
+  date_of_birth: identity
+  gender: identity
+  nationality: identity
+  national_id: identity
+  previous_id_numbers: identity
+  id_type: id_doc
+  id_issue_date: id_doc
+  id_issue_place: id_doc
+  permanent_address: residence
+  current_address: residence
+  marital_status: marital
+  phone_number: contact
+
+tiers:
+  identity: {id_card: 1, qr_code_info: 1, vneid: 1, marriage_certificate: 2, land_use_certificate: 2, cic: 2}
+  id_doc: {id_card: 1, qr_code_info: 1, vneid: 1, marriage_certificate: 2, land_use_certificate: 2, cic: 2}
+  residence: {vneid: 1, residence_confirmation: 1, id_card: 2, qr_code_info: 2, marriage_certificate: 2}
+  marital: {marriage_certificate: 1, marital_status_confirmation: 1}
+  contact: {vneid: 2}
+  business: {household_business_registration: 1, tax_notice: 2, income_statement: 3, loan_application: 3.5}
+  income: {tax_return: 1, bank_statement: 1, accounting_books: 2, income_statement: 3, loan_application: 3.5}
+  asset: {land_use_certificate: 1, valuation_certificate: 1, loan_application: 3}
+  loan: {loan_application: 1}
+  plan: {goods_purchase_contract: 1, invoice: 1, purchase_list: 2, loan_application: 3}
+  credit: {cic: 1, loan_application: 3}
+
+# Thuộc tính tài chính của hộ kinh doanh (nhóm "income")
+income_attrs: [net_revenue_annual, cogs_annual, gross_profit_annual, total_cost_annual, net_profit_annual]
+
+# Tên khác của cùng thuộc tính kinh doanh
+business_synonyms:
+  actual_address: business_address

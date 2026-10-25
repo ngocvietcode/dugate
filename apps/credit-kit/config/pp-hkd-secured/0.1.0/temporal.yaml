@@ -1,0 +1,6 @@
+# Thông tin thay đổi theo thời gian (lac-rules §3.3). owner: Sản phẩm. provisional: true
+# Chứng từ cũ ghi giá trị cũ của các thuộc tính này là lịch sử (N), không phải sai lệch.
+temporal_attrs: [id_type, id_issue_date, id_issue_place, permanent_address, current_address, marital_status, phone_number]
+
+# Chứng từ cũ hơn số ngày này so với ngày tham chiếu coi là thời kỳ trước (cư trú, hôn nhân, SĐT)
+stale_days: 365

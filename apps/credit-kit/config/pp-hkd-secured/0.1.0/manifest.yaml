@@ -1,0 +1,15 @@
+# Cấu hình LAC cho sản phẩm vay hộ kinh doanh có TSBĐ (PP-HKD-SECURED).
+# Nguồn: docs/credit/lac-rules.md §3–8 và hằng số trong PoC validate_case.py / build_case_graph.py.
+# Trạng thái DRAFT: mọi giá trị đánh dấu provisional chờ đơn vị ở cột "owner" chốt (lac-rules §8).
+product: PP-HKD-SECURED
+version: 0.1.0
+status: DRAFT            # DRAFT | APPROVED — chỉ APPROVED được dùng ở production (spec 002 FR-28)
+files:
+  - authority.yaml
+  - temporal.yaml
+  - criticality.yaml
+  - params.yaml
+  - identity.yaml
+  - documents.yaml
+  - provinces.yaml
+  - abbrev.yaml

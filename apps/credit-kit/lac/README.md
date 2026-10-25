@@ -6,7 +6,7 @@ Lớp tất định dựng **Loan Application Context** cho hồ sơ vay: graph 
 - Quy tắc gốc: [docs/credit/lac-rules.md](../../../docs/credit/lac-rules.md)
 - Spec/tasks: [specs/002-credit-appraisal-assist](../../../specs/002-credit-appraisal-assist/)
 
-Trạng thái: **PoC đưa vào nguyên trạng (task L1)**. Hằng số cấu hình vẫn nằm trong code (tách ở L4); chưa có test (L2–L5).
+Trạng thái: PoC đã đưa vào repo (L1), có fixture giả lập + snapshot + test tất định (L2–L3), cấu hình tách ra `apps/credit-kit/config/<sản phẩm>/<version>/` (L4).
 
 ## Cài đặt
 

@@ -1,0 +1,8 @@
+# Từ điển viết tắt, áp theo thứ tự trên chuỗi đã bỏ dấu, chữ thường (lac-rules §3.2). owner: Sản phẩm. provisional: true
+abbrev:
+  - ['\bcs\b', canh sat]
+  - ['\bqlhc\b', quan ly hanh chinh]
+  - ['\bttxh\b', trat tu xa hoi]
+  - ['\bbca\b', bo cong an]
+  - ['\bubnd\b', uy ban nhan dan]
+  - ['\btp\b', thanh pho]

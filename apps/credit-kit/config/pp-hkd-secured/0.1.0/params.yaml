@@ -1,0 +1,3 @@
+# Tham số chính sách (lac-rules §8). provisional: true
+cic_max_age_days: 30        # owner: Quản lý rủi ro — R-CIC-AGE
+fin_tolerance: 0.10         # owner: Quản lý rủi ro — R-INCOME, ghi đè mức C1
