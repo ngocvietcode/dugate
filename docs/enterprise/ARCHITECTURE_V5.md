@@ -37,6 +37,8 @@ Ngoài phạm vi: thay đổi contract public API `/api/v1/*` (AIP-151 Operation
 | G8 | Redis không persistence; secrets qua env (`ENCRYPTION_KEY`) | `docker-compose.yml` | Mất queue khi restart; không có key rotation/HSM |
 | G9 | Test mỏng: 1 unit test + e2e cần môi trường đầy đủ | `tests/pipelines/external-api.test.ts` | Agent không có feedback loop nhanh để tự kiểm chứng |
 | G10 | Tài liệu cho agent sai lệch: `CLAUDE.md` ghi Prisma 5 / v1.5.0 / route `/api/v1/{service}` trong khi code dùng **Drizzle** / v4.12.0 / route `/api/v1/docs/{service}`; `.claude/commands/*` tham chiếu `docs/constitution.md`, `docs/security-requirements.md`, `docs/architecture.md`, `specs/001-convert-engine` **không tồn tại** | `CLAUDE.md`, `.claude/commands/review.md` | Agent đọc sai ngữ cảnh → sinh code sai ngay từ đầu |
+| G11 | **`/api/v1/docs/*` nhận request không có API key**: middleware cho qua, runner chỉ tra key nếu có; không key -> `apiKeyId` rỗng, không profile, không hạn mức chi phí, job vẫn chạy | `middleware.ts` (nhánh `/api/v1/`: "Always allow"), `lib/endpoints/runner.ts` (bước 1c), `lib/endpoints/profile-resolver.ts` (`if (!apiKeyId) return null`) | Ai vào được mạng tới Core cũng gửi được tài liệu và tiêu chi phí AI; không truy vết được người gọi |
+| G12 | **`GET`/`DELETE /api/v1/operations/{id}` không kiểm quyền với người gọi bằng API key**: chỉ so `op.apiKeyId` khi có header `x-api-key-id`, nhưng middleware xoá header này và không đặt lại cho người gọi bằng `x-api-key` | `app/api/v1/operations/[id]/route.ts`, `middleware.ts` | Biết mã operation là đọc/xoá được kết quả trích xuất (dữ liệu khách hàng) của client khác |
 
 ---
 

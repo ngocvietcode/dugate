@@ -10,7 +10,7 @@ Trạng thái: **DRAFT** cùng ARCHITECTURE_V5. Các điều đánh dấu *(v5)*
 3. Mọi endpoint thao tác trên một operation phải kiểm tra operation thuộc phạm vi của caller (apiKey/user/profile) trước khi đọc hoặc ghi.
 4. Mọi lời gọi HTTP ra ngoài đi qua `http-client` có SSRF guard; không gọi `fetch` trực tiếp tới URL do người dùng cung cấp.
 5. Không tắt kiểm tra TLS (`NODE_TLS_REJECT_UNAUTHORIZED=0`, `rejectUnauthorized: false`) trong code chạy production.
-6. *(v5)* Dữ liệu tài liệu không đi vào payload Temporal; chỉ truyền tham chiếu (`fileRef`: key + sha256). Payload đi qua Payload Codec mã hóa.
+6. *(v5)* Bytes tài liệu (PDF/ảnh) không đi vào payload Temporal; chỉ truyền tham chiếu (URL ECM / mã Operation của Core). Dữ liệu trích xuất có cấu trúc (đầu ra DU, `lac.json`) được phép đi trong payload khi < 1 MB. **Mọi payload luôn qua Payload Codec AES-256-GCM** (`apps/src/platform/codec.ts`, `lac/codec.py`), khoá từ Vault/KMS, có xoay vòng.
 
 ## II. Kiểm soát nghiệp vụ
 7. Người duyệt (checker) phải khác người tạo/sửa (maker) — kiểm tra ở server, không chỉ ở UI.
