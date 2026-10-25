@@ -292,6 +292,6 @@ Chuyển từng workflow sau feature flag `ORCHESTRATOR_<slug>=bullmq|temporal`;
 - D3. Tái cấu trúc monorepo **sau khi Temporal ổn định** (Phase 3). Phase 1–2 đặt code ở `lib/temporal/` + lint ranh giới module.
 
 **Còn mở (cần chốt trước Phase 1):**
-3. **CSDL**: giữ PostgreSQL hay chuẩn ngân hàng là Oracle? (Temporal hỗ trợ PostgreSQL/MySQL/Cassandra, không hỗ trợ Oracle.)
-5. **Số liệu NFR**: khối lượng hồ sơ, RPO/RTO, thời gian lưu trữ.
-6. **Phiên bản Next.js**: giữ 14 trong giai đoạn chuyển đổi (đề xuất) hay nâng cấp song song?
+1. **CSDL**: giữ PostgreSQL hay chuẩn ngân hàng là Oracle? (Temporal hỗ trợ PostgreSQL/MySQL/Cassandra, không hỗ trợ Oracle.)
+2. **Số liệu NFR**: khối lượng hồ sơ, RPO/RTO, thời gian lưu trữ.
+3. **Phiên bản Next.js**: giữ 14 trong giai đoạn chuyển đổi (đề xuất) hay nâng cấp song song?
