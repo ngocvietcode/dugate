@@ -62,6 +62,8 @@ class Config:
     province_codes: dict
     abbrev: tuple
     province_by_name: dict = field(default_factory=dict)
+    checklist: tuple = ()
+    validity: dict = field(default_factory=dict)
 
     @property
     def ref(self) -> str:
@@ -133,4 +135,33 @@ def load_config(product: str = DEFAULT_PRODUCT, version: str = DEFAULT_VERSION, 
         role_canon=_need(m, "role_canon", dict, "documents"),
         province_codes=provinces, abbrev=abbrev,
         province_by_name={norm_text(v): k for k, v in provinces.items()},
+        checklist=tuple(_checklist(m.get("checklist", []))),
+        validity=_validity(m.get("validity", {}), _need(m, "cic_max_age_days", int, "params")),
     )
+
+
+SUBJECTS = ("borrower", "spouse", "collateral", "none")
+
+
+def _checklist(items: list) -> list[dict]:
+    seen = set()
+    for it in items:
+        for k in ("key", "group", "required", "accept", "subject"):
+            if k not in it:
+                raise ConfigError(f"checklist: mục {it.get('key', '?')} thiếu '{k}'")
+        if it["subject"] not in SUBJECTS:
+            raise ConfigError(f"checklist: {it['key']}.subject phải thuộc {SUBJECTS}")
+        if it["key"] in seen:
+            raise ConfigError(f"checklist: trùng key {it['key']}")
+        seen.add(it["key"])
+    return items
+
+
+def _validity(v: dict, cic_max_age: int) -> dict:
+    out = {}
+    for doc_type, rule in v.items():
+        r = dict(rule)
+        if r.get("max_age_days") == "params.cic_max_age_days":
+            r["max_age_days"] = cic_max_age
+        out[doc_type] = r
+    return out

@@ -39,7 +39,7 @@
   - Phụ thuộc: L6
   - Kiểm chứng: fixture DU v5 → input LAC → snapshot không đổi
 
-- [ ] **L8 — Giai đoạn 1 (cổng đủ hồ sơ)**
+- [x] **L8 — Giai đoạn 1 (cổng đủ hồ sơ)**
   - File: `lac/phase1.py`, `config/.../checklist.yaml`, tests (AC-1)
   - Phụ thuộc: L6 (Q2 cho checklist thật)
   - Kiểm chứng: fixture CIC của vợ/chồng → mục CIC `THIẾU` với "cần CIC của người vay"

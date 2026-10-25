@@ -1,0 +1,22 @@
+# Checklist Giai đoạn 1 (LAC §4; spec 002 FR-5). owner: Sản phẩm (Q2). provisional: true
+# Mỗi mục: nhóm, bắt buộc, loại chứng từ chấp nhận (gồm chứng từ thay thế), chủ thể cần có.
+#   subject: borrower   — chứng từ phải của người vay (P# có cạnh APPLIES_FOR)
+#            spouse     — của vợ/chồng người vay (nếu hồ sơ có vợ/chồng)
+#            collateral — chứng từ của tài sản bảo đảm khoản vay (khớp số GCN)
+#            none       — không xét chủ thể
+checklist:
+  - {key: legal_id_card, group: Pháp lý, required: true, accept: [id_card, vneid], subject: borrower}
+  - {key: legal_spouse_id_card, group: Pháp lý, required: true, accept: [id_card, vneid], subject: spouse}
+  - {key: legal_marriage_certificate, group: Pháp lý, required: true, accept: [marriage_certificate], subject: borrower}
+  - {key: loan_plan_loan_application, group: Phương án vay, required: true, accept: [loan_application], subject: borrower}
+  - {key: loan_plan_purchase_list, group: Phương án vay, required: true, accept: [goods_purchase_contract, purchase_list], subject: borrower}
+  - {key: income_general_income_statement, group: Nguồn thu nhập, required: true, accept: [income_statement, bank_statement, tax_return], subject: borrower}
+  - {key: collateral_real_estate_certificate, group: Tài sản bảo đảm, required: true, accept: [land_use_certificate], subject: collateral}
+  - {key: collateral_valuation_certificate, group: Tài sản bảo đảm, required: true, accept: [valuation_certificate], subject: collateral}
+  - {key: credit_cic_report, group: Quan hệ tín dụng, required: true, accept: [cic], subject: borrower}
+
+# Hiệu lực theo loại chứng từ. max_age_days: "params.cic_max_age_days" dùng tham số chung.
+validity:
+  cic: {max_age_days: params.cic_max_age_days}
+  id_card: {valid_until: true}
+  valuation_certificate: {max_age_days: 180}     # owner: Quản lý rủi ro

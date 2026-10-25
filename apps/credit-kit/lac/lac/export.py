@@ -24,6 +24,9 @@ def build_lac(data: dict, ref_date: date | None = None, config: Config | None = 
               signals: list | None = None, metrics: list | None = None) -> dict:
     cfg = config or load_config()
     v = Validator(data, ref_date, cic_max_age, cfg).run()
+    if phase1 is None:
+        from lac.phase1 import phase1_gate
+        phase1 = phase1_gate(v)
     return lac_from_validator(v, phase1=phase1, signals=signals, metrics=metrics)
 
 
