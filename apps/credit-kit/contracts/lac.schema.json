@@ -5,7 +5,7 @@
   "description": "Đầu ra lớp LAC (apps/credit-kit/lac). Nguồn sự thật cho contract giữa worker Python và App TypeScript. Xem docs/enterprise/LAC_INTEGRATION.md và docs/credit/lac-rules.md.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "version", "case", "documents", "entities", "mentions", "links", "facts", "discrepancies", "signals", "metrics", "branch2", "stats"],
+  "required": ["schema", "version", "case", "documents", "entities", "mentions", "links", "facts", "discrepancies", "signals", "metrics", "zones", "branch2", "stats"],
   "properties": {
     "schema": {"const": "lac"},
     "version": {"const": "1.0"},
@@ -40,6 +40,15 @@
     "discrepancies": {"type": "array", "items": {"$ref": "#/$defs/discrepancy"}},
     "signals": {"type": "array", "items": {"$ref": "#/$defs/signal"}},
     "metrics": {"type": "array", "items": {"$ref": "#/$defs/metric"}},
+    "zones": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["financials", "funding_plans"],
+      "properties": {
+        "financials": {"type": "array", "items": {"$ref": "#/$defs/financial"}},
+        "funding_plans": {"type": "array", "items": {"$ref": "#/$defs/fundingPlan"}}
+      }
+    },
     "branch2": {
       "type": "object",
       "additionalProperties": false,
@@ -212,6 +221,37 @@
                    "properties": {"name": {"type": "string"}, "fact": {"type": ["string", "null"]}, "value": {"type": ["number", "null"]}}}},
         "missing": {"type": "array", "items": {"type": "string"}},
         "flags": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "financial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity", "metric", "fact", "value", "period", "annualized", "source_type", "sources", "flags"],
+      "properties": {
+        "entity": {"type": "string"},
+        "metric": {"enum": ["revenue", "cogs", "gross_profit", "total_cost", "net_profit", "declared_income", "existing_debt_payment"]},
+        "fact": {"$ref": "#/$defs/factId"},
+        "value": {"type": "number"},
+        "period": {"enum": ["ANNUAL", "MONTHLY", "QUARTERLY", "UNKNOWN"]},
+        "annualized": {"type": ["number", "null"]},
+        "source_type": {"type": ["string", "null"], "description": "SELF_DECLARED | TAX | BANK_STATEMENT | ACCOUNTING | CONTRACT | INVOICE | OTHER | MIXED"},
+        "sources": {"type": "array", "items": {"type": "string"}},
+        "flags": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "fundingPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "loan", "total_fact", "total", "items_sum", "items", "sources", "source_type"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^G\\d+$"},
+        "loan": {"type": ["string", "null"]},
+        "total_fact": {"type": ["string", "null"]},
+        "total": {"type": ["number", "null"]},
+        "items_sum": {"type": "number"},
+        "items": {"type": "array", "items": {"type": "object"}},
+        "sources": {"type": "array", "items": {"type": "string"}},
+        "source_type": {"type": ["string", "null"]}
       }
     },
     "phase1": {

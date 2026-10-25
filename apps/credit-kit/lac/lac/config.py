@@ -65,6 +65,7 @@ class Config:
     checklist: tuple = ()
     validity: dict = field(default_factory=dict)
     signal_params: dict = field(default_factory=dict)
+    source_types: dict = field(default_factory=dict)
 
     @property
     def ref(self) -> str:
@@ -140,6 +141,7 @@ def load_config(product: str = DEFAULT_PRODUCT, version: str = DEFAULT_VERSION, 
         validity=_validity(m.get("validity", {}), _need(m, "cic_max_age_days", int, "params")),
         signal_params={k: float(_need(m, k, (int, float), "params"))
                        for k in ("ltv_cap", "ltv_margin", "plan_cogs_max", "loan_revenue_max")},
+        source_types=m.get("source_types", {}),
     )
 
 

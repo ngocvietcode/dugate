@@ -13,6 +13,7 @@ from pathlib import Path
 from lac.config import Config, load_config
 from lac.graph import approx_tokens, jsonable, load
 from lac.validate import Validator
+from lac.zones import financials, funding_plans
 
 SCHEMA_VERSION = "1.0"
 ENTITY_KINDS = ("party", "business", "asset", "loan_request", "funding_plan", "institution")
@@ -85,6 +86,7 @@ def lac_from_validator(v: Validator, phase1: dict | None = None, signals: list |
         "discrepancies": disc,
         "signals": signals or [],
         "metrics": metrics or [],
+        "zones": {"financials": financials(v), "funding_plans": funding_plans(v)},
         "branch2": {"markdown": ctx, "approx_tokens": approx_tokens(ctx)},
         "stats": {"facts": len(v.facts), "discrepancies": len(rest), "n_variants": len(disc) - len(rest),
                   "by_severity": dict(sorted(Counter(x["severity"] for x in rest).items())),

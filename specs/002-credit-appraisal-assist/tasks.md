@@ -49,7 +49,7 @@
   - Phụ thuộc: L6
   - Kiểm chứng: T# và chỉ số khớp đối chứng; DSCR thiếu lãi suất → "chưa tính được"
 
-- [ ] **L10 — Vùng Phương án vốn và Tài chính có kỳ + loại nguồn**
+- [x] **L10 — Vùng Phương án vốn và Tài chính có kỳ + loại nguồn**
   - File: `graph.py`, `validate.py`, schema, tests
   - Phụ thuộc: L9
   - Kiểm chứng: R-CROSS-DOC, R-ARITH chạy trên vùng mới; snapshot cập nhật có review

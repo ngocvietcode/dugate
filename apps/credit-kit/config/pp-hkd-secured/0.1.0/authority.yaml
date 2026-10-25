@@ -45,3 +45,15 @@ income_attrs: [net_revenue_annual, cogs_annual, gross_profit_annual, total_cost_
 # Tên khác của cùng thuộc tính kinh doanh
 business_synonyms:
   actual_address: business_address
+
+# Loại nguồn của số tài chính (LAC §3.1 vùng Tài chính: mỗi số luôn kèm kỳ và loại nguồn)
+source_types:
+  income_statement: SELF_DECLARED
+  loan_application: SELF_DECLARED
+  purchase_list: SELF_DECLARED
+  tax_return: TAX
+  tax_notice: TAX
+  bank_statement: BANK_STATEMENT
+  accounting_books: ACCOUNTING
+  goods_purchase_contract: CONTRACT
+  invoice: INVOICE
