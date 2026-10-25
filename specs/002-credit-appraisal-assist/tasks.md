@@ -29,8 +29,8 @@
   - Phụ thuộc: L4
   - Kiểm chứng: `pytest -k rules` xanh; coverage `validate.py` ≥ 80%
 
-- [ ] **L6 — Contract `lac.json`**
-  - File: `apps/credit-kit/contracts/lac.schema.json`, `lac/export.py` (gộp facts/discrepancies/graph/branch2 thành `lac.json`), sinh Pydantic
+- [x] **L6 — Contract `lac.json`**
+  - File: `apps/credit-kit/contracts/lac.schema.json`, `lac/export.py` (gộp facts/discrepancies/graph/branch2 thành `lac.json`), kiểm bằng `jsonschema`
   - Phụ thuộc: L5
   - Kiểm chứng: output mọi fixture validate theo schema; FR-14
 

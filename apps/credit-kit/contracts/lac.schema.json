@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dugate.local/contracts/lac/1.0.json",
+  "title": "Loan Application Context (lac.json) v1.0",
+  "description": "Đầu ra lớp LAC (apps/credit-kit/lac). Nguồn sự thật cho contract giữa worker Python và App TypeScript. Xem docs/enterprise/LAC_INTEGRATION.md và docs/credit/lac-rules.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "case", "documents", "entities", "mentions", "links", "facts", "discrepancies", "signals", "metrics", "branch2", "stats"],
+  "properties": {
+    "schema": {"const": "lac"},
+    "version": {"const": "1.0"},
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "product", "segment", "flow", "ref_date", "config", "phase1"],
+      "properties": {
+        "id": {"type": ["string", "null"]},
+        "product": {"type": ["string", "null"]},
+        "segment": {"type": ["string", "null"]},
+        "flow": {"type": ["string", "null"]},
+        "ref_date": {"type": "string", "format": "date"},
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["product", "version", "status"],
+          "properties": {
+            "product": {"type": "string"},
+            "version": {"type": "string"},
+            "status": {"enum": ["DRAFT", "APPROVED"]}
+          }
+        },
+        "phase1": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/phase1"}]}
+      }
+    },
+    "documents": {"type": "array", "items": {"$ref": "#/$defs/document"}},
+    "entities": {"type": "array", "items": {"$ref": "#/$defs/entity"}},
+    "mentions": {"type": "array", "items": {"$ref": "#/$defs/mention"}},
+    "links": {"type": "array", "items": {"$ref": "#/$defs/link"}},
+    "facts": {"type": "array", "items": {"$ref": "#/$defs/fact"}},
+    "discrepancies": {"type": "array", "items": {"$ref": "#/$defs/discrepancy"}},
+    "signals": {"type": "array", "items": {"$ref": "#/$defs/signal"}},
+    "metrics": {"type": "array", "items": {"$ref": "#/$defs/metric"}},
+    "branch2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["markdown", "approx_tokens"],
+      "properties": {
+        "markdown": {"type": "string"},
+        "approx_tokens": {"type": "integer", "minimum": 0}
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["facts", "discrepancies", "n_variants", "by_severity", "by_class", "to_branch2", "unresolved_mentions"],
+      "properties": {
+        "facts": {"type": "integer"},
+        "discrepancies": {"type": "integer", "description": "không tính loại N"},
+        "n_variants": {"type": "integer"},
+        "by_severity": {"type": "object", "additionalProperties": {"type": "integer"}},
+        "by_class": {"type": "object", "additionalProperties": {"type": "integer"}},
+        "to_branch2": {"type": "integer"},
+        "unresolved_mentions": {"type": "integer"}
+      }
+    }
+  },
+  "$defs": {
+    "docId": {"type": "string", "pattern": "^(D\\d+|case\\.[a-z_]+)$"},
+    "factId": {"type": "string", "pattern": "^F\\d+$"},
+    "discId": {"type": "string", "pattern": "^X\\d{2,}$"},
+    "signalId": {"type": "string", "pattern": "^T\\d+$"},
+    "severity": {"enum": ["S1", "S2", "S3", "S4"]},
+    "criticality": {"enum": ["K1", "K2", "K3"]},
+    "value": {"description": "Giá trị trường: chuỗi, số, bool, địa chỉ {full_text,...}, mảng, hoặc {one_of:[...]} khi DU đọc ra nhiều ứng viên"},
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "doc_type", "title", "date", "checklist_items"],
+      "properties": {
+        "id": {"$ref": "#/$defs/docId"},
+        "doc_type": {"type": "string"},
+        "title": {"type": ["string", "null"]},
+        "date": {"type": ["string", "null"], "format": "date"},
+        "checklist_items": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["key", "required"],
+            "properties": {"key": {"type": "string"}, "required": {"type": ["boolean", "null"]}}
+          }
+        }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^(P|U|B|A|L|G|I)\\d+$"},
+        "kind": {"enum": ["party", "business", "asset", "loan_request", "funding_plan", "institution"]},
+        "entity_type": {"type": ["string", "null"]},
+        "name": {"type": ["string", "null"]},
+        "roles": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["role", "doc"],
+                  "properties": {"role": {"type": ["string", "null"]}, "role_raw": {"type": ["string", "null"]}, "doc": {"$ref": "#/$defs/docId"}}}},
+        "src": {"type": ["string", "null"]}
+      }
+    },
+    "mention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["doc", "idx", "party", "role", "confidence", "score", "evidence", "against"],
+      "properties": {
+        "doc": {"$ref": "#/$defs/docId"},
+        "idx": {"type": "integer"},
+        "party": {"type": "string"},
+        "role": {"type": ["string", "null"]},
+        "confidence": {"enum": ["cao", "trung bình", "không xác định"]},
+        "score": {"type": ["integer", "null"]},
+        "evidence": {"type": "array", "items": {"type": "string"}},
+        "against": {"type": "array"}
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "target", "type", "sources", "attrs"],
+      "properties": {
+        "source": {"type": "string"},
+        "target": {"type": "string"},
+        "type": {"type": "string"},
+        "sources": {"type": "array", "items": {"type": "string"}},
+        "attrs": {"type": "object"}
+      }
+    },
+    "fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "entity", "field", "group", "value", "status", "rule", "sources", "criticality", "flags", "observations"],
+      "properties": {
+        "id": {"$ref": "#/$defs/factId"},
+        "entity": {"type": "string"},
+        "field": {"type": "string"},
+        "group": {"type": "string"},
+        "value": {"$ref": "#/$defs/value"},
+        "status": {"enum": ["ok", "chưa xác định", "không có nguồn chứng từ"]},
+        "rule": {"type": ["string", "null"]},
+        "sources": {"type": "array", "items": {"type": "string"}},
+        "criticality": {"$ref": "#/$defs/criticality"},
+        "flags": {"type": "array", "items": {"type": "string", "pattern": "^X\\d{2,}:(A|B|C|A\\|B)$"}},
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["value", "doc", "tier", "historical"],
+            "properties": {
+              "value": {"$ref": "#/$defs/value"},
+              "doc": {"type": "string"},
+              "tier": {"type": "number"},
+              "historical": {"type": "boolean"},
+              "note": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "discrepancy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rule", "class", "subclass", "criticality", "severity", "fields", "title", "detail", "observations", "canonical", "status", "to_branch2", "note"],
+      "properties": {
+        "id": {"$ref": "#/$defs/discId"},
+        "rule": {"type": "string", "pattern": "^R-[A-Z0-9-]+$"},
+        "class": {"enum": ["N", "A", "B", "C", "A|B"]},
+        "subclass": {"type": "string", "pattern": "^(N|[ABC]\\d)$"},
+        "criticality": {"$ref": "#/$defs/criticality"},
+        "severity": {"$ref": "#/$defs/severity"},
+        "fields": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "title": {"type": "string"},
+        "detail": {"type": "string"},
+        "observations": {"type": "array", "items": {"type": "object", "required": ["value", "docs"],
+                         "properties": {"value": {"type": "string"}, "docs": {"type": "array", "items": {"type": "string"}}}}},
+        "canonical": {"type": ["string", "null"]},
+        "status": {"type": "string"},
+        "to_branch2": {"type": "boolean"},
+        "note": {"type": ["string", "null"]}
+      }
+    },
+    "signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rule", "title", "detail", "fields", "discrepancies", "metrics", "threshold"],
+      "properties": {
+        "id": {"$ref": "#/$defs/signalId"},
+        "rule": {"type": "string", "pattern": "^R-X-[A-Z-]+$"},
+        "title": {"type": "string"},
+        "detail": {"type": "string"},
+        "fields": {"type": "array", "items": {"type": "string"}},
+        "discrepancies": {"type": "array", "items": {"$ref": "#/$defs/discId"}},
+        "metrics": {"type": "array", "items": {"type": "string"}},
+        "threshold": {"type": ["number", "string", "null"]}
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "formula", "status", "value", "inputs", "missing", "flags"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^M-[A-Z0-9-]+$"},
+        "name": {"type": "string"},
+        "formula": {"type": "string"},
+        "status": {"enum": ["computed", "not_computable"]},
+        "value": {"type": ["number", "null"]},
+        "inputs": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["name", "fact", "value"],
+                   "properties": {"name": {"type": "string"}, "fact": {"type": ["string", "null"]}, "value": {"type": ["number", "null"]}}}},
+        "missing": {"type": "array", "items": {"type": "string"}},
+        "flags": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "phase1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "items"],
+      "properties": {
+        "status": {"enum": ["COMPLETE", "INCOMPLETE"]},
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["key", "group", "required", "status", "docs", "reasons", "subject"],
+            "properties": {
+              "key": {"type": "string"},
+              "group": {"type": "string"},
+              "required": {"type": "boolean"},
+              "status": {"enum": ["PASS", "REVIEW", "MISSING"]},
+              "docs": {"type": "array", "items": {"$ref": "#/$defs/docId"}},
+              "reasons": {"type": "array", "items": {"type": "string"}},
+              "subject": {"type": ["string", "null"]}
+            }
+          }
+        }
+      }
+    }
+  }
+}

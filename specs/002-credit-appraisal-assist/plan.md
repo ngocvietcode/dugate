@@ -12,7 +12,7 @@ Ba phase:
 |---|---|---|
 | P1 | `apps/` là npm workspace (TS) + `apps/credit-kit/lac/` là package Python (`pyproject.toml`, `uv` hoặc `pip`); cùng repo (L1) | LAC-2 |
 | P2 | Workflow TS gọi activity Python qua task queue `credit-lac-py`: `phase1_gate(input) -> Phase1Result`, `build_validate(input) -> Lac`, `rebuild(lac, changes) -> Lac` | Temporal đa ngôn ngữ |
-| P3 | Contract: `apps/credit-kit/contracts/lac.schema.json` (JSON Schema, version) là nguồn sự thật → sinh Pydantic (`datamodel-code-generator`) và Zod (`json-schema-to-zod`); CI kiểm hai bản sinh khớp schema | Hai ngôn ngữ, một contract |
+| P3 | Contract: `apps/credit-kit/contracts/lac.schema.json` (JSON Schema 2020-12, version 1.0) là nguồn sự thật. Python kiểm output bằng `jsonschema` trong test (không sinh Pydantic — output do code tự dựng, kiểm schema là đủ); TS sinh Zod từ schema (A9), CI kiểm bản sinh khớp | Hai ngôn ngữ, một contract |
 | P4 | Payload Temporal: `lac.json` có thể vài chục KB → vẫn dưới giới hạn; mã hoá bằng Payload Codec chung (Python codec tương đương TS, cùng khoá) | Constitution §6 |
 | P5 | Cấu hình LAC dạng YAML có version trong `apps/credit-kit/config/<product>/<version>/`; loader kiểm schema; giá trị tạm đánh dấu `provisional: true` | FR-27 |
 | P6 | Giữ cấu trúc code PoC khi đưa vào (`graph.py` ← `build_case_graph.py`, `validate.py` ← `validate_case.py`, `draw.py` ← `draw_case_graph.py`); chỉ tách hằng số ra cấu hình và thêm test — **không refactor logic** trong phase L | Bảo toàn hành vi đã kiểm chứng |
