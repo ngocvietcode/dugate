@@ -271,13 +271,17 @@ Các bổ sung này đều là **năng lực chung** (dùng được cho mọi c
 
 ---
 
-## 11. Quyết định mở
+## 11. Quyết định
+
+**Đã chốt (2026-10-25):**
+- **L1 → Cùng repo dugate.** Apps ở thư mục `apps/` với entrypoint/deploy riêng (API + Temporal worker); một PR có thể đổi cả Core và App; lint chặn Apps import `lib/**` của Core (constitution L2). Tách repo chỉ khi có đội riêng — cần ADR mới.
+- **L6 → Chỉ nhận qua `context`.** App không gọi LOS/Core banking/CRM để lấy dữ liệu tham chiếu; hệ thống gọi truyền đủ dữ liệu cần đối chiếu trong `context` của request (context-in, findings-out). Thiếu dữ liệu → validation error khi start, không tự đi lấy. `context` được snapshot vào input workflow và vào audit.
+
+**Còn mở:**
 
 | # | Câu hỏi | Đề xuất |
 |---|---|---|
-| L1 | Apps nằm cùng repo dugate (thư mục `apps/`, deploy riêng) hay repo riêng? | Cùng repo giai đoạn đầu — thay đổi Core + App trong một PR, lint chặn import chéo; tách repo khi có đội riêng |
 | L2 | Hệ thống gọi App đầu tiên là gì (LOS, Trade Finance, BPM nào)? Có ESB/Kafka không? | Cần thông tin để chốt adapter sự kiện |
 | L3 | Review workbench: deep-link sang UI App có chấp nhận được không, hay bắt buộc soát trong UI ngân hàng? | `DELEGATED` + deep-link |
 | L4 | Quy tắc đối chiếu (vd. dung sai số tiền, điều kiện UCP 600/ISBP) do ai sở hữu & phê duyệt version? | Nghiệp vụ sở hữu, rule có version + maker-checker như prompt |
 | L5 | TTL dữ liệu làm việc của Apps & Core | 90 ngày, bản cuối lưu ECM do hệ thống gọi |
-| L6 | App có được đọc dữ liệu tham chiếu trực tiếp từ hệ thống ngân hàng (vd. gọi LOS lấy hạn mức) không, hay chỉ nhận qua `context`? | Chỉ qua `context` (context-in, findings-out) — tránh phụ thuộc ngược và quyền truy cập rộng |

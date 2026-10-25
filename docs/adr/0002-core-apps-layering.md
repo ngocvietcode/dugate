@@ -13,6 +13,7 @@ Workflow nghiệp vụ (giải ngân, L/C, so sánh văn bản) đang nằm tron
 3. Phụ thuộc một chiều: hệ thống ngân hàng → Apps → Core → engines. Apps chỉ dùng API công khai của Core với ApiKey role `APP`.
 4. Apps trả **khuyến nghị kèm bằng chứng**; không sở hữu master data, không ra quyết định, không hạch toán, không quản lý hàng đợi việc toàn ngân hàng.
 5. Temporal (ADR-0001) chỉ dùng ở tầng Apps; Core giữ mô hình Operation hiện tại.
+6. Apps nằm cùng repo dugate (thư mục `apps/`, deploy riêng); dữ liệu nghiệp vụ chỉ nhận qua `context` của request.
 
 ## Hệ quả
 - Core cần bổ sung năng lực chung: prompt template có version + `prompt_ref`, role `APP`, document handle, chuẩn hóa evidence, expose các connector đang chỉ dùng nội bộ.

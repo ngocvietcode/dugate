@@ -19,9 +19,9 @@ Trạng thái: **DRAFT** cùng ARCHITECTURE_V5. Các điều đánh dấu *(v5)*
 
 ## II-b. Phân tầng Core / Apps *(ADR-0002)*
 - L1. Phụ thuộc một chiều: hệ thống ngân hàng → Apps → Core → engines. Core không gọi/import Apps.
-- L2. Apps chỉ gọi Core qua API công khai (`core-client`); không import `lib/**` của Core, không đọc DB của Core, không gọi connector/engine trực tiếp.
+- L2. Apps (thư mục `apps/`, cùng repo) chỉ gọi Core qua API công khai (`core-client`); không import `lib/**` của Core, không đọc DB của Core, không gọi connector/engine trực tiếp.
 - L3. Core không chứa khái niệm nghiệp vụ (khoản vay, L/C, giải ngân…). Năng lực mới thêm vào Core phải dùng được cho mọi client.
-- L4. Apps không sở hữu master data, không ra quyết định cuối, không ghi vào hệ thống nguồn của ngân hàng; dữ liệu nghiệp vụ nhận qua `context` của request.
+- L4. Apps không sở hữu master data, không ra quyết định cuối, không ghi vào hệ thống nguồn của ngân hàng. Dữ liệu nghiệp vụ **chỉ** nhận qua `context` của request — App không gọi hệ thống ngân hàng để lấy dữ liệu; thiếu dữ liệu thì từ chối ở bước validate.
 - L5. Mọi App tuân Workflow Service Contract chung; mọi finding phải có evidence trỏ về tài liệu.
 
 ## III. Orchestration *(v5)*
