@@ -108,6 +108,7 @@ describe('Business Operations internal routes', () => {
     expect(mockGetAssignedProfileIds).toHaveBeenCalledWith('operations:read');
     expect(getSnapshot).toHaveBeenCalledWith(
       {
+        sort: 'recent',
         range: 'today',
         profile: 'profile-a',
         operationType: 'ALL',

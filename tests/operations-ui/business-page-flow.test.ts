@@ -422,7 +422,7 @@ describe('Operations page-level business dashboard flows', () => {
     expect(html).toContain('CASE-MATCH');
     expect(html).toContain('Profile MATCH');
     expect((html.match(/data-applied=/g) ?? [])).toHaveLength(4);
-    expect((html.match(/<article/g) ?? [])).toHaveLength(6); // five KPI cards + breakdown
+    expect((html.match(/<article/g) ?? [])).toHaveLength(7); // six KPI cards + breakdown
     expect(presetIndex).toBeLessThan(kpiIndex);
     expect(kpiIndex).toBeLessThan(breakdownIndex);
     expect(breakdownIndex).toBeLessThan(trendIndex);
@@ -485,6 +485,7 @@ describe('Operations page-level business dashboard flows', () => {
 
     expect(detail.close).toHaveBeenCalledTimes(1);
     expect(dashboard.setDraftFilter).toHaveBeenCalledWith({
+      sort: 'recent',
       range: 'today',
       profile: PROFILE_ID,
       operationType: OPERATION_TYPE,

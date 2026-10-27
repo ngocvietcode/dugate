@@ -1,8 +1,8 @@
 /**
  * Property-based tests for OCR merge (Property 2) and merged counts invariant (Property 3).
  *
- * Feature: payroll-verify-workflow, Property 2: OCR merge preserves all records with sequential re-indexing
- * Feature: payroll-verify-workflow, Property 3: Merged counts invariant
+ * Feature: payroll-verify-workflow, Property 2: OCR merge preserves all records with original STT
+ * Feature: payroll-verify-workflow, Property 3: Document counts and fallback
  *
  * **Validates: Requirements 5.3, 5.4, 5.5, 8.2**
  */
@@ -94,9 +94,9 @@ const arbPageResults: fc.Arbitrary<Array<{ pageIndex: number; data: PayrollJSON 
     });
   });
 
-// ─── Property 2: OCR merge preserves all records with sequential re-indexing ──
+// ─── Property 2: OCR merge preserves all records with original STT ──
 
-describe('Feature: payroll-verify-workflow, Property 2: OCR merge preserves all records with sequential re-indexing', () => {
+describe('Feature: payroll-verify-workflow, Property 2: OCR merge preserves all records with original STT', () => {
   it('merged vpbank list length equals sum of input vpbank list lengths', () => {
     /**
      * **Validates: Requirements 5.3**
@@ -121,7 +121,7 @@ describe('Feature: payroll-verify-workflow, Property 2: OCR merge preserves all 
     );
   });
 
-  it('stt fields are sequentially numbered starting from 1 in vpbank list', () => {
+  it('preserves original stt fields in vpbank page order', () => {
     /**
      * **Validates: Requirements 5.4**
      */
@@ -129,15 +129,15 @@ describe('Feature: payroll-verify-workflow, Property 2: OCR merge preserves all 
       fc.property(arbPageResults, (pageResults) => {
         const merged = mergeOcrResults(pageResults);
 
-        merged.danh_sach_trong_vpbank.forEach((record, idx) => {
-          expect(record.stt).toBe(idx + 1);
-        });
+        const expected = [...pageResults].sort((a, b) => a.pageIndex - b.pageIndex)
+          .flatMap((page) => page.data.danh_sach_trong_vpbank.map((record) => record.stt));
+        expect(merged.danh_sach_trong_vpbank.map((record) => record.stt)).toEqual(expected);
       }),
       { numRuns: 100 },
     );
   });
 
-  it('stt fields are sequentially numbered starting from 1 in non-vpbank list', () => {
+  it('preserves original stt fields in non-vpbank page order', () => {
     /**
      * **Validates: Requirements 5.4**
      */
@@ -145,9 +145,9 @@ describe('Feature: payroll-verify-workflow, Property 2: OCR merge preserves all 
       fc.property(arbPageResults, (pageResults) => {
         const merged = mergeOcrResults(pageResults);
 
-        merged.danh_sach_ngoai_vpbank.forEach((record, idx) => {
-          expect(record.stt).toBe(idx + 1);
-        });
+        const expected = [...pageResults].sort((a, b) => a.pageIndex - b.pageIndex)
+          .flatMap((page) => page.data.danh_sach_ngoai_vpbank.map((record) => record.stt));
+        expect(merged.danh_sach_ngoai_vpbank.map((record) => record.stt)).toEqual(expected);
       }),
       { numRuns: 100 },
     );
@@ -170,7 +170,7 @@ describe('Feature: payroll-verify-workflow, Property 2: OCR merge preserves all 
           const pageVpbank = page.data.danh_sach_trong_vpbank ?? [];
           for (let i = 0; i < pageVpbank.length; i++) {
             const mergedRecord = merged.danh_sach_trong_vpbank[vpbankOffset + i];
-            // ho_ten and so_tai_khoan should match (stt is re-indexed)
+            // ho_ten and so_tai_khoan should match (stt is preserved)
             expect(mergedRecord.ho_ten).toBe(pageVpbank[i].ho_ten);
             expect(mergedRecord.so_tai_khoan).toBe(pageVpbank[i].so_tai_khoan);
             expect(mergedRecord.so_tien).toBe(pageVpbank[i].so_tien);
@@ -196,53 +196,46 @@ describe('Feature: payroll-verify-workflow, Property 2: OCR merge preserves all 
   });
 });
 
-// ─── Property 3: Merged counts invariant ──────────────────────────────────────
+// ─── Property 3: Document counts and fallback ──────────────────────────────────────
 
-describe('Feature: payroll-verify-workflow, Property 3: Merged counts invariant', () => {
-  it('tong_so_nhan_vien equals so_nhan_vien_vpbank + so_nhan_vien_ngan_hang_khac', () => {
-    /**
-     * **Validates: Requirements 5.5**
-     */
-    fc.assert(
-      fc.property(arbPageResults, (pageResults) => {
-        const merged = mergeOcrResults(pageResults);
-        const ttc = merged.thong_tin_chung;
-
-        expect(ttc.tong_so_nhan_vien).toBe(
-          ttc.so_nhan_vien_vpbank + ttc.so_nhan_vien_ngan_hang_khac,
-        );
-      }),
-      { numRuns: 100 },
-    );
+describe('Feature: payroll-verify-workflow, Property 3: Document counts and fallback', () => {
+  it('preserves the first non-zero document total even when it differs from list counts', () => {
+    fc.assert(fc.property(arbPageResults, (pages) => {
+      const sorted = [...pages].sort((a, b) => a.pageIndex - b.pageIndex);
+      const declared = sorted.find((page) => page.data.thong_tin_chung.tong_so_nhan_vien !== 0);
+      const merged = mergeOcrResults(pages);
+      expect(merged.thong_tin_chung.tong_so_nhan_vien).toBe(declared
+        ? declared.data.thong_tin_chung.tong_so_nhan_vien
+        : merged.danh_sach_trong_vpbank.length + merged.danh_sach_ngoai_vpbank.length);
+    }), { numRuns: 100 });
   });
 
-  it('so_nhan_vien_vpbank equals length of danh_sach_trong_vpbank', () => {
-    /**
-     * **Validates: Requirements 5.5, 8.2**
-     */
-    fc.assert(
-      fc.property(arbPageResults, (pageResults) => {
-        const merged = mergeOcrResults(pageResults);
-        const ttc = merged.thong_tin_chung;
-
-        expect(ttc.so_nhan_vien_vpbank).toBe(merged.danh_sach_trong_vpbank.length);
-      }),
-      { numRuns: 100 },
-    );
+  it('preserves the first non-zero per-bank counts when a document total is present', () => {
+    fc.assert(fc.property(arbPageResults, (pages) => {
+      const sorted = [...pages].sort((a, b) => a.pageIndex - b.pageIndex);
+      // An explicit total selects the preserve-document branch for every generated case.
+      const withTotal = sorted.map((page) => ({ ...page, data: { ...page.data,
+        thong_tin_chung: { ...page.data.thong_tin_chung, tong_so_nhan_vien: 123 },
+      } }));
+      const merged = mergeOcrResults(withTotal);
+      for (const key of ['so_nhan_vien_vpbank', 'so_nhan_vien_ngan_hang_khac'] as const) {
+        const first = sorted.find((page) => page.data.thong_tin_chung[key] !== 0);
+        expect(merged.thong_tin_chung[key]).toBe(first?.data.thong_tin_chung[key] ?? 0);
+      }
+    }), { numRuns: 100 });
   });
 
-  it('so_nhan_vien_ngan_hang_khac equals length of danh_sach_ngoai_vpbank', () => {
-    /**
-     * **Validates: Requirements 5.5, 8.2**
-     */
-    fc.assert(
-      fc.property(arbPageResults, (pageResults) => {
-        const merged = mergeOcrResults(pageResults);
-        const ttc = merged.thong_tin_chung;
-
-        expect(ttc.so_nhan_vien_ngan_hang_khac).toBe(merged.danh_sach_ngoai_vpbank.length);
-      }),
-      { numRuns: 100 },
-    );
+  it('falls back to actual list counts when every page lacks a document total', () => {
+    fc.assert(fc.property(arbPageResults, (pages) => {
+      const withoutTotals = pages.map((page) => ({ ...page, data: { ...page.data,
+        thong_tin_chung: { ...page.data.thong_tin_chung, tong_so_nhan_vien: 0,
+          so_nhan_vien_vpbank: 0, so_nhan_vien_ngan_hang_khac: 0 },
+      } }));
+      const merged = mergeOcrResults(withoutTotals);
+      expect(merged.thong_tin_chung.so_nhan_vien_vpbank).toBe(merged.danh_sach_trong_vpbank.length);
+      expect(merged.thong_tin_chung.so_nhan_vien_ngan_hang_khac).toBe(merged.danh_sach_ngoai_vpbank.length);
+      expect(merged.thong_tin_chung.tong_so_nhan_vien).toBe(
+        merged.danh_sach_trong_vpbank.length + merged.danh_sach_ngoai_vpbank.length);
+    }), { numRuns: 100 });
   });
 });

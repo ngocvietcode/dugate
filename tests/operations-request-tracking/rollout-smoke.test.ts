@@ -305,8 +305,9 @@ describe('automated Operations rollout smoke suite', () => {
     ]);
 
     const kpiHtml = renderToStaticMarkup(createElement(DashboardStats, { summary }));
-    expect((kpiHtml.match(/<article/g) ?? [])).toHaveLength(5);
+    expect((kpiHtml.match(/<article/g) ?? [])).toHaveLength(6);
     for (const label of [
+      'P95 Duration',
       'Total Cases',
       'Tokens Processed',
       'Total Cost USD',

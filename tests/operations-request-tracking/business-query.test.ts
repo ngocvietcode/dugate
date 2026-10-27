@@ -93,6 +93,7 @@ describe('Business Operation query validation and authorization', () => {
       searchMode: 'contains',
       page: 3,
     }))).toEqual({
+      sort: 'recent',
       range: 'today',
       profile: 'profile-a',
       operationType: 'extract',
@@ -262,8 +263,10 @@ describe('Atomic Business Operations dashboard snapshot', () => {
       costUsd: '12.34',
       averageTokensPerBusinessOperation: 1750,
       averageDurationSeconds: 30.5,
-      maxDurationOperationIdentifier: 'CASE-2',
-      maxTokenOperationIdentifier: 'CASE-1',
+      maxDurationOperation: { identifier: 'CASE-2', normalizedReference: 'case-2', profileScopeId: 'profile-a', standaloneRequestId: '' },
+      maxTokenOperation: { identifier: 'CASE-1', normalizedReference: 'case-1', profileScopeId: 'profile-a', standaloneRequestId: '' },
+      maxDurationSeconds: 42,
+      maxTokenCount: 2500,
       unpricedRequestCount: 1,
       costIncomplete: true,
     }],
@@ -345,9 +348,14 @@ describe('Atomic Business Operations dashboard snapshot', () => {
         ...dashboardRow.summary,
         totalCostUsd: '12.3400000000',
       });
+      const { maxDurationOperation, maxTokenOperation, ...card } = dashboardRow.breakdownCards[0];
       expect(response.breakdownCards[0]).toEqual({
-        ...dashboardRow.breakdownCards[0],
+        ...card,
         costUsd: '12.3400000000',
+        maxDurationOperationIdentifier: maxDurationOperation.identifier,
+        maxTokenOperationIdentifier: maxTokenOperation.identifier,
+        maxDurationOperationToken: expect.stringMatching(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/),
+        maxTokenOperationToken: expect.stringMatching(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/),
       });
       expect(response.breakdownCards[0].successPercentage).toBe(50);
       expect(response.list).toMatchObject({ page: 2, pageSize: 50, total: 51, totalPages: 2 });
