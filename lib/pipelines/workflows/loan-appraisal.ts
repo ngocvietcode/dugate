@@ -54,7 +54,6 @@ import {
 } from './prompts/loan-appraisal-prompts';
 import { buildEvidenceRegistryV3, toStoredEvidence } from './loan-appraisal/evidence-v3';
 import { dropSucceededStepArtifacts } from './loan-appraisal/compact-view';
-import { financialInputsV3 } from './loan-appraisal/financial-inputs';
 import { DOSSIER_PRECHECK_STEP, isPrecheckEnabled, runDossierPrecheck, skippedPrecheck } from './loan-appraisal/dossier-precheck';
 import {
   DOSSIER_CHECKS_DISABLED, buildDeferredDossierOutput, buildPrecheckReadiness,
@@ -83,11 +82,7 @@ import {
   parsePromptCheckResults,
   promptChecksNotRun,
 } from './loan-appraisal/prompt-checks';
-import {
-  HkdSecuredFinancialStrategy,
-  PolicyStrategy,
-  RecommendationStrategy,
-} from './loan-appraisal/strategies';
+import { packForProduct } from './loan-appraisal/segment-packs/registry';
 import { deriveProcessingStatus, LOAN_STAGE_DEFINITIONS } from './loan-appraisal/state-machine';
 import {
   LOAN_APPRAISAL_OUTPUT_VERSION,
@@ -165,6 +160,8 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
   const { logger, filesData, pipelineVars } = ctx;
   const resumeFromStep = ctx.currentStep;
   const product = getLoanProduct(pipelineVars.product_code as string | undefined);
+  // Logic stage 2–4 theo phân khúc của sản phẩm (D-100); sản phẩm chưa có pack ném lỗi, không có pack mặc định.
+  const { pack, snapshot: packSnapshot } = packForProduct(product.code);
 
   // Cấu hình workflow đọc THEO SẢN PHẨM (param `loan_product_config`): prompt / model / reasoning của từng bước AI,
   // ngưỡng policy, bộ rule (bật/tắt theo luồng) và override checklist. Cấu hình sai chỉ tạo warning và rơi về mặc định,
@@ -186,6 +183,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
   const configSnapshot = {
     ...snapshotPolicy(productPolicy, checkSet),
     ...(configWarnings.length ? { warnings: configWarnings } : {}),
+    segment_pack: packSnapshot,
     reproducibility: buildReproducibilitySnapshot(ctx),
   };
   const fileCount = filesData.length;
@@ -309,12 +307,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
     let financial = getStep(ctx, 2)?.extracted_data as FinancialMetrics | undefined;
     if (resumeFromStep <= 2) {
       await beginStage(ctx, 2, 'Đang tính toán CFADS, DSCR và các chỉ số tài chính...');
-      financial = new HkdSecuredFinancialStrategy().execute({
-        // V2-R06: đọc field có cấu trúc của spec-v3. Giá trị TSBĐ lấy theo tài sản `collateral` của S3; bản bị thay thế bị loại.
-        inputs: financialInputsV3(extractCheckpoint.evidences, mapOutcome.data),
-        // S3 lỗi ⇒ không biết tài sản nào là TSBĐ ⇒ không đánh giá (NOT_APPLICABLE) thay vì báo thiếu giả.
-        skipCollateral: mapOutcome.data === null,
-      });
+      financial = pack.calculateFinancials({ evidences: extractCheckpoint.evidences, s3: mapOutcome.data });
       const calculated = Object.values(financial).filter((metric) => metric.status === 'CALCULATED').length;
       saveStep(ctx, stageResult(2, {
         stepName: 'Tính toán tài chính deterministic',
@@ -374,10 +367,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
         }
       }
 
-      policy = new PolicyStrategy(productPolicy, checkSet).execute({
-        facts: { financial },
-        promptResults,
-      });
+      policy = pack.evaluatePolicy({ policy: productPolicy, checkSet, financial, promptResults });
       const passed = policy.rule_results.filter((rule) => rule.result === 'PASS').length;
       saveStep(ctx, stageResult(3, {
         stepName: 'Policy & Compliance Rules',
@@ -407,7 +397,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
     if (resumeFromStep <= 4) {
       await beginStage(ctx, 4, 'Đang tổng hợp khuyến nghị và tuyến rà soát...');
     }
-    const decision = new RecommendationStrategy(productPolicy).execute({ financial, policy });
+    const decision = pack.recommend({ policy: productPolicy, financial, compliance: policy });
     const processingStatus = deriveProcessingStatus(policy.status, policy.rule_results);
     const finalResult: AppraisalResultV2 = {
       // Giai đoạn 2 chạy OCR (S2) và gom người & tài sản (S3). `checklist` / `cross_check` vẫn là khối rỗng mang mã DOSSIER_CHECKS_DISABLED,

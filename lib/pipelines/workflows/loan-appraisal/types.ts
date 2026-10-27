@@ -14,6 +14,7 @@ import type { DossierGraphView } from '@/lib/loan-dossier/graph/view-contract';
 import type { IntakeAssessment } from './intake-assessment';
 import type { DossierPrecheck } from './dossier-precheck';
 import type { ReproducibilitySnapshot } from './reproducibility';
+import type { SegmentPackSnapshot } from './segment-packs/types';
 import type { RuleGroupKey } from './rule-groups';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 
@@ -290,6 +291,8 @@ export interface LoanConfigSnapshot {
   };
   /** Cảnh báo cấu hình của lần chạy (VD prompt ghi đè bị bỏ qua — V2-R08, input rule khóa cũ — V2-R07). */
   warnings?: string[];
+  /** Segment pack đã tính stage 2–4 (D-100). Kết quả cũ không có (tương đương hkd-secured). */
+  segment_pack?: SegmentPackSnapshot;
   /** Danh mục, template prompt (sha256), model / reasoning ghi đè của các bước AI (ARCHITECTURE E1). Kết quả cũ không có. */
   reproducibility?: ReproducibilitySnapshot;
 }

@@ -229,7 +229,7 @@ mũ; ghi prompt/output vào log job ở Bull Board (D-95); chi phí và token th
 | # | Khoảng trống | Bằng chứng |
 |---|---|---|
 | G1 | Chứng từ tài chính doanh nghiệp chỉ bóc tách LIGHT | `balance_sheet`, `financial_performance_report` chỉ có `period`; `vat_tax_return` chỉ `tax_period`; `enterprise_registration_license` chỉ số ĐK và địa chỉ; `board_meeting_minutes` không có field |
-| G2 | Strategy tài chính gắn cứng HKD | `loan-appraisal.ts` luôn `new HkdSecuredFinancialStrategy()`; `financial-inputs.ts` chỉ đọc `income_type = household_business`; mọi `strategyId` là `hkd-secured-v2:*` |
+| G2 | Strategy tài chính gắn cứng HKD | **Một phần đã xử lý (D-100):** workflow chọn logic stage 2–4 qua segment pack theo `segment` của sản phẩm. Chỉ có pack `hkd-secured`; `sme` được ánh xạ tường minh vào pack đó (`config_snapshot.segment_pack.pack_id = hkd-secured`). Còn lại: viết SME pack (giai đoạn 4) |
 | G3 | Policy SME là bản sao HKD (`0.1.0-draft`) | `loan_products.json`: cùng DSCR 1.25 / LTV 0.7 / 3 tỷ / 18 tháng |
 | G4 | Policy chỉ có 4 tham số phẳng | Không có ngưỡng theo loại cấp tín dụng, loại TSBĐ, hạng khách hàng, giới hạn exposure |
 | G5 | Mô hình "một khoản vay – một đơn" | Đầu vào từ một anchor `loan_application`; khuyến nghị `min(đề nghị, hạn mức, TSBĐ × LTV)`; không có facility hay exposure |
@@ -334,7 +334,7 @@ interface FinancialStrategy {
 | Giai đoạn | Việc chính | Điều kiện xong |
 |---|---|---|
 | **0. Dọn nền** | Tách code tắt ra sau feature flag hoặc module `legacy/`; cập nhật spec-v3 theo 5 stage; snapshot tái lập (E1) | Docs khớp code; mỗi kết quả có `prompt_hash`, `model`, `catalog_version` |
-| **1. Segment Pack cho HKD** | Định nghĩa interface §9.2; đóng gói phần HKD; registry + kiểm tra khi khởi động | Toàn bộ test hồi quy giữ nguyên; `config_snapshot.pack_id = hkd-secured` |
+| **1. Segment Pack cho HKD** ✅ D-100 | Định nghĩa interface §9.2; đóng gói phần HKD; registry + kiểm tra khi khởi động | Toàn bộ test hồi quy giữ nguyên; `config_snapshot.segment_pack.pack_id = hkd-secured`. Interface v1 chỉ gồm stage 2–4 (`calculateFinancials`, `evaluatePolicy`, `recommend`); danh mục chứng từ, anchor, vai trò vào pack khi xây SME pack |
 | **2. Idempotency & thông lượng** | Checkpoint theo file, khoá idempotency sub-step, giới hạn fan-out, job cha không chờ (E3, E4) | Retry S2 chỉ gọi lại file lỗi; tải 20 hồ sơ đồng thời không chặn hàng đợi |
 | **3. LAC** | Theo spec LAC (`lac_mode` off → shadow → on) | Tiêu chí bật trong T-LAC-07 đạt trên bộ UAT |
 | **4. SME Pack** | Schema FULL cho chứng từ SME; strategy tài chính SME; policy pack thật; rule pack SME; facility & exposure | Bộ UAT SME (do nghiệp vụ cung cấp) đạt ngưỡng chính xác đã thống nhất |
@@ -393,7 +393,7 @@ Quyết định chi tiết ở `spec-v3/IMPLEMENT.md` (D-*). Bảng dưới ch�
 | D-97 | Ghi nhận: tạm tắt S4/S5, master_dossier, intake_review, readiness ở giai đoạn 2; DAG 5 stage. Thêm `config_snapshot.reproducibility` | Trạng thái chưa từng được ghi; tái lập kết quả (E1) | Đang áp dụng |
 | D-98 | Tách hàm dùng chung (`prompt-render`, `dossier-facts`, `run-params`) để S4/S5/consolidate/master rời đồ thị import lúc chạy; không xóa code | Đường chạy chính không mang code đang tắt; giữ D-82 | Đang áp dụng (test khóa) |
 | D-99 | Gỡ 4 bước AI không chạy khỏi danh mục cấu hình (`RETIRED_STEP_KEYS`, bỏ êm khi đọc/ghi); gỡ đường resume operation cũ và đầu vào tài chính kiểu v2 cũ | Người dùng xác nhận không còn operation đang dừng | Đang áp dụng |
-| ADR-01 | Lõi chung + Segment Pack (§9) | Mở rộng SME mà không rẽ nhánh lõi | **Đề xuất** |
+| D-100 / ADR-01 | Lõi chung + Segment Pack (§9). v1: stage 2–4, registry phân khúc → pack, fail-closed khi worker khởi động, `config_snapshot.segment_pack` | Mở rộng SME mà không rẽ nhánh lõi | **Đang áp dụng** (chỉ pack HKD) |
 | ADR-02 | Loan Application Context làm nguồn duy nhất cho LLM giai đoạn 2 | Dẫn nguồn được, có trạng thái tin cậy | **Đề xuất** |
 | ADR-03 | Kho policy bất biến có maker-checker; Profile chỉ chọn version | Kiểm soát nội bộ, kiểm toán | **Đề xuất** |
 | ADR-04 | Idempotency theo file/bản thể cho sub-step AI | Retry rẻ, kết quả ổn định | **Đề xuất** |

@@ -30,6 +30,7 @@ import { runPipeline } from './lib/pipelines/engine';
 import { runWorkflow } from './lib/pipelines/workflow-engine';
 import { type PipelineJobData } from './lib/queue/pipeline-queue';
 import { validateWorkerQueueEnv } from './lib/queue/worker-group-validation';
+import { validateSegmentPackRegistry } from './lib/pipelines/workflows/loan-appraisal/segment-packs/registry';
 import { markDlqOperationFailed } from './lib/worker-dlq';
 
 export { markDlqOperationFailed } from './lib/worker-dlq';
@@ -56,6 +57,14 @@ if (!workerQueueResult.valid) {
 
 const PIPELINE_QUEUE = workerQueueResult.pipelineQueue;
 const STEPS_QUEUE = workerQueueResult.stepsQueue;
+
+// Sản phẩm vay nào trong loan_products.json cũng phải có segment pack (D-100): lỗi cấu hình dừng worker ngay
+// thay vì để từng hồ sơ của sản phẩm đó FAILED lúc chạy.
+const segmentPackErrors = validateSegmentPackRegistry();
+if (segmentPackErrors.length > 0) {
+  log.error(`[Worker] ❌ Segment pack registry: ${segmentPackErrors.join(' | ')}`);
+  process.exit(1);
+}
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 

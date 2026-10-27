@@ -92,6 +92,14 @@ Nguồn gốc của các file catalog là `docs/loan-appraisal/spec-v3/03_catalo
 
 `validateProductsAgainstPrograms` (có test) bắt: sản phẩm không có chương trình, sản phẩm thuộc nhiều chương trình, chương trình trỏ tới `product_code` chưa khai. Chạy `npx jest tests/loan-dossier/s4-programs.test.ts`.
 
+### 2.5. Phân khúc phải có segment pack (D-100)
+
+`segment` của sản phẩm chọn **segment pack**, tức logic tính tài chính, policy, khuyến nghị (stage 2–4), qua
+`lib/pipelines/workflows/loan-appraisal/segment-packs/registry.ts`. Hiện có `HKD → hkd-secured` và `SME → hkd-secured`
+(SME tạm dùng logic HKD, xem 3.7). Sản phẩm thuộc phân khúc chưa có pack (`CORPORATE`, `RETAIL`): **worker không khởi
+động** (`validateSegmentPackRegistry` ở `worker.ts`) và `tests/loan-appraisal/segment-packs.test.ts` fail. Không có pack
+mặc định. Pack đã dùng được ghi ở `config_snapshot.segment_pack` của mỗi kết quả.
+
 ## 3. Việc cần cân nhắc theo yêu cầu nghiệp vụ
 
 ### 3.1. Danh mục hồ sơ khác (`checklist_catalog.json`)
@@ -174,7 +182,7 @@ Chỉ khi cần một **phép so sánh mới** (ví dụ chỉ số khả năng 
 
 Đánh giá 5C, stress test và scorecard đã bỏ khỏi giai đoạn 2: kết quả thẩm định chỉ dựa trên chỉ số tài chính và bộ rule (engine + LLM). Field `five_c` chỉ còn ở kết quả cũ.
 
-Tầng này **chưa tách theo sản phẩm**: `HkdSecuredFinancialStrategy` đọc `hkd_net_revenue` / `hkd_net_profit` của bảng kê thu nhập HKD, và luồng tính chạy giống nhau cho mọi sản phẩm. Sản phẩm mới dùng báo cáo tài chính doanh nghiệp (bảng cân đối, báo cáo kết quả kinh doanh) sẽ **không** có doanh thu/lợi nhuận được trích đúng, nên `DSCR` và `LTV` có thể ở trạng thái `INSUFFICIENT_DATA`. Cần chiến lược tài chính riêng và đưa vào `loan-appraisal.ts` theo `product.code`. Đây là việc code, không phải cấu hình.
+Tầng này **tách theo phân khúc qua segment pack** (D-100, mục 2.5), nhưng hiện chỉ có pack `hkd-secured`: nó đọc doanh thu / lợi nhuận từ `income_sources[]` loại `household_business` của bảng kê thu nhập HKD. Sản phẩm dùng báo cáo tài chính doanh nghiệp (bảng cân đối, báo cáo kết quả kinh doanh) sẽ **không** có doanh thu/lợi nhuận được trích đúng, nên `DSCR` và `LTV` có thể ở trạng thái `INSUFFICIENT_DATA`. Cần một pack riêng (cài `SegmentPack` ở `segment-packs/types.ts`, đăng ký trong `registry.ts`), kèm schema bóc tách FULL cho chứng từ tài chính. Đây là việc code, không phải cấu hình; xem `ARCHITECTURE.md` §9.
 
 ## 4. Giao diện
 
@@ -218,6 +226,7 @@ Chạy typecheck: `npx tsc --noEmit`. Khi chạy jest cục bộ nhớ giới h�
 - [ ] `npm run sync:loan-catalogs`; commit cả bản docs lẫn bản `lib/`.
 - [ ] `npx tsc --noEmit` và test catalog xanh.
 - [ ] Cập nhật mô tả `product_code`/`flow` ở `registry.ts`.
+- [ ] Phân khúc của sản phẩm có segment pack (`segment-packs/registry.ts`, mục 2.5); `tests/loan-appraisal/segment-packs.test.ts` xanh.
 
 **Theo nghiệp vụ**
 - [ ] Mục checklist mới (`checklist_catalog.json`) và mọi chương trình khai mục đó.
@@ -226,7 +235,7 @@ Chạy typecheck: `npx tsc --noEmit`. Khi chạy jest cục bộ nhớ giới h�
 - [ ] Ma trận đối chiếu chéo (`cross_check_matrix.json`).
 - [ ] Prompt kiểm tra sơ bộ riêng qua Profile (nếu cần).
 - [ ] Tham số rule / `products[]` trong `loan_check_set` của Profile.
-- [ ] Chiến lược tài chính riêng (code) nếu cách tính khác HKD.
+- [ ] Segment pack riêng (code) nếu cách tính tài chính / policy / khuyến nghị khác HKD.
 
 **Trước khi bàn giao**
 - [ ] Chạy hồ sơ thật qua cả hai giai đoạn: kiểm tra sơ bộ (giai đoạn 1), rồi checklist, đối chiếu, rule (giai đoạn 2).

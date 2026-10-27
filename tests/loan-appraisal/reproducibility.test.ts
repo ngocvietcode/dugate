@@ -86,7 +86,9 @@ describe('runLoanAppraisal ghi reproducibility vào config_snapshot', () => {
       webhookUrl: null, apiKeyId: null, logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     };
     await runLoanAppraisal(ctx as never);
-    const final = (completeWorkflow as jest.Mock).mock.calls[0][2] as { config_snapshot: { reproducibility?: ReproducibilitySnapshot } };
+    const final = (completeWorkflow as jest.Mock).mock.calls[0][2] as { config_snapshot: { reproducibility?: ReproducibilitySnapshot; segment_pack?: unknown } };
+    // D-100: pack đã tính stage 2–4 được ghi cùng kết quả.
+    expect(final.config_snapshot.segment_pack).toEqual({ pack_id: 'hkd-secured', pack_version: expect.any(String), segment: 'HKD' });
     const r = final.config_snapshot.reproducibility!;
     expect(r).toBeDefined();
     expect(r.ai_steps.policy_checks).toMatchObject({ prompt_source: 'PROFILE', prompt_sha256: sha(override), model_override: 'model-eval' });
