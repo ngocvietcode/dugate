@@ -27,6 +27,7 @@ function authorization(
 describe('Business Operations API query parsing', () => {
   it('applies stable defaults without turning an absent search into a query', () => {
     expect(parseBusinessOperationsDashboardQuery(new URLSearchParams())).toEqual({
+      sort: 'recent',
       range: 'today',
       profile: 'ALL',
       operationType: 'ALL',
@@ -39,6 +40,7 @@ describe('Business Operations API query parsing', () => {
 
   it('parses, trims, and maps all public query parameter names', () => {
     const params = new URLSearchParams({
+      sort: 'recent',
       range: 'last_month',
       profile: ' profile-a ',
       operation_type: ' workflows:payroll ',
@@ -49,6 +51,7 @@ describe('Business Operations API query parsing', () => {
     });
 
     expect(parseBusinessOperationsDashboardQuery(params)).toEqual({
+      sort: 'recent',
       range: 'last_month',
       profile: 'profile-a',
       operationType: 'workflows:payroll',

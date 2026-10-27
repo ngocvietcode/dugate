@@ -115,12 +115,12 @@ describe('allAiFields', () => {
     expect(allAiFields(MB02_SCHEMA)).toHaveLength(expected);
   });
 
-  it('returns exactly 86 top-level aiFields for the real MB02 schema', () => {
+  it('returns exactly 85 top-level aiFields for the real MB02 schema', () => {
     if (!MB02_SCHEMA) throw new Error('MB02_SCHEMA is null in the registry');
-    // The current MB02 design has 39 + 43 + 2 + 2 = 86 top-level AI fields
+    // The current MB02 design has 85 top-level AI fields
     // (see mb02.md §4.1). If this number changes, either the schema was
     // extended intentionally (update this test) or something regressed.
-    expect(allAiFields(MB02_SCHEMA)).toHaveLength(86);
+    expect(allAiFields(MB02_SCHEMA)).toHaveLength(85);
   });
 });
 

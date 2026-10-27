@@ -20,7 +20,21 @@ import { DEFAULT_COMPARE_CONFIG, createEmptyThongTinChung, type PayrollJSON } fr
 
 // ─── Load IDP Input Sample ────────────────────────────────────────────────────
 
-const IDP_SAMPLE = require('../../handover-report/Payroll/N8nOldCode/InputSample.json') as Array<Record<string, unknown>>;
+// Synthetic IDP envelope: independent of untracked handover files and live systems.
+const IDP_SAMPLE: Array<Record<string, unknown>> = [{
+  request_id: 'case-test-payroll',
+  callback_url: 'https://idp.example.test/hook/v1/cases/case-test-payroll',
+  artifacts: [
+    { artifact_code: 'payment_request_excel', file_type: 'xlsx', url: 'https://idp.example.test/files/payroll.xlsx' },
+    { artifact_code: 'payment_request_pdfs', file_type: 'pdf', url: 'https://idp.example.test/files/payroll.pdf' },
+  ],
+}];
+
+jest.mock('@/lib/pipelines/processors/http-client', () => ({
+  ...jest.requireActual('@/lib/pipelines/processors/http-client'),
+  assertSafeUrl: jest.fn(async (url: string) => url),
+  ssrfSafeFetch: jest.fn(async () => { throw new Error('simulated CSP network failure'); }),
+}));
 const sample = IDP_SAMPLE[0];
 
 // ─── Test: IDP Input Parsing ──────────────────────────────────────────────────
@@ -42,24 +56,24 @@ describe('E2E: IDP Input Sample Parsing', () => {
         : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     }));
 
-    expect(fileUrls[0].url).toContain('api.aws.csp.vpbank.dev/files/');
+    expect(fileUrls[0].url).toContain('idp.example.test/files/');
     expect(fileUrls[0].filename).toBe('payment_request_excel.xlsx');
     expect(fileUrls[1].filename).toBe('payment_request_pdfs.pdf');
   });
 
   it('should extract callback_url from IDP sample', () => {
     const callbackUrl = sample.callback_url as string;
-    expect(callbackUrl).toContain('api.aws.csp.vpbank.dev/hook/v1/cases/');
+    expect(callbackUrl).toContain('idp.example.test/hook/v1/cases/');
   });
 
   it('should extract request_id from IDP sample', () => {
-    expect(sample.request_id).toBe('case-6kKqxPnIy');
+    expect(sample.request_id).toBe('case-test-payroll');
   });
 
   it('should build csp_oauth2 auth config from known credentials', () => {
     const authConfig: FileUrlAuthConfig = {
       type: 'csp_oauth2',
-      token_url: 'https://api.aws.csp.vpbank.dev/auth/v1/csp/token',
+      token_url: 'https://idp.example.test/auth/v1/csp/token',
       client_id: 'int-eda-aif-rpa-du-cli',
       client_secret: 'test-client-secret', // placeholder — no test reads this value
     };
@@ -73,7 +87,7 @@ describe('E2E: IDP Input Sample Parsing', () => {
 
 describe('E2E: CSP Token Manager', () => {
   const mockConfig: CspTokenConfig = {
-    token_url: 'https://api.aws.csp.vpbank.dev/auth/v1/csp/token',
+    token_url: 'https://idp.example.test/auth/v1/csp/token',
     client_id: 'test-client',
     client_secret: 'test-secret',
   };
@@ -85,7 +99,7 @@ describe('E2E: CSP Token Manager', () => {
   it('should throw on network error (no real CSP endpoint)', async () => {
     // This test confirms getCspToken properly throws when CSP is unreachable
     // In production, the real CSP endpoint would respond
-    await expect(getCspToken(mockConfig)).rejects.toThrow();
+    await expect(getCspToken(mockConfig)).rejects.toThrow('simulated CSP network failure');
   });
 });
 
@@ -220,7 +234,9 @@ describe('E2E: Compare Engine with realistic VPBank payroll data', () => {
 
     expect(webhookPayload.extracted_data.final_decision).toBe('APPROVED');
     expect(webhookPayload.extracted_data.summary.matched_rows).toBe(3);
-    expect(webhookPayload.extracted_data.header_compare.length).toBe(8); // 8 header rules
+    expect(webhookPayload.extracted_data.header_compare.map((rule) => rule.field_code)).toEqual(
+      DEFAULT_COMPARE_CONFIG.header_rules.map((rule) => rule.field_code),
+    );
     expect(webhookPayload.extracted_data.detail_results.length).toBe(2); // trong_vpbank + ngoai_vpbank
   });
 });
@@ -243,12 +259,12 @@ describe('E2E: IDP → DUGate Request Mapping', () => {
       }))),
       file_url_auth: JSON.stringify({
         type: 'csp_oauth2',
-        token_url: 'https://api.aws.csp.vpbank.dev/auth/v1/csp/token',
+        token_url: 'https://idp.example.test/auth/v1/csp/token',
         client_id: 'int-eda-aif-rpa-du-cli',
         client_secret: 'test-client-secret', // placeholder — no test reads this value
       }),
       webhook_url: callbackUrl,
-      csp_token_url: 'https://api.aws.csp.vpbank.dev/auth/v1/csp/token',
+      csp_token_url: 'https://idp.example.test/auth/v1/csp/token',
       csp_client_id: 'csp-service',
       csp_client_secret: 'callback-secret',
     };

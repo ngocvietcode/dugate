@@ -190,6 +190,7 @@ describe('Business Operations dashboard query mapping', () => {
     const params = new URLSearchParams(query);
 
     expect(Object.fromEntries(params.entries())).toEqual({
+      sort: 'recent',
       range: 'this_month',
       profile: 'profile-1',
       operation_type: 'payroll',
