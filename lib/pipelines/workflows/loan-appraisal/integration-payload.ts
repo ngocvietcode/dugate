@@ -276,8 +276,8 @@ function pruneEmpty(value: unknown): unknown {
 }
 
 /**
- * Kết quả OCR theo chứng từ (S2). Bản data giữ đúng cấu trúc của danh mục chứng từ, đã bỏ trường rỗng; bỏ ield_confidences,
- * source_pages, vidence_id, ile_id (provenance, không phải giá trị cuối).
+ * Kết quả OCR theo chứng từ (S2). Bản data giữ đúng cấu trúc của danh mục chứng từ, đã bỏ trường rỗng; bỏ field_confidences,
+ * source_pages, evidence_id, file_id (provenance, không phải giá trị cuối).
  */
 function buildExtractions(result: FinalResult): IntegrationPayload['extractions'] {
   return arrayOf(result.documents?.evidences).map((e) => {
@@ -346,6 +346,7 @@ function buildFinancials(f: FinancialMetrics | undefined): IntegrationPayload['f
       unit: m.unit,
       status: m.status,
       ...(m.input_conflict ? { conflict: true as const } : {}),
+      ...(m.needs_review ? { review: true as const } : {}),
     };
   });
 }

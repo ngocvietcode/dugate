@@ -81,7 +81,7 @@ function minConfidence(byId: ReadonlyMap<string, EvidenceEnvelope>, recordIds: s
 }
 
 /** Gộp `candidates` theo khóa so (một số nguồn S5 có khóa chuẩn hóa khác MD-R06); thứ tự theo lần xuất hiện đầu. */
-/** Gợi ý hợp lệ định dạng; null = không kiểm tra được (không phải \alse\). */
+/** Gợi ý hợp lệ định dạng; null = không kiểm tra được (không phải `false`). */
 export function formatOk(kind: MasterFieldKind, value: unknown): boolean | null {
   const s = String(value ?? '').trim();
   if (!s) return null;

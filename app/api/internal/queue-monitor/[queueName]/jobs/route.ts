@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrCreateQueue } from '@/lib/queue/worker-group-router';
 import { isValidWorkerGroupName } from '@/lib/queue/worker-group-validation';
+import { OWNED_QUEUE_BASES } from '@/lib/queue/pipeline-queue';
 import { requireCapability } from '@/lib/auth-guard';
 import { Logger } from '@/lib/logger';
 
@@ -37,15 +38,13 @@ export async function GET(
     const decodedQueueName = decodeURIComponent(queueName);
 
     // Validate queue name format: only allow known queue patterns
-    const ALLOWED_QUEUE_NAMES = ['pipeline', 'workflow-steps'];
-    const isAllowed =
-      ALLOWED_QUEUE_NAMES.includes(decodedQueueName) ||
-      (decodedQueueName.startsWith('pipeline.') && isValidWorkerGroupName(decodedQueueName.slice('pipeline.'.length))) ||
-      (decodedQueueName.startsWith('workflow-steps.') && isValidWorkerGroupName(decodedQueueName.slice('workflow-steps.'.length)));
+    const isAllowed = OWNED_QUEUE_BASES.some((base) =>
+      decodedQueueName === base ||
+      (decodedQueueName.startsWith(`${base}.`) && isValidWorkerGroupName(decodedQueueName.slice(base.length + 1))));
 
     if (!isAllowed) {
       return NextResponse.json({
-        error: 'Invalid queue name. Must be "pipeline", "workflow-steps", "pipeline.{group-name}", or "workflow-steps.{group-name}".',
+        error: `Invalid queue name. Must be one of ${OWNED_QUEUE_BASES.join(', ')}, optionally suffixed ".{group-name}".`,
       }, { status: 400 });
     }
 

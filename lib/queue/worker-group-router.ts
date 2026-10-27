@@ -8,7 +8,7 @@ import { db } from '@/lib/db';
 import { apiKeys, workerGroups } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { createRedisConnection } from './redis';
-import { PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME } from './pipeline-queue';
+import { OWNED_QUEUE_BASES, PIPELINE_QUEUE_NAME, WORKFLOW_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME } from './pipeline-queue';
 import { MAX_QUEUE_DEPTH, getQueueRetentionOptions } from '@/lib/config';
 import { Logger } from '@/lib/logger';
 
@@ -21,6 +21,9 @@ export interface RouteResult {
   queueName: string;
   stepsQueue: Queue;
   stepsQueueName: string;
+  /** Queue job workflow cha (`workflow` / `workflow.<group>`); dùng qua selectWorkflowQueue. */
+  workflowQueue: Queue;
+  workflowQueueName: string;
 }
 
 // ─── Default job options (shared across all queues) ───────────────────────────
@@ -110,7 +113,7 @@ export async function checkBackpressure(queue: Queue): Promise<boolean> {
 export async function resolveTargetQueue(apiKeyId?: string): Promise<RouteResult> {
   // No apiKeyId → default queue
   if (!apiKeyId) {
-    return buildRouteResult(PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME);
+    return buildRouteResult(PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME, WORKFLOW_QUEUE_NAME);
   }
 
   // Single query: lookup profile's workerGroup + verify group exists via LEFT JOIN
@@ -126,12 +129,12 @@ export async function resolveTargetQueue(apiKeyId?: string): Promise<RouteResult
 
   // Profile not found → default queue (not an error per Req 3.9)
   if (!result) {
-    return buildRouteResult(PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME);
+    return buildRouteResult(PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME, WORKFLOW_QUEUE_NAME);
   }
 
   // No workerGroup assigned → default queue
   if (!result.workerGroup) {
-    return buildRouteResult(PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME);
+    return buildRouteResult(PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME, WORKFLOW_QUEUE_NAME);
   }
 
   // workerGroup set but group doesn't exist (stale reference) → default queue + warn
@@ -139,24 +142,42 @@ export async function resolveTargetQueue(apiKeyId?: string): Promise<RouteResult
     logger.warn(
       `[resolveTargetQueue] Profile ${apiKeyId} references non-existent worker group "${result.workerGroup}" — routing to default queue`,
     );
-    return buildRouteResult(PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME);
+    return buildRouteResult(PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME, WORKFLOW_QUEUE_NAME);
   }
 
   // Route to group-specific queues
   const pipelineQueueName = `pipeline.${result.workerGroup}`;
   const stepsQueueName = `workflow-steps.${result.workerGroup}`;
-  return buildRouteResult(pipelineQueueName, stepsQueueName);
+  const workflowQueueName = `workflow.${result.workerGroup}`;
+  return buildRouteResult(pipelineQueueName, stepsQueueName, workflowQueueName);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function buildRouteResult(pipelineQueueName: string, stepsQueueName: string): RouteResult {
+function buildRouteResult(pipelineQueueName: string, stepsQueueName: string, workflowQueueName: string): RouteResult {
   return {
     queue: getOrCreateQueue(pipelineQueueName),
     queueName: pipelineQueueName,
     stepsQueue: getOrCreateQueue(stepsQueueName),
     stepsQueueName: stepsQueueName,
+    workflowQueue: getOrCreateQueue(workflowQueueName),
+    workflowQueueName,
   };
+}
+
+/**
+ * Queue cho một job workflow cha. Dùng queue `workflow` (concurrency riêng) khi đã có worker nghe nó; chưa có (đang triển khai:
+ * bản web lên trước bản worker, hoặc worker cũ) hoặc Redis lỗi → queue `pipeline` như trước, vì worker `pipeline` xử lý được
+ * cả job workflow. Nhờ vậy thứ tự deploy web / worker nào cũng không làm hồ sơ bị kẹt hay bị từ chối.
+ */
+export async function selectWorkflowQueue(route: RouteResult): Promise<{ queue: Queue; queueName: string }> {
+  try {
+    if ((await route.workflowQueue.getWorkersCount()) > 0) return { queue: route.workflowQueue, queueName: route.workflowQueueName };
+    logger.warn(`[selectWorkflowQueue] No worker on "${route.workflowQueueName}" yet — routing workflow job to "${route.queueName}"`);
+  } catch (err) {
+    logger.warn(`[selectWorkflowQueue] Could not count workers on "${route.workflowQueueName}" — routing workflow job to "${route.queueName}"`, undefined, err);
+  }
+  return { queue: route.queue, queueName: route.queueName };
 }
 
 async function quitCachedConnection(cacheKey: string): Promise<void> {
@@ -186,10 +207,7 @@ async function quitCachedConnection(cacheKey: string): Promise<void> {
  * not fail a database deletion that already succeeded.
  */
 export async function evictGroupFromCache(groupName: string): Promise<void> {
-  const pipelineKey = `pipeline.${groupName}`;
-  const stepsKey = `workflow-steps.${groupName}`;
-
-  for (const key of [pipelineKey, stepsKey]) {
+  for (const key of OWNED_QUEUE_BASES.map((base) => `${base}.${groupName}`)) {
     // Reuse the cached instance when there is one; otherwise open a short-lived queue
     // so obliterate also works in a process that never routed to this group.
     const cached = queueCache.get(key);

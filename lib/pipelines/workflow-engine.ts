@@ -860,6 +860,14 @@ async function sendWebhook(
     state,
     done: state === 'SUCCEEDED' || state === 'FAILED',
   };
+  // margin-deposit callback contract: echo the client-supplied x-correlation-id
+  // back to the caller as transaction_id. When the client omitted the header,
+  // the API route generated a UUID and stored it on the Operation; that same
+  // value is still safe to return here as the request transaction identifier.
+  // (Restored: dropped by an unrelated commit c0a38dbe, test kept expecting it.)
+  if (ctx.endpointSlug === 'workflows:margin-deposit' && ctx.correlationId) {
+    payload.transaction_id = ctx.correlationId;
+  }
   if (typeof failure === 'string') {
     payload.error = failure;
   } else if (failure) {

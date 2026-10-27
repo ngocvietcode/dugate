@@ -252,8 +252,10 @@ describe('parseFieldConfidence', () => {
 
     it('returns a deep-cloned structure — mutating the output does not touch the input', () => {
       const input = { a: ['x ⟨conf:0.5⟩'] };
-      const out = parseFieldConfidence(input) as { a: unknown[] };
-      out.a.push('mutated');
+      // Nested string arrays are inferred checkbox fields with one field-level wrapper.
+      const out = parseFieldConfidence(input) as { a: { value: string[]; confidence: number } };
+      expect(out).toEqual({ a: { value: ['x'], confidence: 0.5 } });
+      out.a.value.push('mutated');
       expect(input.a).toEqual(['x ⟨conf:0.5⟩']);
       expect(input.a.length).toBe(1);
     });

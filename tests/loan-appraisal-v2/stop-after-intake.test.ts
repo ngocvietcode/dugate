@@ -25,7 +25,7 @@ import { initialRunState, runReducer, type RunState } from '@/app/loan-appraisal
 
 import { classifyOf, ev, ID_A12, loanApp } from '../loan-dossier/fixtures/dossier';
 
-/** usinessLines: 2 chứng từ ghi ngành nghề khác nhau → có 1 cặp cần so ngữ nghĩa (D-57). */
+/** businessLines: 2 chứng từ ghi ngành nghề khác nhau → có 1 cặp cần so ngữ nghĩa (D-57). */
 function context(vars: Record<string, unknown>, businessLines?: [string, string]) {
   const borrower = { party_role: 'BORROWER', full_name: 'NGUYỄN VĂN AN', id_number: ID_A12 };
   const evs = [

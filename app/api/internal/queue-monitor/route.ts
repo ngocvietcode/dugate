@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { workerGroups } from '@/lib/db/schema';
 import { getOrCreateQueue } from '@/lib/queue/worker-group-router';
+import { OWNED_QUEUE_BASES, type QueueBase } from '@/lib/queue/pipeline-queue';
 import { requireCapability } from '@/lib/auth-guard';
 import { Logger } from '@/lib/logger';
 
@@ -12,7 +13,7 @@ const logger = new Logger({ service: 'queue-monitor' });
 
 interface QueueStats {
   name: string;
-  type: 'pipeline' | 'workflow-steps';
+  type: QueueBase;
   group: string | null; // null = default queue
   counts: {
     waiting: number;
@@ -35,14 +36,11 @@ export async function GET() {
       .orderBy(workerGroups.name);
 
     // Build list of all queues to query
-    const queueDefs: Array<{ name: string; type: 'pipeline' | 'workflow-steps'; group: string | null }> = [
-      { name: 'pipeline', type: 'pipeline', group: null },
-      { name: 'workflow-steps', type: 'workflow-steps', group: null },
-    ];
+    const queueDefs: Array<{ name: string; type: QueueBase; group: string | null }> =
+      OWNED_QUEUE_BASES.map((base) => ({ name: base, type: base, group: null }));
 
     for (const g of groups) {
-      queueDefs.push({ name: `pipeline.${g.name}`, type: 'pipeline', group: g.name });
-      queueDefs.push({ name: `workflow-steps.${g.name}`, type: 'workflow-steps', group: g.name });
+      for (const base of OWNED_QUEUE_BASES) queueDefs.push({ name: `${base}.${g.name}`, type: base, group: g.name });
     }
 
     // Query Redis for job counts

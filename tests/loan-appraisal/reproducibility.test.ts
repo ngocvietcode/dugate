@@ -14,12 +14,13 @@ jest.mock('@/lib/pipelines/workflow-engine', () => {
 });
 
 import { createHash } from 'crypto';
+import packageJson from '@/package.json';
 
 import { runLoanAppraisal } from '@/lib/pipelines/workflows/loan-appraisal';
 import { completeWorkflow } from '@/lib/pipelines/workflow-engine';
 import { DOSSIER_PRECHECK_PROMPT_TEMPLATE } from '@/lib/pipelines/workflows/loan-appraisal/dossier-precheck-prompt';
 import { POLICY_CHECKS_PROMPT_TEMPLATE } from '@/lib/pipelines/workflows/loan-appraisal/prompt-checks';
-import { buildReproducibilitySnapshot, CATALOG_VERSIONS, type ReproducibilitySnapshot } from '@/lib/pipelines/workflows/loan-appraisal/reproducibility';
+import { buildReproducibilitySnapshot, fingerprintSchemaContents, CATALOG_VERSIONS, type ReproducibilitySnapshot } from '@/lib/pipelines/workflows/loan-appraisal/reproducibility';
 import { LOAN_APPRAISAL_WORKFLOW_VERSION } from '@/lib/pipelines/workflows/loan-appraisal/types';
 
 import { classifyOf, ev, ID_A12, loanApp } from '../loan-dossier/fixtures/dossier';
@@ -28,6 +29,32 @@ const sha = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
 const none = { promptOverrides: {}, modelOverrides: {}, reasoningEffortOverrides: {} };
 
 describe('buildReproducibilitySnapshot', () => {
+  it('schema_fingerprint là sha256 ổn định qua hai lần gọi', () => {
+    const a = buildReproducibilitySnapshot(none).schema_fingerprint;
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    expect(buildReproducibilitySnapshot(none).schema_fingerprint).toBe(a);
+  });
+
+  it('băm theo tên file đã sắp xếp và thay đổi khi nội dung một schema đổi', () => {
+    const a = { 'b.schema.json': { type: 'string' }, 'a.schema.json': { type: 'number' } };
+    expect(fingerprintSchemaContents(a)).toBe(sha('a.schema.json\n{"type":"number"}\n\u0000\nb.schema.json\n{"type":"string"}'));
+    expect(fingerprintSchemaContents({ 'a.schema.json': a['a.schema.json'], 'b.schema.json': a['b.schema.json'] })).toBe(fingerprintSchemaContents(a));
+    expect(fingerprintSchemaContents({ ...a, 'b.schema.json': { type: 'boolean' } })).not.toBe(fingerprintSchemaContents(a));
+  });
+
+  it('app_version ưu tiên APP_VERSION, mặc định dùng package.json', () => {
+    const previous = process.env.APP_VERSION;
+    try {
+      delete process.env.APP_VERSION;
+      expect(buildReproducibilitySnapshot(none).app_version).toBe(packageJson.version);
+      process.env.APP_VERSION = 'test-build-version';
+      expect(buildReproducibilitySnapshot(none).app_version).toBe('test-build-version');
+    } finally {
+      if (previous === undefined) delete process.env.APP_VERSION;
+      else process.env.APP_VERSION = previous;
+    }
+  });
+
   it('tất định và ghi workflow_version + phiên bản danh mục', () => {
     const a = buildReproducibilitySnapshot(none);
     expect(buildReproducibilitySnapshot(none)).toEqual(a);

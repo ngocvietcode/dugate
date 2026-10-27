@@ -1,8 +1,12 @@
-# JSON tích hợp hồ sơ vay: Contract 5.1
+# JSON tích hợp hồ sơ vay: Contract 5.2
 
-Đặc tả của `dugate.loan-appraisal.integration`, `schema_version = "5.1"`. Dành cho hệ thống ngoài nhận kết quả thẩm định qua
+Đặc tả của `dugate.loan-appraisal.integration`, `schema_version = "5.2"`. Dành cho hệ thống ngoài nhận kết quả thẩm định qua
 `GET /api/v1/operations/{id}?view=integration`, `GET /api/v1/operations/{id}/download?view=integration` và webhook `SUCCEEDED`.
 
+> **5.2 so với 5.1 (thay đổi MINOR, D-101).** Thêm `financials[].review?: true`: chỉ số đã tính được nhưng có đầu vào đọc với độ tin cậy
+> thấp, cần rà soát trước khi dùng (cùng tên cờ `review` như ở trường của `documents`). Vắng = mọi đầu vào đã chấp nhận. Consumer 5.1 bỏ qua
+> field không biết nên không vỡ. Cùng đợt, rule engine trả `REVIEW` (thay vì `PASS`) khi chỉ số nó so sánh mang cờ này.
+>
 > **5.1 so với 5.0 (thay đổi MINOR).** Thêm `extractions[]` (kết quả OCR theo chứng từ, **bắt buộc**). Các khối `parties`, `assets`, `documents`,
 > `findings` trở thành **tuỳ chọn**: giai đoạn 2 hiện tạm tắt các bước kiểm tra hồ sơ (Customer 360, checklist, đối chiếu chéo, master data) nên
 > các khối này vắng mặt. Khi các bước đó được bật lại, hoặc với kết quả cũ đã có dữ liệu, chúng xuất hiện như mô tả ở mục 4.
@@ -49,7 +53,7 @@ ra consumer mà không ai biết. Consumer **không** nên bật chế độ str
 ```jsonc
 {
   "schema": "dugate.loan-appraisal.integration",
-  "schema_version": "5.1",
+  "schema_version": "5.2",
   "case":     { "id", "completed_at?", "profile": { "segment": "HKD|SME|CORPORATE|RETAIL", "product", "product_name?", "flow?", "catalog": { "checks", "documents" } } },
   "decision": { "status", "recommendation", "suggested_amount_vnd?", "suggested_tenor_months?", "route", "required_role?", "review_required",
                 "ready_for_handover?", "reason_codes[]", "conditions?[{code,message?}]", "covenants?[]" },
@@ -63,7 +67,7 @@ ra consumer mà không ai biết. Consumer **không** nên bật chế độ str
                  "records[{doc,item?,party?,asset?,fields[]}]",
                  "issues[{kind,file,doc?,message?}]" },
   "findings?": [ { "kind": "DISCREPANCY|LOGIC", "field", "status?", "severity", "review?", "code?", "party?", "asset?", "values?[{doc,value}]", "message?" } ],
-  "financials": [ { "metric", "value?", "unit", "status", "conflict?" } ],
+  "financials": [ { "metric", "value?", "unit", "status", "conflict?", "review?" } ],
   "checks":   [ { "id", "ver", "kind": "ENGINE|LLM|AGENT|EXTERNAL", "group", "outcome", "severity", "code?", "party?", "asset?", "measure?", "confidence?", "message?", "exception?" } ],
   "checks_summary": { "status", "policy?", "total", "by_outcome[{outcome,count}]" },
   "exceptions?": [ "<checks[].id>" ],

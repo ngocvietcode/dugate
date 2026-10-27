@@ -67,7 +67,10 @@ export interface DossierPortsHandle {
   extractPorts(fileRefs: Readonly<Record<string, string>>): ExtractPorts;
   /** `file_id` → đường dẫn storage của các file đã đọc ở S1 (để lưu checkpoint). */
   fileRefs(): Record<string, string>;
-  /** Xoá các bản sao tạm đã upload (best-effort). */
+  /**
+   * Bỏ cache nội dung file và xoá các bản sao tạm đã upload (best-effort). Gọi ngay sau S2: S3–S5 không đọc file, nên giữ
+   * nội dung tới hết lần chạy chỉ chiếm heap của worker workflow (WORKFLOW-SUSPEND-DESIGN §3.3).
+   */
   cleanup(): Promise<void>;
 }
 
@@ -166,6 +169,7 @@ export function createDossierPorts(ctx: WorkflowContext): DossierPortsHandle {
     },
     fileRefs: () => ({ ...refsById }),
     async cleanup() {
+      contentByPath.clear();
       if (uploaded.length === 0) return;
       try {
         const backend = await getStorageBackend();

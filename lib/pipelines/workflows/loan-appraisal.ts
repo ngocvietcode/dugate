@@ -81,7 +81,13 @@ import {
   enabledPromptChecks,
   parsePromptCheckResults,
   promptChecksNotRun,
+  resolveLacMode,
+  type LacPromptOutcome,
 } from './loan-appraisal/prompt-checks';
+import { buildLoanApplicationContext } from '@/lib/loan-dossier/context/build';
+import { renderLoanApplicationContext } from '@/lib/loan-dossier/context/render';
+import type { LoanApplicationContext } from '@/lib/loan-dossier/context/schema';
+import { lacScopeFromInputs } from '@/lib/loan-dossier/context/scope';
 import { packForProduct } from './loan-appraisal/segment-packs/registry';
 import { deriveProcessingStatus, LOAN_STAGE_DEFINITIONS } from './loan-appraisal/state-machine';
 import {
@@ -303,6 +309,26 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       }
     }
 
+    // ── Loan Application Context (D-103): view tất định, dẫn nguồn được cho rule LLM. Dựng lại mỗi lần, không checkpoint. ──
+    // lac_mode: off (mặc định) | shadow (chỉ thống kê, không đổi prompt) | on (prompt dùng {{context}}). Lỗi dựng → đường cũ + warning.
+    const lacMode = resolveLacMode(pipelineVars.lac_mode);
+    let lac: LoanApplicationContext | null = null;
+    if (lacMode !== 'off') {
+      try {
+        lac = buildLoanApplicationContext({
+          product_code: product.code,
+          flow: typeof loanFlow === 'string' ? loanFlow : null,
+          evidences: extractCheckpoint.evidences,
+          s3: mapOutcome.data,
+          s3_status: mapOutcome.data ? mapOutcome.status : null,
+        });
+      } catch (error) {
+        const name = error instanceof Error ? error.name : 'Error';
+        configWarnings.push(`LAC_UNAVAILABLE:${name}`);
+        logger.warn(`[LOAN-APPRAISAL] LAC_UNAVAILABLE: ${name}`);
+      }
+    }
+
     // ── Stage 2: deterministic financial calculations (đọc OCR + asset_registry của S3 để tính giá trị TSBĐ / LTV) ──
     let financial = getStep(ctx, 2)?.extracted_data as FinancialMetrics | undefined;
     if (resumeFromStep <= 2) {
@@ -326,6 +352,8 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
 
     // ── Stage 3: versioned policy rules (rule engine + rule LLM) ────────────────────────────────────
     let policy = getStep(ctx, 3)?.extracted_data as PolicyComplianceResult | undefined;
+    /** D-103: LAC trong prompt của lần chạy này (cho loan_application_context_summary). */
+    let lacPromptUse: { used: boolean; facts_rendered: number } | null = null;
     if (resumeFromStep <= 3) {
       await beginStage(ctx, 3, 'Đang chạy bộ rule sản phẩm và kiểm tra tuân thủ...');
 
@@ -335,6 +363,11 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       const promptChecks = enabledPromptChecks(checkSet);
       let promptSubOperationId: string | null = null;
       let promptEvidenceStats: Record<string, number> | null = null;
+      let lacOutcome: LacPromptOutcome | null = null;
+      // LAC-R17: shadow chỉ đo (độ dài, số dữ kiện, cắt bớt…) để so với đường cũ; không gửi model, không đổi kết quả.
+      const lacStats = lac && lacMode === 'shadow' && promptChecks.length > 0
+        ? renderLoanApplicationContext(lac, lacScopeFromInputs(promptChecks.map((c) => c.input))).stats
+        : null;
       if (promptChecks.length > 0) {
         try {
           const response = await enqueueChecked(
@@ -343,13 +376,19 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
             buildPromptCheckVars({
               checkSet,
               // Rule LLM đọc OCR trực tiếp + người & tài sản đã gom (S3) dạng gọn dựng từ graph. S3 lỗi ⇒ khối master_data ra rỗng.
+              // lac_mode = on: thay bằng Loan Application Context ({{context}}, mã F<n>).
               evidence,
               customer360: {},
               dossierGraph,
               financial,
+              lac,
+              lacMode,
             }, ctx.promptOverrides.policy_checks, (stats) => {
               promptEvidenceStats = { ...stats };
               logger.info(`[LOAN-APPRAISAL] Rule LLM evidence: ${JSON.stringify(stats)}`);
+            }, (outcome) => {
+              lacOutcome = outcome;
+              if (outcome.legacyTemplate) configWarnings.push('LAC_TEMPLATE_LEGACY');
             }),
             null,
             // Step key riêng `policy_checks`; chưa cấu hình thì dùng model của bước evaluate
@@ -358,7 +397,11 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
             ctx.reasoningEffortOverrides.policy_checks ?? ctx.reasoningEffortOverrides.evaluate,
           );
           promptSubOperationId = response.operation.id;
-          promptResults = parsePromptCheckResults(parseDeep(cleanLlmJson(response.content)), checkSet, evidence);
+          const usedLac = lacOutcome as LacPromptOutcome | null;
+          promptResults = parsePromptCheckResults(
+            parseDeep(cleanLlmJson(response.content)), checkSet, evidence, undefined,
+            usedLac?.used && usedLac.render && lac ? { render: usedLac.render, lac } : undefined,
+          );
         } catch (error) {
           if (error instanceof WorkflowCancelledError) throw error;
           const message = error instanceof Error ? error.message : String(error);
@@ -366,6 +409,10 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
           promptResults = promptChecksNotRun(checkSet, message);
         }
       }
+
+      const lacUsedRender = (lacOutcome as LacPromptOutcome | null)?.render ?? null;
+      const lacRenderedStats = lacStats ?? lacUsedRender?.stats ?? null;
+      if (lacRenderedStats) lacPromptUse = { used: Boolean((lacOutcome as LacPromptOutcome | null)?.used), facts_rendered: lacRenderedStats.facts_rendered };
 
       policy = pack.evaluatePolicy({ policy: productPolicy, checkSet, financial, promptResults });
       const passed = policy.rule_results.filter((rule) => rule.result === 'PASS').length;
@@ -383,6 +430,14 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
           prompt_rules: policy.rule_results.filter((rule) => rule.check_kind === 'PROMPT').length,
           check_set_source: checkSet.source,
           ...(promptEvidenceStats ? { prompt_evidence: promptEvidenceStats } : {}),
+          // D-103: chỉ số đếm của LAC (không có giá trị dữ kiện — LAC-R19).
+          ...(lacMode !== 'off' ? {
+            lac: {
+              mode: lacMode,
+              used: (lacOutcome as LacPromptOutcome | null)?.used ?? false,
+              ...(lacStats ?? (lacOutcome as LacPromptOutcome | null)?.render?.stats ?? {}),
+            },
+          } : {}),
           external_checks: policy.external_checks,
         },
         extracted_data: policy,
@@ -406,6 +461,18 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       customer_360: mapOutcome.data,
       dossier_graph: dossierGraph ? toDossierGraphView(dossierGraph) : null,
       claims: storedClaims,
+      ...(lac && lacMode !== 'off' ? {
+        loan_application_context_summary: {
+          lac_version: lac.lac_version,
+          mode: lacMode,
+          used_in_prompt: lacPromptUse?.used ?? false,
+          source_hash: lac.meta.source_hash,
+          fact_count: lac.meta.fact_count,
+          rendered_fact_count: lacPromptUse?.facts_rendered ?? null,
+          conflicts: lac.conflicts.length,
+          gaps: lac.gaps.map((g) => ({ code: g.code, count: g.count })),
+        },
+      } : {}),
       risk_notes: [],
       system_notes: [
         'Các bước kiểm tra hồ sơ (checklist, đối chiếu chéo, master data, kiểm tra nháp) đang tạm tắt ở giai đoạn 2; kết quả gồm OCR, gom người & tài sản, chỉ số tài chính, bộ rule và khuyến nghị.',

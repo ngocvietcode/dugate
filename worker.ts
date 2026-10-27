@@ -21,6 +21,7 @@ import { Worker, Job } from 'bullmq';
 import {
   SUBSTEP_WORKER_CONCURRENCY,
   WORKER_CONCURRENCY,
+  WORKFLOW_CONCURRENCY,
   WORKER_MEMORY_THRESHOLD,
 } from './lib/config';
 import { Logger } from './lib/logger';
@@ -57,6 +58,7 @@ if (!workerQueueResult.valid) {
 
 const PIPELINE_QUEUE = workerQueueResult.pipelineQueue;
 const STEPS_QUEUE = workerQueueResult.stepsQueue;
+const WORKFLOW_QUEUE = workerQueueResult.workflowQueue;
 
 // Sản phẩm vay nào trong loan_products.json cũng phải có segment pack (D-100): lỗi cấu hình dừng worker ngay
 // thay vì để từng hồ sơ của sản phẩm đó FAILED lúc chạy.
@@ -81,6 +83,7 @@ const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 log.info(`[Worker] Starting BullMQ Workers`);
 log.info(`[Worker] pipeline queue: ${PIPELINE_QUEUE} (concurrency ${concurrency})`);
 log.info(`[Worker] workflow-steps queue: ${STEPS_QUEUE} (concurrency ${subStepConcurrency})`);
+log.info(`[Worker] workflow queue: ${WORKFLOW_QUEUE} (concurrency ${WORKFLOW_CONCURRENCY})`);
 // Log-only copy: mask any credentials embedded in the Redis URL.
 // Do NOT reassign `redisUrl` — the real connection is made by createRedisConnection(),
 // which reads process.env.REDIS_URL itself (lib/queue/redis.ts).
@@ -146,6 +149,23 @@ const stepsWorker = new Worker<PipelineJobData>(
   },
 );
 
+// ─── Workflow Worker ──────────────────────────────────────────────────────────
+// Job workflow (cha) phần lớn thời gian chỉ chờ sub-step trên STEPS_QUEUE, nên có slot riêng để hồ sơ lớn không chiếm
+// slot của job pipeline (docs/WORKFLOW-SUSPEND-DESIGN.md phương án A). Trần thật là bộ nhớ: bộ giám sát heap bên dưới
+// dừng cả worker này.
+
+const workflowWorker = new Worker<PipelineJobData>(
+  WORKFLOW_QUEUE,
+  processJob,
+  {
+    connection: createRedisConnection(),
+    concurrency: WORKFLOW_CONCURRENCY,
+    stalledInterval: 30_000,
+    maxStalledCount: 2,
+    // See the note on pipelineWorker above — keepLogs lives in job options.
+  },
+);
+
 // ─── Event handlers ───────────────────────────────────────────────────────────
 
 function attachEvents(worker: Worker, name: string) {
@@ -190,6 +210,7 @@ function attachEvents(worker: Worker, name: string) {
 
 attachEvents(pipelineWorker, 'pipeline');
 attachEvents(stepsWorker, 'workflow-steps');
+attachEvents(workflowWorker, 'workflow');
 
 // ─── Memory monitoring ────────────────────────────────────────────────────────
 
@@ -204,11 +225,13 @@ setInterval(() => {
     log.warn(`[Worker] ⚠️  Heap at ${(ratio * 100).toFixed(1)}% — pausing workers to allow GC`);
     pipelineWorker.pause();
     stepsWorker.pause();
+    workflowWorker.pause();
     paused = true;
   } else if (ratio <= MEMORY_THRESHOLD * 0.85 && paused) {
     log.info(`[Worker] ✅ Heap recovered to ${(ratio * 100).toFixed(1)}% — resuming workers`);
     pipelineWorker.resume();
     stepsWorker.resume();
+    workflowWorker.resume();
     paused = false;
   }
 }, 10_000);
@@ -231,7 +254,7 @@ ensureQueueCleanupScheduled(log.child({ service: 'queue-cleanup' }));
 async function shutdown(signal: string) {
   log.info(`[Worker] ${signal} received — closing workers gracefully...`);
   stopQueueCleanupScheduled();
-  await Promise.all([pipelineWorker.close(), stepsWorker.close()]);
+  await Promise.all([pipelineWorker.close(), stepsWorker.close(), workflowWorker.close()]);
   log.info(`[Worker] Shutdown complete.`);
   process.exit(0);
 }

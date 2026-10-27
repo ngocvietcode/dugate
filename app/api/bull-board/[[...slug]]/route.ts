@@ -15,7 +15,7 @@ import { HonoAdapter } from '@bull-board/hono';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { isAdmin } from '@/lib/rbac';
-import { getPipelineQueue, getWorkflowStepsQueue } from '@/lib/queue/pipeline-queue';
+import { getPipelineQueue, getWorkflowStepsQueue, OWNED_QUEUE_BASES, WORKFLOW_QUEUE_NAME } from '@/lib/queue/pipeline-queue';
 import { getOrCreateQueue } from '@/lib/queue/worker-group-router';
 import { db } from '@/lib/db';
 import { workerGroups } from '@/lib/db/schema';
@@ -59,14 +59,14 @@ async function resolveQueueAdapters(): Promise<BullMQAdapterType[]> {
   const adapters: BullMQAdapterType[] = [
     new BullMQAdapter(getPipelineQueue()),
     new BullMQAdapter(getWorkflowStepsQueue()),
+    new BullMQAdapter(getOrCreateQueue(WORKFLOW_QUEUE_NAME)),
   ];
 
   try {
     const groups = await db.select({ name: workerGroups.name }).from(workerGroups);
     for (const { name } of groups) {
       if (!name) continue;
-      adapters.push(new BullMQAdapter(getOrCreateQueue(`pipeline.${name}`)));
-      adapters.push(new BullMQAdapter(getOrCreateQueue(`workflow-steps.${name}`)));
+      for (const base of OWNED_QUEUE_BASES) adapters.push(new BullMQAdapter(getOrCreateQueue(`${base}.${name}`)));
     }
   } catch (err) {
     // DB unavailable → still expose the default queues rather than failing.

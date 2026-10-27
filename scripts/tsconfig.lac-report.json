@@ -1,0 +1,6 @@
+﻿{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "include": ["lac-shadow-report.ts", "lib/lac-compare.ts"],
+  "exclude": ["../node_modules"]
+}

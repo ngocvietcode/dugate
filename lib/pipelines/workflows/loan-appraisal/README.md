@@ -238,6 +238,25 @@ Thống kê lọc được ghi vào `content_preview.prompt_evidence` của stag
 **Khi thêm rule LLM tuỳ chỉnh, khai báo đủ `input`**; thiếu loại chứng từ thì
 rule chỉ thấy dữ liệu của loại đã khai.
 
+### Loan Application Context (`lac_mode`, D-103)
+
+Thay cặp `{{master_data}}` + `{{evidence}}` bằng **một** khối `{{context}}`: mọi dữ kiện là một dòng `F<n>` có trạng thái tin cậy
+(`CORROBORATED` / `DECLARED` / `DISPUTED` …) và cờ "cần soát", người / tài sản dùng mã `person-n` / `asset-n` của S3, kèm quan hệ,
+mâu thuẫn và khoảng trống dựng sẵn. Code: `lib/loan-dossier/context/` (`build.ts`, `render.ts`, `scope.ts`, `schema.ts`). Spec:
+[loan_application_context.md](../../../../docs/loan-appraisal/spec-v3/cross_cutting/loan_application_context.md).
+
+| `lac_mode` | Hành vi |
+|---|---|
+| `off` (mặc định) | Như cũ |
+| `shadow` | Dựng + render LAC chỉ để đo (`content_preview.lac`); prompt và lời gọi model giống hệt `off` |
+| `on` | Template mặc định `POLICY_CHECKS_LAC_PROMPT_TEMPLATE`; model dẫn `F<n>` / `F<n>.<k>`. Template ghi đè không có `{{context}}` → đường cũ + warning `LAC_TEMPLATE_LEGACY`; dựng LAC lỗi → đường cũ + `LAC_UNAVAILABLE:*` |
+
+Khi `on`, `F<n>` đổi về `record_id` (= `evidence_id` của registry) rồi chạy **nguyên** rào hiện có, cộng hai rào chỉ cho `PASS`:
+dẫn dữ kiện `DISPUTED` / `PROBABLE_OCR_ERROR` / `SUPERSEDED` → `REVIEW` (`PROMPT_CHECK_EVIDENCE_DISPUTED`); chỉ dẫn dữ kiện
+`DECLARED` → `REVIEW` (`PROMPT_CHECK_DECLARED_ONLY`), trừ rule khai `allow_declared_pass: true`. Khóa `input` mới: `lac.loan`,
+`lac.business`, `lac.person[.<role>]`, `lac.asset[.<usage>]`, `lac.relations`, `lac.document.<doc_type_key>`; khóa cũ được ánh xạ.
+Kết quả mang `loan_application_context_summary` (số đếm, mã gap, `source_hash`; không có giá trị dữ kiện).
+
 ## Evidence & provenance
 
 `evidence-v3.ts` (`buildEvidenceRegistryV3`, V2-R04) xây `EvidenceRegistry` từ EvidenceEnvelope của S2: mỗi lá của

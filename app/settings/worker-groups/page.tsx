@@ -3,6 +3,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import type { QueueBase } from '@/lib/queue/pipeline-queue';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,7 +25,7 @@ interface Profile {
 
 interface QueueStats {
   name: string;
-  type: 'pipeline' | 'workflow-steps';
+  type: QueueBase;
   group: string | null;
   counts: {
     waiting: number;

@@ -1,8 +1,14 @@
 # Loan Application Context (`loan_application_context`, LAC)
 
-> Trạng thái: **đề xuất, chưa duyệt** (2026-10-27). Áp dụng trên workflow v2 ([v2_integration.md](v2_integration.md)), giai đoạn 2.
-> Khi được duyệt, ghi quyết định vào `IMPLEMENT.md` và các điểm ở §9 vào `open_questions.md`. Không thay
-> [master_dossier.md](master_dossier.md); quan hệ giữa hai bản ở §3.
+> Trạng thái: **đã cài đặt T-LAC-01…06 (IMPLEMENT D-103, 2026-10-27); `lac_mode` mặc định `off`.** Bật làm mặc định chờ
+> T-LAC-07 (đo trên bộ UAT). Các điểm §9 dùng **mặc định đề xuất**. Áp dụng trên workflow v2 ([v2_integration.md](v2_integration.md)),
+> giai đoạn 2. Không thay [master_dossier.md](master_dossier.md); quan hệ giữa hai bản ở §3.
+>
+> **Lệch so với bản đề xuất (D-103):** (1) fact có thêm `hidden` (thay cho "không render" của LAC-R04), phủ cả mã vai trò / loại
+> party theo chứng từ, `ownership.*` (đã thành quan hệ) và thành phần địa chỉ khi đã có `full_text`; (2) `meta.superseded_evidence_ids`;
+> (3) gộp fact TRÙNG giá trị cho mọi chủ thể (không chỉ khoản vay / kinh doanh) để không lặp dòng; (4) quan hệ OWNS / SPOUSE_OF /
+> LEGAL_REP_OF mang `verification.status = NOT_REQUIRED` (chỉ RELATIVE_OF có xác minh); (5) ghi đè trên Profile vẫn khoan dung với
+> `input` lạ khi đọc, nhưng `lac.document.<doc>` lạ bị từ chối khi ghi (fail-closed như V2-R07).
 
 ## 1. Mục đích
 

@@ -1,4 +1,4 @@
-// HỢP ĐỒNG JSON TÍCH HỢP — dugate.loan-appraisal.integration, schema_version 5.1 (5.0 + extractions; parties/assets/documents/findings tuỳ chọn).
+// HỢP ĐỒNG JSON TÍCH HỢP — dugate.loan-appraisal.integration, schema_version 5.2 (5.1 + financials[].review; 5.1 = 5.0 + extractions; parties/assets/documents/findings tuỳ chọn).
 //
 // Đây là NGUỒN DUY NHẤT của contract: kiểu TypeScript (z.infer), kiểm tra runtime (safeParse) và JSON Schema công bố
 // (z.toJSONSchema) đều sinh từ các schema trong file này. Không viết tay kiểu thứ hai.
@@ -19,7 +19,7 @@
 import { z } from 'zod/v4';
 
 export const INTEGRATION_SCHEMA = 'dugate.loan-appraisal.integration' as const;
-export const INTEGRATION_SCHEMA_VERSION = '5.1' as const;
+export const INTEGRATION_SCHEMA_VERSION = '5.2' as const;
 
 /** Chính sách bắt buộc cho consumer khi gặp giá trị enum chưa biết (thêm ở MINOR sau này). */
 export const UNKNOWN_VALUE_POLICY = 'TREAT_AS_REVIEW' as const;
@@ -165,7 +165,7 @@ export const DocumentsSchema = z.object({
     needs_review: z.number().int(),
     percent: z.number().optional(),
   }).strict()),
-  /** CHỈ mục có ý nghĩa: không phải NOT_APPLICABLE, và hoặc bắt buộc hoặc đang có vấn đề. Tổng quan đầy đủ xem y_group. */
+  /** CHỈ mục có ý nghĩa: không phải NOT_APPLICABLE, và hoặc bắt buộc hoặc đang có vấn đề. Tổng quan đầy đủ xem by_group. */
   items: z.array(DocumentItemSchema),
   /** Dữ liệu đã hợp nhất theo từng chứng từ (giá trị cuối, không nguồn). Trường MISSING (không có giá trị) không xuất hiện. */
   records: z.array(z.object({
@@ -212,6 +212,8 @@ export const FinancialSchema = z.object({
   unit: z.enum(METRIC_UNITS),
   status: z.enum(METRIC_STATUSES),
   conflict: z.literal(true).optional(),
+  /** 5.2 (D-101): đã tính được nhưng có đầu vào đọc với độ tin cậy thấp — cần rà soát trước khi dùng. Vắng = đầu vào đã chấp nhận. */
+  review: z.literal(true).optional(),
 }).strict();
 
 // ─── checks (rule engine + rule LLM + rule Agent) ────────────────────────────

@@ -102,6 +102,7 @@ Username trong DUGate phải trùng tên đăng nhập trên IDP.
 |----------|---------|--------|-------------------|
 | `WORKER_CONCURRENCY` | `5` | Số pipeline job chạy đồng thời | 5–15 tùy CPU/RAM |
 | `SUBSTEP_WORKER_CONCURRENCY` | `WORKER_CONCURRENCY × 2` | Số sub-step job đồng thời | 5–20, set thấp nếu RAM hạn chế |
+| `WORKFLOW_CONCURRENCY` | `WORKER_CONCURRENCY × 2` | Số job workflow (cha) đồng thời trên queue `workflow` / `workflow.<group>`. Job cha phần lớn chỉ chờ sub-step nên đặt cao hơn `WORKER_CONCURRENCY` được; trần thật là bộ nhớ (worker tự dừng ở `WORKER_MEMORY_THRESHOLD`) | 10–20; đo heap trên hồ sơ lớn trước khi tăng |
 | `MAX_QUEUE_DEPTH` | `500` | Số job tối đa trong queue trước khi reject | Tăng nếu burst traffic lớn |
 | `WORKER_MEMORY_THRESHOLD` | `0.90` | % heap để pause worker (0.0–1.0) | 0.85–0.95 |
 | `REDIS_URL` | `redis://redis:6379` | Redis cho BullMQ | Cùng Redis với app |
