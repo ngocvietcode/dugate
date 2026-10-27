@@ -1,0 +1,365 @@
+# dugate
+<!-- v1.5 - 2026-04 -->
+
+## Project Overview
+
+| Key | Value |
+|---|---|
+| Name | dugate (Document Understanding Gateway) |
+| Version | 1.5.0 |
+| Purpose | API Gateway for document processing: ingest, extract, analyze, transform, generate, compare |
+| Stack | Next.js 14, TypeScript 5, Prisma 5, PostgreSQL 16, Redis 7, BullMQ, Tailwind CSS 3 |
+| AI SDKs | Google Gemini (`@google/generative-ai`), OpenAI (`openai`) |
+| External tools | Pandoc (CLI), Ghostscript (CLI), sharp, mammoth, pdf-parse, xlsx |
+| Ports | 2023 (dev), 2025 (prod), 3099 (mock service) |
+| Worker | Standalone BullMQ process (`npx tsx worker.ts`), concurrency 5 (pipeline) / 10 (workflow) |
+
+## Architecture
+
+```
+Client → /api/v1/{service} → Middleware (x-api-key | NextAuth | OIDC)
+       → Runner (discriminate sub-case, load ProfileEndpoint overrides)
+       → submitPipelineJob (save files / download file_urls, create Operation, enqueue BullMQ job)
+       → Worker picks job → Pipeline engine (sequential steps) or Workflow engine (DAG)
+       → Each step calls ExternalApiConnection (multipart/form-data)
+       → Operation updated → Client polls GET /api/v1/operations/{id}
+```
+
+**Key patterns**: AIP-151 Long-Running Operations, idempotency keys, profile-driven overrides, pipeline chaining with session state, per-operation cost tracking, capability-based RBAC (ADMIN/OPS), OIDC SSO.
+
+## Directory Structure
+
+```
+app/                        # Next.js App Router
+  api/v1/                   # Public API: ingest, extract, analyze, transform, generate, compare, workflows, operations, services, billing
+  api/internal/             # Admin API: apikeys, auth-key, ext-connections, ext-overrides, profile-endpoints, dev-sync-endpoints, recover-stalled
+  api/auth/                 # NextAuth (OIDC provider only — SSO)
+  api/bull-board/           # BullMQ dashboard UI
+  api/health/               # Health check
+  api/swagger/              # Swagger/OpenAPI docs
+  api/settings/             # AppSetting CRUD + test
+  api/users/                # User management CRUD
+  api/operations/           # Internal operation polling (UI)
+  login/                    # Login page
+  ai-demo/                  # Interactive AI demo playground
+    components/             # Demo-specific components (UploadZone, PipelineStepCard, ParallelFileGrid, etc.)
+  (pages)/                  # Authenticated UI pages
+    ingest/                 # Document ingestion
+    extract/                # Data extraction
+    analyze/                # Document analysis
+    transform/              # Content transformation
+    generate/               # Content generation
+    compare/                # Document comparison
+    history/                # Operation history
+    operations/[id]/        # Operation detail
+    profiles/               # API key profile management
+    api-connections/        # External API connections
+    api-docs/               # API documentation
+    settings/               # Settings + user management
+components/                 # Shared React components
+  ConversionHistory.tsx     # Operation history display
+  HeaderNav.tsx             # Navigation header
+  MarkdownEditor.tsx        # Markdown editor
+  MarkdownPreview.tsx       # Markdown preview
+  PageWrapper.tsx           # Page layout wrapper
+  ServiceTestClient.tsx     # Service testing UI
+  SessionProviderWrapper.tsx # NextAuth provider
+  SettingsForm.tsx          # Settings form
+  StatusBadge.tsx           # Status indicator badge
+  ThemeProvider.tsx         # Dark/light theme
+  ThemeToggle.tsx           # Theme switcher
+lib/
+  auth.ts                   # NextAuth config (OIDC only; pre-provisioned users, no JIT)
+  config.ts                 # App configuration loader
+  crypto.ts                 # AES-256-GCM encryption for API keys in DB
+  errors.ts                 # Custom error definitions
+  prisma.ts                 # Prisma singleton
+  rbac.ts                   # Legacy: isAdmin() only (hard ADMIN planes, e.g. Bull Board)
+  rbac/capabilities.ts      # Capability catalog (baseline / configurable / locked)
+  rbac/resolve.ts           # DB-backed capability resolver (15s cache, fail-closed)
+  rbac/use-permissions.ts   # Client hook for UI affordances (never authoritative)
+  auth-guard.ts             # requireAuth/requireAdmin/requireCapability/requireProfileAccess
+  rate-limit.ts             # Rate limiting logic
+  upload.ts                 # File upload validation (300MB max, macro rejection)
+  upload-helper.ts          # Upload helper utilities
+  file-url-downloader.ts    # Download files from URLs with auth config & SSRF protection
+  logger.ts                 # Structured logging with correlation IDs
+  settings.ts               # AppSetting read/write, prompt presets
+  cleanup.ts                # Auto-delete uploaded files after 7 days
+  cleanup-scheduler.ts      # Cleanup scheduler initialization
+  zip.ts                    # Archive creation (archiver)
+  endpoints/
+    registry.ts             # SERVICE_REGISTRY: 6 services × N sub-cases with param schemas & connection chains
+    presets.ts              # Extract field presets (invoice, contract, id-card, receipt, table, custom)
+    runner.ts               # Universal endpoint dispatcher → resolves sub-case, merges params, submits job
+    profile-resolver.ts     # Resolve ProfileEndpoint per API key
+  pipelines/
+    engine.ts               # Core pipeline executor (sequential steps, checkpoint/resume)
+    submit.ts               # Job submission (idempotency, sync/async modes, file save)
+    format.ts               # Operation response serialization
+    validate.ts             # Pipeline validation
+    processors/
+      external-api.ts       # External API caller (multipart, prompt interpolation, session chaining)
+      http-client.ts        # HTTP client with SSRF protection
+      prompt-resolver.ts    # Template prompt resolver
+      response-parser.ts    # Response JSON parsing
+    workflow-engine.ts      # Code-driven DAG orchestration (parallel + sequential steps)
+    workflows/              # Registered workflows (e.g. disbursement)
+  queue/
+    pipeline-queue.ts       # BullMQ queue singleton (3 attempts, exponential backoff)
+    redis.ts                # Redis connection factory
+  parsers/
+    interface.ts            # Parser interface definition
+    factory.ts              # Parser factory (dispatch by MIME type)
+    word-parser.ts          # DOCX parser (mammoth)
+    excel-parser.ts         # XLSX parser
+prisma/
+  schema.prisma             # 7 models
+  migrations/               # Incremental migrations
+worker.ts                   # Standalone BullMQ worker (pipeline + workflow queues, memory monitoring, stalled job detection)
+middleware.ts               # Dual auth: NextAuth for UI, x-api-key for /api/v1/, rate limiting
+mock-service/               # Fake external API for testing
+scripts/                    # DB cleanup, migration, mock endpoint setup utilities
+tests/                      # E2E & unit tests
+types/                      # TypeScript type declarations
+docs/                       # Architecture docs, integration guide, admin guide
+docs-site/                  # Documentation site
+```
+
+## Database Models (Prisma)
+
+| Model | Purpose |
+|---|---|
+| **Operation** | Long-running operation (state, progressPercent, progressMessage, pipeline steps, files, output, token usage, cost, webhook, errorCode) |
+| **ApiKey** | Client API keys (hashed, role: STANDARD/ADMIN, spending limit, totalUsed, status) |
+| **ExternalApiConnection** | External AI service registry (URL, authType, authSecret, prompt, response path, session chaining, state) |
+| **ExternalApiOverride** | Per-client prompt overrides scoped to (connection, apiKey, endpointSlug, stepId) |
+| **ProfileEndpoint** | Per-client endpoint config (enabled, locked params, connection override, job priority, fileUrlAuthConfig, allowedFileExtensions) |
+| **AppSetting** | Key-value store (AI provider, model, encrypted API keys, prompt templates, S3 backend config) |
+| **User** | Auth users (username, role: ADMIN/OPS, OIDC: provider, providerSub, email, displayName). No credential is stored — sign-in is SSO-only; the legacy `password` column is retained but unused |
+| **RolePermission** | Configurable OPS capability grants (role, permission, granted, updatedByUserId) — ADMIN-editable, audited |
+| **FileCache** | File deduplication tracking for S3 storage backend (md5Hash, s3Key, size, refCount) |
+
+## API Services (5 core skills + workflows)
+
+Canonical surface is **v2** (`/api/v2/docs/{service}`), per docs/AI_Skills. The legacy
+**v1** surface (`/api/v1/{service}` and `/api/v1/docs/{service}`) remains fully functional
+for backward compatibility, including the deprecated `ingest` service.
+
+| Service (v2) | Sub-cases | Description |
+|---|---|---|
+| `/api/v2/docs/extract` | disbursement, guarantee, approval, collateral, credit-report, query, payment-order, lc, business-license, account-form, civil-doc, vehicle-doc, insurance, contract, table, id-card, invoice + legacy (receipt, custom) | Structured data extraction (17 standardized types per AI_Skills) |
+| `/api/v2/docs/analyze` | classify, compliance, risk, quality (+ legacy: sentiment, fact-check, summarize-eval) | Deep analysis |
+| `/api/v2/docs/transform` | template, rewrite, redact, translate, convert, split | Content transformation (split folded in from ingest) |
+| `/api/v2/docs/generate` | summary, report, email, minutes (+ legacy: outline, qa) | Content generation |
+| `/api/v2/docs/compare` | verify, diff, semantic, version | Document comparison |
+| `/api/v2/docs/workflows` | disbursement, lc-checker, payroll-verify, structure-compare, brd-analyze | Code-driven multi-step workflows |
+
+**Deprecated (v1 only, backward-compatible, hidden from discovery):**
+| Service | Sub-cases | Note |
+|---|---|---|
+| `/api/v1/docs/ingest` | parse, ocr, digitize, split | Folded into extract + `transform:split`. Still callable. |
+
+**Supporting endpoints**:
+- `GET /api/v1/operations` — List operations
+- `GET /api/v1/operations/{id}` — Poll operation status
+- `POST /api/v1/operations/{id}/cancel` — Cancel operation
+- `GET /api/v1/operations/{id}/download` — Download output file
+- `POST /api/v1/operations/{id}/resume` — Resume stalled operation
+- `GET /api/v1/services` — List available services
+- `GET /api/v1/billing/balance` — API key spending balance
+- `GET /api/v1/billing/usage` — Billing usage summary
+
+## Features
+
+- **OIDC Single Sign-On**: Enterprise SSO via configurable OIDC provider (issuer, client ID/secret)
+- **RBAC**: Two roles — ADMIN (always full access) and OPS (operations staff). OPS
+  capabilities are stored in `RolePermission` and editable by an ADMIN at
+  `/settings/users`; identity, role assignment, Profile assignment and the matrix
+  itself are locked to ADMIN. Server guards are authoritative; the UI only hides
+  controls. Matrix exports (JSON/CSV) are available for URM/MTPQ evidence.
+- **File URL Downloads**: Accept `file_urls` param (JSON array of `{url, filename?, mime_type?}`) with per-profile auth config, SSRF protection, 120s timeout
+- **Pipeline Engine**: Sequential step execution with checkpoint/resume capability
+- **Workflow Engine**: DAG-based orchestration for complex multi-step workflows
+- **Session Chaining**: Multi-step external API calls preserving session state
+- **Cost Tracking**: Per-operation input/output token counting and USD cost calculation
+- **Idempotency**: Built-in via idempotency keys on job submission
+- **Webhook Callbacks**: Notify clients on operation completion
+- **Rate Limiting**: Runner-level (Node runtime) sliding-window via Redis. `/api/v1/*` limited per-API-key (configurable per-profile via `ApiKey.rateLimitPerMin`, falls back to `RATE_LIMIT_API_KEY`). Not in middleware because Next 14 middleware runs on Edge (ioredis needs Node).
+- **Storage Engine**: Configurable Local or S3-compatible backend (AWS, MinIO, R2) with MD5 deduplication
+- **File Cleanup**: Auto-delete uploaded files after 7 days
+- **Memory Monitoring**: Worker pauses at 90% heap usage, resumes at 75%
+- **Stalled Job Recovery**: Auto-detection (30s interval) with max 2 retries before DLQ
+- **Security**: AES-256-GCM encryption, path traversal protection, SSRF protection, macro file rejection, API key hashing
+
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `NEXTAUTH_SECRET` | JWT secret (>= 32 chars) |
+| `NEXTAUTH_URL` | Callback URL (http://localhost:2023) |
+| `GEMINI_API_KEY` | Google Gemini API key (optional, can set via /settings UI) |
+| `OPENAI_API_KEY` | OpenAI API key (optional) |
+| `ENCRYPTION_KEY` | AES-256 key for AppSetting encryption (32 chars) |
+| `REDIS_URL` | Redis connection (default: redis://localhost:6379) |
+| `UPLOAD_DIR` | Upload directory (default: ./uploads) |
+| `OUTPUT_DIR` | Output directory (default: ./outputs) |
+| `WORKER_CONCURRENCY` | BullMQ pipeline worker slots (default: 5) |
+| `SYNC_TIMEOUT_MS` | Sync mode timeout (default: 30000) |
+| `MIGRATION` | Auto-run prisma db push + seed on startup (true/false) |
+| `MOCK_SERVICE_URL` | Mock service URL for testing (default: http://localhost:3099) |
+| `RATE_LIMIT_API_KEY` | Default per-API-key rate limit, req/min (default: 100; override per-profile via `ApiKey.rateLimitPerMin`) |
+| `RATE_LIMIT_IP` | Per-IP rate limit for unauthenticated calls, req/min (default: 30) |
+| `FILE_URL_DOWNLOAD_TIMEOUT_MS` | File URL download timeout (default: 120000) |
+| `OIDC_ISSUER` | **Required** — OIDC provider issuer URL (base URL only; the discovery path is appended). Sign-in is SSO-only, so this and the two below are what enable login — there is no separate on/off flag |
+| `OIDC_CLIENT_ID` | **Required** — OIDC client ID |
+| `OIDC_CLIENT_SECRET` | **Required** — OIDC client secret |
+| `SEED_ADMIN_EMAILS` | Comma-separated company emails pre-provisioned as ADMIN. Only needed when seeding an empty database; username is the part before `@` and must match what the IDP presents |
+
+## Deploy
+
+```bash
+# Docker (recommended)
+docker compose up -d
+
+# Manual VPS deploy
+bash deploy/deploy.sh
+```
+
+## First Run
+
+Sign-in is SSO-only and there is no just-in-time provisioning, so an empty database
+has nobody able to log in. Seed the first ADMIN accounts by setting
+`SEED_ADMIN_EMAILS` (comma-separated company emails) with `SEED=true`, then sign in
+through the SSO button on `/login`. Register
+`<NEXTAUTH_URL>/api/auth/callback/oidc` as a redirect URI with the IDP first.
+
+Every subsequent user must be created by an ADMIN at `/settings/users` before they
+can sign in; the username there must match the one the IDP presents.
+
+## Development
+
+```bash
+npm run dev          # Next.js on port 2023
+npm run worker:dev   # BullMQ worker
+npm run test         # Jest tests
+# Requires: PostgreSQL + Redis running
+```
+
+## Documentation
+
+| File | Content |
+|---|---|
+| [docs/AI_CATALOG.html](docs/AI_CATALOG.html) | **AI Catalog** — Solution Owner reference: 5 skills, sub-cases, params, use-case mapping |
+| [docs/DU_INTEGRATION_GUIDE.md](docs/DU_INTEGRATION_GUIDE.md) | Developer & admin integration guide |
+| [docs/SOLUTION_ARCHITECTURE.md](docs/SOLUTION_ARCHITECTURE.md) | High-level architecture |
+| [docs/ARCHITECTURE_REVIEW_API.md](docs/ARCHITECTURE_REVIEW_API.md) | API design review |
+| [docs/admin-multi-connector-guide.md](docs/admin-multi-connector-guide.md) | Admin override & routing guide |
+| [docs/GEMINI_PROMPTS.md](docs/GEMINI_PROMPTS.md) | Prompt engineering notes |
+| [docs/SECURITY-RULES.md](docs/SECURITY-RULES.md) | **Security rules — mandatory read.** See the rule below |
+| [docs/feature-development-checklist.md](docs/feature-development-checklist.md) | Checklist for any new workflow / endpoint / AI feature |
+
+## Security Rules — read docs/SECURITY-RULES.md first
+
+**Before writing or changing any of the following, read
+[docs/SECURITY-RULES.md](docs/SECURITY-RULES.md) in full:**
+
+- anything under `app/api/**/route.ts`
+- anything touching a secret, credential, password, key, token, session, or file upload
+- anything that persists data a user supplied
+
+That document is not generic OWASP advice. Every rule in it comes from a vulnerability that
+actually shipped in this repo, and each one cites the `file:line` of the original defect. The
+short version, which is no substitute for reading it:
+
+| # | Rule |
+|---|---|
+| 1 | An API response never carries a decrypted secret. Return `present: boolean` or a mask, never the value |
+| 2 | `GET` only reads. Anything that changes state is `POST`. An auth guard does not make a destructive `GET` safe — `SameSite=Lax` still sends the session cookie on a top-level GET |
+| 3 | Every guard needs a server-side copy. Never report success for a write the server skipped |
+| 4 | Credentials never go in `localStorage` |
+| 5 | Secrets are encrypted at rest via `lib/crypto`, never `JSON.stringify`d into a text column |
+| 6 | Never set `NODE_TLS_REJECT_UNAUTHORIZED=0`. Add a CA instead |
+| 7 | Do not name a non-secret `*Secret*`. Fortify's Privacy Violation rule keys off identifier names and raised 34 Critical findings on a component, a callback, a number and an empty string |
+| 8 | When fixing a security defect, leave a `[SEC <scan-date> <task-id>]` comment that states the attack mechanism |
+| 9 | Hashes are SHA-256. MD5 only for the S3 ETag comparison in `lib/storage/` |
+| 10 | **No real credential in any tracked file — including `tests/`, `scripts/` and `docs/` examples.** Use `'test-client-secret'` / `dg_live_xxxxxxxxxxxxxxxx`. Before committing, run both `git grep` commands in §10 over the whole repo, not a hand-picked set of folders |
+| 11 | An outbound `fetch` that carries a credential goes through `ssrfSafeFetch` **and** passes `signal: AbortSignal.timeout(ms)` — the wrapper does not add a timeout itself |
+
+**The 18/09/2026 Fortify scan produced 177 findings. The nine worst vulnerabilities in the
+codebase were not among them** — they were found by reading code. The worst were real
+credentials committed for five months: a CSP client secret in a script and a test, and two
+DUGate API keys in a doc and a root script. A clean scan is not evidence of a secure change;
+the checklist in that document is.
+
+When citing `file:line` in any doc, take the number from `git grep -n` output, never count by eye,
+and pin references to old code to a commit (`… at 3ec1a70`). One line number was wrong three
+times in a row during the 18/09 triage because it was counted by hand.
+
+# CLAUDE.md
+
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+## 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+

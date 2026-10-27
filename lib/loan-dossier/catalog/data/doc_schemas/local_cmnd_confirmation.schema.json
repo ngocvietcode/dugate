@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/local_cmnd_confirmation.schema.json",
+  "title": "local_cmnd_confirmation — data",
+  "description": "Schema của evidence.data cho doc_type_key = local_cmnd_confirmation (Giấy xác nhận số CMND 9 số / số định danh cá nhân do cơ quan địa phương cấp). Mô tả nghiệp vụ: 04_document_schemas/local_cmnd_confirmation.md. schema_version 2.0.0. Chưa có dữ liệu mẫu thực tế; OQ-03.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["parties", "legal_info", "previous_id_documents", "confirmation_statement"],
+  "properties": {
+    "parties": {
+      "description": "Đúng 1 người được xác nhận (HOLDER). id_number = số định danh / CCCD hiện tại; previous_id_numbers = số CMND cũ được xác nhận.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "$ref": "#/$defs/HolderParty" }
+    },
+    "legal_info": { "$ref": "_common.schema.json#/$defs/NullableLegalInfo" },
+    "previous_id_documents": {
+      "description": "Chi tiết từng giấy tờ cũ được xác nhận (số, loại, ngày cấp, nơi cấp). Mọi id_number khác null ở đây phải có trong parties[0].previous_id_numbers.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/PreviousIdDocument" }
+    },
+    "confirmation_statement": {
+      "description": "Nguyên văn câu xác nhận (VD 'số CMND … và số định danh cá nhân … là của cùng một người').",
+      "type": ["string", "null"]
+    }
+  },
+  "$defs": {
+    "HolderParty": {
+      "allOf": [
+        { "$ref": "_common.schema.json#/$defs/DocumentParty" },
+        {
+          "properties": {
+            "party_index": { "const": 0 },
+            "party_role": { "const": "HOLDER" },
+            "party_type": { "const": "INDIVIDUAL" },
+            "id_type": { "enum": ["CCCD", "CAN_CUOC", "CMND", "OTHER", null] },
+            "tax_id": { "type": "null" },
+            "representative_name": { "type": "null" },
+            "representative_position": { "type": "null" },
+            "ownership": { "type": "null" }
+          }
+        }
+      ]
+    },
+    "PreviousIdDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id_number", "id_type", "issue_date", "issue_place"],
+      "properties": {
+        "id_number": { "$ref": "_common.schema.json#/$defs/NullableIdNumber" },
+        "id_type": { "$ref": "_enums.schema.json#/$defs/IdType" },
+        "issue_date": { "$ref": "_common.schema.json#/$defs/NullableDate" },
+        "issue_place": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

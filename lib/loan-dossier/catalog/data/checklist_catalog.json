@@ -1,0 +1,1419 @@
+{
+  "catalog_version": "3.0.0",
+  "groups": [
+    {
+      "checklist_group": "legal",
+      "group_label": "I. Hồ sơ pháp lý",
+      "group_no": "I",
+      "scope": "PERSON"
+    },
+    {
+      "checklist_group": "loan_plan",
+      "group_label": "II. Hồ sơ phương án vay vốn",
+      "group_no": "II",
+      "scope": "DOSSIER"
+    },
+    {
+      "checklist_group": "income_source",
+      "group_label": "III. Hồ sơ chứng minh nguồn thu",
+      "group_no": "III",
+      "scope": "DOSSIER"
+    },
+    {
+      "checklist_group": "collateral",
+      "group_label": "IV. Hồ sơ tài sản bảo đảm",
+      "group_no": "IV",
+      "scope": "DOSSIER"
+    },
+    {
+      "checklist_group": "credit_relationship",
+      "group_label": "V. Hồ sơ quan hệ tín dụng",
+      "group_no": "V",
+      "scope": "DOSSIER"
+    }
+  ],
+  "items": [
+    {
+      "item_key": "legal_id_card",
+      "checklist_group": "legal",
+      "checklist_subgroup": null,
+      "item_no": 1,
+      "item_label": "Căn cước công dân / CMND / Thẻ căn cước",
+      "accepted_doc_type_keys": [
+        "id_card"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "PERSON",
+      "applies_to_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "legal_qr_code_info",
+      "checklist_group": "legal",
+      "checklist_subgroup": null,
+      "item_no": 2,
+      "item_label": "Thông tin quét mã QR CCCD",
+      "accepted_doc_type_keys": [
+        "qr_code_info"
+      ],
+      "substitutes": [
+        "legal_same_person_commitment",
+        "legal_local_cmnd_confirmation"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "PERSON",
+      "applies_to_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": null,
+      "original_or_copy": "ORIGINAL",
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "legal_vneid",
+      "checklist_group": "legal",
+      "checklist_subgroup": null,
+      "item_no": 3,
+      "item_label": "Căn cước điện tử (VNeID)",
+      "accepted_doc_type_keys": [
+        "vneid"
+      ],
+      "substitutes": [
+        "legal_residence_confirmation"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "PERSON",
+      "applies_to_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": null,
+      "original_or_copy": "BOTH",
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "legal_residence_confirmation",
+      "checklist_group": "legal",
+      "checklist_subgroup": null,
+      "item_no": 4,
+      "item_label": "Giấy xác nhận thông tin cư trú",
+      "accepted_doc_type_keys": [
+        "residence_confirmation"
+      ],
+      "substitutes": [
+        "legal_vneid"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "PERSON",
+      "applies_to_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": 180,
+      "has_count_rule": false,
+      "note": "Hiệu lực 6 tháng = 180 ngày theo giả định OQ-06.",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "legal_marriage_certificate",
+      "checklist_group": "legal",
+      "checklist_subgroup": null,
+      "item_no": 5,
+      "item_label": "Giấy chứng nhận đăng ký kết hôn",
+      "accepted_doc_type_keys": [
+        "marriage_certificate"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "PERSON",
+      "applies_to_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "person_is_married",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "legal_marital_status_confirmation",
+      "checklist_group": "legal",
+      "checklist_subgroup": null,
+      "item_no": 6,
+      "item_label": "Giấy xác nhận tình trạng hôn nhân (độc thân/ly hôn/góa)",
+      "accepted_doc_type_keys": [
+        "marital_status_confirmation"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "PERSON",
+      "applies_to_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "person_is_not_married",
+      "original_or_copy": null,
+      "validity_days": 180,
+      "has_count_rule": false,
+      "note": "Hiệu lực 6 tháng = 180 ngày tính đến dossier_submitted_at.",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "legal_same_person_commitment",
+      "checklist_group": "legal",
+      "checklist_subgroup": null,
+      "item_no": 7,
+      "item_label": "Cam kết 2 CMND/CCCD là của 01 người",
+      "accepted_doc_type_keys": [
+        "same_person_commitment"
+      ],
+      "substitutes": [
+        "legal_qr_code_info",
+        "legal_local_cmnd_confirmation"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "PERSON",
+      "applies_to_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "same_person_commitment_required",
+      "original_or_copy": "ORIGINAL",
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": "FULL: bắt buộc với borrower/co_borrower; collateral_owner theo điều kiện nhiều số định danh (OQ-02).",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "legal_local_cmnd_confirmation",
+      "checklist_group": "legal",
+      "checklist_subgroup": null,
+      "item_no": 8,
+      "item_label": "Xác nhận CMND của chính quyền địa phương",
+      "accepted_doc_type_keys": [
+        "local_cmnd_confirmation"
+      ],
+      "substitutes": [
+        "legal_qr_code_info",
+        "legal_same_person_commitment"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "PERSON",
+      "applies_to_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "person_has_multiple_id_numbers",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "legal_birth_certificate",
+      "checklist_group": "legal",
+      "checklist_subgroup": null,
+      "item_no": 9,
+      "item_label": "Giấy khai sinh (chứng minh quan hệ với chủ TSBĐ)",
+      "accepted_doc_type_keys": [
+        "birth_certificate"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "PERSON",
+      "applies_to_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "collateral_owner_differs_from_person",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": true,
+      "note": "Số giấy cần nộp theo relationship_verifications[].required_count (PARENT_CHILD = 1, SIBLING = 2).",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "loan_plan_loan_application",
+      "checklist_group": "loan_plan",
+      "checklist_subgroup": null,
+      "item_no": 1,
+      "item_label": "Giấy đề nghị vay vốn kiêm phương án vay theo mẫu VPBank",
+      "accepted_doc_type_keys": [
+        "loan_application"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "loan_plan_purchase_list",
+      "checklist_group": "loan_plan",
+      "checklist_subgroup": null,
+      "item_no": 2,
+      "item_label": "Bảng kê mua hàng",
+      "accepted_doc_type_keys": [
+        "purchase_list"
+      ],
+      "substitutes": [
+        "loan_plan_goods_purchase_contract"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "loan_plan_goods_purchase_contract",
+      "checklist_group": "loan_plan",
+      "checklist_subgroup": null,
+      "item_no": 3,
+      "item_label": "Hợp đồng mua bán hàng hóa",
+      "accepted_doc_type_keys": [
+        "goods_purchase_contract"
+      ],
+      "substitutes": [
+        "loan_plan_purchase_list"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "loan_plan_vehicle_sale_contract",
+      "checklist_group": "loan_plan",
+      "checklist_subgroup": null,
+      "item_no": 4,
+      "item_label": "Hợp đồng mua bán xe ô tô",
+      "accepted_doc_type_keys": [
+        "vehicle_sale_contract"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "loan_purpose_vehicle_purchase",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "loan_plan_land_use_cert_to_buy",
+      "checklist_group": "loan_plan",
+      "checklist_subgroup": null,
+      "item_no": 5,
+      "item_label": "GCN QSDĐ cần mua / đã sang tên KH làm nhà xưởng",
+      "accepted_doc_type_keys": [
+        "land_use_cert_to_buy"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "loan_purpose_factory_purchase",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "loan_plan_exception_approval_memo",
+      "checklist_group": "loan_plan",
+      "checklist_subgroup": null,
+      "item_no": 6,
+      "item_label": "Tờ trình phê duyệt ngoại lệ",
+      "accepted_doc_type_keys": [
+        "exception_approval_memo"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "deviation_code_present",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_general_income_statement",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "general",
+      "item_no": 1,
+      "item_label": "Bảng kê thu nhập",
+      "accepted_doc_type_keys": [
+        "income_statement"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": "FAST: item duy nhất của nhóm nguồn thu (DEC-19, OQ-01). FULL/SIMPLE: checklist gốc không liệt kê, giữ NOT_REQUIRED để hiển thị.",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_salary_labor_contract",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "salary",
+      "item_no": 1,
+      "item_label": "Hợp đồng lao động",
+      "accepted_doc_type_keys": [
+        "labor_contract"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_salary",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": "SIMPLE: checklist gốc không liệt kê mục này.",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_salary_payroll_bank_statement",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "salary",
+      "item_no": 2,
+      "item_label": "Sao kê lương / Sổ phụ ngân hàng",
+      "accepted_doc_type_keys": [
+        "payroll_bank_statement"
+      ],
+      "substitutes": [
+        "income_salary_salary_confirmation"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_salary",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_salary_salary_confirmation",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "salary",
+      "item_no": 3,
+      "item_label": "Giấy xác nhận lương",
+      "accepted_doc_type_keys": [
+        "salary_confirmation"
+      ],
+      "substitutes": [
+        "income_salary_payroll_bank_statement"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_salary",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_salary_vssid_social_insurance",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "salary",
+      "item_no": 4,
+      "item_label": "Quá trình tham gia BHXH (VssID)",
+      "accepted_doc_type_keys": [
+        "vssid_social_insurance"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_rental_real_estate_certificate",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "rental",
+      "item_no": 1,
+      "item_label": "GCN quyền sở hữu BĐS cho thuê",
+      "accepted_doc_type_keys": [
+        "land_use_certificate",
+        "apartment_ownership_certificate"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "ASSET",
+      "applies_to_roles": [],
+      "asset_types": [
+        "real_estate",
+        "apartment"
+      ],
+      "usage_context": "rental_income",
+      "condition_id": "rental_real_estate_present",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": "Dùng chung chứng từ với collateral_real_estate_certificate khi cùng asset_id và cả hai context CONFIRMED (DEC-20).",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_rental_vehicle_registration",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "rental",
+      "item_no": 2,
+      "item_label": "Chứng nhận đăng ký xe ô tô cho thuê",
+      "accepted_doc_type_keys": [
+        "vehicle_registration"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "ASSET",
+      "applies_to_roles": [],
+      "asset_types": [
+        "vehicle"
+      ],
+      "usage_context": "rental_income",
+      "condition_id": "rental_vehicle_present",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_rental_lease_contract",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "rental",
+      "item_no": 3,
+      "item_label": "Hợp đồng cho thuê BĐS / động sản",
+      "accepted_doc_type_keys": [
+        "asset_lease_contract"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_rental",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_rental_payment_receipt",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "rental",
+      "item_no": 4,
+      "item_label": "Giấy biên nhận thu tiền thuê",
+      "accepted_doc_type_keys": [
+        "rental_payment_receipt"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_rental",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_rental_asset_photo",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "rental",
+      "item_no": 5,
+      "item_label": "Ảnh chụp tài sản cho thuê",
+      "accepted_doc_type_keys": [
+        "rental_asset_photo"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_rental",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_household_business_license",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "household_business",
+      "item_no": 1,
+      "item_label": "Giấy chứng nhận đăng ký hộ kinh doanh",
+      "accepted_doc_type_keys": [
+        "household_business_license"
+      ],
+      "substitutes": [
+        "income_household_business_local_confirmation",
+        "income_household_business_tax_payment_receipt"
+      ],
+      "requires_exact_doc_when_met": true,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "household_business_license_required",
+      "original_or_copy": "COPY",
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": "Khoản vay > 3 tỷ: bắt buộc đúng GCN ĐKHKD, không nhận thay thế.",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_household_business_local_confirmation",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "household_business",
+      "item_no": 2,
+      "item_label": "Xác nhận kinh doanh của chính quyền địa phương",
+      "accepted_doc_type_keys": [
+        "local_business_confirmation"
+      ],
+      "substitutes": [
+        "income_household_business_license",
+        "income_household_business_tax_payment_receipt"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_household_business",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_household_business_tax_payment_receipt",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "household_business",
+      "item_no": 3,
+      "item_label": "Chứng từ nộp thuế vào ngân sách",
+      "accepted_doc_type_keys": [
+        "tax_payment_receipt"
+      ],
+      "substitutes": [
+        "income_household_business_license",
+        "income_household_business_local_confirmation"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_household_business",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_household_business_account_ledger",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "household_business",
+      "item_no": 4,
+      "item_label": "Sổ sách ghi chép kinh doanh (in máy hoặc chép tay có ký)",
+      "accepted_doc_type_keys": [
+        "business_account_ledger"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_household_business",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_household_business_photo",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "household_business",
+      "item_no": 5,
+      "item_label": "Hình ảnh thực tế hộ kinh doanh",
+      "accepted_doc_type_keys": [
+        "household_business_photo"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_household_business",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_enterprise_registration_license",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "enterprise",
+      "item_no": 1,
+      "item_label": "Giấy chứng nhận đăng ký doanh nghiệp",
+      "accepted_doc_type_keys": [
+        "enterprise_registration_license"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_enterprise",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_enterprise_board_meeting_minutes",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "enterprise",
+      "item_no": 2,
+      "item_label": "Biên bản họp Hội đồng thành viên",
+      "accepted_doc_type_keys": [
+        "board_meeting_minutes"
+      ],
+      "substitutes": [
+        "income_enterprise_registration_license"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_enterprise",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": "Thay thế bằng GCN ĐKDN có danh sách thành viên góp vốn; engine không kiểm được nội dung danh sách (chỉ nhận diện), CO xác nhận.",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_enterprise_vat_tax_return",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "enterprise",
+      "item_no": 3,
+      "item_label": "Tờ khai thuế GTGT (mẫu 01/GTGT)",
+      "accepted_doc_type_keys": [
+        "vat_tax_return"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_enterprise",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_enterprise_balance_sheet",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "enterprise",
+      "item_no": 4,
+      "item_label": "Bảng cân đối kế toán",
+      "accepted_doc_type_keys": [
+        "balance_sheet"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_enterprise",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_enterprise_financial_performance_report",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "enterprise",
+      "item_no": 5,
+      "item_label": "Báo cáo kết quả hoạt động kinh doanh",
+      "accepted_doc_type_keys": [
+        "financial_performance_report"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_enterprise",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "income_enterprise_photo",
+      "checklist_group": "income_source",
+      "checklist_subgroup": "enterprise",
+      "item_no": 6,
+      "item_label": "Hình ảnh doanh nghiệp do KH làm chủ",
+      "accepted_doc_type_keys": [
+        "enterprise_photo"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "income_source_enterprise",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": "Ảnh màu, bắt buộc thể hiện tên và địa chỉ công ty (CO kiểm, engine chỉ nhận diện).",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "collateral_vehicle_registration",
+      "checklist_group": "collateral",
+      "checklist_subgroup": "movable",
+      "item_no": 1,
+      "item_label": "Chứng nhận đăng ký xe ô tô",
+      "accepted_doc_type_keys": [
+        "vehicle_registration"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "ASSET",
+      "applies_to_roles": [],
+      "asset_types": [
+        "vehicle"
+      ],
+      "usage_context": "collateral",
+      "condition_id": "collateral_vehicle_present",
+      "original_or_copy": "COPY",
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "collateral_vehicle_inspection",
+      "checklist_group": "collateral",
+      "checklist_subgroup": "movable",
+      "item_no": 2,
+      "item_label": "Giấy chứng nhận đăng kiểm xe",
+      "accepted_doc_type_keys": [
+        "vehicle_inspection"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "ASSET",
+      "applies_to_roles": [],
+      "asset_types": [
+        "vehicle"
+      ],
+      "usage_context": "collateral",
+      "condition_id": "collateral_vehicle_present",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": "Đăng kiểm hết hạn được bổ sung trước soạn thảo: engine không kiểm hạn đăng kiểm ở stage này.",
+      "ignore_printed_expiry": true
+    },
+    {
+      "item_key": "collateral_asset_quote",
+      "checklist_group": "collateral",
+      "checklist_subgroup": "movable",
+      "item_no": 3,
+      "item_label": "Báo giá tài sản",
+      "accepted_doc_type_keys": [
+        "asset_quote"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "ASSET",
+      "applies_to_roles": [],
+      "asset_types": [
+        "vehicle"
+      ],
+      "usage_context": "collateral",
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": 90,
+      "has_count_rule": false,
+      "note": "Gốc: bắt buộc nếu xe không có trong Bảng giá / xe cũ — chưa có input để kiểm, giữ NOT_REQUIRED.",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "collateral_movable_asset_valuation_report",
+      "checklist_group": "collateral",
+      "checklist_subgroup": "movable",
+      "item_no": 4,
+      "item_label": "Báo cáo định giá động sản",
+      "accepted_doc_type_keys": [
+        "movable_asset_valuation_report"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "ASSET",
+      "applies_to_roles": [],
+      "asset_types": [
+        "vehicle"
+      ],
+      "usage_context": "collateral",
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": 365,
+      "has_count_rule": false,
+      "note": "Hiệu lực 12 tháng = 365 ngày.",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "collateral_real_estate_certificate",
+      "checklist_group": "collateral",
+      "checklist_subgroup": "real_estate",
+      "item_no": 1,
+      "item_label": "GCN QSDĐ, quyền sở hữu nhà ở và tài sản gắn liền với đất / GCN căn hộ chung cư",
+      "accepted_doc_type_keys": [
+        "land_use_certificate",
+        "apartment_ownership_certificate"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "ASSET",
+      "applies_to_roles": [],
+      "asset_types": [
+        "real_estate",
+        "apartment"
+      ],
+      "usage_context": "collateral",
+      "condition_id": "collateral_real_estate_present",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": "1 item chấp nhận cả 2 doc_type_key (DEC-20).",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "collateral_real_estate_valuation_report",
+      "checklist_group": "collateral",
+      "checklist_subgroup": "real_estate",
+      "item_no": 2,
+      "item_label": "Báo cáo định giá BĐS nội bộ (Thịnh Điền)",
+      "accepted_doc_type_keys": [
+        "real_estate_valuation_report"
+      ],
+      "substitutes": [
+        "collateral_external_valuation_certificate"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "ASSET",
+      "applies_to_roles": [],
+      "asset_types": [
+        "real_estate",
+        "apartment"
+      ],
+      "usage_context": "collateral",
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": 365,
+      "has_count_rule": false,
+      "note": "Hiệu lực 12 tháng = 365 ngày.",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "collateral_external_valuation_certificate",
+      "checklist_group": "collateral",
+      "checklist_subgroup": "real_estate",
+      "item_no": 3,
+      "item_label": "Chứng thư định giá của công ty định giá ngoài",
+      "accepted_doc_type_keys": [
+        "external_valuation_certificate"
+      ],
+      "substitutes": [
+        "collateral_real_estate_valuation_report"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "ASSET",
+      "applies_to_roles": [],
+      "asset_types": [
+        "real_estate",
+        "apartment"
+      ],
+      "usage_context": "collateral",
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": 180,
+      "has_count_rule": false,
+      "note": "Gốc ghi 90/180 ngày; tạm dùng 180 ngày (đề xuất OQ-21).",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "credit_cic_report",
+      "checklist_group": "credit_relationship",
+      "checklist_subgroup": null,
+      "item_no": 1,
+      "item_label": "Báo cáo CIC KH vay / người đồng vay / chủ TSBĐ",
+      "accepted_doc_type_keys": [
+        "cic"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": 30,
+      "has_count_rule": false,
+      "note": "Hiệu lực 30 ngày.",
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "credit_other_institution_contract",
+      "checklist_group": "credit_relationship",
+      "checklist_subgroup": null,
+      "item_no": 2,
+      "item_label": "Hợp đồng tín dụng tại TCTD khác (nếu có dư nợ)",
+      "accepted_doc_type_keys": [
+        "credit_contract"
+      ],
+      "substitutes": [],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": null,
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": null,
+      "ignore_printed_expiry": false
+    },
+    {
+      "item_key": "collateral_cic_check",
+      "checklist_group": "credit_relationship",
+      "checklist_subgroup": null,
+      "item_no": 3,
+      "item_label": "CIC tài sản bảo đảm (tra từ IL)",
+      "accepted_doc_type_keys": [],
+      "substitutes": [
+        "credit_other_institution_contract"
+      ],
+      "requires_exact_doc_when_met": false,
+      "scope": "DOSSIER",
+      "applies_to_roles": [],
+      "asset_types": [],
+      "usage_context": null,
+      "condition_id": "collateral_mortgaged_elsewhere",
+      "original_or_copy": null,
+      "validity_days": null,
+      "has_count_rule": false,
+      "note": "Không phải chứng từ OCR; chỉ đạt khi có credit_contract thay thế (SUBSTITUTED), ngược lại MISSING khi điều kiện MET.",
+      "ignore_printed_expiry": false
+    }
+  ],
+  "conditions": [
+    {
+      "condition_id": "person_is_married",
+      "description": "Người đang chấm đã kết hôn.",
+      "condition_source": "OCR",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "map_dossier_roles.customer_360[person_id].marital_status",
+        "map_dossier_roles.role_registry[person_id].mapped_evidences[doc_type_key=marriage_certificate]",
+        "map_dossier_roles.role_registry[person_id].mapped_evidences[doc_type_key=marital_status_confirmation]"
+      ],
+      "logic": "ms = customer_360[p].marital_status; nếu ms = MARRIED -> MET; nếu ms ∈ {SINGLE, DIVORCED, WIDOWED} -> NOT_MET; nếu ms = null: có evidence marriage_certificate SUCCESS gán cho p -> MET; ngược lại có evidence marital_status_confirmation SUCCESS gán cho p -> NOT_MET; ngược lại -> INPUT_NOT_PROVIDED.",
+      "on_input_missing": "REQUIRED",
+      "note": "Chế độ dự phòng (không có role registry): áp dụng nhánh evidence trên toàn hồ sơ."
+    },
+    {
+      "condition_id": "person_is_not_married",
+      "description": "Người đang chấm độc thân / ly hôn / góa.",
+      "condition_source": "OCR",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "map_dossier_roles.customer_360[person_id].marital_status",
+        "map_dossier_roles.role_registry[person_id].mapped_evidences[doc_type_key=marriage_certificate]",
+        "map_dossier_roles.role_registry[person_id].mapped_evidences[doc_type_key=marital_status_confirmation]"
+      ],
+      "logic": "Phủ định của person_is_married: MET <-> NOT_MET; INPUT_NOT_PROVIDED giữ nguyên.",
+      "on_input_missing": "REQUIRED",
+      "note": null
+    },
+    {
+      "condition_id": "person_has_multiple_id_numbers",
+      "description": "OCR phát hiện người đang chấm có ≥ 2 số CMND/CCCD khác nhau.",
+      "condition_source": "OCR",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "map_dossier_roles.role_registry[person_id].declared_id_number",
+        "map_dossier_roles.role_registry[person_id].current_id_number",
+        "map_dossier_roles.role_registry[person_id].historical_id_numbers[]",
+        "map_dossier_roles.role_registry[person_id].observed_id_numbers[]"
+      ],
+      "logic": "ids = tập phân biệt (đã chuẩn hóa IdNumber, bỏ null) của declared_id_number ∪ {current_id_number} ∪ historical_id_numbers ∪ observed_id_numbers; |ids| ≥ 2 -> MET, ngược lại NOT_MET.",
+      "on_input_missing": "NOT_REQUIRED",
+      "note": "Không có role registry -> INPUT_NOT_PROVIDED."
+    },
+    {
+      "condition_id": "same_person_commitment_required",
+      "description": "Cam kết 2 CMND/CCCD là 1 người bắt buộc theo flow và vai trò.",
+      "condition_source": "OCR",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "request.flow",
+        "map_dossier_roles.role_registry[person_id].roles[]",
+        "condition:person_has_multiple_id_numbers"
+      ],
+      "logic": "Nếu flow = FULL và roles ∩ {borrower, co_borrower} ≠ ∅ -> MET. Ngược lại trả kết quả của person_has_multiple_id_numbers. Chế độ dự phòng: FULL -> MET; FAST/SIMPLE -> INPUT_NOT_PROVIDED.",
+      "on_input_missing": "NOT_REQUIRED",
+      "note": "collateral_owner ở FULL dùng nhánh nhiều số định danh theo giả định OQ-02."
+    },
+    {
+      "condition_id": "collateral_owner_differs_from_person",
+      "description": "Chủ TSBĐ là người khác (không phải vợ/chồng) với KH vay / người đồng vay đang chấm.",
+      "condition_source": "OCR",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "map_dossier_roles.role_registry[].roles[]",
+        "map_dossier_roles.relationship_verifications[]",
+        "map_dossier_roles.customer_360[person_id].spouse_person_id"
+      ],
+      "logic": "owners = {q | collateral_owner ∈ q.roles, q.person_id ≠ p}. MET nếu roles(p) ∩ {borrower, co_borrower} ≠ ∅ VÀ collateral_owner ∉ roles(p) VÀ ∃ q ∈ owners không phải vợ/chồng của p (customer_360[p].spouse_person_id ≠ q và relationship_verifications(p,q).relationship_type ≠ SPOUSE). Ngược lại NOT_MET.",
+      "on_input_missing": "NOT_REQUIRED",
+      "note": "Khi MET: đếm số giấy theo relationship_verifications (has_count_rule). Không có xác minh dùng được -> NEEDS_REVIEW / RELATIONSHIP_UNVERIFIED (DEC-18)."
+    },
+    {
+      "condition_id": "loan_purpose_vehicle_purchase",
+      "description": "Mục đích vay là mua xe ô tô.",
+      "condition_source": "OCR",
+      "evaluation_mode": "LLM_SEMANTIC",
+      "part_condition_ids": [],
+      "input_paths": [
+        "extract_evidence.evidences[doc_type_key=loan_application, status=SUCCESS].data.loan_info.loan_purposes[]"
+      ],
+      "logic": "purposes = hợp các loan_purposes[] của mọi evidence loan_application SUCCESS. purposes rỗng -> INPUT_NOT_PROVIDED. LLM trả lời đóng YES/NO cho câu hỏi 'có mục đích nào là mua xe ô tô?'. YES -> MET, NO -> NOT_MET. LLM lỗi/không phản hồi -> INPUT_NOT_PROVIDED.",
+      "on_input_missing": "REQUIRED",
+      "note": null
+    },
+    {
+      "condition_id": "loan_purpose_factory_purchase",
+      "description": "Phương án vay là mua / bù đắp nhà xưởng (HKD1).",
+      "condition_source": "OCR",
+      "evaluation_mode": "LLM_SEMANTIC",
+      "part_condition_ids": [],
+      "input_paths": [
+        "extract_evidence.evidences[doc_type_key=loan_application, status=SUCCESS].data.loan_info.loan_purposes[]"
+      ],
+      "logic": "Như loan_purpose_vehicle_purchase, câu hỏi 'có mục đích nào là mua hoặc bù đắp chi phí mua đất/nhà xưởng?'.",
+      "on_input_missing": "REQUIRED",
+      "note": null
+    },
+    {
+      "condition_id": "deviation_code_present",
+      "description": "Hồ sơ có yếu tố ngoại lệ (mã Deviation từ IL).",
+      "condition_source": "EXTERNAL_INPUT",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "request.external_input.deviation_code"
+      ],
+      "logic": "v = trim(external_input.deviation_code). external_input = null hoặc v vắng mặt/null -> INPUT_NOT_PROVIDED. v = \"\" -> NOT_MET. v khác rỗng -> MET.",
+      "on_input_missing": "REQUIRED",
+      "note": "Chuỗi rỗng là cách IL báo 'không có ngoại lệ' (đề xuất OQ-18)."
+    },
+    {
+      "condition_id": "income_source_salary",
+      "description": "Có nguồn thu từ lương.",
+      "condition_source": "OCR",
+      "evaluation_mode": "LLM_SEMANTIC",
+      "part_condition_ids": [],
+      "input_paths": [
+        "extract_evidence.evidences[doc_type_key=loan_application, status=SUCCESS].data.financial_info.income_details[].source",
+        "extract_evidence.evidences[doc_type_key=loan_application, status=SUCCESS].data.financial_info.repayment_source",
+        "classify.files[].matches[].doc_type_key",
+        "extract_evidence.evidences[].doc_type_key"
+      ],
+      "logic": "income_types = LLM phân loại mỗi nguồn thu vào tập đóng {salary, rental, household_business, enterprise} (dùng chung 1 lần gọi cho 4 điều kiện income_source_*). salary ∈ income_types -> MET; phân loại thành công nhưng không có salary -> NOT_MET. Không có dữ liệu nguồn thu: có chứng từ labor_contract / salary_confirmation / payroll_bank_statement trong hồ sơ -> MET, ngược lại INPUT_NOT_PROVIDED.",
+      "on_input_missing": "NOT_REQUIRED",
+      "note": null
+    },
+    {
+      "condition_id": "income_source_rental",
+      "description": "Có nguồn thu từ cho thuê tài sản.",
+      "condition_source": "OCR",
+      "evaluation_mode": "LLM_SEMANTIC",
+      "part_condition_ids": [],
+      "input_paths": [
+        "map_dossier_roles.asset_registry[].usage_contexts[]",
+        "extract_evidence.evidences[doc_type_key=loan_application, status=SUCCESS].data.financial_info.income_details[].source"
+      ],
+      "logic": "∃ asset có rental_income ∈ usage_contexts (mọi context_status) -> MET (rule, không gọi LLM). Ngược lại dùng income_types như income_source_salary: rental ∈ income_types -> MET; phân loại thành công không có rental -> NOT_MET. Không có dữ liệu: có asset_lease_contract / rental_payment_receipt / rental_asset_photo -> MET, ngược lại INPUT_NOT_PROVIDED.",
+      "on_input_missing": "NOT_REQUIRED",
+      "note": null
+    },
+    {
+      "condition_id": "income_source_household_business",
+      "description": "Có nguồn thu từ hộ kinh doanh.",
+      "condition_source": "OCR",
+      "evaluation_mode": "LLM_SEMANTIC",
+      "part_condition_ids": [],
+      "input_paths": [
+        "extract_evidence.evidences[doc_type_key=loan_application, status=SUCCESS].data.financial_info.income_details[].source",
+        "extract_evidence.evidences[doc_type_key=loan_application, status=SUCCESS].data.loan_info.borrower_type"
+      ],
+      "logic": "household_business ∈ income_types hoặc loan_info.borrower_type chỉ ra 'Hộ kinh doanh' -> MET; phân loại thành công nhưng không có -> NOT_MET; không có dữ liệu -> INPUT_NOT_PROVIDED.",
+      "on_input_missing": "REQUIRED",
+      "note": "Sản phẩm vay HKD: thiếu dữ liệu thì giữ bắt buộc (an toàn)."
+    },
+    {
+      "condition_id": "income_source_enterprise",
+      "description": "Có nguồn thu từ doanh nghiệp KH làm chủ.",
+      "condition_source": "OCR",
+      "evaluation_mode": "LLM_SEMANTIC",
+      "part_condition_ids": [],
+      "input_paths": [
+        "extract_evidence.evidences[doc_type_key=loan_application, status=SUCCESS].data.financial_info.income_details[].source",
+        "classify.files[].matches[].doc_type_key"
+      ],
+      "logic": "enterprise ∈ income_types -> MET; phân loại thành công nhưng không có -> NOT_MET. Không có dữ liệu: có enterprise_registration_license trong hồ sơ -> MET, ngược lại INPUT_NOT_PROVIDED.",
+      "on_input_missing": "NOT_REQUIRED",
+      "note": null
+    },
+    {
+      "condition_id": "loan_amount_over_3_billion",
+      "description": "Khoản vay > 3 tỷ VND.",
+      "condition_source": "EXTERNAL_INPUT",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "request.external_input.loan_amount"
+      ],
+      "logic": "external_input = null hoặc loan_amount null/vắng -> INPUT_NOT_PROVIDED. loan_amount > 3000000000 -> MET, ngược lại NOT_MET. Không dùng số tiền OCR trên loan_application.",
+      "on_input_missing": "REQUIRED",
+      "note": null
+    },
+    {
+      "condition_id": "household_business_license_required",
+      "description": "GCN ĐKHKD bắt buộc đúng chứng từ: nguồn thu HKD VÀ khoản vay > 3 tỷ.",
+      "condition_source": "EXTERNAL_INPUT",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [
+        "income_source_household_business",
+        "loan_amount_over_3_billion"
+      ],
+      "input_paths": [
+        "condition:income_source_household_business",
+        "condition:loan_amount_over_3_billion"
+      ],
+      "logic": "AND: có phần NOT_MET -> NOT_MET (condition_source = nguồn của phần đó, phần đầu tiên theo thứ tự); không có NOT_MET nhưng có INPUT_NOT_PROVIDED -> INPUT_NOT_PROVIDED (nguồn của phần thiếu đầu tiên); tất cả MET -> MET (condition_source = EXTERNAL_INPUT).",
+      "on_input_missing": "REQUIRED",
+      "note": "MET -> không nhận thay thế (requires_exact_doc_when_met). INPUT_NOT_PROVIDED -> giữ bắt buộc mặc định, cho phép thay thế theo bảng D."
+    },
+    {
+      "condition_id": "collateral_vehicle_present",
+      "description": "Hồ sơ có TSBĐ là xe (động sản).",
+      "condition_source": "OCR",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "map_dossier_roles.asset_registry[].asset_type",
+        "map_dossier_roles.asset_registry[].usage_contexts[]"
+      ],
+      "logic": "Theo từng asset: asset_type = vehicle và collateral ∈ usage_contexts -> MET cho asset đó (1 dòng/asset). Không có asset nào khớp -> 1 dòng asset_id = null, NOT_MET.",
+      "on_input_missing": "NEEDS_REVIEW",
+      "note": "Không có asset_registry -> INPUT_NOT_PROVIDED."
+    },
+    {
+      "condition_id": "collateral_real_estate_present",
+      "description": "Hồ sơ có TSBĐ là bất động sản / căn hộ có GCN.",
+      "condition_source": "OCR",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "map_dossier_roles.asset_registry[].asset_type",
+        "map_dossier_roles.asset_registry[].usage_contexts[]"
+      ],
+      "logic": "Theo từng asset: asset_type ∈ {real_estate, apartment} và collateral ∈ usage_contexts -> MET. Không có asset khớp -> 1 dòng asset_id = null, NOT_MET.",
+      "on_input_missing": "NEEDS_REVIEW",
+      "note": null
+    },
+    {
+      "condition_id": "rental_vehicle_present",
+      "description": "Có xe cho thuê tạo nguồn thu.",
+      "condition_source": "OCR",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "map_dossier_roles.asset_registry[].asset_type",
+        "map_dossier_roles.asset_registry[].usage_contexts[]"
+      ],
+      "logic": "Theo từng asset: asset_type = vehicle và rental_income ∈ usage_contexts -> MET. Không có -> 1 dòng asset_id = null, NOT_MET.",
+      "on_input_missing": "NOT_REQUIRED",
+      "note": null
+    },
+    {
+      "condition_id": "rental_real_estate_present",
+      "description": "Có BĐS / căn hộ cho thuê tạo nguồn thu.",
+      "condition_source": "OCR",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "map_dossier_roles.asset_registry[].asset_type",
+        "map_dossier_roles.asset_registry[].usage_contexts[]"
+      ],
+      "logic": "Theo từng asset: asset_type ∈ {real_estate, apartment} và rental_income ∈ usage_contexts -> MET. Không có -> 1 dòng asset_id = null, NOT_MET.",
+      "on_input_missing": "NOT_REQUIRED",
+      "note": null
+    },
+    {
+      "condition_id": "collateral_mortgaged_elsewhere",
+      "description": "TSBĐ đang thế chấp tại TCTD khác.",
+      "condition_source": "EXTERNAL_INPUT",
+      "evaluation_mode": "RULE",
+      "part_condition_ids": [],
+      "input_paths": [
+        "request.external_input.collateral_mortgaged_elsewhere"
+      ],
+      "logic": "true -> MET; false -> NOT_MET; null/vắng/external_input = null -> INPUT_NOT_PROVIDED.",
+      "on_input_missing": "REQUIRED",
+      "note": null
+    }
+  ]
+}

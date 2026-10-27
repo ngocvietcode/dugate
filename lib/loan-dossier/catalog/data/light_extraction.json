@@ -1,0 +1,230 @@
+{
+  "version": "3.0.0",
+  "description": "S2-R20: bóc tách nhẹ. data = {parties: DocumentParty[] (≥ 1 party chủ thể), legal_info: LegalInfo, fields: {key: giá trị}}.",
+  "doc_types": [
+    {
+      "doc_type_key": "deposit_certificate",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [],
+      "note": null
+    },
+    {
+      "doc_type_key": "payroll_bank_statement",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [
+        {
+          "key": "statement_type",
+          "label": "Loại sổ (sổ phụ / sổ chi tiết tài khoản)",
+          "value_type": "TEXT"
+        }
+      ],
+      "note": null
+    },
+    {
+      "doc_type_key": "vssid_social_insurance",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [
+        {
+          "key": "social_insurance_history",
+          "label": "Quá trình tham gia BHXH (nguyên văn tóm tắt)",
+          "value_type": "TEXT"
+        }
+      ],
+      "note": null
+    },
+    {
+      "doc_type_key": "household_business_license",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [
+        {
+          "key": "registration_number",
+          "label": "Số GCN ĐKHKD",
+          "value_type": "TEXT"
+        },
+        {
+          "key": "business_name",
+          "label": "Tên hộ kinh doanh",
+          "value_type": "TEXT"
+        },
+        {
+          "key": "business_address",
+          "label": "Địa điểm kinh doanh",
+          "value_type": "ADDRESS"
+        },
+        {
+          "key": "business_line",
+          "label": "Ngành nghề",
+          "value_type": "TEXT"
+        }
+      ],
+      "note": "Party chủ thể = người đại diện HKD (tên + số CCCD in trên giấy)."
+    },
+    {
+      "doc_type_key": "local_business_confirmation",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [
+        {
+          "key": "business_confirmation_text",
+          "label": "Nội dung xác nhận kinh doanh (nguyên văn)",
+          "value_type": "TEXT"
+        },
+        {
+          "key": "business_line",
+          "label": "Ngành nghề",
+          "value_type": "TEXT"
+        },
+        {
+          "key": "business_address",
+          "label": "Địa chỉ kinh doanh",
+          "value_type": "ADDRESS"
+        }
+      ],
+      "note": null
+    },
+    {
+      "doc_type_key": "tax_payment_receipt",
+      "subject_party_role": "TAXPAYER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [],
+      "note": "Party chủ thể = người nộp ngân sách; mã số thuế ở `tax_id`."
+    },
+    {
+      "doc_type_key": "business_account_ledger",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [
+        {
+          "key": "ledger_content_text",
+          "label": "Nội dung sổ (nguyên văn, giữ viết tắt)",
+          "value_type": "TEXT"
+        }
+      ],
+      "note": null
+    },
+    {
+      "doc_type_key": "household_business_photo",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [],
+      "note": "Ảnh không thể hiện tên → party có `full_name = null`, `reason_code = REQUIRED_FIELD_UNREADABLE`."
+    },
+    {
+      "doc_type_key": "enterprise_registration_license",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "ORGANIZATION",
+      "fields": [
+        {
+          "key": "registration_number",
+          "label": "Số đăng ký doanh nghiệp",
+          "value_type": "TEXT"
+        },
+        {
+          "key": "headquarters_address",
+          "label": "Địa chỉ trụ sở",
+          "value_type": "ADDRESS"
+        }
+      ],
+      "note": "Party chủ thể = công ty (`full_name` = tên công ty, `tax_id` = mã số DN, `representative_name` = người đại diện theo pháp luật)."
+    },
+    {
+      "doc_type_key": "vat_tax_return",
+      "subject_party_role": "TAXPAYER",
+      "subject_party_type": "ORGANIZATION",
+      "fields": [
+        {
+          "key": "tax_period",
+          "label": "Kỳ tính thuế (nguyên văn)",
+          "value_type": "TEXT"
+        }
+      ],
+      "note": null
+    },
+    {
+      "doc_type_key": "balance_sheet",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "ORGANIZATION",
+      "fields": [
+        {
+          "key": "period",
+          "label": "Kỳ báo cáo (nguyên văn)",
+          "value_type": "TEXT"
+        }
+      ],
+      "note": null
+    },
+    {
+      "doc_type_key": "financial_performance_report",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "ORGANIZATION",
+      "fields": [
+        {
+          "key": "period",
+          "label": "Kỳ báo cáo (nguyên văn)",
+          "value_type": "TEXT"
+        }
+      ],
+      "note": null
+    },
+    {
+      "doc_type_key": "enterprise_photo",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "ORGANIZATION",
+      "fields": [],
+      "note": "Ảnh không thể hiện tên → party có `full_name = null`, `reason_code = REQUIRED_FIELD_UNREADABLE`."
+    },
+    {
+      "doc_type_key": "board_meeting_minutes",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "ORGANIZATION",
+      "fields": [],
+      "note": "Party chủ thể = công ty; mỗi thành viên ghi trong biên bản là 1 party `OTHER` (`party_role_raw` = \"Thành viên\") có tên + số CCCD."
+    },
+    {
+      "doc_type_key": "passport",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [],
+      "note": null
+    },
+    {
+      "doc_type_key": "asset_lease_contract",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [],
+      "note": "Party chủ thể = bên cho thuê (khách hàng)."
+    },
+    {
+      "doc_type_key": "construction_estimate_report",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [],
+      "note": null
+    },
+    {
+      "doc_type_key": "rental_payment_receipt",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [],
+      "note": "Party chủ thể = người nhận tiền thuê (khách hàng)."
+    },
+    {
+      "doc_type_key": "rental_asset_photo",
+      "subject_party_role": "HOLDER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [],
+      "note": null
+    },
+    {
+      "doc_type_key": "exception_approval_memo",
+      "subject_party_role": "CUSTOMER",
+      "subject_party_type": "INDIVIDUAL",
+      "fields": [],
+      "note": null
+    }
+  ]
+}

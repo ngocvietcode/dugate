@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/same_person_commitment.schema.json",
+  "title": "same_person_commitment — data",
+  "description": "Schema của evidence.data cho doc_type_key = same_person_commitment (Giấy cam kết các số CMND/CCCD là của 01 người — mẫu VPBank). Mô tả nghiệp vụ: 04_document_schemas/same_person_commitment.md. schema_version 2.0.0. Chưa có dữ liệu mẫu thực tế; OQ-02, OQ-03.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["parties", "legal_info", "previous_id_documents", "commitment_statement"],
+  "properties": {
+    "parties": {
+      "description": "Đúng 1 người cam kết (HOLDER). id_number = số đang sử dụng; previous_id_numbers = mọi số khác được kê trong cam kết.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "$ref": "#/$defs/HolderParty" }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày ký cam kết; signatories gồm người cam kết (và cán bộ VPBank nếu có).",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    },
+    "previous_id_documents": {
+      "description": "Chi tiết từng số CMND/CCCD khác được kê trong cam kết. Mọi id_number khác null ở đây phải có trong parties[0].previous_id_numbers.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/PreviousIdDocument" }
+    },
+    "commitment_statement": {
+      "description": "Nguyên văn câu cam kết.",
+      "type": ["string", "null"]
+    }
+  },
+  "$defs": {
+    "HolderParty": {
+      "allOf": [
+        { "$ref": "_common.schema.json#/$defs/DocumentParty" },
+        {
+          "properties": {
+            "party_index": { "const": 0 },
+            "party_role": { "const": "HOLDER" },
+            "party_type": { "const": "INDIVIDUAL" },
+            "id_type": { "enum": ["CCCD", "CAN_CUOC", "CMND", "OTHER", null] },
+            "tax_id": { "type": "null" },
+            "representative_name": { "type": "null" },
+            "representative_position": { "type": "null" },
+            "ownership": { "type": "null" }
+          }
+        }
+      ]
+    },
+    "PreviousIdDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id_number", "id_type", "issue_date", "issue_place"],
+      "properties": {
+        "id_number": { "$ref": "_common.schema.json#/$defs/NullableIdNumber" },
+        "id_type": { "$ref": "_enums.schema.json#/$defs/IdType" },
+        "issue_date": { "$ref": "_common.schema.json#/$defs/NullableDate" },
+        "issue_place": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

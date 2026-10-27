@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/cic.schema.json",
+  "title": "cic — data",
+  "description": "Schema của evidence.data cho doc_type_key = cic (Báo cáo thông tin tín dụng CIC). Mẫu S11A/S11T (OQ-07). Hiệu lực 30 ngày tính từ `legal_info.issue_date` (ngày tra cứu). 1 báo cáo nhiều người → mỗi người 1 party HOLDER và 1 phần tử `reports[]`. schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "reports",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "Người được tra cứu (HOLDER); tên thường in hoa không dấu, giữ như in.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 1
+    },
+    "reports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "party_index",
+          "report_datetime",
+          "cic_code",
+          "current_debt_group",
+          "current_debt_group_raw",
+          "bad_debt_5y",
+          "card_late_payment_3y",
+          "watchlist_debt_12m",
+          "queried_institutions_1y_count",
+          "queried_institutions"
+        ],
+        "properties": {
+          "party_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "report_datetime": {
+            "description": "Thời gian gửi báo cáo (có giờ nếu in).",
+            "oneOf": [
+              {
+                "$ref": "_common.schema.json#/$defs/DateTimeString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cic_code": {
+            "description": "Mã CIC (10 chữ số).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "current_debt_group": {
+            "description": "Nhóm nợ hiện tại 1–5; null nếu không có quan hệ tín dụng.",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5
+          },
+          "current_debt_group_raw": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bad_debt_5y": {
+            "description": "Mục 3.5 — lịch sử nợ xấu 5 năm.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "has_records",
+              "records_raw"
+            ],
+            "properties": {
+              "has_records": {
+                "description": "true nếu mục có ít nhất 1 dòng; false nếu ghi 'Không có'.",
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "records_raw": {
+                "description": "Nội dung mục (nguyên văn).",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "card_late_payment_3y": {
+            "description": "Mục 3.6 — chậm thanh toán thẻ 3 năm.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "has_records",
+              "records_raw"
+            ],
+            "properties": {
+              "has_records": {
+                "description": "true nếu mục có ít nhất 1 dòng; false nếu ghi 'Không có'.",
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "records_raw": {
+                "description": "Nội dung mục (nguyên văn).",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "watchlist_debt_12m": {
+            "description": "Mục 3.7 — nợ cần chú ý 12 tháng.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "has_records",
+              "records_raw"
+            ],
+            "properties": {
+              "has_records": {
+                "description": "true nếu mục có ít nhất 1 dòng; false nếu ghi 'Không có'.",
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "records_raw": {
+                "description": "Nội dung mục (nguyên văn).",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "queried_institutions_1y_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "queried_institutions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "institution",
+                "query_date"
+              ],
+              "properties": {
+                "institution": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "query_date": {
+                  "$ref": "_common.schema.json#/$defs/NullableDate"
+                }
+              }
+            }
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "legal_info": {
+      "description": "form_template_number = số hiệu mẫu (VD '2026/S11A'); issue_date = ngày tra cứu (căn cứ hiệu lực).",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "HOLDER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

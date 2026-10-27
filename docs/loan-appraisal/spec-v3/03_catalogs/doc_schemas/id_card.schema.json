@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/id_card.schema.json",
+  "title": "id_card — data",
+  "description": "Schema của evidence.data cho doc_type_key = id_card (CMND / CCCD / Thẻ căn cước). Mô tả nghiệp vụ: 04_document_schemas/id_card.md. schema_version 2.0.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["parties", "legal_info", "card_info"],
+  "properties": {
+    "parties": {
+      "description": "Đúng 1 người: chủ thẻ (HOLDER).",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "$ref": "#/$defs/HolderParty" }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày cấp thẻ; valid_until = ngày hết hạn in trên thẻ (không tự tính).",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    },
+    "card_info": { "$ref": "#/$defs/CardInfo" }
+  },
+  "$defs": {
+    "HolderParty": {
+      "allOf": [
+        { "$ref": "_common.schema.json#/$defs/DocumentParty" },
+        {
+          "properties": {
+            "party_index": { "const": 0 },
+            "party_role": { "const": "HOLDER" },
+            "party_type": { "const": "INDIVIDUAL" },
+            "id_type": { "enum": ["CCCD", "CMND", "CAN_CUOC", null] },
+            "tax_id": { "type": "null" },
+            "representative_name": { "type": "null" },
+            "representative_position": { "type": "null" },
+            "ownership": { "type": "null" }
+          }
+        }
+      ]
+    },
+    "CardInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "has_chip", "has_front_side", "has_back_side", "place_of_origin",
+        "place_of_birth_registration", "identifying_marks", "valid_until_raw"
+      ],
+      "properties": {
+        "has_chip": {
+          "description": "Thẻ có chip điện tử (CCCD gắn chip, Thẻ căn cước 2024). null nếu không xác định được từ ảnh.",
+          "type": ["boolean", "null"]
+        },
+        "has_front_side": { "description": "Instance có chứa mặt trước.", "type": "boolean" },
+        "has_back_side": { "description": "Instance có chứa mặt sau.", "type": "boolean" },
+        "place_of_origin": { "description": "Quê quán (nguyên văn).", "type": ["string", "null"] },
+        "place_of_birth_registration": { "description": "Nơi đăng ký khai sinh (Thẻ căn cước 2024).", "type": ["string", "null"] },
+        "identifying_marks": { "description": "Đặc điểm nhận dạng (mặt sau).", "type": ["string", "null"] },
+        "valid_until_raw": { "description": "Nguyên văn ô ngày hết hạn (VD 'Không thời hạn').", "type": ["string", "null"] }
+      }
+    }
+  }
+}

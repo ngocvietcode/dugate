@@ -1,0 +1,136 @@
+{
+    "project": {
+        "name": "DUGate (Document Understanding API Gateway)",
+        "description": "Enterprise Document AI Gateway - API Gateway nội bộ chuyên xử lý bài toán Document Understanding cho môi trường doanh nghiệp, đặc biệt ngành Tài chính & Ngân hàng. Quy chuẩn hóa 7 API Endpoint với BullMQ Pipeline Engine bất đồng bộ",
+        "tech_stack": ["Next.js 14", "TypeScript", "Node.js 20+", "PostgreSQL 16", "Drizzle ORM", "BullMQ", "Redis 8", "NextAuth.js", "Docker"],
+        "repo_url": "https://github.com/ngocvietcode/dugate",
+        "created_at": "2026-04-21",
+        "version": "v4.12.0"
+    },
+    "architecture": {
+        "pattern": "API Gateway Pattern with Pipeline Engine and Profile-Driven Routing",
+        "database": "PostgreSQL 16 with Drizzle ORM (9 tables), Redis for BullMQ queues",
+        "api_style": "REST API - 7 core endpoints: ingest, extract, analyze, transform, generate, compare, workflows",
+        "auth_method": "Dual Auth: NextAuth JWT (UI) + API Key authentication (x-api-key header) + OIDC/SSO support",
+        "hosting": "Docker Compose (app + worker + redis), PostgreSQL external",
+        "notes": [
+            "Asynchronous Pipeline Engine with BullMQ workers (pipeline queue + workflow-steps queue)",
+            "Profile-driven routing - Admin can override AI connections, prompts, parameters per API Key", 
+            "Multi-AI backend support (Google Gemini, OpenAI, Claude)",
+            "File deduplication via MD5 hash + S3 storage",
+            "Workflow Engine supports Human-in-the-Loop (WAITING_USER_INPUT state)",
+            "3 business workflows: disbursement, lc-checker, payroll-verify"
+        ]
+    },
+    "decisions": [
+        {
+            "title": "Migration from Prisma to Drizzle ORM",
+            "decision": "Migrated to Drizzle ORM for better TypeScript support and performance",
+            "status": "In Progress - Prisma folder still exists for reference",
+            "date": "2026-04-21"
+        },
+        {
+            "title": "BullMQ for Job Queue",
+            "decision": "Using BullMQ with Redis for async job processing with 2 queues (pipeline + workflow-steps) to avoid deadlocks",
+            "status": "Implemented",
+            "date": "2026-04-21"
+        },
+        {
+            "title": "Standalone Worker Process",
+            "decision": "Separate worker.ts process for better scalability and graceful shutdown",
+            "status": "Implemented", 
+            "date": "2026-04-21"
+        },
+        {
+            "title": "Image input support & per-endpoint allow-list",
+            "decision": "Added image input support. Global default allow-list = PDF + Gemini-2.5 image set (jpg/jpeg/png/webp/heic/heif). ENDPOINT_ALLOWED_EXTENSIONS map is a ZERO-REGRESSION SUPERSET: every endpoint keeps pdf+docx (as before) and only ADDS images (+sheets where relevant), so no existing production caller breaks. Priority: Profile > registry endpoint policy > global default.",
+            "status": "Implemented",
+            "date": "2026-06-17",
+            "files": ["lib/upload.ts", "lib/endpoints/registry.ts", "lib/endpoints/runner.ts", "lib/endpoints/json-body-helper.ts", "app/api/v1/docs/workflows/route.ts", "tests/upload/validate.test.ts"]
+        },
+        {
+            "title": "Removed orphaned doc-compare feature",
+            "decision": "doc-compare was never wired into SERVICE_REGISTRY/WORKFLOW_REGISTRY (returned 404, no nav link). Chose Hướng B (retire): deleted app/doc-compare/*, lib/pipelines/workflows/doc-compare.ts + prompts, mock-service ext-doc-compare response + connectors.js entry. Verified nothing else imported it; build + typecheck clean.",
+            "status": "Implemented",
+            "date": "2026-06-17",
+            "files": ["app/doc-compare/* (deleted)", "lib/pipelines/workflows/doc-compare.ts (deleted)", "mock-service/responses/ext-doc-compare.js (deleted)"]
+        },
+        {
+            "title": "Navigation Page Registry & App Launcher",
+            "decision": "Centralized all navigable pages in lib/navigation/registry.ts (single source of truth) with group/role/status/icon/description metadata. HeaderNav renders a registry-driven 'Cong cu' dropdown (keeps existing pill style). Added /apps launcher (full directory). Internal/BU pages visible to all users with 'internal' badge. doc-compare marked deprecated (process not in workflow registry -> 404).",
+            "status": "Implemented",
+            "date": "2026-06-17",
+            "files": ["lib/navigation/registry.ts", "components/StatusBadge.tsx", "components/HeaderNav.tsx", "app/apps/page.tsx"]
+        }
+    ],
+    "conventions": {
+        "naming": "Kebab-case for API endpoints, camelCase for TypeScript, snake_case for database fields",
+        "file_structure": "Next.js App Router structure with lib/ for business logic, separate worker.ts process",
+        "git_branch_strategy": "Feature branches, main for production",
+        "commit_format": "Conventional commits",
+        "code_style": "TypeScript with strict types, ESLint + Prettier"
+    },
+    "known_issues": [
+        "Test coverage cần được cải thiện - có tests nhưng chưa đủ coverage",
+        "Prisma legacy folder vẫn tồn tại cần cleanup",
+        ".env.example chưa đầy đủ - thiếu REDIS_URL, OIDC_*, ALLOWED_PRIVATE_HOSTS",
+        "Worker single instance trong docker-compose (có thể scale bằng replicas)"
+    ],
+    "current_sprint": {
+        "goal": "V3.8 - narrow self-amend SSI (1.17) to fix FORWARD STT10/STT44 regression",
+        "status": "DRAFT - V3.8 created. V3.7 results: SPOT ~90-95%, FORWARD ~90% (2 regr STT10/44 from 1.17), SWAP ~73-87% (Fix2 SSI works, STT48 BU-inconsistent), MM ~84%. V3.8 narrows 1.17: self-amend effective only if other party acknowledges; pending amend -> UnMatch.",
+        "v38_fix": "1.17 self-amend narrowed: own-SSI amend effective ONLY if other party acknowledges/proceeds. Pending (no ack) -> use original -> UnMatch. Fixes FW STT10/44, preserves SPOT STT6.",
+        "v37_status": "DRAFT - Fix1 (derive-then-verify direction) + Fix2 (SWAP SSI completeness). Tested all 4 types.",
+        "v37_fixes": [
+            "Fix 1a (4.5.1): SWAP direction derived from amount SIGNS first, verify vs # line, never recompute from cpty mirror",
+            "Fix 1b (5.2): MM Loan/Deposit derived from typeOfInstrument prefix (PL/LD=Loan, TK/BR=Deposit), verify vs # line",
+            "Fix 2 (4.6.3): replaced flawed default-nostro with SSI completeness (each party must state SSI for both legs, else UnMatch). Restores 1.18 for SWAP"
+        ],
+        "v37_retest_needed": "FULL re-test SWAP(60)+MM(44), field-level compare vs BU, check no regression on currently-passing cases",
+        "final_verification": "SWAP 3/3 target fix + 5/5 canary OK; MM 6/7 (STT3/14 fixed, STT13/29 canary OK, STT15 correct Match+warning); SPOT/FORWARD unchanged from V3.4.",
+        "known_limitations": [
+            "MM STT19: AI misreads direction on mid-chat self-correction (SORRY I GIVE) - rare edge case, deferred",
+            "MM STT44: pending BU confirmation if payPrincipalTo=BIDV_HO swap is true error"
+        ],
+        "regression_found": "MM V3.5 broke 3 Loan cases (STT3/14/19) - rules 1.10/1.19 wrongly flagged payInterestFrom/payInterestTo. Fixed in V3.6 with Loan carve-out.",
+        "tasks": [
+            "✅ Read SWAP_result_v34.csv and SWAP_RESULT_2.md: 60 cases, 43 ok, 17 fail (71.7%) at V3.1",
+            "✅ V3.4 fixed 9 cases (account CITAD/Chase rules, amend cases STT17/20, SEC/UNSEC)",
+            "✅ Deep analysis of 5 remaining fails (STT13/15/16/17/20)",
+            "✅ Found STT17/20 actually FIXED by V3.4 (correctly output UnMatch for Kondor-not-updated amend)",
+            "✅ Root cause STT13/15/16: AI reports 'khong tim thay' for VPBank omitted SSI (default nostro), not truly missing",
+            "✅ V3.6 fix: Section 4.6.3 SWAP SSI Assignment - explicit mapping rule + handle omitted VPBank default nostro",
+            "✅ Versioning maintained: V3.4.md (backup), V3.5.md (MM fixes), V3.6.md (SWAP SSI fix)",
+            "🔄 Ready for re-test SWAP with V3.6 (expected: STT13/15/16 to pass)"
+        ]
+    },
+    "requirement_analysis": {
+        "enabled": true,
+        "auto_detect": true,
+        "complexity_threshold": "standard",
+        "output_dir": "brain/requirements",
+        "_comment": "Toggle requirement analysis on/off. auto_detect skips trivial tasks. Threshold: trivial|standard|complex|enterprise"
+    },
+    "business_context": {
+        "domain": "Banking & Finance - Document Understanding",
+        "key_features": [
+            "7 Core API Endpoints: ingest, extract, analyze, transform, generate, compare, workflows",
+            "Business Workflows: disbursement checking, LC verification, payroll verification", 
+            "Profile-driven routing per API Key",
+            "Multi-AI integration (Gemini, OpenAI, Claude)",
+            "File deduplication and S3 storage",
+            "OIDC/SSO authentication for enterprise"
+        ],
+        "new_requirements": {
+            "guarantee_letter_autogen": {
+                "description": "Tự động hoá mẫu thư bảo lãnh trên ECM - OCR PDF templates và tạo Word documents với QR codes",
+                "key_components": [
+                    "Upload PDF template interface in ECM",
+                    "OCR/POC interface to extract text from PDF",
+                    "GenForm integration to create Word documents with QR codes",
+                    "Integration with existing BG online/offline workflows"
+                ]
+            }
+        }
+    }
+}

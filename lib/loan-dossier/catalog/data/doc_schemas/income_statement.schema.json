@@ -1,0 +1,424 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/income_statement.schema.json",
+  "title": "income_statement — data",
+  "description": "Schema của evidence.data cho doc_type_key = income_statement (Bảng kê thu nhập (mẫu MB01.QĐi-TDCN/41)). 2 cột: Khách hàng vay → party BORROWER, Người đồng vay → party CO_BORROWER (ô 'A/B' tách thành 2 party). Mỗi mục thu nhập là 1 `income_sources[]` gắn người qua `party_index`; chỉ khối con đúng `income_type` khác null. schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "income_summary",
+    "income_sources",
+    "assets",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 1
+    },
+    "income_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "income_source_type_raw",
+        "capital_turnover",
+        "total_monthly_income"
+      ],
+      "properties": {
+        "income_source_type_raw": {
+          "description": "Ô 'Loại nguồn thu' (nguyên văn).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "capital_turnover": {
+          "description": "Vòng quay vốn (số vòng).",
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "total_monthly_income": {
+          "description": "Tổng thu nhập hàng tháng (VND/tháng).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        }
+      }
+    },
+    "income_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_index",
+          "party_index",
+          "income_type",
+          "source_label_raw",
+          "monthly_amount",
+          "frequency_raw",
+          "salary",
+          "rental",
+          "household_business",
+          "trip_trading",
+          "enterprise"
+        ],
+        "properties": {
+          "source_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "party_index": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "income_type": {
+            "enum": [
+              "salary",
+              "rental",
+              "household_business",
+              "trip_trading",
+              "enterprise",
+              "other"
+            ]
+          },
+          "source_label_raw": {
+            "description": "Nhãn mục (VD 'Lương 1 - Nguyễn Văn A').",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "monthly_amount": {
+            "description": "Thu nhập sau thuế của mục (VND/tháng).",
+            "$ref": "_common.schema.json#/$defs/NullableMoney"
+          },
+          "frequency_raw": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "salary": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "employer_name",
+              "current_job_raw",
+              "position",
+              "months_at_employer",
+              "workplace_address"
+            ],
+            "properties": {
+              "employer_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "current_job_raw": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "position": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "months_at_employer": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "workplace_address": {
+                "$ref": "_common.schema.json#/$defs/NullableAddress"
+              }
+            }
+          },
+          "rental": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "asset_index",
+              "asset_description_raw",
+              "owner_name",
+              "tenant_name",
+              "contract_term_raw"
+            ],
+            "properties": {
+              "asset_index": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "asset_description_raw": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "owner_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "tenant_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "contract_term_raw": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "household_business": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "business_name",
+              "business_forms",
+              "business_line",
+              "operating_time_raw",
+              "actual_address",
+              "premises_type_raw",
+              "premises_area_m2",
+              "net_revenue_annual",
+              "cogs_annual",
+              "gross_profit_annual",
+              "total_cost_annual",
+              "net_profit_annual"
+            ],
+            "properties": {
+              "business_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "business_forms": {
+                "description": "Ô tích hình thức kinh doanh: 'Có cơ sở kinh doanh' → PHYSICAL_PREMISES, 'Online' → ONLINE, 'Cả 2' → cả hai.",
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "PHYSICAL_PREMISES",
+                    "ONLINE"
+                  ]
+                }
+              },
+              "business_line": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "operating_time_raw": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "actual_address": {
+                "$ref": "_common.schema.json#/$defs/NullableAddress"
+              },
+              "premises_type_raw": {
+                "description": "Mặt bằng: Thuê / Khách hàng sở hữu (nguyên văn).",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "premises_area_m2": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "net_revenue_annual": {
+                "description": "Doanh thu thuần (VND/năm).",
+                "$ref": "_common.schema.json#/$defs/NullableMoney"
+              },
+              "cogs_annual": {
+                "description": "Giá vốn hàng bán (VND/năm).",
+                "$ref": "_common.schema.json#/$defs/NullableMoney"
+              },
+              "gross_profit_annual": {
+                "description": "Lợi nhuận gộp (VND/năm).",
+                "$ref": "_common.schema.json#/$defs/NullableMoney"
+              },
+              "total_cost_annual": {
+                "description": "Tổng chi phí (VND/năm).",
+                "$ref": "_common.schema.json#/$defs/NullableMoney"
+              },
+              "net_profit_annual": {
+                "description": "Lợi nhuận ròng (VND/năm).",
+                "$ref": "_common.schema.json#/$defs/NullableMoney"
+              }
+            }
+          },
+          "trip_trading": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "vehicle_raw",
+              "net_profit",
+              "net_profit_period"
+            ],
+            "properties": {
+              "vehicle_raw": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "net_profit": {
+                "$ref": "_common.schema.json#/$defs/NullableMoney"
+              },
+              "net_profit_period": {
+                "$ref": "_enums.schema.json#/$defs/MetricPeriod"
+              }
+            }
+          },
+          "enterprise": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "enterprise_name",
+              "registration_or_tax_number",
+              "capital_share_percent",
+              "registered_address",
+              "annual_result",
+              "avg_monthly_profit"
+            ],
+            "properties": {
+              "enterprise_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "registration_or_tax_number": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "capital_share_percent": {
+                "oneOf": [
+                  {
+                    "$ref": "_common.schema.json#/$defs/Percent"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "registered_address": {
+                "$ref": "_common.schema.json#/$defs/NullableAddress"
+              },
+              "annual_result": {
+                "description": "Kết quả kinh doanh năm gần nhất (VND/năm).",
+                "$ref": "_common.schema.json#/$defs/NullableMoney"
+              },
+              "avg_monthly_profit": {
+                "description": "Lợi nhuận trung bình tháng (VND/tháng).",
+                "$ref": "_common.schema.json#/$defs/NullableMoney"
+              }
+            }
+          }
+        }
+      }
+    },
+    "assets": {
+      "description": "Tài sản cho thuê ở mục II.2 (`usage_context_hint = rental_income`, S2-R12).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RentalAsset"
+      }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày lập bảng kê.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "BORROWER",
+                "CO_BORROWER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "RentalAsset": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/AssetDescriptor"
+        },
+        {
+          "properties": {
+            "asset_type": {
+              "enum": [
+                "real_estate",
+                "apartment",
+                "vehicle",
+                "other"
+              ]
+            },
+            "usage_context_hint": {
+              "const": "rental_income"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

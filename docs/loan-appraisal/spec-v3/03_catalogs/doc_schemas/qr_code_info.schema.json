@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/qr_code_info.schema.json",
+  "title": "qr_code_info — data",
+  "description": "Schema của evidence.data cho doc_type_key = qr_code_info (kết quả quét mã QR trên CCCD / Thẻ căn cước). Mô tả nghiệp vụ: 04_document_schemas/qr_code_info.md. schema_version 2.0.0. Không có legal_info: kết quả quét QR không phải văn bản có cơ quan ký/cấp.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["parties", "qr_raw_text"],
+  "properties": {
+    "parties": {
+      "description": "Đúng 1 người: chủ thẻ được quét (HOLDER).",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "$ref": "#/$defs/HolderParty" }
+    },
+    "qr_raw_text": {
+      "description": "Chuỗi QR giải mã nguyên văn (các trường phân tách bằng '|') nếu chứng từ in/hiển thị chuỗi này; null nếu chỉ có bảng nhãn-giá trị.",
+      "type": ["string", "null"]
+    }
+  },
+  "$defs": {
+    "HolderParty": {
+      "allOf": [
+        { "$ref": "_common.schema.json#/$defs/DocumentParty" },
+        {
+          "properties": {
+            "party_index": { "const": 0 },
+            "party_role": { "const": "HOLDER" },
+            "party_type": { "const": "INDIVIDUAL" },
+            "id_type": { "enum": ["CCCD", "CAN_CUOC", null] },
+            "current_address": { "type": "null" },
+            "tax_id": { "type": "null" },
+            "representative_name": { "type": "null" },
+            "representative_position": { "type": "null" },
+            "ownership": { "type": "null" }
+          }
+        }
+      ]
+    }
+  }
+}

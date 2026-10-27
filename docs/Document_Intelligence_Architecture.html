@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Intelligence Architecture</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#ffffff;color:#1a1a1a;min-height:100vh;line-height:1.5}
+
+.header{background:#003057;color:white;padding:56px 60px 44px;position:relative}
+.header::after{content:'';position:absolute;bottom:0;left:60px;right:60px;height:3px;background:linear-gradient(90deg,#00a3e0,#003057)}
+.header h1{font-size:2.4rem;font-weight:300;letter-spacing:-0.5px;margin-bottom:6px}
+.header h1 strong{font-weight:700}
+.header .subtitle{color:rgba(255,255,255,0.7);font-size:1rem;font-weight:300}
+.header .meta{margin-top:20px;display:flex;gap:24px;flex-wrap:wrap}
+.header .meta-item{font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px}
+.header .meta-item strong{color:rgba(255,255,255,0.9)}
+
+.container{max-width:1140px;margin:0 auto;padding:56px 60px 80px}
+
+.section{margin-bottom:64px}
+.section-num{font-size:0.72rem;text-transform:uppercase;letter-spacing:2px;color:#00a3e0;font-weight:700;margin-bottom:6px}
+.section-title{font-size:1.6rem;font-weight:300;color:#003057;margin-bottom:6px;letter-spacing:-0.3px}
+.section-title strong{font-weight:700}
+.section-lead{font-size:0.92rem;color:#5a5a5a;max-width:720px;margin-bottom:32px;line-height:1.7}
+
+.exhibit{font-size:0.68rem;text-transform:uppercase;letter-spacing:1.5px;color:#999;margin-bottom:12px;font-weight:600}
+
+/* Architecture Layers */
+.arch-stack{border:1px solid #eee;border-radius:0;overflow:hidden}
+.arch-layer{display:flex;border-bottom:1px solid #eee}
+.arch-layer:last-child{border-bottom:none}
+.arch-layer-label{width:120px;padding:16px 14px;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:white;display:flex;align-items:center;justify-content:center;text-align:center;flex-shrink:0}
+.arch-layer-content{flex:1;padding:16px 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fafbfc}
+
+.arch-chip{padding:6px 12px;font-size:0.74rem;font-weight:500;background:white;border:1px solid #e8e8e8;color:#333;white-space:nowrap}
+
+.arch-connector{text-align:center;padding:6px 0;font-size:0.7rem;color:#999;letter-spacing:0.5px;border-bottom:1px solid #eee;background:#f7f8f9}
+
+.lbl-consumer{background:#475569}
+.lbl-gateway{background:#003057}
+.lbl-skill{background:#0d7a4f}
+.lbl-ai{background:#5b21b6}
+.lbl-infra{background:#b45309}
+.lbl-data{background:#991b1b}
+
+/* API Cards */
+.api-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.api-card{border:1px solid #eee;padding:20px;transition:box-shadow 0.2s}
+.api-card:hover{box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.api-card-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.api-card-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.api-card-title{font-size:0.92rem;font-weight:700;color:#003057}
+.api-card-method{font-size:0.64rem;color:#999;font-weight:600;letter-spacing:0.5px}
+.api-card-desc{font-size:0.78rem;color:#666;margin-bottom:12px;line-height:1.6}
+.api-card-tags{display:flex;flex-wrap:wrap;gap:4px}
+.api-tag{padding:3px 8px;font-size:0.68rem;font-weight:500;background:#f7f8f9;border:1px solid #eee;color:#555}
+
+.dot-extract{background:#0d7a4f}
+.dot-analyze{background:#5b21b6}
+.dot-transform{background:#b45309}
+.dot-generate{background:#1565c0}
+.dot-compare{background:#991b1b}
+.dot-mgmt{background:#475569}
+
+/* Processing Flow */
+.flow-row{display:flex;align-items:center;gap:0;border:1px solid #eee;margin-top:16px}
+.flow-step{flex:1;padding:20px 16px;text-align:center;border-right:1px solid #eee;position:relative}
+.flow-step:last-child{border-right:none}
+.flow-step::after{content:'→';position:absolute;right:-8px;top:50%;transform:translateY(-50%);color:#ccc;font-size:1rem;z-index:1}
+.flow-step:last-child::after{display:none}
+.flow-step-num{font-size:0.64rem;color:#999;font-weight:700;letter-spacing:1px;margin-bottom:4px}
+.flow-step-title{font-size:0.82rem;font-weight:700;color:#003057;margin-bottom:4px}
+.flow-step-desc{font-size:0.7rem;color:#888;line-height:1.4}
+
+/* Tech principles */
+.tech-principles{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.tech-principle{border:1px solid #eee;padding:20px;border-left:3px solid #003057}
+.tech-principle h4{font-size:0.82rem;font-weight:700;color:#003057;margin-bottom:8px}
+.tech-principle p{font-size:0.76rem;color:#666;line-height:1.6}
+
+/* NFR Table */
+.nfr-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.nfr-table thead th{background:#003057;color:white;padding:12px 16px;text-align:left;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.8px;font-weight:500}
+.nfr-table tbody td{padding:12px 16px;border-bottom:1px solid #eee}
+.nfr-table tbody tr:hover td{background:#fafbfc}
+.nfr-table .sla{font-weight:700;color:#0d7a4f}
+
+/* Security */
+.security-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.security-card{border:1px solid #eee;padding:20px;border-top:3px solid #003057}
+.security-card h4{font-size:0.82rem;font-weight:700;color:#003057;margin-bottom:8px}
+.security-card p{font-size:0.76rem;color:#666;line-height:1.6}
+
+/* Integration */
+.integration-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.integ-card{border:1px solid #eee;padding:16px;text-align:center}
+.integ-card h5{font-size:0.78rem;font-weight:700;color:#003057;margin-bottom:4px}
+.integ-card p{font-size:0.7rem;color:#888}
+
+.footer{text-align:center;padding:40px 60px;border-top:3px solid #003057;margin-top:56px}
+.footer p{font-size:0.75rem;color:#999;line-height:1.8}
+.footer .brand{font-size:0.85rem;color:#003057;font-weight:700;letter-spacing:1px;margin-bottom:8px}
+
+@media(max-width:900px){
+  .header{padding:36px 24px 28px}
+  .container{padding:32px 24px 60px}
+  .api-grid{grid-template-columns:1fr}
+  .tech-principles,.security-grid{grid-template-columns:1fr}
+  .integration-grid{grid-template-columns:repeat(2,1fr)}
+  .flow-row{flex-direction:column}
+  .flow-step{border-right:none;border-bottom:1px solid #eee}
+  .flow-step::after{display:none}
+  .arch-layer{flex-direction:column}
+  .arch-layer-label{width:100%;padding:10px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><strong>Document Intelligence</strong> Architecture</h1>
+  <p class="subtitle">Technical architecture for the intelligent document processing platform</p>
+</div>
+
+<div class="container">
+
+<!-- ===== SECTION 1: LAYERED ARCHITECTURE ===== -->
+<div class="section">
+  <div class="section-num">Section 01</div>
+  <h2 class="section-title"><strong>Layered</strong> Architecture</h2>
+  <p class="section-lead">
+    The platform follows a strict six-layer architecture separating consumer interfaces, gateway controls, 
+    skill hubs, AI engines, infrastructure, and data persistence. Each layer can be scaled and 
+    evolved independently.
+  </p>
+
+  <div class="exhibit">Exhibit 1 — Architecture Stack (Top-Down)</div>
+  <div class="arch-stack">
+
+    <div class="arch-layer">
+      <div class="arch-layer-label lbl-consumer">Consumers</div>
+      <div class="arch-layer-content">
+        <span class="arch-chip">Core Banking (T24)</span>
+        <span class="arch-chip">Loan Origination (LOS)</span>
+        <span class="arch-chip">Payment Hub</span>
+        <span class="arch-chip">AI Agents (OPS Layer)</span>
+        <span class="arch-chip">Partner APIs</span>
+        <span class="arch-chip">Internal Web Apps</span>
+      </div>
+    </div>
+
+    <div class="arch-connector">▼ REST API over HTTPS ▼</div>
+
+    <div class="arch-layer">
+      <div class="arch-layer-label lbl-gateway">APIC (API GATEWAY)</div>
+      <div class="arch-layer-content">
+        <span class="arch-chip">Authentication (OAuth 2.0 / mTLS)</span>
+        <span class="arch-chip">Rate Limiting (per tenant)</span>
+        <span class="arch-chip">Load Balancing</span>
+        <span class="arch-chip">Request Validation</span>
+        <span class="arch-chip">Audit Logging</span>
+        <span class="arch-chip">Request Routing</span>
+      </div>
+    </div>
+
+    <div class="arch-connector">▼ Internal service ▼</div>
+
+    <div class="arch-layer">
+      <div class="arch-layer-label lbl-skill">Skill Hubs</div>
+      <div class="arch-layer-content" style="flex-direction:column;align-items:stretch;gap:10px">
+        <div style="font-size:0.76rem;font-weight:700;color:#0d7a4f;letter-spacing:0.5px">📄 DOCUMENT UNDERSTANDING</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:white;border:1px solid #d1e7dd;border-left:3px solid #0d7a4f">
+          <span class="arch-chip">/extract (17 types)</span>
+          <span class="arch-chip">/analyze (5 tasks)</span>
+          <span class="arch-chip">/transform (9 actions)</span>
+          <span class="arch-chip">/generate (5 tasks)</span>
+          <span class="arch-chip">/compare (4 modes)</span>
+          <span class="arch-chip" style="color:#999;border-color:#eee">/operations · /processors · /health</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-connector">▼ Model orchestration & routing ▼</div>
+
+    <div class="arch-layer">
+      <div class="arch-layer-label lbl-ai">AI Engine</div>
+      <div class="arch-layer-content">
+        <span class="arch-chip">LLM Router (multi-model)</span>
+        <span class="arch-chip">Vision Engine</span>
+        <span class="arch-chip">Layout Analysis</span>
+        <span class="arch-chip">Named Entity Recognition</span>
+        <span class="arch-chip">Table Detection</span>
+        <span class="arch-chip">Confidence Scoring</span>
+      </div>
+    </div>
+
+    <div class="arch-connector">▼ Compute & storage orchestration ▼</div>
+
+    <div class="arch-layer">
+      <div class="arch-layer-label lbl-infra">Infra</div>
+      <div class="arch-layer-content">
+        <span class="arch-chip">Container Orchestration (K8s)</span>
+        <span class="arch-chip">Object Storage</span>
+        <span class="arch-chip">Message Queue</span>
+        <span class="arch-chip">Distributed Cache</span>
+        <span class="arch-chip">Monitoring & Alerting</span>
+        <span class="arch-chip">Secrets Management</span>
+      </div>
+    </div>
+
+
+
+  </div>
+</div>
+
+<!-- ===== SECTION 2: API CAPABILITIES ===== -->
+<div class="section">
+  <div class="section-num">Section 02</div>
+  <h2 class="section-title"><strong>API Capabilities</strong> Overview</h2>
+  <p class="section-lead">
+    Five core skill endpoints grouped under the <strong>Document Understanding</strong> skill hub, plus three management APIs. 
+    Each skill operates as an independent microservice with its own scaling profile and model routing logic.
+  </p>
+
+  <div class="exhibit">Exhibit 2 — Skill Endpoints & Capabilities</div>
+  <div class="api-grid">
+    <div class="api-card">
+      <div class="api-card-header">
+        <div class="api-card-dot dot-extract"></div>
+        <div class="api-card-title">/extract</div>
+        <div class="api-card-method">POST</div>
+      </div>
+      <div class="api-card-desc">Structured data extraction from documents. 17 banking document types supported across credit, payment, legal, and asset categories.</div>
+      <div class="api-card-tags">
+        <span class="api-tag">disbursement</span>
+        <span class="api-tag">guarantee</span>
+        <span class="api-tag">collateral</span>
+        <span class="api-tag">contract</span>
+        <span class="api-tag">lc</span>
+        <span class="api-tag">invoice</span>
+        <span class="api-tag">id-card</span>
+        <span class="api-tag">+10 more</span>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-card-header">
+        <div class="api-card-dot dot-analyze"></div>
+        <div class="api-card-title">/analyze</div>
+        <div class="api-card-method">POST</div>
+      </div>
+      <div class="api-card-desc">Document assessment and classification. AI-driven compliance checking, risk evaluation, and quality scoring.</div>
+      <div class="api-card-tags">
+        <span class="api-tag">classify</span>
+        <span class="api-tag">compliance</span>
+        <span class="api-tag">risk</span>
+        <span class="api-tag">quality</span>
+        <span class="api-tag">sentiment</span>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-card-header">
+        <div class="api-card-dot dot-transform"></div>
+        <div class="api-card-title">/transform</div>
+        <div class="api-card-method">POST</div>
+      </div>
+      <div class="api-card-desc">Document format transformation, handwriting digitization, translation, PII redaction, and template-based generation.</div>
+      <div class="api-card-tags">
+        <span class="api-tag">parse</span>
+        <span class="api-tag">digitize</span>
+        <span class="api-tag">translate</span>
+        <span class="api-tag">rewrite</span>
+        <span class="api-tag">redact</span>
+        <span class="api-tag">template</span>
+        <span class="api-tag">split</span>
+        <span class="api-tag">convert</span>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-card-header">
+        <div class="api-card-dot dot-generate"></div>
+        <div class="api-card-title">/generate</div>
+        <div class="api-card-method">POST</div>
+      </div>
+      <div class="api-card-desc">New content creation from source documents — summaries, structured reports, email drafts, and meeting minutes.</div>
+      <div class="api-card-tags">
+        <span class="api-tag">summary</span>
+        <span class="api-tag">report</span>
+        <span class="api-tag">email</span>
+        <span class="api-tag">minutes</span>
+        <span class="api-tag">outline</span>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-card-header">
+        <div class="api-card-dot dot-compare"></div>
+        <div class="api-card-title">/compare</div>
+        <div class="api-card-method">POST</div>
+      </div>
+      <div class="api-card-desc">Multi-source reconciliation and verification. Identifies discrepancies, semantic changes, and data mismatches across documents.</div>
+      <div class="api-card-tags">
+        <span class="api-tag">diff</span>
+        <span class="api-tag">semantic</span>
+        <span class="api-tag">version</span>
+        <span class="api-tag">verify</span>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-card-header">
+        <div class="api-card-dot dot-mgmt"></div>
+        <div class="api-card-title">Management</div>
+        <div class="api-card-method">GET</div>
+      </div>
+      <div class="api-card-desc">Platform operations — async job tracking, capability registry, and service health monitoring.</div>
+      <div class="api-card-tags">
+        <span class="api-tag">/operations/{id}</span>
+        <span class="api-tag">/processors</span>
+        <span class="api-tag">/health</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3: PROCESSING FLOW ===== -->
+<div class="section">
+  <div class="section-num">Section 03</div>
+  <h2 class="section-title"><strong>Document Processing</strong> Flow</h2>
+  <p class="section-lead">
+    Every document request passes through a standardized five-stage pipeline. 
+    Async processing is triggered automatically for documents exceeding 10 pages.
+  </p>
+
+  <div class="exhibit">Exhibit 3 — End-to-End Processing Pipeline</div>
+  <div class="flow-row">
+    <div class="flow-step">
+      <div class="flow-step-num">STEP 1</div>
+      <div class="flow-step-title">Ingest</div>
+      <div class="flow-step-desc">File upload via API<br>Validation (size, format)<br>Max 50MB / 100 pages</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">STEP 2</div>
+      <div class="flow-step-title">Preprocess</div>
+      <div class="flow-step-desc">Format detection<br>Layout analysis<br>Page segmentation</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">STEP 3</div>
+      <div class="flow-step-title">AI Process</div>
+      <div class="flow-step-desc">Model selection & routing<br>LLM + Vision inference<br>Multi-model ensemble</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">STEP 4</div>
+      <div class="flow-step-title">Validate</div>
+      <div class="flow-step-desc">Confidence scoring<br>Schema validation<br>Business rule checks</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">STEP 5</div>
+      <div class="flow-step-title">Deliver</div>
+      <div class="flow-step-desc">JSON / CSV / XLSX output<br>Webhook callback<br>Audit trail logged</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== SECTION 4: PROFILE & MULTI-TENANT MODEL ===== -->
+<div class="section">
+  <div class="section-num">Section 04</div>
+  <h2 class="section-title"><strong>Profile</strong> & Multi-Tenant Model</h2>
+  <p class="section-lead">
+    Each API consumer (tenant) is governed by a <strong>Profile</strong> — a per-endpoint configuration layer 
+    that controls access permissions, parameter defaults, pipeline routing, and cost governance. 
+    A single deployment serves all tenants with differentiated behavior.
+  </p>
+
+  <div class="exhibit">Exhibit 4 — Profile Hierarchy</div>
+  <div class="arch-stack">
+    <div class="arch-layer">
+      <div class="arch-layer-label lbl-consumer">API Key</div>
+      <div class="arch-layer-content">
+        <span class="arch-chip">Identity & Role</span>
+        <span class="arch-chip">Spending Limit</span>
+        <span class="arch-chip">Worker Group Assignment</span>
+        <span class="arch-chip">Status (active / suspended)</span>
+      </div>
+    </div>
+    <div class="arch-connector">▼ One API Key owns many Profile Endpoints ▼</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label lbl-gateway">Profile Endpoint</div>
+      <div class="arch-layer-content">
+        <span class="arch-chip">Endpoint Access (enabled / disabled)</span>
+        <span class="arch-chip">Locked Parameters (admin-only)</span>
+        <span class="arch-chip">Pipeline Routing Override</span>
+        <span class="arch-chip">Job Priority</span>
+        <span class="arch-chip">File Restrictions</span>
+      </div>
+    </div>
+    <div class="arch-connector">▼ Optional per-step prompt customization ▼</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label lbl-ai">Prompt Override</div>
+      <div class="arch-layer-content">
+        <span class="arch-chip">Per-tenant prompt for any pipeline step</span>
+        <span class="arch-chip">Scoped to specific connection + endpoint</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tech-principles" style="margin-top:28px">
+    <div class="tech-principle">
+      <h4>Controlled Parameters</h4>
+      <p>Administrators define default parameter values and designate which parameters are locked (immutable by clients) vs. open (client-overridable). This ensures sensitive configurations remain under central control.</p>
+    </div>
+    <div class="tech-principle">
+      <h4>Per-Tenant Pipeline Routing</h4>
+      <p>The same logical endpoint (e.g. /extract:invoice) can route through different AI models for different tenants. Administrators configure routing overrides per profile without additional deployments.</p>
+    </div>
+    <div class="tech-principle">
+      <h4>Hierarchical Resolution</h4>
+      <p>Profile lookup resolves from the most specific scope (e.g. "extract:invoice") and falls back to service-level ("extract") when no specific configuration exists. This supports both broad defaults and targeted overrides.</p>
+    </div>
+    <div class="tech-principle">
+      <h4>User-to-Profile Mapping</h4>
+      <p>Interactive users are assigned to one or more profiles. All operations submitted through the web interface inherit the same access rules, quotas, and routing as API-based consumers.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 5: PROMPT MANAGEMENT ===== -->
+<div class="section">
+  <div class="section-num">Section 05</div>
+  <h2 class="section-title"><strong>Prompt</strong> Management</h2>
+  <p class="section-lead">
+    The platform employs a three-tier prompt resolution model that balances standardization with 
+    flexibility. Prompts are resolved at runtime through a priority cascade, with template variables 
+    injected from multiple configuration sources.
+  </p>
+
+  <div class="exhibit">Exhibit 5 — Prompt Resolution Priority (Highest → Lowest)</div>
+  <div class="flow-row">
+    <div class="flow-step" style="background:#ede7f6">
+      <div class="flow-step-num">PRIORITY 1</div>
+      <div class="flow-step-title">Workflow Prompt</div>
+      <div class="flow-step-desc">Dynamically injected<br>by business workflow logic<br>(orchestration layer)</div>
+    </div>
+    <div class="flow-step" style="background:#e3f2fd">
+      <div class="flow-step-num">PRIORITY 2</div>
+      <div class="flow-step-title">Profile Override</div>
+      <div class="flow-step-desc">Tenant-specific prompt<br>configured by admin<br>(per endpoint + step)</div>
+    </div>
+    <div class="flow-step" style="background:#e8f5e9">
+      <div class="flow-step-num">PRIORITY 3</div>
+      <div class="flow-step-title">Connection Default</div>
+      <div class="flow-step-desc">System-wide template<br>shared across all tenants<br>(baseline behavior)</div>
+    </div>
+  </div>
+
+  <div class="tech-principles" style="margin-top:28px">
+    <div class="tech-principle">
+      <h4>Template Variables</h4>
+      <p>All prompts support dynamic placeholders that are populated from registry defaults, profile parameters, and client inputs at runtime. This decouples prompt logic from hardcoded values.</p>
+    </div>
+    <div class="tech-principle">
+      <h4>Document Type Presets</h4>
+      <p>Each recognized document type (invoice, contract, ID card, etc.) carries a predefined extraction schema. Clients may use the built-in schema or supply a fully custom one for ad-hoc use cases.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== SECTION 6: PIPELINE ENGINE ===== -->
+<div class="section">
+  <div class="section-num">Section 06</div>
+  <h2 class="section-title"><strong>Pipeline</strong> Engine</h2>
+  <p class="section-lead">
+    The Pipeline Engine orchestrates multi-step document processing by chaining External API Connections. 
+    Standard endpoints use a declarative linear pipeline, while advanced use cases leverage 
+    a code-driven Workflow Engine for conditional logic and parallel execution.
+  </p>
+
+  <div class="exhibit">Exhibit 6 — Pipeline Execution Model</div>
+  <div class="arch-stack">
+    <div class="arch-layer">
+      <div class="arch-layer-label lbl-gateway" style="font-size:0.58rem">Request Entry</div>
+      <div class="arch-layer-content">
+        <span class="arch-chip">Service & Sub-case Resolution</span>
+        <span class="arch-chip">Profile & Parameter Merge</span>
+        <span class="arch-chip">File Intake (upload + URL)</span>
+        <span class="arch-chip">Idempotency Guard</span>
+      </div>
+    </div>
+    <div class="arch-connector">▼ Async Job Submission (Message Queue) ▼</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label lbl-skill" style="font-size:0.58rem">Pipeline Loop</div>
+      <div class="arch-layer-content" style="flex-direction:column;align-items:stretch;gap:8px">
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span class="arch-chip">Connection Resolution</span>
+          <span class="arch-chip">Prompt Resolution (3-tier)</span>
+          <span class="arch-chip">AI Model Invocation</span>
+          <span class="arch-chip">Response Extraction</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span class="arch-chip">Session State Propagation</span>
+          <span class="arch-chip">Usage Metering</span>
+          <span class="arch-chip">Step Checkpointing</span>
+          <span class="arch-chip">Output Chaining</span>
+        </div>
+      </div>
+    </div>
+    <div class="arch-connector">▼ Completion / Failure ▼</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label lbl-infra" style="font-size:0.58rem">Post-Process</div>
+      <div class="arch-layer-content">
+        <span class="arch-chip">Cost Aggregation</span>
+        <span class="arch-chip">Spending Enforcement</span>
+        <span class="arch-chip">Webhook Delivery</span>
+        <span class="arch-chip">Resource Cleanup</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tech-principles" style="margin-top:28px">
+    <div class="tech-principle">
+      <h4>Checkpoint & Resume</h4>
+      <p>Each completed step is persisted. On retry (infrastructure failure, timeout), the pipeline resumes from the last successful checkpoint — avoiding redundant AI calls and associated costs.</p>
+    </div>
+
+    <div class="tech-principle">
+      <h4>Workload Isolation</h4>
+      <p>Tenants can be assigned to dedicated worker groups with independent queues and concurrency limits, ensuring high-priority workloads are not impacted by batch processing from other tenants.</p>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="footer">
+  <div class="brand">DOCUMENT INTELLIGENCE PLATFORM</div>
+  <p>Technical Architecture Reference — Internal Use Only</p>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI SkillHub · Document Skills Catalog</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #f6f8fb; --card: #ffffff; --border: #e3e8ef;
+    --cyan: #0891b2; --green: #059669; --blue: #2563eb;
+    --orange: #d97706; --purple: #7c3aed; --red: #dc2626;
+    --text: #15233b; --dim: #647088; --code-bg: #ecfeff;
+  }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+  .hero { background: linear-gradient(135deg, #0f2a4a, #1d4ed8, #0891b2); padding: 48px 40px; text-align: center; color: #fff; }
+  .hero h1 { font-size: 2.1rem; margin-bottom: 6px; }
+  .hero p { color: #cfe2ff; font-size: 0.98rem; max-width: 720px; margin: 0 auto; }
+  .container { max-width: 1060px; margin: 0 auto; padding: 38px 24px 80px; }
+  h2 { color: var(--cyan); font-size: 1.4rem; margin: 42px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 1.02rem; margin: 20px 0 8px; }
+  p { margin-bottom: 12px; }
+  code { background: var(--code-bg); padding: 2px 7px; border-radius: 5px; font-family: Consolas, monospace; font-size: 0.85em; color: var(--cyan); font-weight: 600; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 16px 18px; border-radius: 10px; overflow-x: auto; font-family: Consolas, monospace; font-size: 0.82rem; line-height: 1.55; margin: 12px 0; }
+  pre .c { color: #7dd3fc; } pre .s { color: #86efac; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.05); margin: 14px 0; font-size: 0.86rem; }
+  th { background: #eef2f7; color: var(--cyan); padding: 11px 14px; text-align: left; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--card); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f4faff; }
+  .skill { background: var(--card); border: 1px solid var(--border); border-radius: 14px; margin: 18px 0; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .skill-head { display: flex; align-items: center; gap: 14px; padding: 16px 22px; border-bottom: 1px solid var(--border); }
+  .skill-ico { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+  .skill-ep { font-family: Consolas, monospace; font-weight: 700; font-size: 1.02rem; color: var(--cyan); }
+  .skill-sub { font-size: 0.84rem; color: var(--dim); margin-top: 2px; }
+  .skill-body { padding: 8px 22px 16px; }
+  .flow { font-family: Consolas, monospace; font-size: 0.84rem; background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 9px 14px; margin: 8px 0; }
+  .flow span { color: var(--dim); }
+  .muted { color: var(--dim); font-size: 0.84rem; }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 22px; columns: 2; column-gap: 30px; }
+  .toc a { color: var(--blue); text-decoration: none; font-size: 0.9rem; display: block; padding: 3px 0; }
+  .toc a:hover { text-decoration: underline; }
+  @media (max-width: 720px) { .toc { columns: 1; } .container { padding: 24px 14px 60px; } }
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>🧩 AI SkillHub · Document Skills</h1>
+  <p>Document Skills là nhóm năng lực xử lý tài liệu trong AI SkillHub — 5 primitive skill và cách điều phối. Tham chiếu cho Solution Owner, độc lập lĩnh vực nghiệp vụ.</p>
+</div>
+
+<div class="container">
+
+  <h2 id="toc">Mục lục</h2>
+  <div class="toc">
+    <a href="#role">Vai trò &amp; hiệu quả</a>
+    <a href="#model">1. Skills &amp; Orchestration</a>
+    <a href="#how">2. Cách gọi API</a>
+    <a href="#extract">3. extract</a>
+    <a href="#analyze">4. analyze</a>
+    <a href="#transform">5. transform</a>
+    <a href="#generate">6. generate</a>
+    <a href="#compare">7. compare</a>
+    <a href="#orch">8. Điều phối &amp; composition</a>
+    <a href="#workflows">9. Workflows</a>
+    <a href="#params">10. Tham số dùng chung</a>
+    <a href="#support">11. Endpoint hỗ trợ</a>
+    <a href="#governance">12. Profile &amp; bảo mật</a>
+  </div>
+
+  <h2 id="role">Vai trò &amp; hiệu quả</h2>
+  <p><strong>AI SkillHub</strong> là nền tảng năng lực AI, tổ chức theo các nhóm skill; <strong></strong>Document Skills</strong> (phạm vi tài liệu này) là một nhóm con chuyên xử lý tài liệu. Nhóm này đóng vai trò lớp trung gian (gateway) giữa ứng dụng nghiệp vụ và các dịch vụ OCR/LLM/parse: thay vì mỗi ứng dụng tự tích hợp rời rạc, chúng gọi một bộ API đồng nhất; phần phức tạp (định tuyến model, prompt, hàng đợi, chi phí) được tập trung và cấu hình tại hub.</p>
+  <table>
+    <thead><tr><th>Khi tích hợp trực tiếp</th><th>Với AI SkillHub</th></tr></thead>
+    <tbody>
+      <tr><td>Mỗi ứng dụng gọi nhiều dịch vụ rời rạc, mỗi nơi một giao thức</td><td>5 skill đồng nhất, một giao thức multipart + bất đồng bộ</td></tr>
+      <tr><td>Đổi model/prompt phải sửa và deploy lại client</td><td>Cấu hình theo Profile tại gateway; client không đổi</td></tr>
+      <tr><td>Khó giới hạn chi phí/lưu lượng theo từng bên dùng</td><td>Rate limit + spending limit theo từng API Key</td></tr>
+      <tr><td>Tài liệu lớn/đồng thời gây nghẽn ứng dụng</td><td>Hàng đợi worker bất đồng bộ + backpressure + checkpoint/resume</td></tr>
+      <tr><td>Khó truy vết khi lỗi, không rõ chi phí</td><td>Operation có trạng thái, log correlation, đo token/chi phí từng bước</td></tr>
+      <tr><td>Lặp lại tích hợp cho từng nghiệp vụ</td><td>Tái dùng 5 skill; chỉ đóng gói workflow khi luồng lặp lại</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">Hệ quả: một lần tích hợp dùng cho nhiều nghiệp vụ; thay đổi cấu hình không cần deploy; chi phí và lưu lượng kiểm soát được theo từng client.</p>
+
+  <h2 id="model">1. Skills &amp; Orchestration</h2>
+  <p>Nhóm Document Skills của AI SkillHub cung cấp 5 primitive skill xử lý tài liệu. Mỗi skill là một lời gọi HTTP độc lập, tham số có kiểu, và được liệt kê máy-đọc-được qua <code>GET /api/v1/services</code> — ở chế độ agentic, mỗi skill đóng vai trò một tool để LLM gọi.</p>
+  <p>Giải pháp cho một nghiệp vụ là sự <strong>điều phối</strong> nhiều skill. Điều phối có ba chế độ, dùng chung cùng một bộ skill:</p>
+
+  <svg viewBox="0 0 760 290" style="width:100%;max-width:760px;display:block;margin:8px auto 4px;font-family:'Segoe UI',system-ui,sans-serif" role="img" aria-label="5 primitive skills điều phối qua 3 chế độ">
+    <defs>
+      <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker>
+    </defs>
+    <text x="24" y="34" font-size="13" font-weight="700" fill="#647088">5 PRIMITIVE SKILLS</text>
+    <text x="560" y="34" font-size="13" font-weight="700" fill="#647088">3 CHẾ ĐỘ ORCHESTRATION</text>
+
+    <!-- skill→hub lines -->
+    <g stroke="#cbd5e1" stroke-width="1.5">
+      <line x1="174" y1="73"  x2="348" y2="150"/>
+      <line x1="174" y1="115" x2="348" y2="150"/>
+      <line x1="174" y1="157" x2="348" y2="150"/>
+      <line x1="174" y1="199" x2="348" y2="150"/>
+      <line x1="174" y1="241" x2="348" y2="150"/>
+    </g>
+    <!-- hub→mode lines -->
+    <g stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ah)">
+      <line x1="414" y1="150" x2="552" y2="94"/>
+      <line x1="414" y1="150" x2="552" y2="152"/>
+      <line x1="414" y1="150" x2="552" y2="210"/>
+    </g>
+
+    <!-- skill boxes -->
+    <g font-size="13" font-weight="600">
+      <rect x="24" y="56"  width="150" height="34" rx="8" fill="#ecfeff" stroke="#0891b2"/><text x="99" y="78"  text-anchor="middle" fill="#0e7490">extract</text>
+      <rect x="24" y="98"  width="150" height="34" rx="8" fill="#ecfdf5" stroke="#059669"/><text x="99" y="120" text-anchor="middle" fill="#047857">analyze</text>
+      <rect x="24" y="140" width="150" height="34" rx="8" fill="#fef2f2" stroke="#dc2626"/><text x="99" y="162" text-anchor="middle" fill="#b91c1c">transform</text>
+      <rect x="24" y="182" width="150" height="34" rx="8" fill="#ede9fe" stroke="#7c3aed"/><text x="99" y="204" text-anchor="middle" fill="#6d28d9">generate</text>
+      <rect x="24" y="224" width="150" height="34" rx="8" fill="#fef3c7" stroke="#d97706"/><text x="99" y="246" text-anchor="middle" fill="#b45309">compare</text>
+    </g>
+
+    <!-- hub -->
+    <circle cx="381" cy="150" r="34" fill="#1d4ed8"/>
+    <text x="381" y="146" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">điều</text>
+    <text x="381" y="161" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">phối</text>
+
+    <!-- mode boxes -->
+    <g>
+      <rect x="552" y="70"  width="184" height="48" rx="10" fill="#fff" stroke="#cbd5e1"/>
+      <text x="566" y="90"  font-size="13" font-weight="700" fill="#15233b">Client tự ghép</text>
+      <text x="566" y="107" font-size="11" fill="#647088">điều phối phía client</text>
+
+      <rect x="552" y="128" width="184" height="48" rx="10" fill="#eff6ff" stroke="#1d4ed8"/>
+      <text x="566" y="148" font-size="13" font-weight="700" fill="#1e3a8a">Workflow</text>
+      <text x="566" y="165" font-size="11" fill="#647088">DAG định trước, server-side</text>
+
+      <rect x="552" y="186" width="184" height="48" rx="10" fill="#fff" stroke="#cbd5e1" stroke-dasharray="4 3"/>
+      <text x="566" y="206" font-size="13" font-weight="700" fill="#15233b">Agentic</text>
+      <text x="566" y="223" font-size="11" fill="#647088">LLM chọn skill động (mở rộng)</text>
+    </g>
+  </svg>
+  <p class="muted" style="text-align:center">Cùng một bộ 5 skill, ba cách điều phối. Khác biệt là <em>ai</em> quyết định thứ tự gọi và <em>nơi</em> điều phối chạy.</p>
+
+  <table>
+    <thead><tr><th>Chế độ</th><th>Ai quyết định thứ tự gọi</th><th>Dùng khi</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+      <tr><td>Client tự ghép</td><td>Mã phía client (gọi tuần tự + polling)</td><td>Luồng ngắn, client tự kiểm soát</td><td>Sẵn dùng</td></tr>
+      <tr><td>Workflow</td><td>DAG định nghĩa trước, chạy server-side</td><td>Cần xác định, kiểm soát, audit, checkpoint/HITL</td><td>Sẵn dùng</td></tr>
+      <tr><td>Agentic</td><td>LLM chọn skill động theo đầu vào</td><td>Đầu vào biến thiên/mở, không cố định luồng</td><td>Skill đã sẵn sàng làm tool (manifest qua <code>/services</code>); runtime agent là hướng mở rộng</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">Workflow và "client tự ghép" đều là composition — chỉ khác nơi chạy điều phối. Cả ba chế độ tái dùng đúng 5 skill dưới đây, nên thêm skill mới hoặc đổi chế độ điều phối không ảnh hưởng lẫn nhau.</p>
+  <p>Mỗi skill là một đơn vị độc lập, gọi được riêng lẻ. Hệ thống tiêu thụ có thể <strong>gọi ngay một skill đơn lẻ</strong> để đáp ứng đúng nhu cầu tại một bước (ví dụ chỉ cần <code>extract</code> hoặc chỉ cần <code>compare</code>), và <strong>tự điều phối flow nhiều bước ở phía mình</strong> — quyết định gọi skill nào, thứ tự nào, xử lý kết quả trung gian theo logic riêng. Không bắt buộc dùng Workflow; Workflow chỉ là tuỳ chọn khi muốn đẩy phần điều phối (và checkpoint/HITL) sang server-side.</p>
+
+  <h2 id="how">2. Cách gọi API</h2>
+  <p>Mọi skill dùng <code>multipart/form-data</code>: nạp file qua <code>file</code> / <code>files[]</code> (hoặc <code>file_urls</code> JSON), kèm tham số định tuyến và tham số tuỳ chọn. Xác thực qua header <code>x-api-key</code>.</p>
+  <pre><span class="c"># Đồng bộ — chờ kết quả (file nhỏ)</span>
+curl -X POST "{host}/api/v2/docs/{skill}?sync=true" \
+  -H <span class="s">"x-api-key: dg_xxx"</span> -F <span class="s">"file=@input.pdf"</span> -F <span class="s">"{discriminator}={sub-case}"</span>
+
+<span class="c"># Bất đồng bộ — nhận 202 + Operation-Location, rồi poll</span>
+curl -X POST "{host}/api/v2/docs/{skill}" -H <span class="s">"x-api-key: dg_xxx"</span> -F <span class="s">"file=@input.pdf"</span> -F <span class="s">"{discriminator}={sub-case}"</span>
+curl "{host}/api/v1/operations/op-123" -H <span class="s">"x-api-key: dg_xxx"</span></pre>
+  <p class="muted">Bất đồng bộ trả <code>202</code> + header <code>Operation-Location</code>; client poll theo URL đó hoặc nhận <code>webhook_url</code> khi xong. Header <code>idempotency-key</code> chống gửi trùng; <code>output_format</code> nhận json/md/html/csv.</p>
+
+  <h2 id="extract">3. extract <span class="muted">— trích xuất dữ liệu có cấu trúc</span></h2>
+  <div class="skill">
+    <div class="skill-head">
+      <div class="skill-ico" style="background:#ecfeff;color:var(--cyan)">📥</div>
+      <div><div class="skill-ep">POST /api/v2/docs/extract</div><div class="skill-sub">Định tuyến: <code>type</code> · trả về JSON</div></div>
+    </div>
+    <div class="skill-body">
+      <p>Biến tài liệu phi cấu trúc thành JSON. Hai cơ chế độc lập lĩnh vực và một tập preset cấu hình được:</p>
+      <table>
+        <thead><tr><th>type</th><th>Năng lực</th></tr></thead>
+        <tbody>
+          <tr><td><code>custom</code></td><td>Schema động: truyền <code>fields</code> hoặc JSON <code>schema</code>, trích xuất đúng cấu trúc yêu cầu</td></tr>
+          <tr><td><code>query</code></td><td>Hỏi đáp trên tài liệu: truyền <code>query</code>, nhận câu trả lời trích từ nội dung</td></tr>
+          <tr><td><em>preset types</em></td><td>Loại tinh chỉnh sẵn, mỗi loại có bộ trường cố định; bật/tắt theo Profile</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Preset hiện cấu hình: <code>disbursement</code>, <code>guarantee</code>, <code>approval</code>, <code>collateral</code>, <code>credit-report</code>, <code>contract</code>, <code>table</code>, <code>payment-order</code>, <code>lc</code>, <code>invoice</code>, <code>business-license</code>, <code>account-form</code>, <code>id-card</code>, <code>civil-doc</code>, <code>vehicle-doc</code>, <code>insurance</code>. Lĩnh vực mới dùng <code>custom</code>/<code>schema</code> hoặc khai báo preset mới ở cấu hình.</p>
+      <p class="muted">Đầu vào: PDF, ảnh, DOCX; thêm Excel cho dữ liệu dạng bảng.</p>
+    </div>
+  </div>
+
+  <h2 id="analyze">4. analyze <span class="muted">— phân tích, đánh giá, phân loại</span></h2>
+  <div class="skill">
+    <div class="skill-head">
+      <div class="skill-ico" style="background:#ecfdf5;color:var(--green)">🔍</div>
+      <div><div class="skill-ep">POST /api/v2/docs/analyze</div><div class="skill-sub">Định tuyến: <code>task</code></div></div>
+    </div>
+    <div class="skill-body">
+      <table>
+        <thead><tr><th>task</th><th>Năng lực</th><th>Tham số chính</th></tr></thead>
+        <tbody>
+          <tr><td><code>classify</code></td><td>Phân loại vào nhóm/nhãn cho trước</td><td><code>categories</code></td></tr>
+          <tr><td><code>compliance</code></td><td>Kiểm tra tuân thủ theo tiêu chí/checklist</td><td><code>criteria</code></td></tr>
+          <tr><td><code>risk</code></td><td>Đánh giá rủi ro, phát hiện bất thường</td><td>—</td></tr>
+          <tr><td><code>quality</code></td><td>Chấm điểm chất lượng theo tiêu chí</td><td><code>criteria</code></td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Đầu vào: PDF, ảnh, DOCX.</p>
+    </div>
+  </div>
+
+  <h2 id="transform">5. transform <span class="muted">— biến đổi định dạng/nội dung</span></h2>
+  <div class="skill">
+    <div class="skill-head">
+      <div class="skill-ico" style="background:#fef2f2;color:var(--red)">🔄</div>
+      <div><div class="skill-ep">POST /api/v2/docs/transform</div><div class="skill-sub">Định tuyến: <code>action</code></div></div>
+    </div>
+    <div class="skill-body">
+      <table>
+        <thead><tr><th>action</th><th>Năng lực</th><th>Tham số chính</th></tr></thead>
+        <tbody>
+          <tr><td><code>convert</code></td><td>Chuyển định dạng (PDF↔Word, image→text)</td><td><code>output_format</code></td></tr>
+          <tr><td><code>translate</code></td><td>Dịch sang ngôn ngữ đích</td><td><code>target_language</code>, <code>tone</code></td></tr>
+          <tr><td><code>rewrite</code></td><td>Viết lại theo phong cách</td><td><code>style</code>, <code>tone</code></td></tr>
+          <tr><td><code>redact</code></td><td>Che/ẩn thông tin nhạy cảm (PII)</td><td>—</td></tr>
+          <tr><td><code>template</code></td><td>Điền dữ liệu vào mẫu biểu</td><td><code>template</code></td></tr>
+          <tr><td><code>split</code></td><td>Tách/ghép trang tài liệu</td><td><code>pages</code></td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Đầu vào: PDF, ảnh, DOCX.</p>
+    </div>
+  </div>
+
+  <h2 id="generate">6. generate <span class="muted">— sinh nội dung</span></h2>
+  <div class="skill">
+    <div class="skill-head">
+      <div class="skill-ico" style="background:#ede9fe;color:var(--purple)">✏️</div>
+      <div><div class="skill-ep">POST /api/v2/docs/generate</div><div class="skill-sub">Định tuyến: <code>task</code></div></div>
+    </div>
+    <div class="skill-body">
+      <table>
+        <thead><tr><th>task</th><th>Năng lực</th><th>Tham số chính</th></tr></thead>
+        <tbody>
+          <tr><td><code>summary</code></td><td>Tóm tắt nội dung</td><td>—</td></tr>
+          <tr><td><code>report</code></td><td>Sinh báo cáo/tờ trình từ dữ liệu</td><td>—</td></tr>
+          <tr><td><code>email</code></td><td>Soạn email/thông báo</td><td><code>tone</code></td></tr>
+          <tr><td><code>minutes</code></td><td>Sinh biên bản từ transcript</td><td><code>format</code></td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Đầu vào: PDF, ảnh, DOCX, hoặc text/JSON từ bước trước trong một composition.</p>
+    </div>
+  </div>
+
+  <h2 id="compare">7. compare <span class="muted">— so sánh/đối chiếu</span></h2>
+  <div class="skill">
+    <div class="skill-head">
+      <div class="skill-ico" style="background:#fef3c7;color:var(--orange)">⚖️</div>
+      <div><div class="skill-ep">POST /api/v2/docs/compare</div><div class="skill-sub">Định tuyến: <code>mode</code></div></div>
+    </div>
+    <div class="skill-body">
+      <table>
+        <thead><tr><th>mode</th><th>Năng lực</th><th>Tham số chính</th></tr></thead>
+        <tbody>
+          <tr><td><code>verify</code></td><td>Đối chiếu với nguồn tham chiếu, phát hiện sai lệch</td><td><code>reference_data</code>, <code>focus</code></td></tr>
+          <tr><td><code>diff</code></td><td>So sánh 2 phiên bản theo dòng/ký tự</td><td><code>output_format</code></td></tr>
+          <tr><td><code>semantic</code></td><td>So sánh ngữ nghĩa</td><td><code>focus</code></td></tr>
+          <tr><td><code>version</code></td><td>Tạo changelog giữa các phiên bản</td><td><code>output_format</code></td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Đầu vào: 2 file qua <code>source_file</code> + <code>target_file</code> (hoặc <code>files[]</code>). PDF, ảnh, DOCX.</p>
+    </div>
+  </div>
+
+  <h2 id="orch">8. Điều phối &amp; composition</h2>
+  <p>Hệ thống tiêu thụ tự ghép skill ở phía mình: gọi từng skill theo nhu cầu mỗi bước, dùng kết quả của bước trước làm đầu vào bước sau, và áp logic điều khiển (rẽ nhánh, lặp, lọc) theo nghiệp vụ riêng. Một số mẫu ghép (độc lập lĩnh vực):</p>
+  <div class="flow">extract → compare&nbsp;&nbsp;<span>// bóc tách rồi đối chiếu với dữ liệu tham chiếu</span></div>
+  <div class="flow">extract → analyze → generate&nbsp;&nbsp;<span>// bóc tách → đánh giá → sinh báo cáo</span></div>
+  <div class="flow">transform(split) → extract[parallel] → compare → generate&nbsp;&nbsp;<span>// tách → bóc tách song song → đối chiếu → tổng hợp</span></div>
+  <div class="flow">extract(query) → generate&nbsp;&nbsp;<span>// hỏi đáp rồi soạn phản hồi</span></div>
+  <p>Engine điều phối server-side hỗ trợ:</p>
+  <table>
+    <thead><tr><th>Năng lực</th><th>Mô tả</th></tr></thead>
+    <tbody>
+      <tr><td>Tuần tự / song song</td><td>Nối tiếp các bước, hoặc fan-out N tài liệu xử lý đồng thời</td></tr>
+      <tr><td>Checkpoint / resume</td><td>Lưu trạng thái sau mỗi bước; chạy lại từ điểm dừng</td></tr>
+      <tr><td>Human-in-the-loop</td><td>Tạm dừng cho người duyệt/chỉnh, rồi tiếp tục</td></tr>
+      <tr><td>Prompt override theo bước</td><td>3 tầng: prompt code &lt; override theo Profile &lt; default connector</td></tr>
+      <tr><td>Session chaining</td><td>Truyền kết quả bước trước làm đầu vào bước sau</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="workflows">9. Workflows</h2>
+  <p>Workflow là một composition đóng gói chạy server-side trên engine ở mục 8: <code>POST /api/v2/docs/workflows</code>, định tuyến qua <code>process</code>, yêu cầu API Key. Mỗi workflow lắp từ các skill ở mục 3–7; bảng dưới liệt kê cấu phần theo từng bước.</p>
+  <table>
+    <thead><tr><th>process</th><th>Cấu phần (skill · sub-case theo bước)</th><th>Đặc tính</th></tr></thead>
+    <tbody>
+      <tr><td><code>disbursement</code></td><td>analyze·classify [//] → extract·* [//] → compare·verify → generate·report</td><td>HITL ở bước extract</td></tr>
+      <tr><td><code>lc-checker</code></td><td>extract (OCR full-text) → analyze·compliance → generate·report</td><td>hybrid OCR + file gốc</td></tr>
+      <tr><td><code>payroll-verify</code></td><td>extract·table (OCR) → extract (chuẩn hoá) → compare·verify (rule-based)</td><td>quality gate + retry</td></tr>
+      <tr><td><code>structure-compare</code></td><td>extract (OCR layout) → extract (cấu trúc) → compare·semantic (theo mapping)</td><td>HITL xác nhận mapping</td></tr>
+      <tr><td><code>brd-analyze</code></td><td>extract·query (intake) → analyze·quality (scorecard) → generate·report</td><td>chấm điểm theo scorecard</td></tr>
+    </tbody>
+  </table>
+  <p class="muted"><code>[//]</code> = chạy song song theo từng file. Một workflow không phải năng lực mới — nó là một cách ghép các skill có sẵn, đóng gói để tái dùng khi luồng lặp lại và cần checkpoint/HITL.</p>
+
+  <h2 id="params">10. Tham số dùng chung</h2>
+  <table>
+    <thead><tr><th>Tham số</th><th>Ý nghĩa</th><th>Giá trị</th></tr></thead>
+    <tbody>
+      <tr><td><code>output_format</code></td><td>Định dạng kết quả</td><td>json (mặc định), md, html, csv</td></tr>
+      <tr><td><code>language</code> / <code>target_language</code></td><td>Ngôn ngữ tài liệu / ngôn ngữ đích</td><td>vi, en, ja, zh</td></tr>
+      <tr><td><code>tone</code></td><td>Giọng điệu</td><td>formal, casual, business, academic</td></tr>
+      <tr><td><code>style</code></td><td>Phong cách viết lại</td><td>academic, executive, simplified, bullet_points</td></tr>
+      <tr><td><code>pages</code></td><td>Trang cần xử lý</td><td>"1", "1-5", "1,3,5"</td></tr>
+      <tr><td><code>fields</code> / <code>schema</code></td><td>Trường / JSON Schema tuỳ biến (extract)</td><td>chuỗi / JSON</td></tr>
+      <tr><td><code>query</code></td><td>Câu hỏi cho extract·query</td><td>chuỗi</td></tr>
+      <tr><td><code>reference_data</code></td><td>Dữ liệu gốc để đối soát</td><td>JSON string</td></tr>
+      <tr><td><code>webhook_url</code></td><td>Callback khi hoàn tất</td><td>URL</td></tr>
+      <tr><td>header <code>idempotency-key</code></td><td>Chống gửi trùng</td><td>chuỗi duy nhất</td></tr>
+      <tr><td>query <code>?sync=true</code></td><td>Chờ kết quả đồng bộ</td><td>true/false</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">Admin có thể khoá (lock) tham số ở mức Profile. Tham số khả dụng cho mỗi API Key tra tại <code>GET /api/v1/services</code>.</p>
+
+  <h2 id="support">11. Endpoint hỗ trợ</h2>
+  <table>
+    <thead><tr><th>Endpoint</th><th>Mục đích</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /api/v1/services</code></td><td>Liệt kê skill/sub-case khả dụng + tham số client được phép</td></tr>
+      <tr><td><code>GET /api/v1/operations/{id}</code></td><td>Poll trạng thái &amp; kết quả</td></tr>
+      <tr><td><code>POST /api/v1/operations/{id}/cancel</code></td><td>Huỷ operation</td></tr>
+      <tr><td><code>GET /api/v1/operations/{id}/download</code></td><td>Tải file kết quả</td></tr>
+      <tr><td><code>POST /api/v1/operations/{id}/resume</code></td><td>Chạy lại operation bị treo</td></tr>
+      <tr><td><code>GET /api/v1/billing/balance</code> · <code>/usage</code></td><td>Hạn mức &amp; mức sử dụng của API Key</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="governance">12. Profile &amp; bảo mật</h2>
+  <p>Mỗi API Key là một Profile. Hành vi skill/workflow điều khiển theo Profile, không cần client sửa code — đây là cơ chế để cùng một catalog phục vụ nhiều lĩnh vực.</p>
+  <table>
+    <thead><tr><th>Cơ chế</th><th>Mô tả</th></tr></thead>
+    <tbody>
+      <tr><td>Bật/tắt endpoint</td><td>Enable/disable từng skill·sub-case cho mỗi API Key</td></tr>
+      <tr><td>Khoá tham số</td><td>Ép giá trị mặc định, chặn client override</td></tr>
+      <tr><td>Override routing/prompt</td><td>Định tuyến connector &amp; prompt riêng theo Profile/bước</td></tr>
+      <tr><td>Job priority</td><td>LOW / MEDIUM / HIGH cho hàng đợi</td></tr>
+      <tr><td>Rate limit</td><td>Mặc định hệ thống; cấu hình riêng <code>rateLimitPerMin</code> mỗi API Key</td></tr>
+      <tr><td>Spending limit</td><td>Hạn mức chi tiêu theo API Key; vượt trả <code>402</code></td></tr>
+      <tr><td>Bảo mật</td><td>Hash API key, mã hoá secret (AES-256-GCM), SSRF protection, từ chối file macro</td></tr>
+    </tbody>
+  </table>
+  <h3>Onboarding một lĩnh vực mới</h3>
+  <ol class="muted" style="margin-left:20px">
+    <li>Chọn skill·sub-case cần bật.</li>
+    <li>Khai báo schema cho <code>extract·custom</code> hoặc thêm preset.</li>
+    <li>Khoá tham số nội bộ; đặt <code>rateLimitPerMin</code> và <code>spendingLimit</code>.</li>
+    <li>Định tuyến connector AI backend.</li>
+    <li>Đóng gói Workflow nếu luồng đa bước lặp lại.</li>
+  </ol>
+
+  <p class="muted" style="margin-top:36px; text-align:center; border-top:1px solid var(--border); padding-top:18px;">
+    Nguồn chân lý: <code>lib/endpoints/registry.ts</code> · Surface chuẩn: v2 · Tham số theo Profile tra tại <code>GET /api/v1/services</code>.
+  </p>
+
+</div>
+</body>
+</html>

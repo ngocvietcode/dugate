@@ -1,0 +1,89 @@
+diff --git a/app/loan-appraisal-v2/lib/ocr-documents.ts b/app/loan-appraisal-v2/lib/ocr-documents.ts
+index 6266969..2a25a7e 100644
+--- a/app/loan-appraisal-v2/lib/ocr-documents.ts
++++ b/app/loan-appraisal-v2/lib/ocr-documents.ts
+@@ -53,13 +53,25 @@ export interface OcrFileGroup {
+ }
+ 
+ const INSTANCE_RE = /^instances\[(\d+)\]/;
+-const PRIMARY_ID_LEAVES = new Set(['id_number', 'so_cccd', 'cccd', 'so_dinh_danh', 'dinh_danh_ca_nhan']);
++const PRIMARY_ID_LEAVES = new Set([
++  'id_number', 'so_cccd', 'cccd', 'so_dinh_danh', 'dinh_danh_ca_nhan',
++  // Hộ chiếu (identity schema: passport_info.passport_number)
++  'passport_number', 'passport_no', 'so_ho_chieu',
++]);
+ 
+-/** Chỉ giữ chữ số; trả null nếu quá ngắn để là số giấy tờ (< 9 số). */
++/**
++ * Chuẩn hoá số giấy tờ để hiển thị và so khớp.
++ * - Bỏ khoảng trắng và ký tự phân cách (. - / _), viết hoa.
++ * - Số thuần chữ số (CCCD/CMND): cần >= 9 chữ số.
++ * - Số có chữ cái (hộ chiếu, VD "C1234567"): giữ nguyên chữ + số, cần 6–20 ký tự và có ít nhất 1 chữ số.
++ * - Trường hợp khác (quá ngắn, chữ thuần như "Không có", ký tự lạ): trả null.
++ */
+ export function normalizeIdNumber(value: unknown): string | null {
+   if (value === null || value === undefined) return null;
+-  const digits = String(value).replace(/\D/g, '');
+-  return digits.length >= 9 ? digits : null;
++  const compact = String(value).replace(/[\s.\-/_]/g, '').toUpperCase();
++  if (/^\d+$/.test(compact)) return compact.length >= 9 ? compact : null;
++  if (/^[A-Z0-9]{6,20}$/.test(compact) && /\d/.test(compact)) return compact;
++  return null;
+ }
+ 
+ /** Bỏ dấu, viết hoa, gộp khoảng trắng để so khớp tên người. */
+diff --git a/components/loan-appraisal-v2/intake/OcrResults.tsx b/components/loan-appraisal-v2/intake/OcrResults.tsx
+index d90f80d..520bef4 100644
+--- a/components/loan-appraisal-v2/intake/OcrResults.tsx
++++ b/components/loan-appraisal-v2/intake/OcrResults.tsx
+@@ -21,7 +21,12 @@ import { FOCUS_RING } from '../ui/toneClasses';
+ function Segment({ segment }: { segment: OcrSegment }) {
+   const fields = safeArray(segment.fields);
+   const roles = safeArray(segment.roles);
+-  const idLabel = segment.idNumber && segment.idNumber.length === 9 ? 'CMND' : 'CCCD';
++  // Số có chữ cái (hộ chiếu...) → "Số giấy tờ"; 9 chữ số → CMND; còn lại → CCCD
++  const idLabel = !segment.idNumber
++    ? 'CCCD'
++    : /[A-Z]/.test(segment.idNumber)
++      ? 'Số giấy tờ'
++      : segment.idNumber.length === 9 ? 'CMND' : 'CCCD';
+   return (
+     <div>
+       <div className="flex flex-wrap items-center gap-2 border-l-2 border-primary bg-muted/50 px-2.5 py-1.5">
+diff --git a/tests/loan-appraisal-v2/ocr-documents.test.ts b/tests/loan-appraisal-v2/ocr-documents.test.ts
+index 95d80f1..a47a9e9 100644
+--- a/tests/loan-appraisal-v2/ocr-documents.test.ts
++++ b/tests/loan-appraisal-v2/ocr-documents.test.ts
+@@ -88,6 +88,12 @@ describe('ocr-documents helpers', () => {
+     expect(normalizeIdNumber('145 864 944')).toBe('145864944');
+     expect(normalizeIdNumber('12')).toBeNull();
+     expect(normalizeIdNumber(null)).toBeNull();
++    // Hộ chiếu / ID có chữ cái: giữ nguyên chữ + số, viết hoa, bỏ khoảng trắng & phân cách
++    expect(normalizeIdNumber('C1234567')).toBe('C1234567');
++    expect(normalizeIdNumber('c 123-4567')).toBe('C1234567');
++    expect(normalizeIdNumber('N1234567A')).toBe('N1234567A');
++    expect(normalizeIdNumber('Không có')).toBeNull();
++    expect(normalizeIdNumber('AB12')).toBeNull();
+     expect(normalizePersonName('Trần Ánh Dương')).toBe(normalizePersonName('TRẦN ÁNH DƯƠNG'));
+     expect(normalizePersonName('  Nguyễn   Thị  Kiều Anh ')).toBe('NGUYEN THI KIEU ANH');
+   });
+@@ -99,6 +105,19 @@ describe('ocr-documents helpers', () => {
+     });
+   });
+ 
++  it('keeps alphanumeric passport numbers in the identity and matches roles by them', () => {
++    const passport = fieldsOf('instances[0]', {
++      'personal_info.full_name': 'NGUYEN VAN A',
++      'identification_details.identification_type': 'Hộ chiếu',
++      'passport_info.passport_number': 'c 1234567',
++    });
++    const identity = readIdentity(passport);
++    expect(identity.idNumber).toBe('C1234567');
++    // Tên khác nhau để chắc chắn khớp theo số hộ chiếu, không phải theo tên
++    const withPassport = [participant('C1234567', ['COLLATERAL_OWNER'], 'NGUYỄN VĂN B')];
++    expect(resolveRoles(identity, withPassport, [])).toEqual(['COLLATERAL_OWNER']);
++  });
++
+   it('resolves roles by id, old id, unique name, fallback, else UNRESOLVED', () => {
+     const base = { fullName: null, idNumber: null, oldIdNumber: null, identificationType: null };
+     expect(resolveRoles({ ...base, idNumber: '036097002872' }, participants, [])).toEqual(['CO_BORROWER']);

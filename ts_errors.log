@@ -1,0 +1,17 @@
+.next/types/app/api/convert/[id]/download/route.ts(2,24): error TS2307: Cannot find module '../../../../../../../app/api/convert/[id]/download/route.js' or its corresponding type declarations.
+.next/types/app/api/convert/[id]/download/route.ts(5,29): error TS2307: Cannot find module '../../../../../../../app/api/convert/[id]/download/route.js' or its corresponding type declarations.
+.next/types/app/api/convert/[id]/edit/route.ts(2,24): error TS2307: Cannot find module '../../../../../../../app/api/convert/[id]/edit/route.js' or its corresponding type declarations.
+.next/types/app/api/convert/[id]/edit/route.ts(5,29): error TS2307: Cannot find module '../../../../../../../app/api/convert/[id]/edit/route.js' or its corresponding type declarations.
+.next/types/app/api/convert/[id]/route.ts(2,24): error TS2307: Cannot find module '../../../../../../app/api/convert/[id]/route.js' or its corresponding type declarations.
+.next/types/app/api/convert/[id]/route.ts(5,29): error TS2307: Cannot find module '../../../../../../app/api/convert/[id]/route.js' or its corresponding type declarations.
+.next/types/app/api/convert/route.ts(2,24): error TS2307: Cannot find module '../../../../../app/api/convert/route.js' or its corresponding type declarations.
+.next/types/app/api/convert/route.ts(5,29): error TS2307: Cannot find module '../../../../../app/api/convert/route.js' or its corresponding type declarations.
+.next/types/app/api/v1/convert/[id]/route.ts(2,24): error TS2307: Cannot find module '../../../../../../../app/api/v1/convert/[id]/route.js' or its corresponding type declarations.
+.next/types/app/api/v1/convert/[id]/route.ts(5,29): error TS2307: Cannot find module '../../../../../../../app/api/v1/convert/[id]/route.js' or its corresponding type declarations.
+.next/types/app/api/v1/convert/route.ts(2,24): error TS2307: Cannot find module '../../../../../../app/api/v1/convert/route.js' or its corresponding type declarations.
+.next/types/app/api/v1/convert/route.ts(5,29): error TS2307: Cannot find module '../../../../../../app/api/v1/convert/route.js' or its corresponding type declarations.
+.next/types/app/convert/[id]/page.ts(2,24): error TS2307: Cannot find module '../../../../../app/convert/[id]/page.js' or its corresponding type declarations.
+.next/types/app/convert/[id]/page.ts(5,29): error TS2307: Cannot find module '../../../../../app/convert/[id]/page.js' or its corresponding type declarations.
+.next/types/app/convert/page.ts(2,24): error TS2307: Cannot find module '../../../../app/convert/page.js' or its corresponding type declarations.
+.next/types/app/convert/page.ts(5,29): error TS2307: Cannot find module '../../../../app/convert/page.js' or its corresponding type declarations.
+tmp/test-docx-logic.ts(1,29): error TS2307: Cannot find module '../lib/converters/docx' or its corresponding type declarations.

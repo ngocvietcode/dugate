@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/residence_confirmation.schema.json",
+  "title": "residence_confirmation — data",
+  "description": "Schema của evidence.data cho doc_type_key = residence_confirmation (Giấy xác nhận thông tin về cư trú — mẫu CT07/CT08). Mô tả nghiệp vụ: 04_document_schemas/residence_confirmation.md. schema_version 2.0.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["parties", "legal_info", "residence_info", "confirmation_statements", "validity_period_raw"],
+  "properties": {
+    "parties": {
+      "description": "parties[0] = người được xác nhận (HOLDER, đúng 1). Các phần tử sau = thành viên hộ (HOUSEHOLD_MEMBER), party_role_raw = nguyên văn 'Quan hệ với chủ hộ'.",
+      "type": "array",
+      "minItems": 1,
+      "prefixItems": [{ "$ref": "#/$defs/HolderParty" }],
+      "items": { "$ref": "#/$defs/HouseholdMemberParty" }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày ký xác nhận (dùng tính hiệu lực ở check_checklist, OQ-06); valid_until chỉ khi giấy in ngày hết hạn cụ thể.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    },
+    "residence_info": { "$ref": "#/$defs/ResidenceInfo" },
+    "confirmation_statements": {
+      "description": "Nguyên văn từng dòng nội dung xác nhận.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "validity_period_raw": {
+      "description": "Nguyên văn câu thời hạn giá trị (VD 'có giá trị 30 ngày kể từ ngày cấp'). Không tự tính ngày hết hạn.",
+      "type": ["string", "null"]
+    }
+  },
+  "$defs": {
+    "ResidenceParty": {
+      "allOf": [
+        { "$ref": "_common.schema.json#/$defs/DocumentParty" },
+        {
+          "properties": {
+            "party_role": { "enum": ["HOLDER", "HOUSEHOLD_MEMBER"] },
+            "party_type": { "const": "INDIVIDUAL" },
+            "id_type": { "enum": ["CCCD", "CMND", "CAN_CUOC", "OTHER", null] },
+            "tax_id": { "type": "null" },
+            "representative_name": { "type": "null" },
+            "representative_position": { "type": "null" },
+            "ownership": { "type": "null" }
+          }
+        }
+      ]
+    },
+    "HolderParty": {
+      "allOf": [
+        { "$ref": "#/$defs/ResidenceParty" },
+        { "properties": { "party_index": { "const": 0 }, "party_role": { "const": "HOLDER" } } }
+      ]
+    },
+    "HouseholdMemberParty": {
+      "allOf": [
+        { "$ref": "#/$defs/ResidenceParty" },
+        { "properties": { "party_index": { "minimum": 1 }, "party_role": { "const": "HOUSEHOLD_MEMBER" } } }
+      ]
+    },
+    "ResidenceInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "place_of_origin", "temporary_address", "temporary_residence_from", "temporary_residence_until",
+        "temporary_residence_duration_raw", "household_head_party_index", "holder_relationship_to_household_head_raw"
+      ],
+      "properties": {
+        "place_of_origin": { "description": "Quê quán (nguyên văn).", "type": ["string", "null"] },
+        "temporary_address": {
+          "description": "Nơi tạm trú của người được xác nhận.",
+          "$ref": "_common.schema.json#/$defs/NullableAddress"
+        },
+        "temporary_residence_from": { "$ref": "_common.schema.json#/$defs/NullableDate" },
+        "temporary_residence_until": { "$ref": "_common.schema.json#/$defs/NullableDate" },
+        "temporary_residence_duration_raw": {
+          "description": "Nguyên văn 'Thời hạn tạm trú'.",
+          "type": ["string", "null"]
+        },
+        "household_head_party_index": {
+          "description": "Trỏ parties[] của chủ hộ. 0 nếu người được xác nhận là chủ hộ. null nếu giấy không ghi chủ hộ.",
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "holder_relationship_to_household_head_raw": {
+          "description": "Nguyên văn 'Quan hệ với chủ hộ' của người được xác nhận (VD 'Chủ hộ', 'Con').",
+          "type": ["string", "null"]
+        }
+      }
+    }
+  }
+}

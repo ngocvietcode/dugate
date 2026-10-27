@@ -1,0 +1,3 @@
+# Shell scripts must keep LF endings. A CRLF shebang makes alpine's /bin/sh fail
+# with "no such file or directory", which is a confusing way to learn about \r.
+*.sh text eol=lf

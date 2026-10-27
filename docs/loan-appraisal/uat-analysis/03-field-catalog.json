@@ -1,0 +1,2407 @@
+{
+  "source": "TestResults_CheckChecklist_2.xlsx",
+  "status": "proposed",
+  "note": "Mọi giá trị trả về dạng JSON string (hoặc mảng string). 'type' là kiểu JSON, 'format' là gợi ý ngữ nghĩa cho bước chuẩn hóa/đối chiếu. Key tiếng Anh do đề xuất, nhãn tiếng Việt lấy từ file test. Trường source=added là bổ sung theo yêu cầu, không có trong file test",
+  "groups": [
+    {
+      "id": "A",
+      "name": "Hồ sơ pháp lý"
+    },
+    {
+      "id": "B",
+      "name": "Hồ sơ phương án vay vốn"
+    },
+    {
+      "id": "C1",
+      "name": "Hồ sơ TSBĐ là động sản"
+    },
+    {
+      "id": "C2",
+      "name": "Hồ sơ TSBĐ là bất động sản"
+    },
+    {
+      "id": "D1",
+      "name": "Hồ sơ chứng minh nguồn thu nhập"
+    },
+    {
+      "id": "D2",
+      "name": "Hồ sơ lịch sử tín dụng"
+    }
+  ],
+  "forms": [
+    {
+      "id": "cccd",
+      "group": "A",
+      "name": "Căn cước công dân",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "id_number",
+          "label": "Số Căn cước công dân (mặt trước)",
+          "type": "string",
+          "format": "id_number",
+          "note": "12 số"
+        },
+        {
+          "key": "full_name",
+          "label": "Họ và tên",
+          "type": "string",
+          "format": "name",
+          "note": "In hoa có dấu"
+        },
+        {
+          "key": "date_of_birth",
+          "label": "Ngày sinh",
+          "type": "string",
+          "format": "date",
+          "note": "dd/mm/yyyy"
+        },
+        {
+          "key": "gender",
+          "label": "Giới tính",
+          "type": "string",
+          "format": "enum",
+          "note": "Nam/Nữ"
+        },
+        {
+          "key": "permanent_address",
+          "label": "Nơi thường trú",
+          "type": "string",
+          "format": "address",
+          "note": "Địa chỉ in trên thẻ, thường là địa chỉ cũ; không dùng làm nguồn chuẩn"
+        },
+        {
+          "key": "issue_date_place",
+          "label": "Ngày cấp, Nơi cấp (mặt sau)",
+          "type": "string",
+          "format": "date+string",
+          "note": "Mặt sau"
+        },
+        {
+          "key": "valid_until",
+          "label": "Có giá trị đến",
+          "type": "string",
+          "format": "date",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "vneid",
+      "group": "A",
+      "name": "Căn cước điện tử (VNeID)",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "full_name",
+          "label": "Họ và tên",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "id_number",
+          "label": "Số Căn cước công dân (mặt trước)",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        },
+        {
+          "key": "permanent_address",
+          "label": "Nơi thường trú",
+          "type": "string",
+          "format": "address",
+          "note": "Nguồn chuẩn cho địa chỉ thường trú"
+        },
+        {
+          "key": "temporary_address",
+          "label": "Nơi tạm trú",
+          "type": "string",
+          "format": "address",
+          "note": "'---' nếu không có"
+        },
+        {
+          "key": "current_address",
+          "label": "Nơi ở hiện tại",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "old_id_number",
+          "label": "Số chứng minh nhân dân 9 số",
+          "type": "string",
+          "format": "id_number",
+          "note": "Thường để trống"
+        }
+      ]
+    },
+    {
+      "id": "qr_code",
+      "group": "A",
+      "name": "Thông tin sau khi quét mã QR code",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "id_number",
+          "label": "Số Căn cước công dân",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        },
+        {
+          "key": "old_id_number",
+          "label": "Số chứng minh nhân dân 9 số",
+          "type": "string",
+          "format": "id_number",
+          "note": "Cầu nối CMND 9 số - CCCD 12 số"
+        },
+        {
+          "key": "full_name",
+          "label": "Họ và tên",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "xac_nhan_cu_tru",
+      "group": "A",
+      "name": "Xác nhận cư trú",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "full_name",
+          "label": "Họ và tên",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "date_of_birth",
+          "label": "Ngày tháng năm sinh",
+          "type": "string",
+          "format": "date",
+          "note": ""
+        },
+        {
+          "key": "id_number",
+          "label": "Số Căn cước công dân",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        },
+        {
+          "key": "permanent_address",
+          "label": "Nơi thường trú",
+          "type": "string",
+          "format": "address",
+          "note": "Nguồn chuẩn cho địa chỉ thường trú"
+        },
+        {
+          "key": "temporary_or_current_address",
+          "label": "Nơi tạm trú / Nơi ở hiện tại",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "residence_valid_until",
+          "label": "Thời hạn xác nhận cư trú",
+          "type": "string",
+          "format": "date",
+          "note": "Dạng '20 tháng 03 năm 2027'"
+        }
+      ]
+    },
+    {
+      "id": "xac_nhan_hon_nhan",
+      "group": "A",
+      "name": "Xác nhận tình trạng hôn nhân (độc thân/ly hôn/góa)",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "effective_date",
+          "label": "Ngày hiệu lực",
+          "type": "string",
+          "format": "date",
+          "note": "Dạng '07 tháng 5 năm 2026'"
+        },
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Ví dụ: GIẤY XÁC NHẬN TÌNH TRẠNG HÔN NHÂN"
+        },
+        {
+          "key": "full_name",
+          "label": "Họ và tên",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "date_of_birth",
+          "label": "Ngày tháng năm sinh",
+          "type": "string",
+          "format": "date",
+          "note": ""
+        },
+        {
+          "key": "id_number",
+          "label": "Số Căn cước công dân/CMND 9 số",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        },
+        {
+          "key": "marital_status",
+          "label": "Tình trạng hôn nhân",
+          "type": "string",
+          "format": "text_full",
+          "note": "Lấy cả câu"
+        },
+        {
+          "key": "residence",
+          "label": "Nơi cư trú (4)",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "issue_date",
+          "label": "Ngày, tháng, năm (cấp)",
+          "type": "string",
+          "format": "date",
+          "note": ""
+        },
+        {
+          "key": "purpose",
+          "label": "Giấy này được sử dụng để (7)",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "xac_nhan_cmnd_dia_phuong",
+      "group": "A",
+      "name": "Xác nhận chứng minh nhân dân của chính quyền địa phương",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "full_name",
+          "label": "Họ và tên",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "date_of_birth",
+          "label": "Ngày tháng năm sinh",
+          "type": "string",
+          "format": "date",
+          "note": ""
+        },
+        {
+          "key": "id_number",
+          "label": "Số Căn cước công dân",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        },
+        {
+          "key": "permanent_address",
+          "label": "Nơi thường trú",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "effective_date",
+          "label": "Ngày hiệu lực",
+          "type": "string",
+          "format": "date",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "cam_ket_cmnd_cccd",
+      "group": "A",
+      "name": "Cam kết 2 chứng minh nhân dân, Căn cước công dân là của 01 người (mẫu VPBank)",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "full_name",
+          "label": "Họ và tên",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "id_numbers",
+          "label": "Số chứng minh nhân dân, Căn cước công dân số",
+          "type": "string[]",
+          "format": "id_number",
+          "note": "Có 2 số (CMND và CCCD)"
+        },
+        {
+          "key": "permanent_address",
+          "label": "Nơi thường trú",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "dang_ky_ket_hon",
+      "group": "A",
+      "name": "Đăng ký kết hôn (nếu đã kết hôn)",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Ví dụ: GIẤY CHỨNG NHẬN KẾT HÔN"
+        },
+        {
+          "key": "spouse_names",
+          "label": "Họ và tên vợ/chồng",
+          "type": "string[]",
+          "format": "name",
+          "note": "Có thể gộp 2 người: 'A + B'"
+        },
+        {
+          "key": "date_of_birth",
+          "label": "Ngày tháng năm sinh",
+          "type": "string",
+          "format": "date",
+          "note": "Có thể chỉ có năm"
+        },
+        {
+          "key": "id_number",
+          "label": "Số Căn cước công dân/CMND 9 số",
+          "type": "string",
+          "format": "id_number",
+          "note": "Thường là CMND 9 số"
+        },
+        {
+          "key": "marriage_date",
+          "label": "Ngày đăng ký kết hôn",
+          "type": "string",
+          "format": "date",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "giay_khai_sinh",
+      "group": "A",
+      "name": "Giấy khai sinh (chứng minh quan hệ KH/người đồng vay với chủ TSBĐ)",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "father_name",
+          "label": "Họ và tên bố",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "mother_name",
+          "label": "Họ và tên mẹ",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "child_name",
+          "label": "Họ và tên con",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "de_nghi_vay_von",
+      "group": "B",
+      "name": "Giấy đề nghị vay vốn (mẫu VPBank)",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Mẫu 3-trong-1, có thể có 3 tiêu đề nối bằng ';'"
+        },
+        {
+          "key": "borrower_name",
+          "label": "Tên KH vay",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "borrower_id",
+          "label": "Căn cước công dân KH vay",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        },
+        {
+          "key": "co_borrower_name",
+          "label": "Tên người đồng vay",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "co_borrower_id",
+          "label": "Căn cước công dân người đồng vay",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        },
+        {
+          "key": "marital_status",
+          "label": "Tình trạng hôn nhân",
+          "type": "string",
+          "format": "enum",
+          "note": ""
+        },
+        {
+          "key": "collateral_owner_name",
+          "label": "Tên Chủ sở hữu Tài sản bảo đảm",
+          "type": "string[]",
+          "format": "name",
+          "note": "Nhiều chủ nối bằng '+' hoặc 'và'"
+        },
+        {
+          "key": "collateral_owner_id",
+          "label": "Căn cước công dân chủ sở hữu tài sản",
+          "type": "string[]",
+          "format": "id_number",
+          "note": ""
+        },
+        {
+          "key": "relationship_to_borrower",
+          "label": "Quan hệ với khách hàng vay",
+          "type": "string",
+          "format": "text",
+          "note": "Chính chủ / Vợ chồng / Chính người vay"
+        },
+        {
+          "key": "business_line",
+          "label": "Ngành nghề kinh doanh",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "loan_amount",
+          "label": "Số tiền cho vay",
+          "type": "string",
+          "format": "money",
+          "note": "Nhiều dạng: 425,000,000 đồng; 990.000.000; 266000000"
+        },
+        {
+          "key": "loan_term",
+          "label": "Thời hạn vay",
+          "type": "string",
+          "format": "number",
+          "note": "Tháng"
+        },
+        {
+          "key": "loan_purpose",
+          "label": "Mục đích vay vốn",
+          "type": "string",
+          "format": "text_full",
+          "note": "Lấy nội dung được chọn/điền, không lấy tên phương án in sẵn"
+        },
+        {
+          "key": "repayment_source",
+          "label": "Nguồn trả nợ",
+          "type": "string",
+          "format": "string|money",
+          "note": ""
+        },
+        {
+          "key": "interest_rate",
+          "label": "Lãi suất",
+          "type": "string",
+          "format": "text",
+          "note": "Mã biểu lãi suất: LC10, LC9, LC11..."
+        },
+        {
+          "key": "reference_name",
+          "label": "Họ tên người tham chiếu",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "reference_relationship",
+          "label": "Mối quan hệ với người vay chính",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "reference_phone",
+          "label": "Số điện thoại người tham chiếu",
+          "type": "string",
+          "format": "phone",
+          "note": ""
+        },
+        {
+          "key": "interest_rate_percent",
+          "label": "Lãi suất (%/năm)",
+          "type": "string",
+          "format": "percent",
+          "note": "Lãi suất cho vay theo %/năm ghi trên đề nghị vay; khác mã biểu lãi suất (interest_rate)",
+          "source": "added"
+        },
+        {
+          "key": "has_existing_debt",
+          "label": "Có nghĩa vụ nợ hiện hữu tại TCTD",
+          "type": "string",
+          "format": "enum",
+          "note": "Có / Không theo khai của KH; ghi 'Không' khi KH khai rõ không có khoản vay nào",
+          "source": "added"
+        },
+        {
+          "key": "existing_monthly_debt_payment",
+          "label": "Số tiền trả nợ hàng tháng của các khoản vay hiện hữu",
+          "type": "string",
+          "format": "money",
+          "note": "Tổng số tiền KH đang trả hàng tháng cho mọi khoản vay hiện hữu; '0' khi KH khai không có khoản vay",
+          "source": "added"
+        }
+      ]
+    },
+    {
+      "id": "bang_ke_mua_hang",
+      "group": "B",
+      "name": "Bảng kê mua hàng",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Tiêu đề thay đổi: BẢNG KÊ HÀNG HÓA MUA VÀO / HÀNG CẦN NHẬP / MUA HÀNG..."
+        },
+        {
+          "key": "buyer_name",
+          "label": "Khách hàng/Người mua hàng",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "total_value",
+          "label": "Tổng giá trị bảng kê",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "hd_mua_ban_hang_hoa",
+      "group": "B",
+      "name": "Hợp đồng mua bán hàng hóa",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "seller_name",
+          "label": "Thông tin bên bán - Tên bên bán",
+          "type": "string",
+          "format": "name",
+          "note": "Tên cá nhân hoặc doanh nghiệp/đại lý bán"
+        },
+        {
+          "key": "seller_id_or_tax_code",
+          "label": "Thông tin bên bán - Số CCCD / Mã số thuế",
+          "type": "string",
+          "format": "text",
+          "note": "CCCD nếu bên bán là cá nhân, mã số thuế nếu là doanh nghiệp; không dùng làm định danh khách hàng"
+        },
+        {
+          "key": "seller_address",
+          "label": "Thông tin bên bán - Địa chỉ",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "seller_representative",
+          "label": "Thông tin bên bán - Người đại diện",
+          "type": "string",
+          "format": "name",
+          "note": "Chỉ khi bên bán là doanh nghiệp"
+        },
+        {
+          "key": "buyer_name",
+          "label": "Thông tin bên mua - Tên bên mua",
+          "type": "string",
+          "format": "name",
+          "note": "Thường là khách hàng vay; dùng đối chiếu họ tên"
+        },
+        {
+          "key": "buyer_id_number",
+          "label": "Thông tin bên mua - Số CCCD",
+          "type": "string",
+          "format": "id_number",
+          "note": "Dùng gắn hợp đồng vào khách hàng vay"
+        },
+        {
+          "key": "buyer_address",
+          "label": "Thông tin bên mua - Địa chỉ",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "total_value",
+          "label": "Tổng giá trị mua hàng",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "hd_mua_ban_xe",
+      "group": "B",
+      "name": "Hợp đồng mua bán xe",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "seller_name",
+          "label": "Thông tin bên bán - Tên bên bán",
+          "type": "string",
+          "format": "name",
+          "note": "Tên cá nhân hoặc doanh nghiệp/đại lý bán"
+        },
+        {
+          "key": "seller_id_or_tax_code",
+          "label": "Thông tin bên bán - Số CCCD / Mã số thuế",
+          "type": "string",
+          "format": "text",
+          "note": "CCCD nếu bên bán là cá nhân, mã số thuế nếu là doanh nghiệp; không dùng làm định danh khách hàng"
+        },
+        {
+          "key": "seller_address",
+          "label": "Thông tin bên bán - Địa chỉ",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "seller_representative",
+          "label": "Thông tin bên bán - Người đại diện",
+          "type": "string",
+          "format": "name",
+          "note": "Chỉ khi bên bán là doanh nghiệp"
+        },
+        {
+          "key": "buyer_name",
+          "label": "Thông tin bên mua - Tên bên mua",
+          "type": "string",
+          "format": "name",
+          "note": "Thường là khách hàng vay; dùng đối chiếu họ tên"
+        },
+        {
+          "key": "buyer_id_number",
+          "label": "Thông tin bên mua - Số CCCD",
+          "type": "string",
+          "format": "id_number",
+          "note": "Dùng gắn hợp đồng vào khách hàng vay"
+        },
+        {
+          "key": "buyer_address",
+          "label": "Thông tin bên mua - Địa chỉ",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "brand_model",
+          "label": "Thông tin xe cần mua - Nhãn hiệu, số loại",
+          "type": "string",
+          "format": "text",
+          "note": "Ví dụ: KIA, CARENS"
+        },
+        {
+          "key": "manufacture_year",
+          "label": "Thông tin xe cần mua - Năm sản xuất",
+          "type": "string",
+          "format": "number",
+          "note": ""
+        },
+        {
+          "key": "engine_no",
+          "label": "Thông tin xe cần mua - Số máy",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "chassis_no",
+          "label": "Thông tin xe cần mua - Số khung",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "plate_no",
+          "label": "Thông tin xe cần mua - Biển số",
+          "type": "string",
+          "format": "text",
+          "note": "Để trống nếu xe mới chưa đăng ký"
+        },
+        {
+          "key": "total_value",
+          "label": "Tổng giá trị mua hàng",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "gcn_qsdd_nha_xuong",
+      "group": "B",
+      "name": "Giấy chứng nhận quyền sử dụng đất cần mua/đã sang tên KH (làm nhà xưởng)",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "owner_name",
+          "label": "Tên Chủ sở hữu Tài sản bảo đảm",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "parcel_no",
+          "label": "Thửa đất số",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "map_sheet_no",
+          "label": "Tờ bản đồ số",
+          "type": "string",
+          "format": "text",
+          "note": "File gộp 'Tờ bản đồ số / Địa chỉ thửa đất', tách thành 2 trường (giả định G6)"
+        },
+        {
+          "key": "parcel_address",
+          "label": "Địa chỉ thửa đất",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "certificate_no",
+          "label": "Số Giấy chứng nhận",
+          "type": "string",
+          "format": "text",
+          "note": "Ký tự bằng số và chữ"
+        }
+      ]
+    },
+    {
+      "id": "to_trinh_ngoai_le",
+      "group": "B",
+      "name": "Tờ trình phê duyệt ngoại lệ",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Chỉ cần nhận diện loại chứng từ"
+        },
+        {
+          "key": "subject_name",
+          "label": "Tên khách hàng/đối tượng được đề nghị ngoại lệ",
+          "type": "string",
+          "format": "name",
+          "note": "Để biết tờ trình thuộc hồ sơ của ai",
+          "source": "added",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "dang_ky_xe",
+      "group": "C1",
+      "name": "Chứng nhận đăng ký xe ô tô",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "registration_no",
+          "label": "Số (Number)",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "owner_name",
+          "label": "Tên chủ xe",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "brand_model",
+          "label": "Nhãn hiệu, số loại",
+          "type": "string",
+          "format": "text",
+          "note": "Ví dụ: KIA, CARENS"
+        },
+        {
+          "key": "plate_no",
+          "label": "Biển số đăng ký",
+          "type": "string",
+          "format": "text",
+          "note": "Ví dụ: 86A-364.34"
+        }
+      ]
+    },
+    {
+      "id": "dang_kiem_xe",
+      "group": "C1",
+      "name": "Đăng kiểm xe",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "GIẤY CHỨNG NHẬN KIỂM ĐỊNH AN TOÀN KỸ THUẬT VÀ BẢO VỆ MÔI TRƯỜNG XE CƠ GIỚI"
+        },
+        {
+          "key": "inspection_no",
+          "label": "Số (Number)",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "manufacture_year",
+          "label": "Năm sản xuất",
+          "type": "string",
+          "format": "number",
+          "note": ""
+        },
+        {
+          "key": "owner_name",
+          "label": "Tên chủ xe",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "bao_gia_tai_san",
+      "group": "C1",
+      "name": "Báo giá tài sản",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "subject_name",
+          "label": "Tên khách hàng/chủ tài sản",
+          "type": "string",
+          "format": "name",
+          "note": "Báo giá cho ai",
+          "source": "added",
+          "required": true
+        },
+        {
+          "key": "brand_model",
+          "label": "Loại (Model) / Nhãn hiệu",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "manufacture_year",
+          "label": "Năm sản xuất",
+          "type": "string",
+          "format": "number",
+          "note": ""
+        },
+        {
+          "key": "asset_value",
+          "label": "Giá trị của tài sản",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "dinh_gia_dong_san",
+      "group": "C1",
+      "name": "Báo cáo định giá động sản",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "customer_name",
+          "label": "Tên khách hàng vay vốn",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "plate_no",
+          "label": "Biển kiểm soát xe",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "engine_no",
+          "label": "Số máy",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "asset_value",
+          "label": "Giá trị của tài sản",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "gcn_qsdd",
+      "group": "C2",
+      "name": "Giấy chứng nhận quyền sử dụng đất, quyền sở hữu tài sản khác gắn liền với đất",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "File có comment 'Trường này ko cần check nhé' (giả định G3)"
+        },
+        {
+          "key": "owner_name",
+          "label": "Tên Chủ sở hữu",
+          "type": "string[]",
+          "format": "name",
+          "note": "Nhiều chủ nối bằng '+'"
+        },
+        {
+          "key": "parcel_no",
+          "label": "Thửa đất số",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "map_sheet_no",
+          "label": "Tờ bản đồ số",
+          "type": "string",
+          "format": "text",
+          "note": "Có thể nằm ở trang cập nhật/biến động"
+        },
+        {
+          "key": "parcel_address",
+          "label": "Địa chỉ thửa đất",
+          "type": "string",
+          "format": "address",
+          "note": "Thường là địa chỉ cũ trước sáp nhập"
+        },
+        {
+          "key": "certificate_no",
+          "label": "Số Giấy chứng nhận",
+          "type": "string",
+          "format": "text",
+          "note": "Ví dụ: BQ 747032, CY 857027"
+        }
+      ]
+    },
+    {
+      "id": "gcn_can_ho",
+      "group": "C2",
+      "name": "Giấy chứng nhận QSDĐ, quyền sở hữu nhà ở và tài sản khác gắn liền với đất (căn hộ chung cư)",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "owner_name",
+          "label": "Tên Chủ sở hữu",
+          "type": "string",
+          "format": "name",
+          "note": "Mục 1. Người sử dụng đất, chủ sở hữu"
+        },
+        {
+          "key": "house_type",
+          "label": "Loại nhà ở",
+          "type": "string",
+          "format": "text",
+          "note": "Mục 2.a"
+        },
+        {
+          "key": "apartment_building_name",
+          "label": "Tên nhà chung cư",
+          "type": "string",
+          "format": "text",
+          "note": "Mục 2.a"
+        },
+        {
+          "key": "certificate_no",
+          "label": "Số Giấy chứng nhận",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "dinh_gia_bds_thinh_dien",
+      "group": "C2",
+      "name": "Báo cáo định giá Bất động sản (Công ty TNHH Thịnh Điền)",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "BÁO CÁO ĐỊNH GIÁ TÀI SẢN"
+        },
+        {
+          "key": "customer_name",
+          "label": "Tên khách hàng vay vốn",
+          "type": "string",
+          "format": "name",
+          "note": "Mục I. Thông tin chung - Khách hàng vay (dự kiến)"
+        },
+        {
+          "key": "certificate_no",
+          "label": "Số Giấy chứng nhận Tài sản bảo đảm",
+          "type": "string",
+          "format": "text",
+          "note": "Mục II.1; có thể kèm cơ quan cấp, ngày cấp, số vào sổ"
+        },
+        {
+          "key": "parcel_no",
+          "label": "Thửa đất số",
+          "type": "string",
+          "format": "text",
+          "note": "Mục II.3 A"
+        },
+        {
+          "key": "map_sheet_no",
+          "label": "Tờ bản đồ số",
+          "type": "string",
+          "format": "text",
+          "note": "Mục II.3 A"
+        },
+        {
+          "key": "parcel_address",
+          "label": "Địa chỉ thửa đất",
+          "type": "string",
+          "format": "address",
+          "note": "Mục II.3 A - Địa chỉ"
+        },
+        {
+          "key": "land_use_status",
+          "label": "Hiện trạng thửa đất",
+          "type": "string",
+          "format": "text",
+          "note": "Mục II.2"
+        },
+        {
+          "key": "asset_value",
+          "label": "Giá trị của tài sản (VNĐ)",
+          "type": "string",
+          "format": "money",
+          "note": "Mục III.1 - Tổng giá trị tài sản tư vấn về giá"
+        },
+        {
+          "key": "asset_grade",
+          "label": "Hạng tài sản",
+          "type": "string",
+          "format": "text",
+          "note": "Mục IV - Xếp loại TSBĐ"
+        }
+      ]
+    },
+    {
+      "id": "chung_thu_sba",
+      "group": "C2",
+      "name": "Chứng thư định giá - Công ty CP Tư vấn Quy hoạch và Thẩm định giá SBA (SBA)",
+      "per_person": false,
+      "note": "Vị trí lấy dữ liệu: xem 01-field-extraction-by-form.md mục C2.4",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "requester_name",
+          "label": "Tên khách hàng yêu cầu",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "collateral_info",
+          "label": "Thông tin TSBĐ",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "land_use_status",
+          "label": "Hiện trạng thửa đất",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "asset_value",
+          "label": "Giá trị của tài sản (VNĐ)",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        },
+        {
+          "key": "certificate_no",
+          "label": "Số Giấy chứng nhận",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "asset_grade",
+          "label": "Hạng tài sản",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "chung_thu_citics",
+      "group": "C2",
+      "name": "Chứng thư định giá - Công ty CP CITICS (CITICS)",
+      "per_person": false,
+      "note": "Vị trí lấy 'Hạng tài sản' trong file có vẻ chưa đúng (giả định G7)",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "requester_name",
+          "label": "Tên khách hàng yêu cầu",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "collateral_info",
+          "label": "Thông tin TSBĐ",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "land_use_status",
+          "label": "Hiện trạng thửa đất",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "asset_value",
+          "label": "Giá trị của tài sản (VNĐ)",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        },
+        {
+          "key": "certificate_no",
+          "label": "Số Giấy chứng nhận",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "asset_grade",
+          "label": "Hạng tài sản",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "chung_thu_fargo",
+      "group": "C2",
+      "name": "Chứng thư định giá - Công ty CP Thẩm định giá FARGO (FARGO)",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "requester_name",
+          "label": "Tên khách hàng yêu cầu",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "collateral_info",
+          "label": "Thông tin TSBĐ",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "land_use_status",
+          "label": "Hiện trạng thửa đất",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "asset_value",
+          "label": "Giá trị của tài sản (VNĐ)",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        },
+        {
+          "key": "certificate_no",
+          "label": "Số Giấy chứng nhận",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "asset_grade",
+          "label": "Hạng tài sản",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "chung_thu_vvfc",
+      "group": "C2",
+      "name": "Chứng thư định giá - Công ty CP Định giá và Dịch vụ Tài chính Việt Nam (VVFC)",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "requester_name",
+          "label": "Tên khách hàng yêu cầu",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "collateral_info",
+          "label": "Thông tin TSBĐ",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "land_use_status",
+          "label": "Hiện trạng thửa đất",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "asset_value",
+          "label": "Giá trị của tài sản (VNĐ)",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        },
+        {
+          "key": "certificate_no",
+          "label": "Số Giấy chứng nhận",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "asset_grade",
+          "label": "Hạng tài sản",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "bang_ke_thu_nhap",
+      "group": "D1",
+      "name": "Bảng kê thu nhập (MB01.Qđi-TDCN/41)",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "THÔNG TIN THU NHẬP CỦA KHÁCH HÀNG / BẢNG KÊ THU NHẬP"
+        },
+        {
+          "key": "customer_name",
+          "label": "Tên khách hàng vay/ người đồng vay",
+          "type": "string",
+          "format": "name",
+          "note": "Có thể gộp 2 người: 'A/B' -> tách thành từng người"
+        },
+        {
+          "key": "id_number",
+          "label": "Căn cước công dân",
+          "type": "string",
+          "format": "id_number",
+          "note": "Chỉ lấy số; bỏ ngày cấp, nơi cấp nếu có"
+        },
+        {
+          "key": "income_source_type",
+          "label": "Loại nguồn thu",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "capital_turnover",
+          "label": "Vòng quay",
+          "type": "string",
+          "format": "number",
+          "note": "Số vòng quay vốn"
+        },
+        {
+          "key": "salary_section",
+          "label": "II.1 Nguồn thu từ lương",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "salary_current_job",
+          "label": "II.1 a> Thông tin về công việc hiện tại",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "salary_position",
+          "label": "II.1 Chức vụ",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "salary_months_at_employer",
+          "label": "II.1 Thời gian làm việc tại đơn vị hiện tại (tháng)",
+          "type": "string",
+          "format": "number",
+          "note": ""
+        },
+        {
+          "key": "salary_workplace_address",
+          "label": "II.1 Địa chỉ nơi làm việc",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "salary_net_income",
+          "label": "II.1 Thu nhập sau thuế (VND/tháng)",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        },
+        {
+          "key": "rental_section",
+          "label": "II.2 Nguồn thu từ cho thuê tài sản",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "rental_asset_description",
+          "label": "II.2 Mô tả chi tiết về tài sản",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "rental_owner_name",
+          "label": "II.2 Tên chủ sở hữu",
+          "type": "string",
+          "format": "name",
+          "note": "Chỉ chữ"
+        },
+        {
+          "key": "rental_tenant_name",
+          "label": "II.2 Họ và tên người thuê",
+          "type": "string",
+          "format": "name",
+          "note": "Chỉ chữ"
+        },
+        {
+          "key": "rental_contract_term",
+          "label": "II.2 Thời hạn hợp đồng thuê",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "rental_net_income",
+          "label": "II.2 Thu nhập sau thuế (VND/tháng)",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        },
+        {
+          "key": "hkd_business_name",
+          "label": "II.3.1 HKD - Tên cơ sở kinh doanh",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "hkd_business_form",
+          "label": "II.3.1 HKD - Hình thức kinh doanh",
+          "type": "string[]",
+          "format": "enum",
+          "allowed_values": [
+            "Có cơ sở kinh doanh",
+            "Online"
+          ],
+          "note": "Ô tích trên form có 3 lựa chọn. Trả về danh sách các hình thức được tích, chỉ gồm 'Có cơ sở kinh doanh' và/hoặc 'Online'. Nếu tích 'Cả 2 hình thức trên' thì trả cả hai giá trị; danh sách rỗng nếu không tích ô nào. Giá trị cho phép: `Có cơ sở kinh doanh`, `Online`"
+        },
+        {
+          "key": "hkd_business_line",
+          "label": "II.3.1 HKD - Ngành nghề kinh doanh",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "hkd_operating_time",
+          "label": "II.3.1 HKD - Thời gian đã hoạt động",
+          "type": "string",
+          "format": "text",
+          "note": "Ví dụ: Từ năm 2021 đến nay; > 3 năm; 6 NĂM"
+        },
+        {
+          "key": "hkd_actual_address",
+          "label": "II.3.1 HKD - Địa chỉ kinh doanh thực tế",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "hkd_premises_type",
+          "label": "II.3.1 HKD - Mặt bằng, trụ sở kinh doanh",
+          "type": "string",
+          "format": "text",
+          "note": "Thuê / Khách hàng sở hữu"
+        },
+        {
+          "key": "hkd_premises_area_m2",
+          "label": "II.3.1 HKD - Diện tích mặt bằng kinh doanh (m2)",
+          "type": "string",
+          "format": "number",
+          "note": ""
+        },
+        {
+          "key": "hkd_net_revenue",
+          "label": "II.3.1 HKD - Doanh thu thuần",
+          "type": "string",
+          "format": "money",
+          "note": "Theo năm (VND/năm)"
+        },
+        {
+          "key": "hkd_cogs",
+          "label": "II.3.1 HKD - Giá vốn hàng bán",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        },
+        {
+          "key": "hkd_gross_profit",
+          "label": "II.3.1 HKD - Lợi nhuận gộp",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        },
+        {
+          "key": "hkd_total_cost",
+          "label": "II.3.1 HKD - Tổng chi phí",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        },
+        {
+          "key": "hkd_net_profit",
+          "label": "II.3.1 HKD - Lợi nhuận ròng",
+          "type": "string",
+          "format": "money",
+          "note": "Theo năm (VND/năm)"
+        },
+        {
+          "key": "trip_vehicle",
+          "label": "II.3.2 Kinh doanh buôn chuyến - Phương tiện vận tải",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "trip_net_profit",
+          "label": "II.3.2 Kinh doanh buôn chuyến - Lợi nhuận ròng",
+          "type": "string",
+          "format": "money",
+          "note": "File ghi nhãn '3.1'"
+        },
+        {
+          "key": "enterprise_name",
+          "label": "II.3.3 Doanh nghiệp - Tên doanh nghiệp",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "enterprise_reg_no",
+          "label": "II.3.3 Doanh nghiệp - Số ĐKKD/MST",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "enterprise_capital_share",
+          "label": "II.3.3 Doanh nghiệp - Tỷ lệ góp vốn của KH",
+          "type": "string",
+          "format": "percent",
+          "note": "Số + %"
+        },
+        {
+          "key": "enterprise_address",
+          "label": "II.3.3 Doanh nghiệp - Địa chỉ theo ĐKKD",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "enterprise_annual_result",
+          "label": "II.3.3 Doanh nghiệp - Kết quả kinh doanh năm gần nhất (VNĐ/năm)",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        },
+        {
+          "key": "enterprise_avg_monthly_profit",
+          "label": "II.3.3 Doanh nghiệp - Lợi nhuận trung bình tháng",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "hd_lao_dong",
+      "group": "D1",
+      "name": "Hợp đồng lao động",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "HỢP ĐỒNG LAO ĐỘNG"
+        },
+        {
+          "key": "company",
+          "label": "Công ty",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "employee_name",
+          "label": "Tên KH",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "id_number",
+          "label": "Căn cước công dân",
+          "type": "string",
+          "format": "id_number",
+          "note": "Lấy toàn bộ số"
+        }
+      ]
+    },
+    {
+      "id": "xac_nhan_luong",
+      "group": "D1",
+      "name": "Giấy xác nhận lương",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "GIẤY XÁC NHẬN LƯƠNG"
+        },
+        {
+          "key": "employee_name",
+          "label": "Tên KH",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "id_number",
+          "label": "Căn cước công dân",
+          "type": "string",
+          "format": "id_number",
+          "note": "Lấy toàn bộ số"
+        },
+        {
+          "key": "net_income",
+          "label": "Tổng thu nhập thực lãnh",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "sao_ke_luong",
+      "group": "D1",
+      "name": "Sao kê lương",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "subject_name",
+          "label": "Tên chủ tài khoản",
+          "type": "string",
+          "format": "name",
+          "note": "Sao kê của ai: người vay, đồng vay hay người khác",
+          "source": "added",
+          "required": true
+        },
+        {
+          "key": "statement_type",
+          "label": "Sổ phụ tài khoản/sổ chi tiết tài khoản",
+          "type": "string",
+          "format": "text",
+          "note": "Chỉ nhận diện loại chứng từ"
+        }
+      ]
+    },
+    {
+      "id": "vssid",
+      "group": "D1",
+      "name": "VSSID",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "subject_name",
+          "label": "Họ và tên người tham gia bảo hiểm xã hội",
+          "type": "string",
+          "format": "name",
+          "note": "VSSID của ai",
+          "source": "added",
+          "required": true
+        },
+        {
+          "key": "social_insurance_history",
+          "label": "Quá trình tham gia bảo hiểm xã hội",
+          "type": "string",
+          "format": "text",
+          "note": "Chỉ nhận diện loại chứng từ"
+        }
+      ]
+    },
+    {
+      "id": "gcn_dkhkd",
+      "group": "D1",
+      "name": "Giấy chứng nhận đăng ký hộ kinh doanh",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "reg_no",
+          "label": "Số",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "business_name",
+          "label": "Tên HKD",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "business_address",
+          "label": "Địa điểm kinh doanh",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "business_line",
+          "label": "Ngành nghề",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "representative_name",
+          "label": "Người đại diện",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "id_number",
+          "label": "Căn cước công dân",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "xac_nhan_kinh_doanh",
+      "group": "D1",
+      "name": "Xác nhận kinh doanh của chính quyền địa phương",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "subject_name",
+          "label": "Tên người/hộ được xác nhận kinh doanh",
+          "type": "string",
+          "format": "name",
+          "note": "Xác nhận cho ai",
+          "source": "added",
+          "required": true
+        },
+        {
+          "key": "business_confirmation",
+          "label": "Xác nhận kinh doanh",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "business_line",
+          "label": "Ngành nghề",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "business_address",
+          "label": "Địa chỉ kinh doanh",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "chung_tu_nop_thue",
+      "group": "D1",
+      "name": "Chứng từ nộp thuế (Giấy nộp tiền vào ngân sách nhà nước)",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "payer_name",
+          "label": "Người nộp ngân sách nhà nước",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "tax_code",
+          "label": "Mã số thuế",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "so_sach",
+      "group": "D1",
+      "name": "Sổ sách (bán hàng/nhập hàng)",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "subject_name",
+          "label": "Tên chủ sổ sách / hộ kinh doanh",
+          "type": "string",
+          "format": "name",
+          "note": "Sổ của ai",
+          "source": "added",
+          "required": true
+        },
+        {
+          "key": "ledger_content",
+          "label": "Sổ sách bán hàng/ sổ sách nhập hàng",
+          "type": "string",
+          "format": "text_full",
+          "note": "Lấy toàn bộ chữ, kể cả viết tắt"
+        }
+      ]
+    },
+    {
+      "id": "hinh_anh_hkd",
+      "group": "D1",
+      "name": "Hình ảnh HKD",
+      "per_person": true,
+      "note": "Chỉ nhận diện ảnh, không có trường trích xuất",
+      "fields": [
+        {
+          "key": "subject_name",
+          "label": "Tên chủ hộ kinh doanh / tên cơ sở (nếu thể hiện trên ảnh)",
+          "type": "string",
+          "format": "name",
+          "note": "Nếu ảnh không thể hiện tên thì để trống và gắn cảnh báo, không tự suy từ hồ sơ",
+          "source": "added",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "dkkd_doanh_nghiep",
+      "group": "D1",
+      "name": "Đăng ký kinh doanh doanh nghiệp",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "reg_no",
+          "label": "Số đăng ký kinh doanh",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "company_name",
+          "label": "Tên công ty",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "hq_address",
+          "label": "Địa chỉ trụ sở",
+          "type": "string",
+          "format": "address",
+          "note": ""
+        },
+        {
+          "key": "legal_representative",
+          "label": "Người đại diện theo pháp luật",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "to_khai_vat",
+      "group": "D1",
+      "name": "Tờ khai thuế VAT (mẫu 01/GTGT)",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "tax_period",
+          "label": "Kỳ tính thuế",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "taxpayer_name",
+          "label": "Tên người nộp thuế",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "bckqkd",
+      "group": "D1",
+      "name": "Báo cáo kết quả hoạt động kinh doanh",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "period",
+          "label": "Kỳ",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "company_name",
+          "label": "Tên công ty",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "bang_can_doi_ke_toan",
+      "group": "D1",
+      "name": "Bảng cân đối kế toán",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "period",
+          "label": "Kỳ",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "company_name",
+          "label": "Tên công ty",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "hinh_anh_doanh_nghiep",
+      "group": "D1",
+      "name": "Hình ảnh doanh nghiệp KH làm chủ",
+      "per_person": true,
+      "note": "Chỉ nhận diện ảnh, không có trường trích xuất",
+      "fields": [
+        {
+          "key": "subject_name",
+          "label": "Tên chủ doanh nghiệp / tên công ty (nếu thể hiện trên ảnh)",
+          "type": "string",
+          "format": "name",
+          "note": "Nếu ảnh không thể hiện tên thì để trống và gắn cảnh báo",
+          "source": "added",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "bien_ban_hdtv",
+      "group": "D1",
+      "name": "Biên bản hội đồng thành viên",
+      "per_person": false,
+      "note": "",
+      "fields": [
+        {
+          "key": "company_name",
+          "label": "Tên công ty",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "full_name",
+          "label": "Họ và tên",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "id_number",
+          "label": "Căn cước công dân",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "cic_khach_hang",
+      "group": "D2",
+      "name": "CIC KH - người đồng vay - chủ Tài sản bảo đảm (S11A/S11T)",
+      "per_person": true,
+      "note": "",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "BÁO CÁO CHI TIẾT QUAN HỆ TÍN DỤNG; có thể kèm '(Khách hàng thể nhân)' hoặc 'TỨC THỜI'"
+        },
+        {
+          "key": "query_date",
+          "label": "Ngày tra cứu",
+          "type": "string",
+          "format": "datetime",
+          "note": "Có thể kèm giờ; trên form là 'Thời gian gửi báo cáo'"
+        },
+        {
+          "key": "full_name",
+          "label": "Họ và tên",
+          "type": "string",
+          "format": "name",
+          "note": "In hoa, thường không dấu"
+        },
+        {
+          "key": "cic_code",
+          "label": "Mã CIC",
+          "type": "string",
+          "format": "text",
+          "note": "10 chữ số"
+        },
+        {
+          "key": "id_number",
+          "label": "Số CCCD/CMND",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        },
+        {
+          "key": "debt_group",
+          "label": "Kiểm tra nhóm nợ",
+          "type": "string",
+          "format": "enum",
+          "note": "Nhóm 1 (Nợ đủ tiêu chuẩn)..."
+        },
+        {
+          "key": "bad_debt_5y",
+          "label": "Lịch sử nợ xấu trong 5 năm (mục 3.5)",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "card_late_payment_3y",
+          "label": "Lịch sử chậm thanh toán thẻ trong 3 năm (mục 3.6)",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "watchlist_debt_12m",
+          "label": "Nợ cần chú ý trong 12 tháng (mục 3.7)",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "queried_institutions",
+          "label": "Danh sách TCTD tra cứu (1 năm gần nhất)",
+          "type": "string[]",
+          "format": "string",
+          "note": "Danh sách tên hoặc số lượng"
+        }
+      ]
+    },
+    {
+      "id": "hd_tin_dung_tctd_khac",
+      "group": "D2",
+      "name": "Hợp đồng tín dụng (Tổ chức tín dụng khác)",
+      "per_person": false,
+      "note": "Lấy toàn bộ thông tin bao gồm cả dấu và số",
+      "fields": [
+        {
+          "key": "contract_no",
+          "label": "Số hợp đồng tín dụng",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "sign_date",
+          "label": "Ngày ký",
+          "type": "string",
+          "format": "date",
+          "note": ""
+        },
+        {
+          "key": "lender",
+          "label": "Bên cho vay",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "borrower",
+          "label": "Bên vay",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "id_number",
+          "label": "Căn cước công dân",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        },
+        {
+          "key": "loan_amount",
+          "label": "Số tiền vay",
+          "type": "string",
+          "format": "money",
+          "note": ""
+        },
+        {
+          "key": "loan_purpose",
+          "label": "Mục đích",
+          "type": "string",
+          "format": "text_full",
+          "note": ""
+        },
+        {
+          "key": "loan_term",
+          "label": "Thời hạn vay",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "cic_tsbd",
+      "group": "D2",
+      "name": "CIC Tài sản bảo đảm (không OCR, lấy dữ liệu từ IL)",
+      "per_person": false,
+      "note": "Theo file: không OCR, dữ liệu lấy từ IL",
+      "fields": [
+        {
+          "key": "form_title",
+          "label": "Tên mẫu biểu",
+          "type": "string",
+          "format": "text",
+          "note": "Nhận diện loại chứng từ"
+        },
+        {
+          "key": "query_date",
+          "label": "Ngày tra cứu",
+          "type": "string",
+          "format": "datetime",
+          "note": ""
+        },
+        {
+          "key": "full_name",
+          "label": "Họ tên",
+          "type": "string",
+          "format": "name",
+          "note": ""
+        },
+        {
+          "key": "cic_code",
+          "label": "Mã CIC",
+          "type": "string",
+          "format": "text",
+          "note": ""
+        },
+        {
+          "key": "id_number",
+          "label": "Căn cước công dân",
+          "type": "string",
+          "format": "id_number",
+          "note": ""
+        },
+        {
+          "key": "other_institutions",
+          "label": "Danh sách Tổ chức tín dụng khác đang quan hệ",
+          "type": "string[]",
+          "format": "string",
+          "note": ""
+        }
+      ]
+    }
+  ]
+}

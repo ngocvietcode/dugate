@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/labor_contract.schema.json",
+  "title": "labor_contract — data",
+  "description": "Schema của evidence.data cho doc_type_key = labor_contract (Hợp đồng lao động). Ngày hết hạn hợp đồng dùng đánh giá ổn định nguồn lương; `sign_date` dùng cho logic rule `id_issue_date_before_labor_contract`. schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "contract_info",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "EMPLOYER (đơn vị sử dụng lao động, ORGANIZATION; UAT `company`) và EMPLOYEE (khách hàng).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 1
+    },
+    "contract_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_number",
+        "contract_type_raw",
+        "sign_date",
+        "effective_date",
+        "expiry_date",
+        "position",
+        "work_location_raw",
+        "monthly_salary",
+        "payment_terms_raw"
+      ],
+      "properties": {
+        "contract_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contract_type_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sign_date": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "effective_date": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "expiry_date": {
+          "description": "Ngày hết hạn; null nếu không xác định thời hạn.",
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "position": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "work_location_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "monthly_salary": {
+          "description": "Mức lương hàng tháng ghi trên hợp đồng (VND/tháng).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "payment_terms_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "legal_info": {
+      "description": "document_number = số hợp đồng; issue_date = ngày ký.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "EMPLOYER",
+                "EMPLOYEE"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

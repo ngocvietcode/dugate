@@ -1,0 +1,606 @@
+{
+  "version": "3.0.0",
+  "doc_types": [
+    {
+      "doc_type_key": "id_card",
+      "doc_type_label": "Căn cước công dân / CMND / Thẻ căn cước",
+      "checklist_group": "legal",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "1 bản thể = 1 người. Mặt trước + mặt sau gộp 1 evidence.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number"
+      ]
+    },
+    {
+      "doc_type_key": "vneid",
+      "doc_type_label": "Căn cước điện tử (VNeID)",
+      "checklist_group": "legal",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "Ảnh chụp màn hình ứng dụng VNeID.",
+      "recognition_hint": "Ảnh chụp màn hình ứng dụng VNeID (giao diện Căn cước điện tử): luôn có ảnh chân dung tròn ở đầu màn hình, họ tên viết hoa, huy hiệu \"Định danh mức 2\" (hoặc \"Định danh mức 1\"). Có hai kiểu màn hình: (1) \"Thông tin cá nhân\" với các dòng Số định danh cá nhân, Giới tính, Ngày sinh, Số điện thoại, Nơi thường trú (có thể không có quê quán / nơi đăng ký khai sinh); (2) \"Thẻ căn cước\" / chi tiết đầy đủ với quê quán, nơi đăng ký khai sinh, nơi thường trú, nơi tạm trú. Dấu hiệu chắc nhất là ảnh chân dung + chữ \"Định danh mức 2\"/\"Định danh mức 1\" + giao diện ứng dụng điện thoại. KHÔNG phải màn hình thông tin lấy từ mã QR in trên CCCD (loại đó chỉ có chữ, không ảnh chân dung, không huy hiệu định danh, có chú thích \"lấy từ mã QR in trên CCCD\").",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number"
+      ]
+    },
+    {
+      "doc_type_key": "qr_code_info",
+      "doc_type_label": "Thông tin sau khi quét mã QR CCCD",
+      "checklist_group": "legal",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": null,
+      "recognition_hint": "Màn hình hoặc ảnh hiển thị thông tin lấy từ mã QR in trên CCCD, VD tiêu đề \"Thông tin Căn cước công dân\" hoặc \"Thông tin quét mã QR\" (ứng dụng đọc QR như Zalo), kèm dòng chú thích \"Thông tin này được lấy từ mã QR in trên CCCD\". Chỉ có các dòng chữ: Số CCCD, Số CMND (9 số, cũ), Họ và tên, Giới tính, Ngày sinh, Nơi thường trú, Ngày cấp; KHÔNG có ảnh chân dung, quê quán, nơi đăng ký khai sinh, nơi tạm trú. Cũng nhận chuỗi QR giải mã dạng \"số CCCD|số CMND|họ tên|ngày sinh|giới tính|nơi thường trú|ngày cấp\". Có cả số CCCD lẫn số CMND nên liên kết được 2 số của cùng 1 người. Không phân loại thành vneid hay id_card.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number",
+        "previous_id_number"
+      ]
+    },
+    {
+      "doc_type_key": "residence_confirmation",
+      "doc_type_label": "Giấy xác nhận thông tin cư trú (CT07/CT08)",
+      "checklist_group": "legal",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number",
+        "issue_date"
+      ]
+    },
+    {
+      "doc_type_key": "marital_status_confirmation",
+      "doc_type_label": "Giấy xác nhận tình trạng hôn nhân",
+      "checklist_group": "legal",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "Hiệu lực 6 tháng (kiểm ở `check_checklist`).",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number",
+        "marital_status",
+        "issue_date"
+      ]
+    },
+    {
+      "doc_type_key": "local_cmnd_confirmation",
+      "doc_type_label": "Xác nhận CMND của chính quyền địa phương",
+      "checklist_group": "legal",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "BRD ghi \"đề xuất bỏ\" — xem OQ-03.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number",
+        "previous_id_number"
+      ]
+    },
+    {
+      "doc_type_key": "same_person_commitment",
+      "doc_type_label": "Cam kết 2 CMND/CCCD là 1 người",
+      "checklist_group": "legal",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "BRD ghi \"đề xuất bỏ\" — xem OQ-03.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number",
+        "previous_id_number"
+      ]
+    },
+    {
+      "doc_type_key": "marriage_certificate",
+      "doc_type_label": "Giấy chứng nhận đăng ký kết hôn",
+      "checklist_group": "legal",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "Không có hạn hiệu lực.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number"
+      ]
+    },
+    {
+      "doc_type_key": "birth_certificate",
+      "doc_type_label": "Giấy khai sinh",
+      "checklist_group": "legal",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "Dùng xác minh quan hệ với chủ TSBĐ.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number"
+      ]
+    },
+    {
+      "doc_type_key": "loan_application",
+      "doc_type_label": "Giấy đề nghị vay vốn kiêm phương án vay",
+      "checklist_group": "loan_plan",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": "**Role anchor** của hồ sơ.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number",
+        "marital_status",
+        "amount",
+        "collateral_identifier",
+        "loan_purpose",
+        "income_source"
+      ]
+    },
+    {
+      "doc_type_key": "purchase_list",
+      "doc_type_label": "Bảng kê mua hàng",
+      "checklist_group": "loan_plan",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "Thay thế lẫn nhau với #12.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "amount"
+      ]
+    },
+    {
+      "doc_type_key": "goods_purchase_contract",
+      "doc_type_label": "Hợp đồng mua bán hàng hóa",
+      "checklist_group": "loan_plan",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "Thay thế lẫn nhau với #11.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "amount"
+      ]
+    },
+    {
+      "doc_type_key": "vehicle_sale_contract",
+      "doc_type_label": "Hợp đồng mua bán xe ô tô",
+      "checklist_group": "loan_plan",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": "Bắt buộc khi mục đích vay là mua xe.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "amount",
+        "chassis_number"
+      ]
+    },
+    {
+      "doc_type_key": "land_use_cert_to_buy",
+      "doc_type_label": "GCN QSDĐ cần mua / đã sang tên KH (làm nhà xưởng)",
+      "checklist_group": "loan_plan",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": "Bắt buộc khi phương án mua/bù đắp nhà xưởng.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number",
+        "certificate_number"
+      ]
+    },
+    {
+      "doc_type_key": "vehicle_registration",
+      "doc_type_label": "Chứng nhận đăng ký xe ô tô",
+      "checklist_group": "collateral",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": "Dùng cả `income_source` khi `usage_context = rental_income`.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "license_plate",
+        "chassis_number"
+      ]
+    },
+    {
+      "doc_type_key": "vehicle_inspection",
+      "doc_type_label": "Giấy chứng nhận đăng kiểm xe",
+      "checklist_group": "collateral",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": null,
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "license_plate",
+        "chassis_number"
+      ]
+    },
+    {
+      "doc_type_key": "asset_quote",
+      "doc_type_label": "Báo giá tài sản",
+      "checklist_group": "collateral",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": "Giá sơ bộ, hiệu lực 90 ngày. Không dùng làm giá trị định giá chính thức.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "chassis_number",
+        "issue_date"
+      ]
+    },
+    {
+      "doc_type_key": "movable_asset_valuation_report",
+      "doc_type_label": "Báo cáo định giá động sản",
+      "checklist_group": "collateral",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": "Hiệu lực 12 tháng.",
+      "recognition_hint": "Báo cáo của Công ty TNHH Thịnh Điền cho tài sản ĐỘNG SẢN: phương tiện vận tải (PTVT), phương tiện thi công (PTTC), máy móc thiết bị (MMTB), dây chuyền sản xuất (DCSX). Tiêu đề \"BÁO CÁO TƯ VẤN GIÁ HIỆN TRẠNG TÀI SẢN ĐẢM BẢO\" kèm dòng \"(Áp dụng với tài sản là PTVT/PTTC/MMTB/DCSX)\"; nội dung mô tả nhãn hiệu, số loại, năm sản xuất, màu sắc, tình trạng tài sản. Phân biệt với real_estate_valuation_report theo TIÊU ĐỀ và dòng \"Áp dụng đối với/với\": tài sản là đất, nhà, căn hộ (\"BÁO CÁO TƯ VẤN VỀ GIÁ TÀI SẢN BẢO ĐẢM\", \"Áp dụng đối với tài sản là Bất động sản\") thì KHÔNG thuộc loại này. Chứng thư do công ty thẩm định giá khác lập → external_valuation_certificate.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "license_plate",
+        "chassis_number",
+        "issue_date"
+      ]
+    },
+    {
+      "doc_type_key": "land_use_certificate",
+      "doc_type_label": "GCN QSDĐ, quyền sở hữu nhà ở và tài sản gắn liền với đất",
+      "checklist_group": "collateral",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": "Dùng cả `income_source` khi `usage_context = rental_income`. Rule chủ sở hữu hiện tại.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number",
+        "certificate_number"
+      ]
+    },
+    {
+      "doc_type_key": "apartment_ownership_certificate",
+      "doc_type_label": "GCN quyền sở hữu căn hộ chung cư",
+      "checklist_group": "collateral",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": "Cùng rule chủ sở hữu hiện tại với #19. Checklist coi #19 và #20 là cùng mục.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number",
+        "certificate_number"
+      ]
+    },
+    {
+      "doc_type_key": "real_estate_valuation_report",
+      "doc_type_label": "Báo cáo định giá BĐS nội bộ (Thịnh Điền)",
+      "checklist_group": "collateral",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": "`form_variant`: `TD_VALUATION_REPORT`, `TD_PRICE_ADVISORY`, `AUTO_VALUATION`. Thay thế lẫn nhau với #22.",
+      "recognition_hint": "Do Công ty TNHH Thịnh Điền lập (tên/logo Thịnh Điền ở đầu trang hoặc phần ký) cho tài sản là BẤT ĐỘNG SẢN (đất, nhà, căn hộ). Tiêu đề thường là \"BÁO CÁO TƯ VẤN VỀ GIÁ TÀI SẢN BẢO ĐẢM\" kèm dòng \"(Áp dụng đối với tài sản là Bất động sản)\"; cũng có thể là \"BÁO CÁO ĐỊNH GIÁ TÀI SẢN\" hoặc định giá tự động. Bố cục: I. Thông tin chung có \"Khách hàng vay (dự kiến)\"; II. Giấy tờ chứng minh quyền sở hữu, hiện trạng; III. Kết quả định giá có \"Tổng giá trị tài sản tư vấn về giá\"; IV. Xếp loại TSBĐ. Báo cáo cũng của Thịnh Điền nhưng có tiêu đề \"BÁO CÁO TƯ VẤN GIÁ HIỆN TRẠNG TÀI SẢN ĐẢM BẢO\" (áp dụng với PTVT/PTTC/MMTB/DCSX) là động sản → KHÔNG thuộc loại này, thuộc movable_asset_valuation_report. Văn bản định giá do công ty thẩm định giá khác lập cũng KHÔNG thuộc loại này.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "certificate_number",
+        "issue_date"
+      ]
+    },
+    {
+      "doc_type_key": "external_valuation_certificate",
+      "doc_type_label": "Chứng thư định giá công ty định giá ngoài",
+      "checklist_group": "collateral",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": "`appraisal_company`: `SBA`, `CITICS`, `FARGO`, `VVFC`, `OTHER`. Thay thế lẫn nhau với #21.",
+      "recognition_hint": "Do công ty thẩm định giá độc lập (không phải Thịnh Điền) lập, VD Công ty CP Tư vấn Quy hoạch và Thẩm định giá SBA, Công ty CP CITICS, Công ty CP Thẩm định giá FARGO, Công ty CP Định giá và Dịch vụ Tài chính Việt Nam (VVFC) hoặc công ty khác. Tiêu đề thường là \"CHỨNG THƯ THẨM ĐỊNH GIÁ\" hoặc tên công ty ở đầu trang; có số chứng thư, mục \"Khách hàng yêu cầu\" / \"Khách hàng\" / \"Đơn vị đề nghị\", \"Tài sản thẩm định giá\". Báo cáo thẩm định giá chi tiết đi kèm ở các trang sau là cùng một bản.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "certificate_number",
+        "issue_date"
+      ]
+    },
+    {
+      "doc_type_key": "income_statement",
+      "doc_type_label": "Bảng kê thu nhập (mẫu MB01.QĐi-TDCN/41)",
+      "checklist_group": "income_source",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": true,
+      "note": "Nguồn xác định `usage_context = rental_income` cho tài sản.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "income_source"
+      ]
+    },
+    {
+      "doc_type_key": "labor_contract",
+      "doc_type_label": "Hợp đồng lao động",
+      "checklist_group": "income_source",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name"
+      ]
+    },
+    {
+      "doc_type_key": "salary_confirmation",
+      "doc_type_label": "Giấy xác nhận lương",
+      "checklist_group": "income_source",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "Thay thế lẫn nhau với `payroll_bank_statement`.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name"
+      ]
+    },
+    {
+      "doc_type_key": "cic",
+      "doc_type_label": "Báo cáo thông tin tín dụng CIC (KH vay / người đồng vay / chủ TSBĐ)",
+      "checklist_group": "credit_relationship",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "Hiệu lực 30 ngày. Mẫu S11A/S11T — xem OQ-07.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name",
+        "id_number",
+        "issue_date"
+      ]
+    },
+    {
+      "doc_type_key": "credit_contract",
+      "doc_type_label": "Hợp đồng tín dụng tại TCTD khác",
+      "checklist_group": "credit_relationship",
+      "needs_extraction": true,
+      "has_parties": true,
+      "has_assets": false,
+      "note": "Chưa có dữ liệu mẫu.",
+      "extraction_level": "FULL",
+      "summary_fields": [
+        "full_name"
+      ]
+    },
+    {
+      "doc_type_key": "deposit_certificate",
+      "doc_type_label": "Sổ tiết kiệm / Hợp đồng tiền gửi",
+      "checklist_group": "collateral",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": "TSBĐ tiền gửi",
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "payroll_bank_statement",
+      "doc_type_label": "Sao kê lương / Sổ phụ ngân hàng",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": "Thay thế lẫn nhau với `salary_confirmation`",
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "vssid_social_insurance",
+      "doc_type_label": "Quá trình tham gia BHXH (VssID)",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "household_business_license",
+      "doc_type_label": "Giấy chứng nhận đăng ký hộ kinh doanh",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "local_business_confirmation",
+      "doc_type_label": "Xác nhận kinh doanh của chính quyền địa phương",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "tax_payment_receipt",
+      "doc_type_label": "Chứng từ nộp thuế vào ngân sách",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "business_account_ledger",
+      "doc_type_label": "Sổ sách ghi chép kinh doanh (bán hàng / nhập hàng)",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "household_business_photo",
+      "doc_type_label": "Hình ảnh thực tế hộ kinh doanh",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "enterprise_registration_license",
+      "doc_type_label": "Giấy chứng nhận đăng ký doanh nghiệp",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "vat_tax_return",
+      "doc_type_label": "Tờ khai thuế GTGT (mẫu 01/GTGT)",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "balance_sheet",
+      "doc_type_label": "Bảng cân đối kế toán",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "financial_performance_report",
+      "doc_type_label": "Báo cáo kết quả hoạt động kinh doanh",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "enterprise_photo",
+      "doc_type_label": "Hình ảnh doanh nghiệp do KH làm chủ",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": "Bắt buộc thể hiện tên + địa chỉ công ty",
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "board_meeting_minutes",
+      "doc_type_label": "Biên bản họp Hội đồng thành viên",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "passport",
+      "doc_type_label": "Hộ chiếu",
+      "checklist_group": "legal",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "asset_lease_contract",
+      "doc_type_label": "Hợp đồng cho thuê tài sản (BĐS / động sản)",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "construction_estimate_report",
+      "doc_type_label": "Bảng dự toán xây dựng / sửa chữa nhà",
+      "checklist_group": "loan_plan",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "rental_payment_receipt",
+      "doc_type_label": "Giấy biên nhận thu tiền thuê",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "rental_asset_photo",
+      "doc_type_label": "Ảnh chụp tài sản cho thuê",
+      "checklist_group": "income_source",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    },
+    {
+      "doc_type_key": "exception_approval_memo",
+      "doc_type_label": "Tờ trình phê duyệt ngoại lệ",
+      "checklist_group": "loan_plan",
+      "needs_extraction": false,
+      "has_parties": false,
+      "has_assets": false,
+      "note": null,
+      "extraction_level": "LIGHT"
+    }
+  ]
+}

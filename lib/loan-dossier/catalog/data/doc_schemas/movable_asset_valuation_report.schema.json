@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/movable_asset_valuation_report.schema.json",
+  "title": "movable_asset_valuation_report — data",
+  "description": "Schema của evidence.data cho doc_type_key = movable_asset_valuation_report (Báo cáo định giá động sản). Hiệu lực 365 ngày tính từ `legal_info.issue_date` (S4-R15). schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "assets",
+    "asset_details",
+    "valuation_info",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "CUSTOMER = khách hàng vay vốn; OWNER = chủ tài sản nếu in.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 1
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Asset"
+      },
+      "minItems": 1
+    },
+    "asset_details": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset_index",
+          "vehicle_brand",
+          "vehicle_model",
+          "vehicle_type",
+          "manufacture_year",
+          "color",
+          "asset_condition_raw",
+          "valuation_value"
+        ],
+        "properties": {
+          "asset_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "vehicle_brand": {
+            "description": "Nhãn hiệu (VD 'KIA').",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vehicle_model": {
+            "description": "Số loại / model (VD 'CARENS').",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vehicle_type": {
+            "description": "Loại phương tiện (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manufacture_year": {
+            "description": "Năm sản xuất.",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1900,
+            "maximum": 2100
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "asset_condition_raw": {
+            "description": "Tình trạng tài sản (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "valuation_value": {
+            "description": "Giá trị định giá (VND). UAT `asset_value`.",
+            "$ref": "_common.schema.json#/$defs/NullableMoney"
+          }
+        }
+      }
+    },
+    "valuation_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valuation_date",
+        "valuation_purpose",
+        "valuation_method_raw",
+        "total_valuation_value"
+      ],
+      "properties": {
+        "valuation_date": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "valuation_purpose": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "valuation_method_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "total_valuation_value": {
+          "description": "Tổng giá trị định giá (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        }
+      }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày lập báo cáo (căn cứ hiệu lực).",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "CUSTOMER",
+                "OWNER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "Asset": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/AssetDescriptor"
+        },
+        {
+          "properties": {
+            "asset_type": {
+              "enum": [
+                "vehicle",
+                "other"
+              ]
+            },
+            "usage_context_hint": {
+              "const": null
+            }
+          }
+        }
+      ]
+    }
+  }
+}

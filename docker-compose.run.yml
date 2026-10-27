@@ -1,0 +1,117 @@
+services:
+  skillhub-app:
+    image: dugate:${IMAGE_TAG:-0.0.1}
+    pull_policy: never
+    container_name: du-app
+    ports:
+      - "3013:2023"
+    restart: unless-stopped
+    networks:
+      - docker-net
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - INTERNAL_API_URL=https://du.aws.rpa.vpbank.dev
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=https://du.aws.rpa.vpbank.dev
+      - DISABLE_HISTORY=false
+      # Set MIGRATION=true (in the Portainer stack env) for the deploy that must
+      # create the new `vaultSecretPath` column via drizzle-kit push, then revert to false.
+      - MIGRATION=${MIGRATION:-false}
+      - SEED=false
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - UPLOAD_DIR=/app/uploads
+      - OUTPUT_DIR=/app/outputs
+      - SEED_ADMIN_KEY=${SEED_ADMIN_KEY}
+      # Only needed when seeding an EMPTY database: SSO sign-in has no just-in-time
+      # provisioning, so the first ADMIN rows must be pre-created. Comma-separated
+      # company emails; the username is the part before "@".
+      - SEED_ADMIN_EMAILS=${SEED_ADMIN_EMAILS:-}
+      - REDIS_URL=redis://redis:6379
+      - ALLOWED_PRIVATE_HOSTS=${ALLOWED_PRIVATE_HOSTS}
+      # SSO is the only way into the UI — local username/password login no longer
+      # exists. All three values must be present or nobody can sign in; there is no
+      # separate on/off switch.
+      - OIDC_ISSUER=${OIDC_ISSUER:-https://portal.aws.rpa.vpbank.dev/proxy-service/identity/application/o/skillhub}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET}
+      - SYNC_TIMEOUT_MS=300000
+      # ─── Secrets / HashiCorp Vault (IT SEC) ───────────────────────────────
+      # Leave VAULT_ADDR empty to keep the 'dev' provider (legacy authSecret fallback).
+      # Set SECRET_PROVIDER=vault + the AppRole creds to resolve keys from Vault.
+      - SECRET_PROVIDER=${SECRET_PROVIDER:-}
+      - VAULT_ADDR=${VAULT_ADDR:-}
+      - VAULT_ROLE_ID=${VAULT_ROLE_ID:-}
+      - VAULT_SECRET_ID=${VAULT_SECRET_ID:-}
+      - VAULT_KV_MOUNT=${VAULT_KV_MOUNT:-secret}
+      - VAULT_NAMESPACE=${VAULT_NAMESPACE:-}
+      - VAULT_SECRET_CACHE_TTL_MS=${VAULT_SECRET_CACHE_TTL_MS:-60000}
+      - VAULT_SECRET_STALE_MAX_MS=${VAULT_SECRET_STALE_MAX_MS:-600000}
+      # ─── Operation content retention (keep identical on app and worker) ───
+      - OPERATION_CONTENT_RETENTION_DAYS=${OPERATION_CONTENT_RETENTION_DAYS:-7}
+      - OPERATION_CONTENT_PURGE_MAX_PER_RUN=${OPERATION_CONTENT_PURGE_MAX_PER_RUN:-5000}
+      - OPERATION_CONTENT_PURGE_DRY_RUN=${OPERATION_CONTENT_PURGE_DRY_RUN:-false}
+      - WORKFLOW_SUBSTEP_KEEP_CONTENT=${WORKFLOW_SUBSTEP_KEEP_CONTENT:-false}
+    volumes:
+      - skillhub_upload_data:/app/uploads
+      - skillhub_output_data:/app/outputs
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: dockerhub-proxy.aws.platform.vpbank.dev/redis:8-alpine
+    pull_policy: never
+    networks:
+      - docker-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  worker:
+    image: dugate:${IMAGE_TAG:-0.0.1}
+    pull_policy: never
+    command: ["node", "worker.js"]
+    networks:
+      - docker-net
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: redis://redis:6379
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      UPLOAD_DIR: /app/uploads
+      OUTPUT_DIR: /app/outputs
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+      SUBSTEP_WORKER_CONCURRENCY: 5
+      ALLOWED_PRIVATE_HOSTS: ${ALLOWED_PRIVATE_HOSTS}
+      SYNC_TIMEOUT_MS: 300000
+      # ─── Secrets / HashiCorp Vault (IT SEC) — worker also resolves keys ───
+      SECRET_PROVIDER: ${SECRET_PROVIDER:-}
+      VAULT_ADDR: ${VAULT_ADDR:-}
+      VAULT_ROLE_ID: ${VAULT_ROLE_ID:-}
+      VAULT_SECRET_ID: ${VAULT_SECRET_ID:-}
+      VAULT_KV_MOUNT: ${VAULT_KV_MOUNT:-secret}
+      VAULT_NAMESPACE: ${VAULT_NAMESPACE:-}
+      VAULT_SECRET_CACHE_TTL_MS: ${VAULT_SECRET_CACHE_TTL_MS:-60000}
+      VAULT_SECRET_STALE_MAX_MS: ${VAULT_SECRET_STALE_MAX_MS:-600000}
+      # ─── Operation content retention (keep identical on app and worker) ───
+      OPERATION_CONTENT_RETENTION_DAYS: ${OPERATION_CONTENT_RETENTION_DAYS:-7}
+      OPERATION_CONTENT_PURGE_MAX_PER_RUN: ${OPERATION_CONTENT_PURGE_MAX_PER_RUN:-5000}
+      OPERATION_CONTENT_PURGE_DRY_RUN: ${OPERATION_CONTENT_PURGE_DRY_RUN:-false}
+      WORKFLOW_SUBSTEP_KEEP_CONTENT: ${WORKFLOW_SUBSTEP_KEEP_CONTENT:-false}
+    volumes:
+      - skillhub_upload_data:/app/uploads
+      - skillhub_output_data:/app/outputs
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  skillhub_upload_data:
+  skillhub_output_data:
+
+networks:
+  docker-net:
+    external: true

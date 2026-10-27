@@ -1,0 +1,10 @@
+{
+  "verdict": "APPROVED",
+  "findings": [
+    { "id": 1, "severity": "NIT", "title": "Cancel 200 response body already carries state CANCELLED but design only relies on 3-round poll", "fix": "Optionally run applyOperation on the 200 body; keep the 3-round poll as fallback" },
+    { "id": 2, "severity": "NIT", "title": "Acceptance criteria numbered out of order (AC16/AC17 between AC12 and AC13)", "fix": "Renumber sequentially and keep references valid" },
+    { "id": 3, "severity": "NIT", "title": "V1-result rule 'index<3 || done' leaves 'done' undefined", "fix": "State the exact predicate or copy it from useLoanAppraisalPolling.ts" },
+    { "id": 4, "severity": "NIT", "title": "No explicit transition row for fatal poll errors (forbidden/not-found/network) in 4.4", "fix": "Add running|cancelling -> failed on fatal poll error" }
+  ],
+  "reviewDoc": "d:\\Jobs\\dugate\\.agents\\tasks\\loan-appraisal-v2-ui/design-review.md"
+}

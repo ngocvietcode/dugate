@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/marriage_certificate.schema.json",
+  "title": "marriage_certificate — data",
+  "description": "Schema của evidence.data cho doc_type_key = marriage_certificate (Giấy chứng nhận kết hôn / Trích lục kết hôn). Mô tả nghiệp vụ: 04_document_schemas/marriage_certificate.md. schema_version 2.0.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["parties", "legal_info", "marital_status", "registration_date", "registration_book_number", "place_of_registration"],
+  "properties": {
+    "parties": {
+      "description": "Đúng 2 người: 1 HUSBAND và 1 WIFE (thứ tự theo vị trí trên giấy, thường Chồng trước).",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/SpouseParty" },
+      "allOf": [
+        {
+          "contains": { "properties": { "party_role": { "const": "HUSBAND" } }, "required": ["party_role"] },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": { "properties": { "party_role": { "const": "WIFE" } }, "required": ["party_role"] },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "legal_info": {
+      "description": "document_number = 'Số' của giấy; issue_date = ngày ký cấp giấy; valid_until luôn null (không có hạn hiệu lực).",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    },
+    "marital_status": {
+      "description": "Luôn MARRIED: giấy chứng nhận việc đăng ký kết hôn.",
+      "const": "MARRIED"
+    },
+    "registration_date": {
+      "description": "Ngày đăng ký kết hôn.",
+      "$ref": "_common.schema.json#/$defs/NullableDate"
+    },
+    "registration_book_number": {
+      "description": "'Quyển số'.",
+      "type": ["string", "null"]
+    },
+    "place_of_registration": {
+      "description": "Nguyên văn 'Nơi đăng ký' (cơ quan đăng ký kết hôn).",
+      "type": ["string", "null"]
+    }
+  },
+  "$defs": {
+    "SpouseParty": {
+      "allOf": [
+        { "$ref": "_common.schema.json#/$defs/DocumentParty" },
+        {
+          "properties": {
+            "party_index": { "maximum": 1 },
+            "party_role": { "enum": ["HUSBAND", "WIFE"] },
+            "party_type": { "const": "INDIVIDUAL" },
+            "tax_id": { "type": "null" },
+            "representative_name": { "type": "null" },
+            "representative_position": { "type": "null" },
+            "ownership": { "type": "null" }
+          }
+        }
+      ]
+    }
+  }
+}

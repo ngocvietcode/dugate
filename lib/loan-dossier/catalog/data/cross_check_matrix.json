@@ -1,0 +1,2487 @@
+{
+  "catalog_key": "cross_check_field_matrix",
+  "catalog_version": "3.0.0",
+  "stage_key": "cross_check_documents",
+  "description": "Ma trận field_group × role × nguồn chứng từ cho cross_check_documents. Giải thích: 01_catalogs/cross_check_field_matrix.md.",
+  "role_priority": [
+    "borrower",
+    "co_borrower",
+    "collateral_owner",
+    "other"
+  ],
+  "role_labels": {
+    "borrower": "Khách hàng vay",
+    "co_borrower": "Người đồng vay",
+    "collateral_owner": "Chủ tài sản bảo đảm",
+    "other": "Đối tượng khác"
+  },
+  "field_groups": [
+    {
+      "field_group": "full_name",
+      "field_label": "Họ và tên",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner",
+        "other"
+      ],
+      "asset_owner_roles": [],
+      "asset_types": [],
+      "canonical_source": {
+        "rule": "CURRENT_IDENTITY_DOCUMENT",
+        "preferred_doc_type_keys": [
+          "id_card",
+          "vneid",
+          "qr_code_info"
+        ]
+      },
+      "sub_fields": [
+        {
+          "sub_field": null,
+          "field_label": "Họ và tên",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "id_card",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vneid",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "qr_code_info",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "BORROWER",
+                "CO_BORROWER",
+                "COLLATERAL_OWNER",
+                "SPOUSE",
+                "REFERENCE_PERSON"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "marriage_certificate",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HUSBAND",
+                "WIFE"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "labor_contract",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "EMPLOYEE"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "salary_confirmation",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "EMPLOYEE"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "purchase_list",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "CUSTOMER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "cic",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "field_group": "id_number",
+      "field_label": "Số định danh",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner",
+        "other"
+      ],
+      "asset_owner_roles": [],
+      "asset_types": [],
+      "canonical_source": {
+        "rule": "CURRENT_IDENTITY_DOCUMENT",
+        "preferred_doc_type_keys": [
+          "id_card",
+          "vneid",
+          "qr_code_info"
+        ]
+      },
+      "sub_fields": [
+        {
+          "sub_field": null,
+          "field_label": "Số định danh",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "id_card",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "id_card",
+              "field_path": "data.parties[].previous_id_numbers[]",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vneid",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "qr_code_info",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "qr_code_info",
+              "field_path": "data.parties[].previous_id_numbers[]",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "same_person_commitment",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "same_person_commitment",
+              "field_path": "data.parties[].previous_id_numbers[]",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "local_cmnd_confirmation",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "local_cmnd_confirmation",
+              "field_path": "data.parties[].previous_id_numbers[]",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "BORROWER",
+                "CO_BORROWER",
+                "COLLATERAL_OWNER",
+                "SPOUSE",
+                "REFERENCE_PERSON"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "land_use_certificate",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "apartment_ownership_certificate",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_registration",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "labor_contract",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "EMPLOYEE"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "cic",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "field_group": "date_of_birth",
+      "field_label": "Ngày sinh",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner",
+        "other"
+      ],
+      "asset_owner_roles": [],
+      "asset_types": [],
+      "canonical_source": {
+        "rule": "CURRENT_IDENTITY_DOCUMENT",
+        "preferred_doc_type_keys": [
+          "id_card",
+          "vneid",
+          "qr_code_info"
+        ]
+      },
+      "sub_fields": [
+        {
+          "sub_field": null,
+          "field_label": "Ngày sinh",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "id_card",
+              "field_path": "data.parties[].date_of_birth",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vneid",
+              "field_path": "data.parties[].date_of_birth",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "qr_code_info",
+              "field_path": "data.parties[].date_of_birth",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.parties[].date_of_birth",
+              "attribution": "PARTY",
+              "party_roles": [
+                "BORROWER",
+                "CO_BORROWER",
+                "COLLATERAL_OWNER",
+                "SPOUSE",
+                "REFERENCE_PERSON"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "marriage_certificate",
+              "field_path": "data.parties[].date_of_birth",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HUSBAND",
+                "WIFE"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "labor_contract",
+              "field_path": "data.parties[].date_of_birth",
+              "attribution": "PARTY",
+              "party_roles": [
+                "EMPLOYEE"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "salary_confirmation",
+              "field_path": "data.parties[].date_of_birth",
+              "attribution": "PARTY",
+              "party_roles": [
+                "EMPLOYEE"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "purchase_list",
+              "field_path": "data.parties[].date_of_birth",
+              "attribution": "PARTY",
+              "party_roles": [
+                "CUSTOMER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "cic",
+              "field_path": "data.parties[].date_of_birth",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "field_group": "marital_status",
+      "field_label": "Tình trạng hôn nhân",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner",
+        "other"
+      ],
+      "asset_owner_roles": [],
+      "asset_types": [],
+      "canonical_source": {
+        "rule": "NO_CANONICAL_SOURCE",
+        "preferred_doc_type_keys": []
+      },
+      "sub_fields": [
+        {
+          "sub_field": null,
+          "field_label": "Tình trạng hôn nhân",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.party_details[].marital_status",
+              "attribution": "PARTY_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.party_details[].party_index",
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "marital_status_confirmation",
+              "field_path": "data.marital_status",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "field_group": "permanent_address",
+      "field_label": "Địa chỉ thường trú",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "asset_owner_roles": [],
+      "asset_types": [],
+      "canonical_source": {
+        "rule": "LATEST_VALID_RESIDENCE_RECORD",
+        "preferred_doc_type_keys": [
+          "residence_confirmation",
+          "vneid",
+          "id_card"
+        ]
+      },
+      "sub_fields": [
+        {
+          "sub_field": null,
+          "field_label": "Địa chỉ thường trú",
+          "comparison_method": "ADDRESS_REFERENCE",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "id_card",
+              "field_path": "data.parties[].permanent_address",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vneid",
+              "field_path": "data.parties[].permanent_address",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "residence_confirmation",
+              "field_path": "data.parties[].permanent_address",
+              "attribution": "PARTY",
+              "party_roles": [
+                "HOLDER",
+                "HOUSEHOLD_MEMBER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.parties[].permanent_address",
+              "attribution": "PARTY",
+              "party_roles": [
+                "BORROWER",
+                "CO_BORROWER",
+                "COLLATERAL_OWNER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "land_use_certificate",
+              "field_path": "data.parties[].permanent_address",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "apartment_ownership_certificate",
+              "field_path": "data.parties[].permanent_address",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_registration",
+              "field_path": "data.parties[].permanent_address",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "field_group": "business_address",
+      "field_label": "Địa chỉ kinh doanh",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower"
+      ],
+      "asset_owner_roles": [],
+      "asset_types": [],
+      "canonical_source": {
+        "rule": "NO_CANONICAL_SOURCE",
+        "preferred_doc_type_keys": []
+      },
+      "sub_fields": [
+        {
+          "sub_field": null,
+          "field_label": "Địa chỉ kinh doanh",
+          "comparison_method": "SEMANTIC",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.business_info.business_address",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "BORROWER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "purchase_list",
+              "field_path": "data.business_info.business_address",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "CUSTOMER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "goods_purchase_contract",
+              "field_path": "data.parties[].current_address",
+              "attribution": "PARTY",
+              "party_roles": [
+                "BUYER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "field_group": "business_line",
+      "field_label": "Ngành nghề kinh doanh",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower"
+      ],
+      "asset_owner_roles": [],
+      "asset_types": [],
+      "canonical_source": {
+        "rule": "NO_CANONICAL_SOURCE",
+        "preferred_doc_type_keys": []
+      },
+      "sub_fields": [
+        {
+          "sub_field": null,
+          "field_label": "Ngành nghề kinh doanh",
+          "comparison_method": "SEMANTIC",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.business_info.business_line",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "BORROWER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "purchase_list",
+              "field_path": "data.business_info.business_line",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "CUSTOMER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "goods_purchase_contract",
+              "field_path": "data.goods_summary.goods_description",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "BUYER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "field_group": "loan_amount",
+      "field_label": "Số tiền vay đề xuất",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower"
+      ],
+      "asset_owner_roles": [],
+      "asset_types": [],
+      "canonical_source": {
+        "rule": "BANK_PROPOSED_AMOUNT",
+        "preferred_doc_type_keys": [
+          "loan_application"
+        ]
+      },
+      "sub_fields": [
+        {
+          "sub_field": null,
+          "field_label": "Số tiền vay đề xuất",
+          "comparison_method": "METRIC",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.loan_info.bank_proposed_amount",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "BORROWER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": "bank_proposed_loan_amount",
+              "period": "POINT_IN_TIME",
+              "unit": "VND"
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.loan_info.requested_amount",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "BORROWER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": "requested_loan_amount",
+              "period": "POINT_IN_TIME",
+              "unit": "VND"
+            },
+            {
+              "doc_type_key": "purchase_list",
+              "field_path": "data.funding_plan.loan_amount",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "CUSTOMER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": "requested_loan_amount",
+              "period": "POINT_IN_TIME",
+              "unit": "VND"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "field_group": "income",
+      "field_label": "Số liệu thu nhập",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower"
+      ],
+      "asset_owner_roles": [],
+      "asset_types": [],
+      "canonical_source": {
+        "rule": "INCOME_STATEMENT",
+        "preferred_doc_type_keys": [
+          "income_statement"
+        ]
+      },
+      "sub_fields": [
+        {
+          "sub_field": null,
+          "field_label": "Số liệu thu nhập",
+          "comparison_method": "METRIC",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "income_statement",
+              "field_path": "data.income_summary.total_monthly_income",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "BORROWER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": "monthly_income",
+              "period": "MONTHLY",
+              "unit": "VND"
+            },
+            {
+              "doc_type_key": "income_statement",
+              "field_path": "data.income_sources[].monthly_amount",
+              "attribution": "PARTY_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.income_sources[].party_index",
+              "filter": {
+                "relative_path": "income_type",
+                "equals": "salary",
+                "include_when_null": false
+              },
+              "metric": "monthly_salary",
+              "period": "MONTHLY",
+              "unit": "VND"
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.financial_info.total_income",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "BORROWER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": "monthly_income",
+              "period": "MONTHLY",
+              "unit": "VND"
+            },
+            {
+              "doc_type_key": "salary_confirmation",
+              "field_path": "data.salary_info.monthly_salary",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "EMPLOYEE"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": "monthly_salary",
+              "period": "MONTHLY",
+              "unit": "VND"
+            },
+            {
+              "doc_type_key": "labor_contract",
+              "field_path": "data.contract_info.monthly_salary",
+              "attribution": "SUBJECT_PARTY_ROLE",
+              "party_roles": [
+                "EMPLOYEE"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": "monthly_salary",
+              "period": "MONTHLY",
+              "unit": "VND"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "field_group": "collateral_owner_identity",
+      "field_label": "Thông tin chủ TSBĐ",
+      "scope": "PERSON_ASSET",
+      "applicable_roles": [
+        "collateral_owner"
+      ],
+      "asset_owner_roles": [],
+      "asset_types": [],
+      "canonical_source": {
+        "rule": "LATEST_OWNERSHIP_RECORD",
+        "preferred_doc_type_keys": [
+          "land_use_certificate",
+          "apartment_ownership_certificate",
+          "vehicle_registration",
+          "land_use_cert_to_buy"
+        ]
+      },
+      "sub_fields": [
+        {
+          "sub_field": "full_name",
+          "field_label": "Thông tin chủ TSBĐ — Họ và tên",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "land_use_certificate",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "apartment_ownership_certificate",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "land_use_cert_to_buy",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_registration",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "asset_quote",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "movable_asset_valuation_report",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "real_estate_valuation_report",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "external_valuation_certificate",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.parties[].full_name",
+              "attribution": "PARTY",
+              "party_roles": [
+                "COLLATERAL_OWNER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "id_number",
+          "field_label": "Thông tin chủ TSBĐ — Số định danh",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "land_use_certificate",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "apartment_ownership_certificate",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "land_use_cert_to_buy",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_registration",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "asset_quote",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "movable_asset_valuation_report",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "real_estate_valuation_report",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "external_valuation_certificate",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "OWNER"
+              ],
+              "index_field_path": null,
+              "filter": {
+                "relative_path": "ownership.is_current_owner",
+                "equals": true,
+                "include_when_null": true
+              },
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.parties[].id_number",
+              "attribution": "PARTY",
+              "party_roles": [
+                "COLLATERAL_OWNER"
+              ],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "field_group": "real_estate_info",
+      "field_label": "Thông tin bất động sản",
+      "scope": "ASSET",
+      "applicable_roles": [
+        "collateral_owner"
+      ],
+      "asset_owner_roles": [
+        "borrower",
+        "co_borrower"
+      ],
+      "asset_types": [
+        "real_estate",
+        "apartment"
+      ],
+      "canonical_source": {
+        "rule": "LATEST_OWNERSHIP_RECORD",
+        "preferred_doc_type_keys": [
+          "land_use_certificate",
+          "apartment_ownership_certificate",
+          "land_use_cert_to_buy"
+        ]
+      },
+      "sub_fields": [
+        {
+          "sub_field": "certificate_number",
+          "field_label": "Thông tin BĐS — Số phát hành GCN",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "land_use_certificate",
+              "field_path": "data.assets[].identifiers.certificate_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "apartment_ownership_certificate",
+              "field_path": "data.assets[].identifiers.certificate_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "land_use_cert_to_buy",
+              "field_path": "data.assets[].identifiers.certificate_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "real_estate_valuation_report",
+              "field_path": "data.assets[].identifiers.certificate_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "external_valuation_certificate",
+              "field_path": "data.assets[].identifiers.certificate_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.assets[].identifiers.certificate_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "certificate_book_number",
+          "field_label": "Thông tin BĐS — Số vào sổ cấp GCN",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "land_use_certificate",
+              "field_path": "data.assets[].identifiers.certificate_book_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "apartment_ownership_certificate",
+              "field_path": "data.assets[].identifiers.certificate_book_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "land_use_cert_to_buy",
+              "field_path": "data.assets[].identifiers.certificate_book_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "real_estate_valuation_report",
+              "field_path": "data.assets[].identifiers.certificate_book_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "external_valuation_certificate",
+              "field_path": "data.assets[].identifiers.certificate_book_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "land_parcel_number",
+          "field_label": "Thông tin BĐS — Số thửa",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "land_use_certificate",
+              "field_path": "data.assets[].identifiers.land_parcel_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "land_use_cert_to_buy",
+              "field_path": "data.assets[].identifiers.land_parcel_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "real_estate_valuation_report",
+              "field_path": "data.assets[].identifiers.land_parcel_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "external_valuation_certificate",
+              "field_path": "data.assets[].identifiers.land_parcel_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.assets[].identifiers.land_parcel_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "map_sheet_number",
+          "field_label": "Thông tin BĐS — Số tờ bản đồ",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "land_use_certificate",
+              "field_path": "data.assets[].identifiers.map_sheet_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "land_use_cert_to_buy",
+              "field_path": "data.assets[].identifiers.map_sheet_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "real_estate_valuation_report",
+              "field_path": "data.assets[].identifiers.map_sheet_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "external_valuation_certificate",
+              "field_path": "data.assets[].identifiers.map_sheet_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.assets[].identifiers.map_sheet_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "apartment_number",
+          "field_label": "Thông tin BĐS — Số căn hộ",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "apartment_ownership_certificate",
+              "field_path": "data.assets[].identifiers.apartment_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "real_estate_valuation_report",
+              "field_path": "data.assets[].identifiers.apartment_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "external_valuation_certificate",
+              "field_path": "data.assets[].identifiers.apartment_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.assets[].identifiers.apartment_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "building_name",
+          "field_label": "Thông tin BĐS — Tên tòa nhà",
+          "comparison_method": "SEMANTIC",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "apartment_ownership_certificate",
+              "field_path": "data.assets[].identifiers.building_name",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "real_estate_valuation_report",
+              "field_path": "data.assets[].identifiers.building_name",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "external_valuation_certificate",
+              "field_path": "data.assets[].identifiers.building_name",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "asset_address",
+          "field_label": "Thông tin BĐS — Địa chỉ tài sản",
+          "comparison_method": "ADDRESS_REFERENCE",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "land_use_certificate",
+              "field_path": "data.assets[].address",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "apartment_ownership_certificate",
+              "field_path": "data.assets[].address",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "land_use_cert_to_buy",
+              "field_path": "data.assets[].address",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "real_estate_valuation_report",
+              "field_path": "data.assets[].address",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "external_valuation_certificate",
+              "field_path": "data.assets[].address",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.assets[].address",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "land_area",
+          "field_label": "Thông tin BĐS — Diện tích đất",
+          "comparison_method": "METRIC",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "land_use_certificate",
+              "field_path": "data.asset_details[].land_area_m2",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": "land_area",
+              "period": "POINT_IN_TIME",
+              "unit": "SQUARE_METER"
+            },
+            {
+              "doc_type_key": "land_use_cert_to_buy",
+              "field_path": "data.asset_details[].land_area_m2",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": "land_area",
+              "period": "POINT_IN_TIME",
+              "unit": "SQUARE_METER"
+            },
+            {
+              "doc_type_key": "real_estate_valuation_report",
+              "field_path": "data.asset_details[].land_area_m2",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": "land_area",
+              "period": "POINT_IN_TIME",
+              "unit": "SQUARE_METER"
+            },
+            {
+              "doc_type_key": "external_valuation_certificate",
+              "field_path": "data.asset_details[].land_area_m2",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": "land_area",
+              "period": "POINT_IN_TIME",
+              "unit": "SQUARE_METER"
+            }
+          ]
+        },
+        {
+          "sub_field": "asset_value",
+          "field_label": "Thông tin BĐS — Giá trị tài sản",
+          "comparison_method": "METRIC",
+          "canonical_source": {
+            "rule": "VALUATION_REPORT",
+            "preferred_doc_type_keys": [
+              "real_estate_valuation_report",
+              "external_valuation_certificate"
+            ]
+          },
+          "sources": [
+            {
+              "doc_type_key": "real_estate_valuation_report",
+              "field_path": "data.asset_details[].valuation_value",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": "valuation_value",
+              "period": "POINT_IN_TIME",
+              "unit": "VND"
+            },
+            {
+              "doc_type_key": "external_valuation_certificate",
+              "field_path": "data.asset_details[].valuation_value",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": "valuation_value",
+              "period": "POINT_IN_TIME",
+              "unit": "VND"
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.asset_details[].declared_value",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": "declared_value",
+              "period": "POINT_IN_TIME",
+              "unit": "VND"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "field_group": "movable_asset_info",
+      "field_label": "Thông tin động sản (xe)",
+      "scope": "ASSET",
+      "applicable_roles": [
+        "collateral_owner"
+      ],
+      "asset_owner_roles": [
+        "borrower",
+        "co_borrower"
+      ],
+      "asset_types": [
+        "vehicle"
+      ],
+      "canonical_source": {
+        "rule": "LATEST_OWNERSHIP_RECORD",
+        "preferred_doc_type_keys": [
+          "vehicle_registration"
+        ]
+      },
+      "sub_fields": [
+        {
+          "sub_field": "license_plate",
+          "field_label": "Thông tin xe — Biển kiểm soát",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "vehicle_registration",
+              "field_path": "data.assets[].identifiers.license_plate",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_inspection",
+              "field_path": "data.assets[].identifiers.license_plate",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_sale_contract",
+              "field_path": "data.assets[].identifiers.license_plate",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "asset_quote",
+              "field_path": "data.assets[].identifiers.license_plate",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "movable_asset_valuation_report",
+              "field_path": "data.assets[].identifiers.license_plate",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.assets[].identifiers.license_plate",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "chassis_number",
+          "field_label": "Thông tin xe — Số khung",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "vehicle_registration",
+              "field_path": "data.assets[].identifiers.chassis_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_inspection",
+              "field_path": "data.assets[].identifiers.chassis_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_sale_contract",
+              "field_path": "data.assets[].identifiers.chassis_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "asset_quote",
+              "field_path": "data.assets[].identifiers.chassis_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "movable_asset_valuation_report",
+              "field_path": "data.assets[].identifiers.chassis_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.assets[].identifiers.chassis_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "engine_number",
+          "field_label": "Thông tin xe — Số máy",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "vehicle_registration",
+              "field_path": "data.assets[].identifiers.engine_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_inspection",
+              "field_path": "data.assets[].identifiers.engine_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_sale_contract",
+              "field_path": "data.assets[].identifiers.engine_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "asset_quote",
+              "field_path": "data.assets[].identifiers.engine_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "movable_asset_valuation_report",
+              "field_path": "data.assets[].identifiers.engine_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.assets[].identifiers.engine_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "registration_number",
+          "field_label": "Thông tin xe — Số đăng ký xe",
+          "comparison_method": "EXACT",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "vehicle_registration",
+              "field_path": "data.assets[].identifiers.registration_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_inspection",
+              "field_path": "data.assets[].identifiers.registration_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "movable_asset_valuation_report",
+              "field_path": "data.assets[].identifiers.registration_number",
+              "attribution": "ASSET",
+              "party_roles": [],
+              "index_field_path": null,
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "vehicle_brand",
+          "field_label": "Thông tin xe — Nhãn hiệu",
+          "comparison_method": "SEMANTIC",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "vehicle_registration",
+              "field_path": "data.asset_details[].vehicle_brand",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_inspection",
+              "field_path": "data.asset_details[].vehicle_brand",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_sale_contract",
+              "field_path": "data.asset_details[].vehicle_brand",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "asset_quote",
+              "field_path": "data.asset_details[].vehicle_brand",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "movable_asset_valuation_report",
+              "field_path": "data.asset_details[].vehicle_brand",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "vehicle_model",
+          "field_label": "Thông tin xe — Số loại / model",
+          "comparison_method": "SEMANTIC",
+          "canonical_source": null,
+          "sources": [
+            {
+              "doc_type_key": "vehicle_registration",
+              "field_path": "data.asset_details[].vehicle_model",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_inspection",
+              "field_path": "data.asset_details[].vehicle_model",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "vehicle_sale_contract",
+              "field_path": "data.asset_details[].vehicle_model",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "asset_quote",
+              "field_path": "data.asset_details[].vehicle_model",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            },
+            {
+              "doc_type_key": "movable_asset_valuation_report",
+              "field_path": "data.asset_details[].vehicle_model",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": null,
+              "period": null,
+              "unit": null
+            }
+          ]
+        },
+        {
+          "sub_field": "asset_value",
+          "field_label": "Thông tin xe — Giá trị tài sản",
+          "comparison_method": "METRIC",
+          "canonical_source": {
+            "rule": "VALUATION_REPORT",
+            "preferred_doc_type_keys": [
+              "movable_asset_valuation_report"
+            ]
+          },
+          "sources": [
+            {
+              "doc_type_key": "movable_asset_valuation_report",
+              "field_path": "data.asset_details[].valuation_value",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": "valuation_value",
+              "period": "POINT_IN_TIME",
+              "unit": "VND"
+            },
+            {
+              "doc_type_key": "asset_quote",
+              "field_path": "data.asset_details[].quoted_value",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": "quoted_value",
+              "period": "POINT_IN_TIME",
+              "unit": "VND"
+            },
+            {
+              "doc_type_key": "loan_application",
+              "field_path": "data.asset_details[].declared_value",
+              "attribution": "ASSET_INDEX_FIELD",
+              "party_roles": [],
+              "index_field_path": "data.asset_details[].asset_index",
+              "filter": null,
+              "metric": "declared_value",
+              "period": "POINT_IN_TIME",
+              "unit": "VND"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "logic_rules": [
+    {
+      "rule_key": "id_issue_date_before_labor_contract",
+      "rule_label": "Ngày cấp CCCD so với ngày ký HĐLĐ",
+      "scope": "PERSON",
+      "severity_when_violated": "REVIEW",
+      "inputs": [
+        {
+          "doc_type_key": "id_card",
+          "field_path": "data.parties[].id_issue_date",
+          "attribution": "PARTY",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "id_card",
+          "field_path": "data.parties[].id_number",
+          "attribution": "PARTY",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "labor_contract",
+          "field_path": "data.contract_info.sign_date",
+          "attribution": "SUBJECT_PARTY_ROLE",
+          "party_roles": [
+            "EMPLOYEE"
+          ]
+        },
+        {
+          "doc_type_key": "labor_contract",
+          "field_path": "data.parties[].id_number",
+          "attribution": "PARTY",
+          "party_roles": [
+            "EMPLOYEE"
+          ]
+        }
+      ],
+      "condition": "Cùng person_id; id_number của EMPLOYEE trên labor_contract = id_number của HOLDER trên id_card; violated = id_issue_date > sign_date.",
+      "message": "Ngày cấp Căn cước công dân có sau ngày ký Hợp đồng lao động",
+      "needs_ba_confirmation": true
+    },
+    {
+      "rule_key": "purchase_total_below_loan_amount",
+      "rule_label": "Tổng giá trị bảng kê / hợp đồng so với số tiền vay đề xuất",
+      "scope": "DOSSIER",
+      "severity_when_violated": "REVIEW",
+      "inputs": [
+        {
+          "doc_type_key": "loan_application",
+          "field_path": "data.loan_info.bank_proposed_amount",
+          "attribution": "SUBJECT_PARTY_ROLE",
+          "party_roles": [
+            "BORROWER"
+          ]
+        },
+        {
+          "doc_type_key": "purchase_list",
+          "field_path": "data.funding_plan.total_amount",
+          "attribution": "SUBJECT_PARTY_ROLE",
+          "party_roles": [
+            "CUSTOMER"
+          ]
+        },
+        {
+          "doc_type_key": "goods_purchase_contract",
+          "field_path": "data.contract_info.total_amount",
+          "attribution": "SUBJECT_PARTY_ROLE",
+          "party_roles": [
+            "BUYER"
+          ]
+        }
+      ],
+      "condition": "Cần bank_proposed_amount và ≥ 1 tổng giá trị (purchase_list hoặc goods_purchase_contract). Tổng = cộng total của mọi evidence SUCCESS, mỗi duplicate_group chỉ tính 1 lần. violated = tổng < bank_proposed_amount.",
+      "message": "Tổng giá trị bảng kê mua hàng / hợp đồng mua bán hàng hóa nhỏ hơn số tiền vay đề xuất",
+      "needs_ba_confirmation": true
+    },
+    {
+      "rule_key": "declared_collateral_owner_not_current_owner",
+      "rule_label": "Chủ TSBĐ khai trên đơn vay so với chủ sở hữu hiện tại",
+      "scope": "ASSET",
+      "severity_when_violated": "HIGH",
+      "inputs": [
+        {
+          "doc_type_key": "loan_application",
+          "field_path": "data.parties[].full_name",
+          "attribution": "PARTY",
+          "party_roles": [
+            "COLLATERAL_OWNER"
+          ]
+        },
+        {
+          "doc_type_key": "land_use_certificate",
+          "field_path": "data.parties[].ownership.is_current_owner",
+          "attribution": "PARTY",
+          "party_roles": [
+            "OWNER"
+          ]
+        },
+        {
+          "doc_type_key": "apartment_ownership_certificate",
+          "field_path": "data.parties[].ownership.is_current_owner",
+          "attribution": "PARTY",
+          "party_roles": [
+            "OWNER"
+          ]
+        },
+        {
+          "doc_type_key": "vehicle_registration",
+          "field_path": "data.parties[].ownership.is_current_owner",
+          "attribution": "PARTY",
+          "party_roles": [
+            "OWNER"
+          ]
+        }
+      ],
+      "condition": "Với mỗi asset_id có current_owner_person_ids ≠ [] và có ≥ 1 người được loan_application khai là COLLATERAL_OWNER gắn với tài sản đó: violated = tồn tại người khai không thuộc current_owner_person_ids.",
+      "message": "Chủ tài sản bảo đảm khai trên Giấy đề nghị vay vốn không phải chủ sở hữu hiện tại trên giấy chứng nhận",
+      "needs_ba_confirmation": true
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "verdict": "APPROVED",
+  "findings": [
+    "Non-blocking (possible): if the FAILED transitionOperationState throws, the catch exits before the charge, so that spend is lost. Same class as the documented crash window. Optionally charge before the transition.",
+    "Non-blocking (confirmed): tests/pipelines/workflow-failure.test.ts has an unrelated H1 INPUT_INVALID hunk bundled in the working tree. Keep it out of this change's commit.",
+    "Non-blocking (confirmed): F4 is a guard that passes before and after the change, not a RED test. The behavioral RED is carried by F1, F3, F5 and F6.",
+    "Reported, not changed: the SUCCEEDED workflow double count (sub-op charge plus completeWorkflow ctx.totalCost) is pinned by C1 and awaits the user's decision."
+  ],
+  "reviewDoc": "d:\\Jobs\\dugate/.agents/tasks/failed-billing-review.md"
+}

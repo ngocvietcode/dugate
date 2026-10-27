@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Skills – Platform Overview</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0;
+            --cyan: #0891b2; --green: #059669; --blue: #2563eb;
+            --orange: #d97706; --purple: #7c3aed; --red: #dc2626;
+            --text: #1e293b; --dim: #64748b;
+        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+        .hero { background: linear-gradient(135deg, #1e3a5f, #2563eb, #0891b2); padding: 50px 40px; text-align: center; }
+        .hero h1 { font-size: 2.2rem; color: white; margin-bottom: 8px; }
+        .hero p { color: #bfdbfe; font-size: 1rem; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+        h2 { color: var(--cyan); font-size: 1.4rem; margin-bottom: 20px; }
+        /* Skill cards */
+        .skill-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+        .skill-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+        .skill-card:hover { border-color: var(--cyan); }
+        .skill-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; }
+        .skill-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+        .skill-endpoint { font-family: 'Consolas', monospace; font-size: 1.1rem; font-weight: 700; color: var(--cyan); }
+        .skill-desc { font-size: 0.88rem; color: var(--dim); margin-top: 3px; }
+        .skill-body { padding: 20px 24px; }
+
+        /* Types/tasks grid */
+        .param-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+        .param-item { padding: 10px 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; }
+        .param-name { font-family: Consolas, monospace; font-size: 0.82rem; font-weight: 700; color: var(--cyan); }
+        .param-desc { font-size: 0.78rem; color: var(--dim); margin-top: 3px; }
+
+        /* UC chips */
+        .uc-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+        .uc-chip { padding: 4px 10px; border-radius: 10px; font-size: 0.72rem; background: #eff6ff; color: var(--blue); border: 1px solid #bfdbfe; font-weight: 600; }
+
+        /* Summary table */
+        .sum-table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.05); margin: 24px 0; }
+        .sum-table th { background: #f1f5f9; color: var(--cyan); padding: 12px 16px; text-align: left; font-size: 0.78rem; font-weight: 600; border-bottom: 2px solid var(--border); }
+        .sum-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 0.82rem; background: var(--card); }
+        .sum-table tr:last-child td { border-bottom: none; }
+        .sum-table tr:hover td { background: #f0f9ff; }
+        .sum-table code { background: #ecfeff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; color: var(--cyan); font-weight: 600; }
+
+        .section-note { padding: 16px 20px; background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 10px; margin-bottom: 24px; font-size: 0.88rem; color: #155e75; }
+        .section-note strong { color: var(--cyan); }
+
+        @media (max-width: 768px) {
+            .param-grid { grid-template-columns: 1fr; }
+            .container { padding: 20px 12px; }
+            .hero h1 { font-size: 1.7rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>AI Skills</h1>
+        <p>Nền tảng AI xử lý cho các quy trình E2E</p>
+    </div>
+
+    <div class="container">
+
+        <h2>Document Skills</h2>
+        <div class="skill-grid">
+            <!-- /extract -->
+            <div class="skill-card">
+                <div class="skill-header">
+                    <div class="skill-icon" style="background: #ecfeff; color: var(--cyan);">📥</div>
+                    <div>
+                        <div class="skill-endpoint">POST /extract</div>
+                        <div class="skill-desc">Đọc & trích xuất thông tin có cấu trúc từ chứng từ → JSON output</div>
+                    </div>
+                </div>
+                <div class="skill-body">
+                    <div style="padding: 12px 16px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; margin-bottom: 16px; font-size: 0.84rem; color: #0c4a6e;">
+                        <strong>📊 Quy mô:</strong> Hiện có trên <strong>80 loại chứng từ</strong> đã được OCR/IDP, quy hoạch lại thành <strong>17 Extract Types</strong> chuẩn theo domain nghiệp vụ. Mỗi type có schema output cố định, giúp tăng accuracy và cho phép validation chặt hơn so với xử lý generic.
+                    </div>
+                    <div style="font-size: 0.78rem; font-weight: 600; color: var(--dim); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">17 Extract Types – phân nhóm theo domain</div>
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text); margin-bottom: 8px;">🏦 Tín dụng & Giải ngân</div>
+                        <div class="param-grid">
+                            <div class="param-item"><div class="param-name">disbursement</div><div class="param-desc">Chứng từ giải ngân, giấy nhận nợ, HĐ tín dụng</div></div>
+                            <div class="param-item"><div class="param-name">guarantee</div><div class="param-desc">Hồ sơ bảo lãnh, thư BL, HĐ bảo đảm</div></div>
+                            <div class="param-item"><div class="param-name">approval</div><div class="param-desc">Nghị quyết phê duyệt, điều kiện sản phẩm</div></div>
+                            <div class="param-item"><div class="param-name">collateral</div><div class="param-desc">Sổ đỏ, HĐ mua bán BĐS, hồ sơ giải chấp</div></div>
+                            <div class="param-item"><div class="param-name">credit-report</div><div class="param-desc">Báo cáo CIC, BCTC, đơn đề nghị cấp TD</div></div>
+                            <div class="param-item"><div class="param-name">contract</div><div class="param-desc">Hợp đồng dịch vụ, mua bán, tín dụng, thế chấp</div></div>
+                            <div class="param-item"><div class="param-name">table</div><div class="param-desc">Bảng biểu / BCTC dạng bảng → structured data</div></div>
+                            <div class="param-item"><div class="param-name">query</div><div class="param-desc">Hỏi đáp trên doc (QA) – tra cứu quy định/chính sách</div></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text); margin-bottom: 8px;">💳 Thanh toán & Tài trợ Thương mại</div>
+                        <div class="param-grid">
+                            <div class="param-item"><div class="param-name">payment-order</div><div class="param-desc">Ủy nhiệm chi (UNC) – bản cứng, fax, email</div></div>
+                            <div class="param-item"><div class="param-name">lc</div><div class="param-desc">Chứng từ L/C, điện SWIFT, B/L, invoice TM</div></div>
+                            <div class="param-item"><div class="param-name">invoice</div><div class="param-desc">Hóa đơn VAT, thương mại, thanh toán quốc tế</div></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text); margin-bottom: 8px;">🏢 Onboarding & Pháp lý</div>
+                        <div class="param-grid">
+                            <div class="param-item"><div class="param-name">business-license</div><div class="param-desc">ĐKKD, Mã số thuế, Giấy phép kinh doanh</div></div>
+                            <div class="param-item"><div class="param-name">account-form</div><div class="param-desc">Form đăng ký mở/thay đổi tài khoản, CIF</div></div>
+                            <div class="param-item"><div class="param-name">id-card</div><div class="param-desc">CMND / CCCD / Passport / Visa</div></div>
+                            <div class="param-item"><div class="param-name">civil-doc</div><div class="param-desc">Giấy tờ hộ tịch (kết hôn, tình trạng HN)</div></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text); margin-bottom: 8px;">🚗 Tài sản & Bảo hiểm</div>
+                        <div class="param-grid">
+                            <div class="param-item"><div class="param-name">vehicle-doc</div><div class="param-desc">Chứng từ xe (kiểm định, xuất xưởng, COC)</div></div>
+                            <div class="param-item"><div class="param-name">insurance</div><div class="param-desc">GCN bảo hiểm, HĐ bảo hiểm nhà/xe</div></div>
+                        </div>
+                    </div>
+                    <div class="uc-row">
+                        <span class="uc-chip">Tất cả 17 UC sử dụng</span>
+                    </div>
+                </div>
+            </div>
+            <!-- /analyze -->
+            <div class="skill-card">
+                <div class="skill-header">
+                    <div class="skill-icon" style="background: #ecfdf5; color: var(--green);">🔍</div>
+                    <div>
+                        <div class="skill-endpoint">POST /analyze</div>
+                        <div class="skill-desc">Phân tích, đánh giá, cho điểm, phân loại chứng từ</div>
+                    </div>
+                </div>
+                <div class="skill-body">
+                    <div style="font-size: 0.78rem; font-weight: 600; color: var(--dim); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">4 Tasks</div>
+                    <div class="param-grid">
+                        <div class="param-item"><div class="param-name">classify</div><div class="param-desc">Phân loại chứng từ theo nhóm/loại (email, form, UNC...)</div></div>
+                        <div class="param-item"><div class="param-name">compliance</div><div class="param-desc">Kiểm tra tuân thủ quy định, đối chiếu checklist</div></div>
+                        <div class="param-item"><div class="param-name">risk</div><div class="param-desc">Đánh giá mức độ rủi ro, phát hiện dấu hiệu gian lận</div></div>
+                        <div class="param-item"><div class="param-name">quality</div><div class="param-desc">Chấm điểm chất lượng hồ sơ / cuộc gọi</div></div>
+                    </div>
+                    <div class="uc-row">
+                        <span class="uc-chip">Giải ngân SME</span><span class="uc-chip">Bảo lãnh SME</span><span class="uc-chip">Thẩm định SME</span>
+                        <span class="uc-chip">Vận hành POS</span><span class="uc-chip">Mở TK doanh nghiệp</span>
+                        <span class="uc-chip">Giải ngân DNL</span><span class="uc-chip">Bảo lãnh DNL</span>
+                        <span class="uc-chip">Kiểm soát RRVH</span><span class="uc-chip">Kiểm soát sau vay</span>
+                        <span class="uc-chip">Thẩm định KHCN</span><span class="uc-chip">Vận hành thanh toán</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- /compare -->
+            <div class="skill-card">
+                <div class="skill-header">
+                    <div class="skill-icon" style="background: #fef3c7; color: var(--orange);">⚖️</div>
+                    <div>
+                        <div class="skill-endpoint">POST /compare</div>
+                        <div class="skill-desc">Đối chiếu 2+ nguồn dữ liệu, phát hiện sai lệch</div>
+                    </div>
+                </div>
+                <div class="skill-body">
+                    <div style="font-size: 0.78rem; font-weight: 600; color: var(--dim); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">4 Modes</div>
+                    <div class="param-grid">
+                        <div class="param-item"><div class="param-name">verify</div><div class="param-desc">Đối chiếu chứng từ vs hệ thống, kiểm tra chữ ký/con dấu</div></div>
+                        <div class="param-item"><div class="param-name">diff</div><div class="param-desc">So sánh 2 phiên bản, phát hiện thay đổi</div></div>
+                        <div class="param-item"><div class="param-name">semantic</div><div class="param-desc">So sánh ngữ nghĩa (không chỉ text match)</div></div>
+                        <div class="param-item"><div class="param-name">version</div><div class="param-desc">Track lịch sử thay đổi hồ sơ qua các lần bổ sung</div></div>
+                    </div>
+                    <div class="uc-row">
+                        <span class="uc-chip">Soạn hồ sơ giải chấp</span><span class="uc-chip">KSSV nhà dự án</span>
+                        <span class="uc-chip">Giải ngân SME</span><span class="uc-chip">Bảo lãnh SME</span><span class="uc-chip">Thẩm định SME</span>
+                        <span class="uc-chip">Vận hành POS</span><span class="uc-chip">Mở TK doanh nghiệp</span>
+                        <span class="uc-chip">Giải ngân DNL</span><span class="uc-chip">Bảo lãnh DNL</span>
+                        <span class="uc-chip">Xử lý UNC</span><span class="uc-chip">Đối chiếu FX</span>
+                        <span class="uc-chip">Kiểm soát sau vay</span><span class="uc-chip">Thẩm định KHCN</span><span class="uc-chip">Vận hành thanh toán</span>
+                    </div>
+                </div>
+            </div>
+            <!-- /generate -->
+            <div class="skill-card">
+                <div class="skill-header">
+                    <div class="skill-icon" style="background: #ede9fe; color: var(--purple);">✏️</div>
+                    <div>
+                        <div class="skill-endpoint">POST /generate</div>
+                        <div class="skill-desc">Tạo nội dung mới từ hồ sơ – báo cáo, tóm tắt, email</div>
+                    </div>
+                </div>
+                <div class="skill-body">
+                    <div style="font-size: 0.78rem; font-weight: 600; color: var(--dim); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">4 Tasks</div>
+                    <div class="param-grid">
+                        <div class="param-item"><div class="param-name">summary</div><div class="param-desc">Tóm tắt nội dung hồ sơ, trạng thái xử lý</div></div>
+                        <div class="param-item"><div class="param-name">report</div><div class="param-desc">Lập tờ trình, báo cáo đề xuất, phân tích xu hướng</div></div>
+                        <div class="param-item"><div class="param-name">email</div><div class="param-desc">Soạn email thông báo, nhắc nhở, phản hồi</div></div>
+                        <div class="param-item"><div class="param-name">minutes</div><div class="param-desc">Tóm tắt nội dung cuộc gọi (Voice AI)</div></div>
+                    </div>
+                    <div class="uc-row">
+                        <span class="uc-chip">Callbot hẹn KH</span><span class="uc-chip">Thẩm định SME</span>
+                        <span class="uc-chip">Phát hành L/C</span><span class="uc-chip">Giải ngân DNL</span>
+                        <span class="uc-chip">Kiểm soát RRVH</span><span class="uc-chip">Kiểm soát sau vay</span>
+                        <span class="uc-chip">Thẩm định KHCN</span><span class="uc-chip">Vận hành thanh toán</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- /transform -->
+            <div class="skill-card">
+                <div class="skill-header">
+                    <div class="skill-icon" style="background: #fef2f2; color: var(--red);">🔄</div>
+                    <div>
+                        <div class="skill-endpoint">POST /transform</div>
+                        <div class="skill-desc">Biến đổi format/nội dung – điền form, chuẩn hóa, che dữ liệu</div>
+                    </div>
+                </div>
+                <div class="skill-body">
+                    <div style="font-size: 0.78rem; font-weight: 600; color: var(--dim); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">6 Actions</div>
+                    <div class="param-grid">
+                        <div class="param-item"><div class="param-name">template</div><div class="param-desc">Tự động điền mẫu biểu, soạn thư BL theo mẫu</div></div>
+                        <div class="param-item"><div class="param-name">rewrite</div><div class="param-desc">Viết lại nội dung theo chuẩn format</div></div>
+                        <div class="param-item"><div class="param-name">redact</div><div class="param-desc">Che/ẩn thông tin nhạy cảm (PII, số TK)</div></div>
+                        <div class="param-item"><div class="param-name">translate</div><div class="param-desc">Dịch nội dung (VN ↔ EN)</div></div>
+                        <div class="param-item"><div class="param-name">convert</div><div class="param-desc">Chuyển đổi format (PDF → Word, image → text)</div></div>
+                        <div class="param-item"><div class="param-name">split</div><div class="param-desc">Tách file multi-page thành từng chứng từ riêng</div></div>
+                    </div>
+                    <div class="uc-row">
+                        <span class="uc-chip">Soạn hồ sơ giải chấp</span><span class="uc-chip">Bảo lãnh SME</span>
+                        <span class="uc-chip">Phát hành L/C</span><span class="uc-chip">Bảo lãnh DNL</span><span class="uc-chip">Thẩm định KHCN</span>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- end skill-grid -->
+
+        <!-- OTHER SKILLS (không thuộc scope E2E chi tiết) -->
+        <h2 style="margin-top: 50px;">AI Skills</h2>
+
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-bottom: 40px;">
+            <!-- Voice Skills -->
+            <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <div style="width: 38px; height: 38px; border-radius: 8px; background: #fef3c7; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🎙️</div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.95rem;">Voice Skills</div>
+                        <div style="font-size: 0.78rem; color: var(--dim);">Xử lý giọng nói</div>
+                    </div>
+                </div>
+                <div style="font-size: 0.84rem; color: var(--text); line-height: 1.6;">
+                    <div style="padding: 6px 0; border-bottom: 1px solid var(--border);"><strong style="color: var(--orange);">STT</strong> – Speech-to-Text: chuyển giọng nói thành văn bản</div>
+                    <div style="padding: 6px 0;"><strong style="color: var(--orange);">TTS</strong> – Text-to-Speech: chuyển văn bản thành giọng nói tự nhiên</div>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.75rem; color: var(--dim); font-style: italic;">Phục vụ: Callbot (UC #3)</div>
+            </div>
+
+            <!-- Conversational Skills -->
+            <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <div style="width: 38px; height: 38px; border-radius: 8px; background: #ede9fe; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">💬</div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.95rem;">Conversational Skills</div>
+                        <div style="font-size: 0.78rem; color: var(--dim);">Giao tiếp tự động</div>
+                    </div>
+                </div>
+                <div style="font-size: 0.84rem; color: var(--text); line-height: 1.6;">
+                    <div style="padding: 6px 0; border-bottom: 1px solid var(--border);"><strong style="color: var(--purple);">Callbot</strong> – Gọi điện tự động theo kịch bản, xử lý hội thoại đa lượt</div>
+                    <div style="padding: 6px 0;"><strong style="color: var(--purple);">Chatbot</strong> – Hỗ trợ nhân viên qua chat, tra cứu quy trình/quy định</div>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.75rem; color: var(--dim); font-style: italic;">Phục vụ: Callbot hẹn KH (UC #3), hỗ trợ nội bộ</div>
+            </div>
+
+            <!-- Co-worker Skills -->
+            <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <div style="width: 38px; height: 38px; border-radius: 8px; background: #ecfdf5; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🤝</div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.95rem;">Co-worker Skills</div>
+                        <div style="font-size: 0.78rem; color: var(--dim);">Hỗ trợ vận hành</div>
+                    </div>
+                </div>
+                <div style="font-size: 0.84rem; color: var(--text); line-height: 1.6;">
+                    <div style="padding: 6px 0; border-bottom: 1px solid var(--border);"><strong style="color: var(--green);">Email</strong> – Phân loại, tóm tắt, soạn phản hồi email tự động</div>
+                    <div style="padding: 6px 0;"><strong style="color: var(--green);">Scheduler</strong> – Nhắc việc, theo dõi deadline, trigger hành động theo lịch</div>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.75rem; color: var(--dim); font-style: italic;">Phục vụ: Workflow Co-worker, nhắc việc nội bộ</div>
+            </div>
+        </div>
+        <!-- SUMMARY TABLE -->
+        <h2 style="margin-top: 50px;">📋 Tổng hợp: UC × Skills sử dụng</h2>
+        <div style="overflow-x: auto;">
+        <table class="sum-table">
+            <thead>
+                <tr>
+                    <th>Use Case</th>
+                    <th>/extract</th>
+                    <th>/analyze</th>
+                    <th>/compare</th>
+                    <th>/generate</th>
+                    <th>/transform</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Soạn hồ sơ giải chấp</td><td><code>collateral</code></td><td>—</td><td><code>verify</code></td><td>—</td><td><code>template</code></td></tr>
+                <tr><td>KSSV nhà dự án</td><td><code>disbursement</code></td><td><code>classify</code> <code>compliance</code></td><td><code>verify</code></td><td>—</td><td>—</td></tr>
+                <tr><td>Callbot hẹn KH thế chấp</td><td>—</td><td><code>quality</code></td><td>—</td><td><code>minutes</code></td><td>—</td></tr>
+                <tr><td>Giải ngân SME</td><td><code>disbursement</code> <code>approval</code></td><td><code>classify</code> <code>compliance</code> <code>risk</code></td><td><code>verify</code></td><td>—</td><td>—</td></tr>
+                <tr><td>Bảo lãnh SME</td><td><code>guarantee</code> <code>approval</code></td><td><code>compliance</code> <code>risk</code></td><td><code>verify</code></td><td>—</td><td><code>template</code></td></tr>
+                <tr><td>Thẩm định SME luồng A</td><td><code>collateral</code> <code>table</code> <code>approval</code></td><td><code>compliance</code> <code>risk</code></td><td><code>verify</code></td><td><code>report</code></td><td>—</td></tr>
+                <tr><td>Vận hành POS</td><td><code>business-license</code> <code>contract</code></td><td><code>classify</code> <code>compliance</code></td><td><code>verify</code></td><td>—</td><td>—</td></tr>
+                <tr><td>Mở tài khoản doanh nghiệp</td><td><code>id-card</code> <code>account-form</code> <code>business-license</code></td><td><code>compliance</code></td><td><code>verify</code></td><td>—</td><td>—</td></tr>
+                <tr><td>Phát hành L/C</td><td><code>lc</code></td><td><code>compliance</code></td><td>—</td><td><code>report</code></td><td><code>template</code></td></tr>
+                <tr><td>Giải ngân doanh nghiệp lớn</td><td><code>disbursement</code> <code>approval</code></td><td><code>risk</code></td><td><code>verify</code></td><td><code>report</code></td><td>—</td></tr>
+                <tr><td>Bảo lãnh doanh nghiệp lớn</td><td><code>guarantee</code> <code>approval</code></td><td><code>classify</code> <code>compliance</code> <code>risk</code></td><td><code>verify</code></td><td>—</td><td><code>template</code></td></tr>
+                <tr><td>Xử lý UNC chuyển tiền</td><td><code>payment-order</code></td><td>—</td><td><code>verify</code></td><td>—</td><td>—</td></tr>
+                <tr><td>Đối chiếu FX/LNH</td><td><code>payment-order</code></td><td>—</td><td><code>verify</code></td><td>—</td><td>—</td></tr>
+                <tr><td>Kiểm soát RRVH chuyên đề</td><td><code>query</code></td><td><code>risk</code></td><td>—</td><td><code>report</code></td><td>—</td></tr>
+                <tr><td>Kiểm soát sau vay</td><td><code>approval</code> <code>query</code></td><td><code>classify</code></td><td><code>verify</code></td><td><code>report</code></td><td>—</td></tr>
+                <tr><td>Thẩm định KHCN thế chấp</td><td><code>collateral</code> <code>disbursement</code> <code>query</code></td><td><code>compliance</code> <code>risk</code></td><td><code>verify</code></td><td><code>report</code></td><td><code>template</code></td></tr>
+                <tr><td>Vận hành thanh toán</td><td><code>payment-order</code></td><td><code>classify</code> <code>risk</code></td><td><code>verify</code></td><td><code>report</code></td><td>—</td></tr>
+            </tbody>
+        </table>
+        </div>
+
+    </div><!-- end container -->
+</body>
+</html>

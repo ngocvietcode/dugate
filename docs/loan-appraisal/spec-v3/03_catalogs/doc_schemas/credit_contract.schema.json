@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/credit_contract.schema.json",
+  "title": "credit_contract — data",
+  "description": "Schema của evidence.data cho doc_type_key = credit_contract (Hợp đồng tín dụng tại TCTD khác). Khoản vay hiện hữu tại tổ chức tín dụng khác (không so số tiền/mục đích/thời hạn với khoản đang đề nghị). schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "contract_info",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "LENDER (TCTD, ORGANIZATION) và BORROWER / CO_BORROWER.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 1
+    },
+    "contract_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_number",
+        "sign_date",
+        "loan_amount",
+        "loan_purpose",
+        "loan_term_months",
+        "loan_term_raw",
+        "interest_rate",
+        "maturity_date"
+      ],
+      "properties": {
+        "contract_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sign_date": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "loan_amount": {
+          "description": "Số tiền vay (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "loan_purpose": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loan_term_months": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "loan_term_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "interest_rate": {
+          "description": "Lãi suất %/năm nếu in.",
+          "oneOf": [
+            {
+              "$ref": "_common.schema.json#/$defs/Percent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "maturity_date": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        }
+      }
+    },
+    "legal_info": {
+      "description": "document_number = số hợp đồng; issue_date = ngày ký.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "BORROWER",
+                "CO_BORROWER",
+                "LENDER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

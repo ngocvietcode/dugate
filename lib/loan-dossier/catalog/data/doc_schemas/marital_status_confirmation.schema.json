@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/marital_status_confirmation.schema.json",
+  "title": "marital_status_confirmation — data",
+  "description": "Schema của evidence.data cho doc_type_key = marital_status_confirmation (Giấy xác nhận tình trạng hôn nhân). Mô tả nghiệp vụ: 04_document_schemas/marital_status_confirmation.md. schema_version 2.0.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["parties", "legal_info", "marital_status", "marital_status_raw", "residence_period", "usage_purpose", "validity_period_raw"],
+  "properties": {
+    "parties": {
+      "description": "Đúng 1 người được xác nhận (HOLDER).",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "$ref": "#/$defs/HolderParty" }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày cấp (dòng 'ngày … tháng … năm …'), dùng tính hiệu lực 180 ngày ở check_checklist. valid_until chỉ khi in ngày cụ thể.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    },
+    "marital_status": {
+      "description": "Chuẩn hóa từ marital_status_raw.",
+      "$ref": "_enums.schema.json#/$defs/MaritalStatus"
+    },
+    "marital_status_raw": { "description": "Nguyên văn ô 'Tình trạng hôn nhân'.", "type": ["string", "null"] },
+    "residence_period": {
+      "description": "Khoảng thời gian cư trú được xác nhận ('Trong thời gian cư trú tại … từ ngày … đến ngày …'). null nếu giấy không ghi.",
+      "oneOf": [{ "$ref": "#/$defs/ResidencePeriod" }, { "type": "null" }]
+    },
+    "usage_purpose": { "description": "Nguyên văn 'Giấy này được cấp để …'.", "type": ["string", "null"] },
+    "validity_period_raw": {
+      "description": "Nguyên văn câu thời hạn (VD 'có giá trị sử dụng 6 tháng kể từ ngày cấp'). Không tự tính ngày hết hạn.",
+      "type": ["string", "null"]
+    }
+  },
+  "$defs": {
+    "HolderParty": {
+      "allOf": [
+        { "$ref": "_common.schema.json#/$defs/DocumentParty" },
+        {
+          "properties": {
+            "party_index": { "const": 0 },
+            "party_role": { "const": "HOLDER" },
+            "party_type": { "const": "INDIVIDUAL" },
+            "id_type": { "enum": ["CCCD", "CMND", "CAN_CUOC", "PASSPORT", "OTHER", null] },
+            "tax_id": { "type": "null" },
+            "representative_name": { "type": "null" },
+            "representative_position": { "type": "null" },
+            "ownership": { "type": "null" }
+          }
+        }
+      ]
+    },
+    "ResidencePeriod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["place_raw", "from_date", "to_date"],
+      "properties": {
+        "place_raw": { "type": ["string", "null"] },
+        "from_date": { "$ref": "_common.schema.json#/$defs/NullableDate" },
+        "to_date": { "$ref": "_common.schema.json#/$defs/NullableDate" }
+      }
+    }
+  }
+}

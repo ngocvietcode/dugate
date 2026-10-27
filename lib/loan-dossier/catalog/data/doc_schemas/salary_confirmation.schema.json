@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/salary_confirmation.schema.json",
+  "title": "salary_confirmation — data",
+  "description": "Schema của evidence.data cho doc_type_key = salary_confirmation (Giấy xác nhận lương). 1 người lao động / giấy. schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "salary_info",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "EMPLOYER (đơn vị xác nhận) và EMPLOYEE (khách hàng).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 1
+    },
+    "salary_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "position",
+        "months_at_employer",
+        "monthly_salary",
+        "gross_monthly_salary",
+        "salary_period_raw",
+        "confirmation_date"
+      ],
+      "properties": {
+        "position": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "months_at_employer": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "monthly_salary": {
+          "description": "Tổng thu nhập thực lĩnh hàng tháng (VND/tháng). UAT `net_income`.",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "gross_monthly_salary": {
+          "description": "Lương gộp hàng tháng (VND/tháng).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "salary_period_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confirmation_date": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        }
+      }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày xác nhận.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "EMPLOYER",
+                "EMPLOYEE"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

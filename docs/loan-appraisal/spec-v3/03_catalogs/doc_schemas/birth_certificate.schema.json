@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/birth_certificate.schema.json",
+  "title": "birth_certificate — data",
+  "description": "Schema của evidence.data cho doc_type_key = birth_certificate (Giấy khai sinh / Trích lục khai sinh). Mô tả nghiệp vụ: 04_document_schemas/birth_certificate.md. schema_version 2.0.0. Chưa có dữ liệu mẫu thực tế.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["parties", "legal_info", "place_of_birth", "registration_date", "registration_book_number", "place_of_registration"],
+  "properties": {
+    "parties": {
+      "description": "Đúng 1 CHILD (người được khai sinh), tối đa 1 FATHER, tối đa 1 MOTHER. Mục cha/mẹ bỏ trống trên giấy → không tạo party.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/BirthParty" },
+      "allOf": [
+        {
+          "contains": { "properties": { "party_role": { "const": "CHILD" } }, "required": ["party_role"] },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": { "properties": { "party_role": { "const": "FATHER" } }, "required": ["party_role"] },
+          "minContains": 0,
+          "maxContains": 1
+        },
+        {
+          "contains": { "properties": { "party_role": { "const": "MOTHER" } }, "required": ["party_role"] },
+          "minContains": 0,
+          "maxContains": 1
+        }
+      ]
+    },
+    "legal_info": {
+      "description": "document_number = 'Số' của giấy; issue_date = ngày ký cấp (bản chính hoặc trích lục); valid_until luôn null.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    },
+    "place_of_birth": { "description": "Nguyên văn 'Nơi sinh' của người được khai sinh.", "type": ["string", "null"] },
+    "registration_date": {
+      "description": "Ngày đăng ký khai sinh.",
+      "$ref": "_common.schema.json#/$defs/NullableDate"
+    },
+    "registration_book_number": { "description": "'Quyển số'.", "type": ["string", "null"] },
+    "place_of_registration": { "description": "Nguyên văn 'Nơi đăng ký' (UBND cấp xã/huyện).", "type": ["string", "null"] }
+  },
+  "$defs": {
+    "BirthParty": {
+      "allOf": [
+        { "$ref": "_common.schema.json#/$defs/DocumentParty" },
+        {
+          "properties": {
+            "party_index": { "maximum": 2 },
+            "party_role": { "enum": ["CHILD", "FATHER", "MOTHER"] },
+            "party_type": { "const": "INDIVIDUAL" },
+            "tax_id": { "type": "null" },
+            "representative_name": { "type": "null" },
+            "representative_position": { "type": "null" },
+            "ownership": { "type": "null" }
+          }
+        }
+      ]
+    }
+  }
+}

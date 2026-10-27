@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/apartment_ownership_certificate.schema.json",
+  "title": "apartment_ownership_certificate — data",
+  "description": "Schema của evidence.data cho doc_type_key = apartment_ownership_certificate (GCN quyền sở hữu căn hộ chung cư). Mỗi thửa/căn là 1 phần tử `assets[]`; thuộc tính đất/nhà ở `asset_details[]`. `identifiers.apartment_number`, `building_name` = căn hộ số, tên nhà chung cư (mục 2.a). schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "assets",
+    "asset_details",
+    "change_records",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "Chủ sở hữu theo S2-R13: chủ trang bìa → `ownership.ownership_source = COVER_PAGE`; người nhận quyền ở trang biến động → `CHANGE_RECORD` kèm `ownership_change_date`; `is_current_owner` theo S2-R13. Ô ghép nhiều chủ ('A + B', 'A và B') giữ 1 party (S2-R11), S3 tách.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/OwnerParty"
+      },
+      "minItems": 1
+    },
+    "assets": {
+      "description": "Thửa đất / căn hộ. `identifiers.certificate_number` = số phát hành GCN (VD 'BQ 747032'), `certificate_book_number` = số vào sổ cấp GCN.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Asset"
+      },
+      "minItems": 1
+    },
+    "asset_details": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset_index",
+          "land_area_m2",
+          "land_use_purpose",
+          "land_use_term_raw",
+          "land_use_origin",
+          "house_type",
+          "construction_area_m2",
+          "floor_area_m2",
+          "number_of_floors",
+          "floor",
+          "ownership_form"
+        ],
+        "properties": {
+          "asset_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "land_area_m2": {
+            "description": "Diện tích thửa đất (m²).",
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "land_use_purpose": {
+            "description": "Mục đích sử dụng đất (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "land_use_term_raw": {
+            "description": "Thời hạn sử dụng (nguyên văn, VD 'Lâu dài').",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "land_use_origin": {
+            "description": "Nguồn gốc sử dụng (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "house_type": {
+            "description": "Loại nhà ở / tài sản gắn liền (mục 2.a).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "construction_area_m2": {
+            "description": "Diện tích xây dựng (m²).",
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "floor_area_m2": {
+            "description": "Diện tích sàn / diện tích sử dụng căn hộ (m²).",
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "number_of_floors": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "floor": {
+            "description": "Tầng của căn hộ (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ownership_form": {
+            "description": "Hình thức sở hữu / sử dụng (riêng, chung…).",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "change_records": {
+      "description": "Trang 'Những thay đổi sau khi cấp giấy chứng nhận', theo thứ tự in.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "record_index",
+          "change_date",
+          "change_type",
+          "content_raw",
+          "party_indexes"
+        ],
+        "properties": {
+          "record_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "change_date": {
+            "description": "Ngày đăng ký biến động.",
+            "$ref": "_common.schema.json#/$defs/NullableDate"
+          },
+          "change_type": {
+            "oneOf": [
+              {
+                "$ref": "_enums.schema.json#/$defs/OwnershipChangeType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content_raw": {
+            "description": "Nội dung biến động (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "party_indexes": {
+            "description": "party_index của người nhận quyền ở biến động này.",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày ký cấp GCN; issuing_authority = cơ quan cấp; valid_until luôn null.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "OwnerParty": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "OWNER"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Asset": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/AssetDescriptor"
+        },
+        {
+          "properties": {
+            "asset_type": {
+              "enum": [
+                "apartment"
+              ]
+            },
+            "usage_context_hint": {
+              "const": null
+            }
+          }
+        }
+      ]
+    }
+  }
+}

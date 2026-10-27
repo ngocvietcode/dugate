@@ -1,0 +1,637 @@
+{
+  "version": "3.0.0",
+  "reason_codes": [
+    {
+      "code": "COMPLETED",
+      "scope": "STAGE",
+      "meaning": "Chạy xong, đủ dữ liệu.",
+      "status": "SUCCESS",
+      "stages": "Tất cả"
+    },
+    {
+      "code": "UNSUPPORTED_FILES_PRESENT",
+      "scope": "STAGE",
+      "meaning": "Có ≥ 1 file hợp lệ và ≥ 1 file `UNSUPPORTED_FILE` / `PASSWORD_PROTECTED` / `CORRUPTED_FILE`.",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "classify"
+    },
+    {
+      "code": "UNKNOWN_FILES_PRESENT",
+      "scope": "STAGE",
+      "meaning": "Có file `UNKNOWN` (không nhận diện được loại).",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "classify"
+    },
+    {
+      "code": "NO_PROCESSABLE_FILES",
+      "scope": "STAGE",
+      "meaning": "Không có file nào xử lý được.",
+      "status": "INSUFFICIENT_DATA",
+      "stages": "classify"
+    },
+    {
+      "code": "EXTRACTION_ERRORS_PRESENT",
+      "scope": "STAGE",
+      "meaning": "Có ≥ 1 evidence `status = ERROR`.",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "extract_evidence"
+    },
+    {
+      "code": "NO_EXTRACTABLE_DOCUMENTS",
+      "scope": "STAGE",
+      "meaning": "Không có match nào `needs_extraction = true`.",
+      "status": "NOT_EVALUATED",
+      "stages": "extract_evidence"
+    },
+    {
+      "code": "LOAN_APPLICATION_MISSING",
+      "scope": "STAGE",
+      "meaning": "Không có `loan_application` thành công → không dựng được role registry.",
+      "status": "INSUFFICIENT_DATA",
+      "stages": "map_dossier_roles"
+    },
+    {
+      "code": "UNMAPPED_DOCUMENTS_PRESENT",
+      "scope": "STAGE",
+      "meaning": "Có evidence không gán được cho người nào.",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "map_dossier_roles"
+    },
+    {
+      "code": "ROLE_CONFLICT_PRESENT",
+      "scope": "STAGE",
+      "meaning": "Có `role_conflict = true`.",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "map_dossier_roles"
+    },
+    {
+      "code": "ASSET_CONTEXT_UNRESOLVED",
+      "scope": "STAGE",
+      "meaning": "Có tài sản `context_status ≠ CONFIRMED`.",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "map_dossier_roles"
+    },
+    {
+      "code": "MISSING_CONDITIONAL_EVIDENCE",
+      "scope": "STAGE",
+      "meaning": "Còn item phụ thuộc external input chưa được truyền.",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "check_checklist"
+    },
+    {
+      "code": "SUBJECT_MAPPING_UNAVAILABLE",
+      "scope": "STAGE",
+      "meaning": "Chạy chế độ dự phòng, nhóm `legal` chấm chung (không theo người).",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "check_checklist"
+    },
+    {
+      "code": "INVALID_FLOW",
+      "scope": "STAGE",
+      "meaning": "`flow` thiếu hoặc không thuộc các luồng của chương trình checklist của sản phẩm (`checklist_programs.json`).",
+      "status": "FAILED",
+      "stages": "check_checklist"
+    },
+    {
+      "code": "UNKNOWN_CHECKLIST_PROGRAM",
+      "scope": "STAGE",
+      "meaning": "`product_code` thiếu hoặc không thuộc chương trình checklist nào trong `checklist_programs.json` (S4-R24).",
+      "status": "FAILED",
+      "stages": "check_checklist"
+    },
+    {
+      "code": "CHECKLIST_ITEMS_UNRESOLVED",
+      "scope": "STAGE",
+      "meaning": "Có item bắt buộc ở `NEEDS_RESCAN` / `NEEDS_REVIEW` (chưa kết luận được đủ/thiếu).",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "check_checklist"
+    },
+    {
+      "code": "MISSING_PRIMARY_EVIDENCE",
+      "scope": "STAGE",
+      "meaning": "Thiếu toàn bộ chứng từ chính.",
+      "status": "INSUFFICIENT_DATA",
+      "stages": "check_checklist, cross_check_documents"
+    },
+    {
+      "code": "UNDETERMINED_RESULTS_PRESENT",
+      "scope": "STAGE",
+      "meaning": "Đối chiếu xong nhưng có ≥ 1 kết quả `UNDETERMINED` cần CO xác nhận (không đủ căn cứ kết luận).",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "cross_check_documents"
+    },
+    {
+      "code": "SINGLE_DOCUMENT_ONLY",
+      "scope": "STAGE",
+      "meaning": "Chỉ có 1 evidence thành công, không có gì để đối chiếu.",
+      "status": "INSUFFICIENT_DATA",
+      "stages": "cross_check_documents"
+    },
+    {
+      "code": "NO_COMPARABLE_PAIRS",
+      "scope": "STAGE",
+      "meaning": "Không có field nào xuất hiện ở ≥ 2 nguồn.",
+      "status": "NOT_EVALUATED",
+      "stages": "cross_check_documents"
+    },
+    {
+      "code": "ROLE_REGISTRY_UNAVAILABLE",
+      "scope": "STAGE",
+      "meaning": "`map_dossier_roles` không có output dùng được (status ∉ {`SUCCESS`, `PARTIAL_SUCCESS`} hoặc `role_registry[]` rỗng).",
+      "status": "UNAVAILABLE",
+      "stages": "cross_check_documents, compare_ocr_sl"
+    },
+    {
+      "code": "EXCLUDED_EVIDENCES_PRESENT",
+      "scope": "STAGE",
+      "meaning": "Có evidence `ERROR` hoặc evidence nằm trong `unmapped_evidences[]` bị loại khỏi đối chiếu.",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "cross_check_documents"
+    },
+    {
+      "code": "SL_INPUT_NOT_PROVIDED",
+      "scope": "STAGE",
+      "meaning": "Request không có `sl_input` (null).",
+      "status": "NOT_EVALUATED",
+      "stages": "compare_ocr_sl"
+    },
+    {
+      "code": "PARTIAL_FIELD_MATCH",
+      "scope": "STAGE",
+      "meaning": "Có block SL chưa nhập hoặc thiếu OCR.",
+      "status": "PARTIAL_SUCCESS",
+      "stages": "compare_ocr_sl"
+    },
+    {
+      "code": "SL_DATA_EMPTY",
+      "scope": "STAGE",
+      "meaning": "File/payload SL rỗng hoặc không map được người nào.",
+      "status": "INSUFFICIENT_DATA",
+      "stages": "compare_ocr_sl"
+    },
+    {
+      "code": "NOT_APPLICABLE_FOR_FLOW",
+      "scope": "STAGE",
+      "meaning": "Stage không áp dụng cho luồng/sản phẩm.",
+      "status": "NOT_EVALUATED",
+      "stages": "Tất cả"
+    },
+    {
+      "code": "SKIPPED_BY_POLICY",
+      "scope": "STAGE",
+      "meaning": "Bỏ qua theo cấu hình.",
+      "status": "NOT_EVALUATED",
+      "stages": "Tất cả"
+    },
+    {
+      "code": "INTEGRATION_SERVICE_DOWN",
+      "scope": "STAGE",
+      "meaning": "Dịch vụ tích hợp ngoài không phản hồi.",
+      "status": "UNAVAILABLE",
+      "stages": "Tất cả"
+    },
+    {
+      "code": "DEPENDENCY_FAILED",
+      "scope": "STAGE",
+      "meaning": "Một stage trong `depends_on` kết thúc `FAILED`.",
+      "status": "UNAVAILABLE",
+      "stages": "Tất cả trừ classify"
+    },
+    {
+      "code": "ENGINE_CRASH",
+      "scope": "STAGE",
+      "meaning": "Lỗi code không bắt được.",
+      "status": "FAILED",
+      "stages": "Tất cả"
+    },
+    {
+      "code": "ENGINE_TIMEOUT",
+      "scope": "STAGE",
+      "meaning": "Quá thời gian xử lý.",
+      "status": "FAILED",
+      "stages": "Tất cả"
+    },
+    {
+      "code": "OUT_OF_MEMORY",
+      "scope": "STAGE",
+      "meaning": "Tràn bộ nhớ.",
+      "status": "FAILED",
+      "stages": "Tất cả"
+    },
+    {
+      "code": "JSON_PARSE_ERROR",
+      "scope": "STAGE",
+      "meaning": "Output model không parse được.",
+      "status": "FAILED",
+      "stages": "Tất cả"
+    },
+    {
+      "code": "UNSUPPORTED_FORMAT",
+      "scope": "FILE",
+      "meaning": "Định dạng không thuộc pdf/jpg/jpeg/png.",
+      "pairs_with": "UNSUPPORTED_FILE"
+    },
+    {
+      "code": "PASSWORD_PROTECTED",
+      "scope": "FILE",
+      "meaning": "PDF có mật khẩu.",
+      "pairs_with": "PASSWORD_PROTECTED"
+    },
+    {
+      "code": "CORRUPTED_FILE",
+      "scope": "FILE",
+      "meaning": "File hỏng, không mở được.",
+      "pairs_with": "CORRUPTED_FILE"
+    },
+    {
+      "code": "EMPTY_OR_UNREADABLE",
+      "scope": "FILE",
+      "meaning": "Trang trắng / không có nội dung.",
+      "pairs_with": "UNKNOWN"
+    },
+    {
+      "code": "LOW_QUALITY_UNREADABLE",
+      "scope": "FILE",
+      "meaning": "Scan quá mờ, không nhận diện được bố cục.",
+      "pairs_with": "UNKNOWN"
+    },
+    {
+      "code": "UNCLASSIFIED",
+      "scope": "FILE",
+      "meaning": "Có nội dung nhưng không khớp loại nào với confidence ≥ 0.50.",
+      "pairs_with": "UNKNOWN"
+    },
+    {
+      "code": "FORM_NOT_FOUND",
+      "scope": "EVIDENCE",
+      "meaning": "Không tìm thấy mẫu biểu thuộc loại này trong phạm vi trang được giao.",
+      "pairs_with": "Không tìm thấy mẫu biểu thuộc loại này trong phạm vi trang được giao."
+    },
+    {
+      "code": "UNREADABLE_CONTENT",
+      "scope": "EVIDENCE",
+      "meaning": "Có mẫu biểu nhưng không đọc được nội dung nào.",
+      "pairs_with": "Có mẫu biểu nhưng không đọc được nội dung nào."
+    },
+    {
+      "code": "REQUIRED_FIELD_UNREADABLE",
+      "scope": "EVIDENCE",
+      "meaning": "`status = SUCCESS` nhưng field định danh bắt buộc (VD `id_number`) = null. Cảnh báo, không phải lỗi.",
+      "pairs_with": "status = SUCCESS nhưng field định danh bắt buộc (VD id_number) = null. Cảnh báo, không phải lỗi."
+    },
+    {
+      "code": "HISTORICAL_ID_NUMBER",
+      "scope": "MAP",
+      "meaning": "CMND 9 số cũ và CCCD 12 số hiện tại của cùng người.",
+      "severity": "INFO` (nâng `REVIEW` nếu confidence < 0.8)"
+    },
+    {
+      "code": "CURRENT_ID_NUMBER_CONFLICT",
+      "scope": "MAP",
+      "meaning": "≥ 2 số định danh hiện tại khác nhau cho cùng người.",
+      "severity": "HIGH"
+    },
+    {
+      "code": "DECLARED_ID_DIFFERS",
+      "scope": "MAP",
+      "meaning": "Số trên `loan_application` khác số hiện tại, không xác định được là số cũ.",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "OBSERVED_ID_DIFFERS",
+      "scope": "MAP",
+      "meaning": "Số định danh trên chứng từ không phải giấy tờ định danh (GCN, CIC, HĐLĐ…) khác số hiện tại/số khai báo của người đã ghép theo họ tên, không xác định được là số cũ.",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "AMBIGUOUS_IDENTITY_MATCH",
+      "scope": "MAP",
+      "meaning": "Party khớp (theo số định danh hoặc họ tên) với ≥ 2 người trong `role_registry[]` → không tự gán, đưa vào `unmapped`.",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "NO_IDENTITY_MATCH",
+      "scope": "MAP",
+      "meaning": "Evidence không khớp người nào → `unmapped`.",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "NAME_SPELLING_DIFFERENCE",
+      "scope": "MAP",
+      "meaning": "Tên gần giống nhưng khác dấu/chính tả → không tự gộp.",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "NO_IDENTITY_FIELDS",
+      "scope": "MAP",
+      "meaning": "Evidence không có tên và số định danh đọc được.",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "MULTIPLE_IDENTITIES_FOR_ROLE",
+      "scope": "MAP",
+      "meaning": "Một vai trò bị khớp bởi ≥ 2 danh tính khác nhau (`role_conflict`).",
+      "severity": "HIGH"
+    },
+    {
+      "code": "ASSET_CONTEXT_AMBIGUOUS",
+      "scope": "MAP",
+      "meaning": "Không xác nhận được ngữ cảnh sử dụng của tài sản.",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "ASSET_IDENTIFIER_CONFLICT",
+      "scope": "MAP",
+      "meaning": "Cùng tài sản nhưng định danh (số khung, số GCN…) lệch giữa các chứng từ.",
+      "severity": "HIGH"
+    },
+    {
+      "code": "DOCUMENT_FOUND",
+      "scope": "CHK",
+      "meaning": "Có chứng từ hợp lệ.",
+      "pairs_with": "PRESENT"
+    },
+    {
+      "code": "SUBSTITUTED_BY_ALLOWED_DOC",
+      "scope": "CHK",
+      "meaning": "Dùng chứng từ thay thế trong bảng thay thế.",
+      "pairs_with": "SUBSTITUTED"
+    },
+    {
+      "code": "COVERED_BY_ALTERNATIVE",
+      "scope": "CHK",
+      "meaning": "Không bắt buộc riêng: thuộc nhóm chứng từ thay thế nhau, nhóm đã có một mục bắt buộc đại diện (S4-R27).",
+      "pairs_with": "NOT_APPLICABLE"
+    },
+    {
+      "code": "DOCUMENT_NOT_FOUND",
+      "scope": "CHK",
+      "meaning": "Không có chứng từ, không có thay thế.",
+      "pairs_with": "MISSING"
+    },
+    {
+      "code": "DOCUMENT_EXPIRED",
+      "scope": "CHK",
+      "meaning": "Có chứng từ nhưng hết hiệu lực.",
+      "pairs_with": "MISSING"
+    },
+    {
+      "code": "INSUFFICIENT_BIRTH_CERTIFICATES",
+      "scope": "CHK",
+      "meaning": "Số giấy khai sinh hợp lệ < số yêu cầu.",
+      "pairs_with": "MISSING"
+    },
+    {
+      "code": "EXTRACTION_FAILED",
+      "scope": "CHK",
+      "meaning": "Nhận diện được loại nhưng OCR lỗi.",
+      "pairs_with": "NEEDS_RESCAN"
+    },
+    {
+      "code": "ASSET_CONTEXT_UNRESOLVED",
+      "scope": "CHK",
+      "meaning": "Không xác định được `asset_id`/`usage_context`.",
+      "pairs_with": "NEEDS_REVIEW"
+    },
+    {
+      "code": "CONFLICTING_DUPLICATES",
+      "scope": "CHK",
+      "meaning": "Nhiều bản cùng loại có dữ liệu xung đột.",
+      "pairs_with": "NEEDS_REVIEW"
+    },
+    {
+      "code": "ROLE_CONFLICT_UNRESOLVED",
+      "scope": "CHK",
+      "meaning": "Người đang chấm có `role_conflict = true`; chứng từ của người này không được tính tự động.",
+      "pairs_with": "NEEDS_REVIEW"
+    },
+    {
+      "code": "RELATIONSHIP_UNVERIFIED",
+      "scope": "CHK",
+      "meaning": "Giấy khai sinh bắt buộc nhưng không có kết quả xác minh quan hệ dùng được (DEC-18).",
+      "pairs_with": "NEEDS_REVIEW"
+    },
+    {
+      "code": "DOCUMENT_OWNER_UNCONFIRMED",
+      "scope": "CHK",
+      "meaning": "Hồ sơ có chứng từ đúng loại nhưng chưa xác nhận được thuộc người đang chấm (S3 để ở unmapped_evidences vì tên khác chính tả / khớp nhiều người, hoặc bị loại do người khác trên cùng chứng từ có danh tính xung đột) — cần rà soát, không phải thiếu chứng từ (S4-R28, D-64).",
+      "pairs_with": "NEEDS_REVIEW"
+    },
+    {
+      "code": "ISSUE_DATE_UNREADABLE",
+      "scope": "CHK",
+      "meaning": "Mục có thời hạn hiệu lực nhưng không đọc được ngày cấp đủ để kết luận còn/hết hiệu lực.",
+      "pairs_with": "NEEDS_RESCAN"
+    },
+    {
+      "code": "CONDITION_NOT_MET",
+      "scope": "CHK",
+      "meaning": "Điều kiện áp dụng không thỏa.",
+      "pairs_with": "NOT_APPLICABLE"
+    },
+    {
+      "code": "NOT_REQUIRED_FOR_FLOW",
+      "scope": "CHK",
+      "meaning": "Không bắt buộc ở luồng này.",
+      "pairs_with": "NOT_APPLICABLE"
+    },
+    {
+      "code": "CONDITION_INPUT_NOT_PROVIDED",
+      "scope": "CHK",
+      "meaning": "Thiếu external input → giữ bắt buộc mặc định.",
+      "pairs_with": "(giữ status theo kết quả tìm chứng từ)"
+    },
+    {
+      "code": "EXACT_MATCH",
+      "scope": "XCK",
+      "meaning": "Trùng sau chuẩn hóa.",
+      "pairs_with": "MATCH",
+      "severity": "INFO"
+    },
+    {
+      "code": "SEMANTIC_MATCH",
+      "scope": "XCK",
+      "meaning": "Khác hình thức, cùng bản chất.",
+      "pairs_with": "MATCH",
+      "severity": "INFO"
+    },
+    {
+      "code": "UNACCENTED_MATCH",
+      "scope": "XCK",
+      "meaning": "Tên trùng sau khi bỏ dấu; khác nhau chỉ vì có chứng từ ghi không dấu (VD CIC) và các bản có dấu cùng một cách viết (S5-R07).",
+      "pairs_with": "MATCH",
+      "severity": "INFO"
+    },
+    {
+      "code": "ID_LINKED_BY_DOCUMENT",
+      "scope": "XCK",
+      "meaning": "Người có 2 số định danh (CMND 9 số cũ + CCCD 12 số) và một chứng từ nối số (mã QR trên CCCD, Giấy cam kết 2 CMND/CCCD, Giấy xác nhận CMND địa phương) thể hiện đủ cả hai số nên xác định là cùng một người (S5-R08, D-61).",
+      "pairs_with": "MATCH",
+      "severity": "INFO"
+    },
+    {
+      "code": "PROBABLE_OCR_ERROR",
+      "scope": "XCK",
+      "meaning": "Gần khớp: mã/số (số GCN, số khung, số máy, biển số…) dài ≥ 6 ký tự; ≥ 2 nguồn ghi giống nhau và đúng 1 nguồn lệch đúng 1 ký tự — nghi do đọc sai, cần xem lại trang của nguồn lệch (S5-R07).",
+      "pairs_with": "NEAR_MATCH",
+      "severity": "INFO"
+    },
+    {
+      "code": "VALUE_CONFLICT",
+      "scope": "XCK",
+      "meaning": "Giá trị mâu thuẫn.",
+      "pairs_with": "MISMATCH",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "CURRENT_ID_NUMBER_CONFLICT",
+      "scope": "XCK",
+      "meaning": "2 số định danh hiện tại khác nhau.",
+      "pairs_with": "MISMATCH",
+      "severity": "HIGH"
+    },
+    {
+      "code": "DUPLICATE_VALUE_CONFLICT",
+      "scope": "XCK",
+      "meaning": "2 bản cùng loại chứng từ ghi khác nhau.",
+      "pairs_with": "MISMATCH",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "HISTORICAL_ID_NUMBER",
+      "scope": "XCK",
+      "meaning": "CMND cũ vs CCCD mới.",
+      "pairs_with": "UNDETERMINED",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "METRIC_INCOMPATIBLE",
+      "scope": "XCK",
+      "meaning": "Chỉ số khác kỳ/khác bản chất.",
+      "pairs_with": "UNDETERMINED",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "EXACT_MATCH",
+      "scope": "CSL",
+      "meaning": "Trùng sau chuẩn hóa.",
+      "pairs_with": "MATCH"
+    },
+    {
+      "code": "SEMANTIC_MATCH",
+      "scope": "CSL",
+      "meaning": "Cùng bản chất (VD \"CCCD\" ≈ \"Thẻ căn cước\").",
+      "pairs_with": "MATCH"
+    },
+    {
+      "code": "SECONDARY_SOURCE_USED",
+      "scope": "CSL",
+      "meaning": "Dùng nguồn OCR thứ 2 vì nguồn 1 không có.",
+      "pairs_with": "MATCH / MISMATCH"
+    },
+    {
+      "code": "VALUE_CONFLICT",
+      "scope": "CSL",
+      "meaning": "Khác bản chất.",
+      "pairs_with": "MISMATCH"
+    },
+    {
+      "code": "OCR_VALUE_MISSING",
+      "scope": "CSL",
+      "meaning": "Có SL, không có OCR.",
+      "pairs_with": "OCR_VALUE_MISSING"
+    },
+    {
+      "code": "PERSON_NOT_MAPPED",
+      "scope": "CSL",
+      "meaning": "Không ghép được người SL với `person_id`.",
+      "pairs_with": "OCR_VALUE_MISSING"
+    },
+    {
+      "code": "ASSET_NOT_MAPPED",
+      "scope": "CSL",
+      "meaning": "Không ghép được block TSBĐ trên SL với `asset_id` nào trong `asset_registry[]`.",
+      "pairs_with": "OCR_VALUE_MISSING"
+    },
+    {
+      "code": "SL_VALUE_MISSING",
+      "scope": "CSL",
+      "meaning": "Có OCR, SL để trống.",
+      "pairs_with": "SL_VALUE_MISSING"
+    },
+    {
+      "code": "MARKED_NOT_ON_DOCUMENT",
+      "scope": "CSL",
+      "meaning": "Dòng SL đánh dấu \"Không có trên chứng từ\".",
+      "pairs_with": "NOT_APPLICABLE"
+    },
+    {
+      "code": "MULTIPLE_SOURCES_CONFLICT",
+      "scope": "CSL",
+      "meaning": "Các nguồn OCR mâu thuẫn nhau.",
+      "pairs_with": "UNDETERMINED"
+    },
+    {
+      "code": "PLACEHOLDER_VALUE",
+      "scope": "CSL",
+      "meaning": "SL là giá trị giữ chỗ (`N/A`, \"Nhập thông tin\").",
+      "pairs_with": "UNDETERMINED"
+    },
+    {
+      "code": "FIELD_SPLIT_FAILED",
+      "scope": "CSL",
+      "meaning": "Không tách được field con (tỉnh/xã) từ OCR.",
+      "pairs_with": "UNDETERMINED"
+    },
+    {
+      "code": "AMBIGUOUS_PERSON_MATCH",
+      "scope": "CSL",
+      "meaning": "Ghép người SL ↔ OCR mơ hồ.",
+      "pairs_with": "UNDETERMINED"
+    },
+    {
+      "code": "AMBIGUOUS_ASSET_MATCH",
+      "scope": "CSL",
+      "meaning": "Ghép block TSBĐ trên SL ↔ `asset_id` mơ hồ (≥ 2 ứng viên).",
+      "pairs_with": "UNDETERMINED"
+    },
+    {
+      "code": "FIELD_MAPPING_NOT_FOUND",
+      "scope": "CSL",
+      "meaning": "Trường SL không có trong `sl_fields.json` và không được đánh dấu \"Không có trên chứng từ\".",
+      "pairs_with": "UNDETERMINED"
+    },
+    {
+      "code": "INCOME_FIELD_EXCLUDED",
+      "scope": "CSL",
+      "meaning": "Trường SL thuộc nhóm nguồn thu (doanh thu, thu nhập, lợi nhuận, chi phí…) — loại khỏi phạm vi đối chiếu theo DEC-11.",
+      "pairs_with": "NOT_APPLICABLE"
+    },
+    {
+      "code": "SL_VALUE_FROM_OCR",
+      "scope": "CSL",
+      "pairs_with": "NOT_APPLICABLE",
+      "meaning": "Giá trị trên form do RM nhận từ gợi ý OCR (source = OCR_ACCEPTED) nên không đối chiếu lại với chính OCR."
+    },
+    {
+      "code": "SEMANTIC_UNAVAILABLE",
+      "scope": "XCK",
+      "meaning": "Dịch vụ so khớp ngữ nghĩa (LLM) lỗi hoặc không phản hồi; chưa kết luận.",
+      "pairs_with": "UNDETERMINED",
+      "severity": "REVIEW"
+    },
+    {
+      "code": "SEMANTIC_DEFERRED",
+      "scope": "XCK",
+      "meaning": "Cặp giá trị cần so ngữ nghĩa (LLM) nhưng giai đoạn tiếp nhận không gọi LLM; sẽ so ở giai đoạn thẩm định (D-57).",
+      "pairs_with": "UNDETERMINED",
+      "severity": "INFO"
+    },
+    {
+      "code": "FIELD_FORMAT_INVALID",
+      "scope": "EVIDENCE",
+      "meaning": "`status = SUCCESS` nhưng ≥ 1 field sai định dạng/kiểu đã bị thay bằng null/rỗng (message nêu đường dẫn, confidence field cấp 1 ≤ 0.5). Cảnh báo, không phải lỗi.",
+      "pairs_with": "status = SUCCESS; field sai định dạng để trống, cần rà soát."
+    }
+  ]
+}

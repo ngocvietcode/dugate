@@ -1,0 +1,28 @@
+/* Biến màu trạng thái scoped cho v2. Màu nền/chữ chung dùng token của app (bg-card, text-foreground...). */
+.la2-root {
+  --la2-success: 4 120 87;
+  --la2-warning: 161 72 8;
+  --la2-danger: 190 18 60;
+  --la2-info: 29 78 216;
+}
+
+.dark .la2-root,
+.vpb-dark .la2-root {
+  --la2-success: 52 211 153;
+  --la2-warning: 251 191 36;
+  --la2-danger: 251 113 133;
+  --la2-info: 96 165 250;
+}
+
+.la2-root summary::-webkit-details-marker { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .la2-root *,
+  .la2-root *::before,
+  .la2-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

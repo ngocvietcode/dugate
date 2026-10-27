@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "description": "Danh mục SẢN PHẨM VAY của workflow loan-appraisal. Thêm sản phẩm mới = thêm một phần tử vào `products` (kèm một chương trình checklist có cùng product_code trong checklist_programs.json). Mỗi sản phẩm khai báo định danh, tên hiển thị và policy mặc định (ngưỡng deterministic mà các rule chung LOAN.* đọc). Profile có thể ghi đè ngưỡng (loan_policy), nhưng không tạo được sản phẩm mới. Hướng dẫn đầy đủ: docs/loan-appraisal/ADD-NEW-PRODUCT-FLOW.md.",
+  "default_product_code": "hkd-loan",
+  "products": [
+    {
+      "product_code": "hkd-loan",
+      "segment": "HKD",
+      "name": "Vay Hộ Kinh Doanh (HKD)",
+      "description": "Sản phẩm vay vốn phục vụ sản xuất kinh doanh cho khách hàng Hộ Kinh Doanh, có tài sản bảo đảm.",
+      "policy": {
+        "config_version": "2.0.0",
+        "policy_id": "PP-HKD-SECURED",
+        "policy_version": "2.0.0",
+        "minimum_dscr": 1.25,
+        "maximum_ltv": 0.7,
+        "maximum_amount_vnd": 3000000000,
+        "default_tenor_months": 18,
+        "scorecard_id": null,
+        "scorecard_version": null
+      }
+    },
+    {
+      "product_code": "sme",
+      "segment": "SME",
+      "name": "Vay Doanh nghiệp vừa và nhỏ (SME)",
+      "description": "Sản phẩm vay vốn cho khách hàng doanh nghiệp vừa và nhỏ. Danh mục hồ sơ theo chương trình sme_secured (luồng FLOW_A).",
+      "policy": {
+        "config_version": "0.1.0",
+        "policy_id": "PP-SME-SECURED",
+        "policy_version": "0.1.0-draft",
+        "minimum_dscr": 1.25,
+        "maximum_ltv": 0.7,
+        "maximum_amount_vnd": 3000000000,
+        "default_tenor_months": 18,
+        "scorecard_id": null,
+        "scorecard_version": null
+      }
+    }
+  ]
+}

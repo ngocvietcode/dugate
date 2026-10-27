@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/vehicle_sale_contract.schema.json",
+  "title": "vehicle_sale_contract — data",
+  "description": "Schema của evidence.data cho doc_type_key = vehicle_sale_contract (Hợp đồng mua bán xe ô tô). Xe mua bán là `assets[]` loại `vehicle`; xe mới chưa đăng ký → `license_plate = null`. schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "assets",
+    "asset_details",
+    "contract_info",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "SELLER (đại lý / cá nhân bán) và BUYER (thường là khách hàng vay).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 2
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Asset"
+      },
+      "minItems": 1
+    },
+    "asset_details": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset_index",
+          "vehicle_brand",
+          "vehicle_model",
+          "vehicle_type",
+          "manufacture_year",
+          "color",
+          "vehicle_name",
+          "unit_price"
+        ],
+        "properties": {
+          "asset_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "vehicle_brand": {
+            "description": "Nhãn hiệu (VD 'KIA').",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vehicle_model": {
+            "description": "Số loại / model (VD 'CARENS').",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vehicle_type": {
+            "description": "Loại phương tiện (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manufacture_year": {
+            "description": "Năm sản xuất.",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1900,
+            "maximum": 2100
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vehicle_name": {
+            "description": "Tên xe ghi trên hợp đồng (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit_price": {
+            "description": "Đơn giá xe (VND).",
+            "$ref": "_common.schema.json#/$defs/NullableMoney"
+          }
+        }
+      }
+    },
+    "contract_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_number",
+        "sign_date",
+        "total_amount",
+        "payment_terms_raw"
+      ],
+      "properties": {
+        "contract_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sign_date": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "total_amount": {
+          "description": "Tổng giá trị hợp đồng (VND). UAT `total_value`.",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "payment_terms_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "legal_info": {
+      "description": "document_number = số hợp đồng; issue_date = ngày ký.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "SELLER",
+                "BUYER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "Asset": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/AssetDescriptor"
+        },
+        {
+          "properties": {
+            "asset_type": {
+              "enum": [
+                "vehicle"
+              ]
+            },
+            "usage_context_hint": {
+              "const": null
+            }
+          }
+        }
+      ]
+    }
+  }
+}

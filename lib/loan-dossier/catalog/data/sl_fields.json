@@ -1,0 +1,649 @@
+{
+  "version": "3.0.0",
+  "excluded": "Mọi trường nguồn thu (doanh thu, thu nhập, lợi nhuận, chi phí) — BRD 09/10/2026.",
+  "fields": [
+    {
+      "field_key": "full_name",
+      "label": "Họ và tên",
+      "group": "identity",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "value_type": "TEXT",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "id_card",
+          "field_path": "data.parties[].full_name",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "vneid",
+          "field_path": "data.parties[].full_name",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "qr_code_info",
+          "field_path": "data.parties[].full_name",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "loan_application",
+          "field_path": "data.parties[].full_name",
+          "party_roles": [
+            "BORROWER",
+            "CO_BORROWER",
+            "COLLATERAL_OWNER"
+          ]
+        }
+      ]
+    },
+    {
+      "field_key": "date_of_birth",
+      "label": "Ngày sinh",
+      "group": "identity",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "value_type": "DATE",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "id_card",
+          "field_path": "data.parties[].date_of_birth",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "vneid",
+          "field_path": "data.parties[].date_of_birth",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "qr_code_info",
+          "field_path": "data.parties[].date_of_birth",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "loan_application",
+          "field_path": "data.parties[].date_of_birth",
+          "party_roles": [
+            "BORROWER",
+            "CO_BORROWER",
+            "COLLATERAL_OWNER"
+          ]
+        }
+      ]
+    },
+    {
+      "field_key": "gender",
+      "label": "Giới tính",
+      "group": "identity",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "value_type": "GENDER",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "id_card",
+          "field_path": "data.parties[].gender",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "vneid",
+          "field_path": "data.parties[].gender",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "qr_code_info",
+          "field_path": "data.parties[].gender",
+          "party_roles": [
+            "HOLDER"
+          ]
+        }
+      ]
+    },
+    {
+      "field_key": "nationality",
+      "label": "Quốc tịch",
+      "group": "identity",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "value_type": "TEXT",
+      "method": "SEMANTIC",
+      "ocr_sources": [
+        {
+          "doc_type_key": "id_card",
+          "field_path": "data.parties[].nationality",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "vneid",
+          "field_path": "data.parties[].nationality",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "qr_code_info",
+          "field_path": "data.parties[].nationality",
+          "party_roles": [
+            "HOLDER"
+          ]
+        }
+      ]
+    },
+    {
+      "field_key": "id_number",
+      "label": "Số CCCD/CMND",
+      "group": "identity",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "value_type": "ID_NUMBER",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "id_card",
+          "field_path": "data.parties[].id_number",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "vneid",
+          "field_path": "data.parties[].id_number",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "qr_code_info",
+          "field_path": "data.parties[].id_number",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "loan_application",
+          "field_path": "data.parties[].id_number",
+          "party_roles": [
+            "BORROWER",
+            "CO_BORROWER",
+            "COLLATERAL_OWNER"
+          ]
+        }
+      ]
+    },
+    {
+      "field_key": "id_issue_date",
+      "label": "Ngày cấp",
+      "group": "identity",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "value_type": "DATE",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "id_card",
+          "field_path": "data.parties[].id_issue_date",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "vneid",
+          "field_path": "data.parties[].id_issue_date",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "qr_code_info",
+          "field_path": "data.parties[].id_issue_date",
+          "party_roles": [
+            "HOLDER"
+          ]
+        }
+      ]
+    },
+    {
+      "field_key": "id_issue_place",
+      "label": "Nơi cấp",
+      "group": "identity",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "value_type": "TEXT",
+      "method": "SEMANTIC",
+      "ocr_sources": [
+        {
+          "doc_type_key": "id_card",
+          "field_path": "data.parties[].id_issue_place",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "vneid",
+          "field_path": "data.parties[].id_issue_place",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "qr_code_info",
+          "field_path": "data.parties[].id_issue_place",
+          "party_roles": [
+            "HOLDER"
+          ]
+        }
+      ]
+    },
+    {
+      "field_key": "id_expiry_date",
+      "label": "Ngày hết hạn",
+      "group": "identity",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "value_type": "DATE",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "id_card",
+          "field_path": "data.legal_info.valid_until",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "vneid",
+          "field_path": "data.legal_info.valid_until",
+          "party_roles": [
+            "HOLDER"
+          ]
+        }
+      ]
+    },
+    {
+      "field_key": "permanent_address",
+      "label": "Địa chỉ thường trú",
+      "group": "residence",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower",
+        "collateral_owner"
+      ],
+      "value_type": "ADDRESS",
+      "method": "ADDRESS_REFERENCE",
+      "ocr_sources": [
+        {
+          "doc_type_key": "residence_confirmation",
+          "field_path": "data.parties[].permanent_address",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "id_card",
+          "field_path": "data.parties[].permanent_address",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "vneid",
+          "field_path": "data.parties[].permanent_address",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "qr_code_info",
+          "field_path": "data.parties[].permanent_address",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "loan_application",
+          "field_path": "data.parties[].permanent_address",
+          "party_roles": [
+            "BORROWER",
+            "CO_BORROWER",
+            "COLLATERAL_OWNER"
+          ]
+        }
+      ]
+    },
+    {
+      "field_key": "current_address",
+      "label": "Địa chỉ hiện tại",
+      "group": "residence",
+      "scope": "PERSON",
+      "applicable_roles": [
+        "borrower",
+        "co_borrower"
+      ],
+      "value_type": "ADDRESS",
+      "method": "ADDRESS_REFERENCE",
+      "ocr_sources": [
+        {
+          "doc_type_key": "residence_confirmation",
+          "field_path": "data.parties[].permanent_address",
+          "party_roles": [
+            "HOLDER"
+          ]
+        },
+        {
+          "doc_type_key": "loan_application",
+          "field_path": "data.parties[].current_address",
+          "party_roles": [
+            "BORROWER",
+            "CO_BORROWER",
+            "COLLATERAL_OWNER"
+          ]
+        }
+      ]
+    },
+    {
+      "field_key": "loan_amount",
+      "label": "Số tiền vay đề xuất",
+      "group": "loan_plan",
+      "scope": "DOSSIER",
+      "applicable_roles": [
+        "borrower"
+      ],
+      "value_type": "MONEY",
+      "method": "METRIC",
+      "ocr_sources": [
+        {
+          "doc_type_key": "loan_application",
+          "field_path": "data.loan_info.bank_proposed_amount",
+          "party_roles": []
+        }
+      ]
+    },
+    {
+      "field_key": "loan_term_months",
+      "label": "Thời hạn vay (tháng)",
+      "group": "loan_plan",
+      "scope": "DOSSIER",
+      "applicable_roles": [
+        "borrower"
+      ],
+      "value_type": "INTEGER",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "loan_application",
+          "field_path": "data.loan_info.loan_term_months",
+          "party_roles": []
+        }
+      ]
+    },
+    {
+      "field_key": "loan_purpose_detail",
+      "label": "Mục đích vay chi tiết",
+      "group": "loan_plan",
+      "scope": "DOSSIER",
+      "applicable_roles": [
+        "borrower"
+      ],
+      "value_type": "TEXT",
+      "method": "SEMANTIC",
+      "ocr_sources": [
+        {
+          "doc_type_key": "loan_application",
+          "field_path": "data.loan_info.loan_purpose_detail",
+          "party_roles": []
+        }
+      ]
+    },
+    {
+      "field_key": "asset_type",
+      "label": "Loại TSBĐ",
+      "group": "collateral",
+      "scope": "ASSET",
+      "applicable_roles": [
+        "collateral_owner"
+      ],
+      "value_type": "ASSET_TYPE",
+      "method": "SEMANTIC",
+      "ocr_sources": [
+        {
+          "doc_type_key": "loan_application",
+          "field_path": "data.assets[].asset_type",
+          "party_roles": []
+        }
+      ]
+    },
+    {
+      "field_key": "certificate_number",
+      "label": "Số GCN / Sổ hồng",
+      "group": "collateral",
+      "scope": "ASSET",
+      "applicable_roles": [
+        "collateral_owner"
+      ],
+      "value_type": "TEXT",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "land_use_certificate",
+          "field_path": "data.assets[].identifiers.certificate_number",
+          "party_roles": []
+        },
+        {
+          "doc_type_key": "apartment_ownership_certificate",
+          "field_path": "data.assets[].identifiers.certificate_number",
+          "party_roles": []
+        },
+        {
+          "doc_type_key": "land_use_cert_to_buy",
+          "field_path": "data.assets[].identifiers.certificate_number",
+          "party_roles": []
+        }
+      ]
+    },
+    {
+      "field_key": "land_parcel_number",
+      "label": "Số thửa",
+      "group": "collateral",
+      "scope": "ASSET",
+      "applicable_roles": [
+        "collateral_owner"
+      ],
+      "value_type": "TEXT",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "land_use_certificate",
+          "field_path": "data.assets[].identifiers.land_parcel_number",
+          "party_roles": []
+        },
+        {
+          "doc_type_key": "apartment_ownership_certificate",
+          "field_path": "data.assets[].identifiers.land_parcel_number",
+          "party_roles": []
+        },
+        {
+          "doc_type_key": "land_use_cert_to_buy",
+          "field_path": "data.assets[].identifiers.land_parcel_number",
+          "party_roles": []
+        }
+      ]
+    },
+    {
+      "field_key": "map_sheet_number",
+      "label": "Số tờ bản đồ",
+      "group": "collateral",
+      "scope": "ASSET",
+      "applicable_roles": [
+        "collateral_owner"
+      ],
+      "value_type": "TEXT",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "land_use_certificate",
+          "field_path": "data.assets[].identifiers.map_sheet_number",
+          "party_roles": []
+        },
+        {
+          "doc_type_key": "apartment_ownership_certificate",
+          "field_path": "data.assets[].identifiers.map_sheet_number",
+          "party_roles": []
+        },
+        {
+          "doc_type_key": "land_use_cert_to_buy",
+          "field_path": "data.assets[].identifiers.map_sheet_number",
+          "party_roles": []
+        }
+      ]
+    },
+    {
+      "field_key": "asset_address",
+      "label": "Địa chỉ TSBĐ",
+      "group": "collateral",
+      "scope": "ASSET",
+      "applicable_roles": [
+        "collateral_owner"
+      ],
+      "value_type": "ADDRESS",
+      "method": "ADDRESS_REFERENCE",
+      "ocr_sources": [
+        {
+          "doc_type_key": "land_use_certificate",
+          "field_path": "data.assets[].address",
+          "party_roles": []
+        },
+        {
+          "doc_type_key": "apartment_ownership_certificate",
+          "field_path": "data.assets[].address",
+          "party_roles": []
+        },
+        {
+          "doc_type_key": "land_use_cert_to_buy",
+          "field_path": "data.assets[].address",
+          "party_roles": []
+        }
+      ]
+    },
+    {
+      "field_key": "license_plate",
+      "label": "Biển kiểm soát",
+      "group": "collateral",
+      "scope": "ASSET",
+      "applicable_roles": [
+        "collateral_owner"
+      ],
+      "value_type": "TEXT",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "vehicle_registration",
+          "field_path": "data.assets[].identifiers.license_plate",
+          "party_roles": []
+        },
+        {
+          "doc_type_key": "vehicle_inspection",
+          "field_path": "data.assets[].identifiers.license_plate",
+          "party_roles": []
+        }
+      ]
+    },
+    {
+      "field_key": "chassis_number",
+      "label": "Số khung",
+      "group": "collateral",
+      "scope": "ASSET",
+      "applicable_roles": [
+        "collateral_owner"
+      ],
+      "value_type": "TEXT",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "vehicle_registration",
+          "field_path": "data.assets[].identifiers.chassis_number",
+          "party_roles": []
+        },
+        {
+          "doc_type_key": "vehicle_inspection",
+          "field_path": "data.assets[].identifiers.chassis_number",
+          "party_roles": []
+        }
+      ]
+    },
+    {
+      "field_key": "engine_number",
+      "label": "Số máy",
+      "group": "collateral",
+      "scope": "ASSET",
+      "applicable_roles": [
+        "collateral_owner"
+      ],
+      "value_type": "TEXT",
+      "method": "EXACT",
+      "ocr_sources": [
+        {
+          "doc_type_key": "vehicle_registration",
+          "field_path": "data.assets[].identifiers.engine_number",
+          "party_roles": []
+        },
+        {
+          "doc_type_key": "vehicle_inspection",
+          "field_path": "data.assets[].identifiers.engine_number",
+          "party_roles": []
+        }
+      ]
+    }
+  ]
+}

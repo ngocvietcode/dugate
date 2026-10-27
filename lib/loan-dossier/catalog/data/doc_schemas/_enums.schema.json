@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/enums.schema.json",
+  "title": "Enum registry v2",
+  "description": "Enum dùng bởi schema chứng từ. Nguồn đầy đủ: ../enums.json.",
+  "$defs": {
+    "DocTypeKey": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ExtractableDocTypeKey"
+        },
+        {
+          "$ref": "#/$defs/RecognitionOnlyDocTypeKey"
+        }
+      ]
+    },
+    "UsageContext": {
+      "type": "string",
+      "enum": [
+        "collateral",
+        "rental_income"
+      ]
+    },
+    "AssetType": {
+      "type": "string",
+      "enum": [
+        "real_estate",
+        "apartment",
+        "vehicle",
+        "deposit",
+        "other"
+      ]
+    },
+    "BlockingInputType": {
+      "type": "string",
+      "enum": [
+        "DOCUMENT",
+        "EXTERNAL_DATA",
+        "INTEGRATION"
+      ]
+    },
+    "PartyType": {
+      "type": "string",
+      "enum": [
+        "INDIVIDUAL",
+        "ORGANIZATION"
+      ]
+    },
+    "PartyRole": {
+      "type": "string",
+      "enum": [
+        "HOLDER",
+        "HUSBAND",
+        "WIFE",
+        "CHILD",
+        "FATHER",
+        "MOTHER",
+        "HOUSEHOLD_MEMBER",
+        "SELLER",
+        "BUYER",
+        "EMPLOYER",
+        "EMPLOYEE",
+        "OWNER",
+        "CUSTOMER",
+        "BORROWER",
+        "CO_BORROWER",
+        "SPOUSE",
+        "COLLATERAL_OWNER",
+        "REFERENCE_PERSON",
+        "TAXPAYER",
+        "LENDER",
+        "OTHER"
+      ]
+    },
+    "IdType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "CCCD",
+        "CMND",
+        "CAN_CUOC",
+        "PASSPORT",
+        "TAX_ID",
+        "OTHER",
+        null
+      ]
+    },
+    "Gender": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "MALE",
+        "FEMALE",
+        null
+      ]
+    },
+    "MaritalStatus": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "SINGLE",
+        "MARRIED",
+        "DIVORCED",
+        "WIDOWED",
+        null
+      ]
+    },
+    "RelationshipType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "PARENT_CHILD",
+        "SIBLING",
+        "SPOUSE",
+        "OTHER",
+        null
+      ]
+    },
+    "OwnershipSource": {
+      "type": "string",
+      "enum": [
+        "COVER_PAGE",
+        "CHANGE_RECORD"
+      ]
+    },
+    "OwnershipChangeType": {
+      "type": "string",
+      "enum": [
+        "TRANSFER",
+        "GIFT",
+        "INHERITANCE",
+        "OTHER"
+      ]
+    },
+    "AppraisalCompany": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "THINH_DIEN",
+        "SBA",
+        "CITICS",
+        "FARGO",
+        "VVFC",
+        "OTHER",
+        null
+      ]
+    },
+    "RealEstateValuationFormVariant": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "TD_VALUATION_REPORT",
+        "TD_PRICE_ADVISORY",
+        "AUTO_VALUATION",
+        null
+      ]
+    },
+    "MetricPeriod": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "MONTHLY",
+        "ANNUAL",
+        "POINT_IN_TIME",
+        null
+      ]
+    }
+  }
+}

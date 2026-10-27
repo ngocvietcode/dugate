@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/vneid.schema.json",
+  "title": "vneid — data",
+  "description": "Schema của evidence.data cho doc_type_key = vneid (ảnh chụp màn hình Căn cước điện tử trên ứng dụng VNeID). Mô tả nghiệp vụ: 04_document_schemas/vneid.md. schema_version 2.0.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["parties", "legal_info", "electronic_id_info"],
+  "properties": {
+    "parties": {
+      "description": "Đúng 1 người: chủ tài khoản / chủ căn cước điện tử (HOLDER).",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "$ref": "#/$defs/HolderParty" }
+    },
+    "legal_info": {
+      "description": "Thường chỉ có document_title, issue_date, valid_until (nếu màn hình hiển thị); signatories luôn [].",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    },
+    "electronic_id_info": { "$ref": "#/$defs/ElectronicIdInfo" }
+  },
+  "$defs": {
+    "HolderParty": {
+      "allOf": [
+        { "$ref": "_common.schema.json#/$defs/DocumentParty" },
+        {
+          "properties": {
+            "party_index": { "const": 0 },
+            "party_role": { "const": "HOLDER" },
+            "party_type": { "const": "INDIVIDUAL" },
+            "id_type": { "enum": ["CCCD", "CAN_CUOC", null] },
+            "tax_id": { "type": "null" },
+            "representative_name": { "type": "null" },
+            "representative_position": { "type": "null" },
+            "ownership": { "type": "null" }
+          }
+        }
+      ]
+    },
+    "ElectronicIdInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["place_of_origin", "place_of_birth_registration", "temporary_address", "screen_count"],
+      "properties": {
+        "place_of_origin": { "description": "Quê quán (nguyên văn).", "type": ["string", "null"] },
+        "place_of_birth_registration": { "description": "Nơi đăng ký khai sinh.", "type": ["string", "null"] },
+        "temporary_address": {
+          "description": "Nơi tạm trú (dòng dưới Nơi thường trú). CCCD giấy không có dòng này.",
+          "$ref": "_common.schema.json#/$defs/NullableAddress"
+        },
+        "screen_count": {
+          "description": "Số ảnh màn hình VNeID đã gộp trong instance.",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

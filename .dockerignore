@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+# Every local env file, not just `.env`. The builder stage runs `COPY . .`, so a
+# developer's .env.local would otherwise carry DATABASE_URL and NEXTAUTH_SECRET
+# into an intermediate build layer. Nothing in the build reads these files:
+# runtime values come from the container environment.
+.env
+.env.*
+uploads
+outputs
+coverage

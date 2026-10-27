@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/external_valuation_certificate.schema.json",
+  "title": "external_valuation_certificate — data",
+  "description": "Schema của evidence.data cho doc_type_key = external_valuation_certificate (Chứng thư định giá công ty định giá ngoài). Gộp 4 mẫu SBA, CITICS, FARGO, VVFC; công ty ở `valuation_info.appraisal_company`. Hiệu lực 180 ngày (OQ-21). schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "assets",
+    "asset_details",
+    "valuation_info",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "CUSTOMER = khách hàng vay / khách hàng yêu cầu định giá; OWNER = chủ tài sản nếu in.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 1
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Asset"
+      },
+      "minItems": 1
+    },
+    "asset_details": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset_index",
+          "land_area_m2",
+          "land_use_status",
+          "land_value",
+          "construction_value",
+          "valuation_value",
+          "asset_grade"
+        ],
+        "properties": {
+          "asset_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "land_area_m2": {
+            "description": "Diện tích đất được định giá (m²).",
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "land_use_status": {
+            "description": "Hiện trạng thửa đất / tài sản (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "land_value": {
+            "description": "Giá trị quyền sử dụng đất (VND).",
+            "$ref": "_common.schema.json#/$defs/NullableMoney"
+          },
+          "construction_value": {
+            "description": "Giá trị công trình xây dựng (VND).",
+            "$ref": "_common.schema.json#/$defs/NullableMoney"
+          },
+          "valuation_value": {
+            "description": "Tổng giá trị định giá của tài sản này (VND).",
+            "$ref": "_common.schema.json#/$defs/NullableMoney"
+          },
+          "asset_grade": {
+            "description": "Hạng / xếp loại tài sản (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "valuation_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "appraisal_company",
+        "form_variant",
+        "valuation_certificate_number",
+        "valuation_date",
+        "valuation_purpose",
+        "collateral_info_text",
+        "validity_period_raw",
+        "total_valuation_value"
+      ],
+      "properties": {
+        "appraisal_company": {
+          "$ref": "_enums.schema.json#/$defs/AppraisalCompany"
+        },
+        "form_variant": {
+          "type": "null"
+        },
+        "valuation_certificate_number": {
+          "description": "Số chứng thư / số báo cáo.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "valuation_date": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "valuation_purpose": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "collateral_info_text": {
+          "description": "Khối 'Thông tin TSBĐ' (nguyên văn). UAT `collateral_info`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "validity_period_raw": {
+          "description": "Câu thời hạn hiệu lực (nguyên văn).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "total_valuation_value": {
+          "description": "Tổng giá trị định giá (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        }
+      }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày phát hành chứng thư / báo cáo (căn cứ hiệu lực).",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "CUSTOMER",
+                "OWNER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "Asset": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/AssetDescriptor"
+        },
+        {
+          "properties": {
+            "asset_type": {
+              "enum": [
+                "real_estate",
+                "apartment"
+              ]
+            },
+            "usage_context_hint": {
+              "const": null
+            }
+          }
+        }
+      ]
+    }
+  }
+}

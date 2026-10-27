@@ -1,0 +1,428 @@
+﻿{
+  "summary": {
+    "files_scanned": 1,
+    "total_issues": 2,
+    "critical": 0,
+    "warnings": 0,
+    "info": 2,
+    "quality_score": "A"
+  },
+  "issues": {
+    "critical": [],
+    "warning": [],
+    "info": [
+      {
+        "file": "app/api/users/route.ts",
+        "line": 16,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (!session || session.user.role !== 'ADMIN') {"
+      },
+      {
+        "file": "app/api/users/route.ts",
+        "line": 31,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (!session || session.user.role !== 'ADMIN') {"
+      }
+    ]
+  }
+}
+{
+  "summary": {
+    "files_scanned": 1,
+    "total_issues": 0,
+    "critical": 0,
+    "warnings": 0,
+    "info": 0,
+    "quality_score": "A"
+  },
+  "issues": {
+    "critical": [],
+    "warning": [],
+    "info": []
+  }
+}
+{
+  "summary": {
+    "files_scanned": 1,
+    "total_issues": 34,
+    "critical": 0,
+    "warnings": 0,
+    "info": 34,
+    "quality_score": "A"
+  },
+  "issues": {
+    "critical": [],
+    "warning": [],
+    "info": [
+      {
+        "file": "app/settings/users/page.tsx",
+        "line": 57,
+        "severity": "info",
+        "rule": "NAM001",
+        "category": "naming",
+        "message": "Non-descriptive variable name",
+        "suggestion": "Use meaningful variable names that describe the content (e.g., 'userData' instead of 'data')",
+        "snippet": "const data = await res.json();"
+      },
+      {
+        "file": "app/settings/users/page.tsx",
+        "line": 67,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (status === 'loading') return;"
+      },
+      {
+        "file": "app/settings/users/page.tsx",
+        "line": 68,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (!session || session.user.role !== 'ADMIN') {"
+      },
+      {
+        "file": "app/settings/users/page.tsx",
+        "line": 106,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (modalMode === 'create') {"
+      },
+      {
+        "file": "app/settings/users/page.tsx",
+        "line": 112,
+        "severity": "info",
+        "rule": "NAM001",
+        "category": "naming",
+        "message": "Non-descriptive variable name",
+        "suggestion": "Use meaningful variable names that describe the content (e.g., 'userData' instead of 'data')",
+        "snippet": "const data = await res.json();"
+      },
+      {
+        "file": "app/settings/users/page.tsx",
+        "line": 115,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "} else if (modalMode === 'edit' && editingUser) {"
+      },
+      {
+        "file": "app/settings/users/page.tsx",
+        "line": 117,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (formUsername !== editingUser.username) body.username = formUsername;"
+      },
+      {
+        "file": "app/settings/users/page.tsx",
+        "line": 125,
+        "severity": "info",
+        "rule": "NAM001",
+        "category": "naming",
+        "message": "Non-descriptive variable name",
+        "suggestion": "Use meaningful variable names that describe the content (e.g., 'userData' instead of 'data')",
+        "snippet": "const data = await res.json();"
+      },
+      {
+        "file": "app/settings/users/page.tsx",
+        "line": 141,
+        "severity": "info",
+        "rule": "NAM001",
+        "category": "naming",
+        "message": "Non-descriptive variable name",
+        "suggestion": "Use meaningful variable names that describe the content (e.g., 'userData' instead of 'data')",
+        "snippet": "const data = await res.json();"
+      },
+      {
+        "file": "app/settings/users/page.tsx",
+        "line": 152,
+        "severity": "info",
+        "rule": "NAM002",
+        "category": "naming",
+        "message": "Single-character variable name (outside of loop counters)",
+        "suggestion": "Use descriptive variable names for better readability",
+        "snippet": "const filtered = users.filter(u =>"
+      }
+    ]
+  }
+}
+{
+  "summary": {
+    "files_scanned": 1,
+    "total_issues": 5,
+    "critical": 0,
+    "warnings": 0,
+    "info": 5,
+    "quality_score": "A"
+  },
+  "issues": {
+    "critical": [],
+    "warning": [],
+    "info": [
+      {
+        "file": "components/HeaderNav.tsx",
+        "line": 28,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (pathname === '/login' || pathname === '/setup') return null;"
+      },
+      {
+        "file": "components/HeaderNav.tsx",
+        "line": 30,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "const isAdmin = session?.user?.role === 'ADMIN';"
+      },
+      {
+        "file": "components/HeaderNav.tsx",
+        "line": 31,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "const isViewer = session?.user?.role === 'VIEWER';"
+      },
+      {
+        "file": "components/HeaderNav.tsx",
+        "line": 54,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "pathname === '/' ? 'pill-nav-active' : 'pill-nav-inactive'"
+      },
+      {
+        "file": "components/HeaderNav.tsx",
+        "line": 128,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "{session.user.role === 'ADMIN' ? '≡ƒöæ Quß║ún trß╗ï vi├¬n' : session.user.role === 'VIEWER' ? '≡ƒæü Chß╗ë xem' : '≡ƒæñ Ng╞░ß╗¥i d├╣ng'}"
+      }
+    ]
+  }
+}
+{
+  "summary": {
+    "files_scanned": 1,
+    "total_issues": 2,
+    "critical": 0,
+    "warnings": 0,
+    "info": 2,
+    "quality_score": "A"
+  },
+  "issues": {
+    "critical": [],
+    "warning": [],
+    "info": [
+      {
+        "file": "lib/auth.ts",
+        "line": 10,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (process.env.NODE_ENV !== \"production\") globalForPrisma.prisma = prisma;"
+      },
+      {
+        "file": "lib/auth.ts",
+        "line": 85,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (account?.provider === \"oidc\") {"
+      }
+    ]
+  }
+}
+{
+  "summary": {
+    "files_scanned": 1,
+    "total_issues": 4,
+    "critical": 0,
+    "warnings": 0,
+    "info": 4,
+    "quality_score": "A"
+  },
+  "issues": {
+    "critical": [],
+    "warning": [],
+    "info": [
+      {
+        "file": "lib/endpoints/runner.ts",
+        "line": 124,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (!entry || typeof entry.url !== 'string' || !entry.url.trim()) {"
+      },
+      {
+        "file": "lib/endpoints/runner.ts",
+        "line": 137,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "endpointSlug: discriminatorValue && discriminatorValue !== '_default'"
+      },
+      {
+        "file": "lib/endpoints/runner.ts",
+        "line": 150,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "discriminatorValue && discriminatorValue !== '_default'"
+      },
+      {
+        "file": "lib/endpoints/runner.ts",
+        "line": 179,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (serviceSlug === 'extract' && discriminatorValue) {"
+      }
+    ]
+  }
+}
+{
+  "summary": {
+    "files_scanned": 1,
+    "total_issues": 5,
+    "critical": 0,
+    "warnings": 2,
+    "info": 3,
+    "quality_score": "A"
+  },
+  "issues": {
+    "critical": [],
+    "warning": [
+      {
+        "file": "middleware.ts",
+        "line": 24,
+        "severity": "warning",
+        "rule": "QUAL003",
+        "category": "scan",
+        "message": "console.log left in production code",
+        "suggestion": "Remove console.log or replace with proper logging library",
+        "snippet": "console.log(`[Request] ${request.method} ${pathname}`);"
+      },
+      {
+        "file": "middleware.ts",
+        "line": 101,
+        "severity": "warning",
+        "rule": "QUAL003",
+        "category": "scan",
+        "message": "console.log left in production code",
+        "suggestion": "Remove console.log or replace with proper logging library",
+        "snippet": "console.error('[Middleware] Internal Auth Check error:', e);"
+      }
+    ],
+    "info": [
+      {
+        "file": "middleware.ts",
+        "line": 23,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (process.env.NODE_ENV !== 'production') {"
+      },
+      {
+        "file": "middleware.ts",
+        "line": 70,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "if (res.status === 429) {"
+      },
+      {
+        "file": "middleware.ts",
+        "line": 82,
+        "severity": "info",
+        "rule": "NAM001",
+        "category": "naming",
+        "message": "Non-descriptive variable name",
+        "suggestion": "Use meaningful variable names that describe the content (e.g., 'userData' instead of 'data')",
+        "snippet": "const data = await res.json();"
+      }
+    ]
+  }
+}
+{
+  "summary": {
+    "files_scanned": 1,
+    "total_issues": 2,
+    "critical": 0,
+    "warnings": 0,
+    "info": 2,
+    "quality_score": "A"
+  },
+  "issues": {
+    "critical": [],
+    "warning": [],
+    "info": [
+      {
+        "file": "lib/rbac.ts",
+        "line": 6,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "return role === 'ADMIN' || role === 'USER';"
+      },
+      {
+        "file": "lib/rbac.ts",
+        "line": 10,
+        "severity": "info",
+        "rule": "QUAL008",
+        "category": "scan",
+        "message": "Loose equality check in JavaScript ΓÇö use strict equality",
+        "suggestion": "Use === and !== instead of == and != to avoid type coercion",
+        "snippet": "return role === 'ADMIN';"
+      }
+    ]
+  }
+}

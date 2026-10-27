@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/vehicle_inspection.schema.json",
+  "title": "vehicle_inspection — data",
+  "description": "Schema của evidence.data cho doc_type_key = vehicle_inspection (Giấy chứng nhận đăng kiểm xe). Không xác định chủ sở hữu hiện tại (S2-R13 không áp dụng): party OWNER có `ownership = null`. Hạn kiểm định ở `legal_info.valid_until` nhưng S4 không kiểm (`ignore_printed_expiry`). schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "assets",
+    "asset_details",
+    "inspection_info",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "Chủ xe in trên giấy (OWNER).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      }
+    },
+    "assets": {
+      "description": "`identifiers.registration_number` = số đăng ký xe nếu giấy có in; KHÔNG ghi số quản lý hay số seri vào đây.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Asset"
+      },
+      "minItems": 1
+    },
+    "asset_details": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset_index",
+          "vehicle_brand",
+          "vehicle_model",
+          "vehicle_type",
+          "manufacture_year",
+          "color",
+          "country_of_manufacture",
+          "modification_status_raw",
+          "seats",
+          "payload_kg",
+          "gross_weight_kg"
+        ],
+        "properties": {
+          "asset_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "vehicle_brand": {
+            "description": "Nhãn hiệu (VD 'KIA').",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vehicle_model": {
+            "description": "Số loại / model (VD 'CARENS').",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vehicle_type": {
+            "description": "Loại phương tiện (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manufacture_year": {
+            "description": "Năm sản xuất.",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1900,
+            "maximum": 2100
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country_of_manufacture": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "modification_status_raw": {
+            "description": "Tình trạng cải tạo (nguyên văn, VD 'Có cải tạo').",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "seats": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "payload_kg": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "gross_weight_kg": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "inspection_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inspection_number",
+        "management_number",
+        "inspection_date"
+      ],
+      "properties": {
+        "inspection_number": {
+          "description": "Số chứng nhận kiểm định / số seri (VD 'VA 3533404'). UAT `inspection_no`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "management_number": {
+          "description": "Số quản lý phương tiện (VD '3603D-019912').",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "inspection_date": {
+          "description": "Ngày kiểm định.",
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        }
+      }
+    },
+    "legal_info": {
+      "description": "document_number = số chứng nhận kiểm định; issue_date = ngày cấp; valid_until = hạn kiểm định.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "OWNER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "Asset": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/AssetDescriptor"
+        },
+        {
+          "properties": {
+            "asset_type": {
+              "enum": [
+                "vehicle"
+              ]
+            },
+            "usage_context_hint": {
+              "const": null
+            }
+          }
+        }
+      ]
+    }
+  }
+}

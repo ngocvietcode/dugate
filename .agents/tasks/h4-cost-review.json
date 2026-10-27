@@ -1,0 +1,9 @@
+{
+  "verdict": "APPROVED",
+  "findings": [
+    "Literal requirement vs implementation (likely, non-blocking): no apiKeys.totalUsed write on CANCELLED; incurred cost is already billed once by each sub-op in runPipeline. Confirm with the user that this satisfies 'count the used cost'.",
+    "Sub-op billing premise untested (possible, non-blocking): the optional billing-source guard test was skipped; add a small runPipeline/enqueueSubStep test so nobody breaks or doubles the single increment point.",
+    "Possible pre-existing double count on SUCCEEDED (likely, out of scope): completeWorkflow adds ctx.totalCost on top of sub-op billing. Also an in-flight sub-op finishing after cancel is billed to the key but may be missing from the parent row's recorded totals."
+  ],
+  "reviewDoc": "d:\\Jobs\\dugate\\.agents\\tasks/h4-cost-review.md"
+}

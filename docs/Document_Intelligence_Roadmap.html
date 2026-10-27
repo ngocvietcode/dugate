@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Intelligence Roadmap — AI Maturity Model</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#ffffff;color:#1a1a1a;min-height:100vh;line-height:1.5}
+
+/* McKinsey style: clean whites, strong navy, minimal decoration */
+.header{background:#003057;color:white;padding:56px 60px 44px;position:relative}
+.header::after{content:'';position:absolute;bottom:0;left:60px;right:60px;height:3px;background:linear-gradient(90deg,#00a3e0,#003057)}
+.header h1{font-size:2.4rem;font-weight:300;letter-spacing:-0.5px;margin-bottom:6px}
+.header h1 strong{font-weight:700}
+.header .subtitle{color:rgba(255,255,255,0.7);font-size:1rem;font-weight:300}
+.header .meta{margin-top:20px;display:flex;gap:24px;flex-wrap:wrap}
+.header .meta-item{font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px}
+.header .meta-item strong{color:rgba(255,255,255,0.9)}
+
+.container{max-width:1140px;margin:0 auto;padding:56px 60px 80px}
+
+.section{margin-bottom:64px}
+.section-num{font-size:0.72rem;text-transform:uppercase;letter-spacing:2px;color:#00a3e0;font-weight:700;margin-bottom:6px}
+.section-title{font-size:1.6rem;font-weight:300;color:#003057;margin-bottom:6px;letter-spacing:-0.3px}
+.section-title strong{font-weight:700}
+.section-lead{font-size:0.92rem;color:#5a5a5a;max-width:720px;margin-bottom:32px;line-height:1.7}
+
+/* Exhibit labels */
+.exhibit{font-size:0.68rem;text-transform:uppercase;letter-spacing:1.5px;color:#999;margin-bottom:12px;font-weight:600}
+
+/* Tables - McKinsey style */
+.mck-table{width:100%;border-collapse:collapse;font-size:0.84rem}
+.mck-table thead th{background:#f7f8f9;padding:12px 16px;text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.8px;color:#666;font-weight:600;border-bottom:2px solid #003057}
+.mck-table tbody td{padding:14px 16px;border-bottom:1px solid #eee;vertical-align:top}
+.mck-table tbody tr:hover td{background:#fafbfc}
+.mck-table .section-row td{background:#f7f8f9;font-weight:700;color:#003057;font-size:0.78rem;padding:10px 16px;letter-spacing:0.5px;border-bottom:1px solid #ddd}
+
+/* Level indicators */
+.lvl{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:28px;border-radius:4px;font-weight:700;font-size:0.72rem;padding:0 10px}
+.lvl-0{background:#f0f0f0;color:#888}
+.lvl-1{background:#e8f5e9;color:#2e7d32}
+.lvl-2{background:#fff8e1;color:#f57f17}
+.lvl-3{background:#ede7f6;color:#4527a0}
+.lvl-4{background:#e3f2fd;color:#1565c0}
+.lvl-4p{background:linear-gradient(135deg,#e3f2fd,#ede7f6);color:#1565c0}
+
+/* Principle cards */
+.principles{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:24px}
+.principle{border-left:3px solid #003057;padding:16px 20px;background:#fafbfc}
+.principle h4{font-size:0.82rem;font-weight:700;color:#003057;margin-bottom:6px}
+.principle p{font-size:0.78rem;color:#5a5a5a;line-height:1.6}
+
+/* KPI bar */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin:32px 0}
+.kpi{text-align:center;padding:20px;border:1px solid #eee}
+.kpi-val{font-size:2.2rem;font-weight:700;color:#003057}
+.kpi-label{font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+.kpi-sub{font-size:0.7rem;color:#00a3e0;margin-top:6px;font-weight:500}
+
+/* Composition diagram */
+.compose-diagram{display:flex;align-items:center;gap:24px;padding:28px 32px;background:#f7f8f9;border:1px solid #eee;margin-top:24px}
+.compose-col{flex:1}
+.compose-col h5{font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;font-weight:600}
+.compose-pills{display:flex;flex-wrap:wrap;gap:6px}
+.compose-pill{padding:5px 12px;border-radius:3px;font-size:0.72rem;font-weight:600}
+.compose-arrow{font-size:1.8rem;color:#ccc;flex-shrink:0}
+
+/* Consumption matrix */
+.consume-table{width:100%;border-collapse:collapse;font-size:0.76rem}
+.consume-table th{padding:10px 10px;text-align:center;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;color:#666;font-weight:600;border-bottom:2px solid #003057;background:#f7f8f9}
+.consume-table th:first-child{text-align:left}
+.consume-table td{padding:8px 10px;text-align:center;border-bottom:1px solid #f0f0f0}
+.consume-table td:first-child{text-align:left;font-weight:600;color:#1a1a1a}
+.consume-table .check{color:#2e7d32;font-weight:600}
+.consume-table .dash{color:#ccc}
+
+/* Phase cards */
+.phase-cards{display:grid;gap:16px}
+.phase-card{border:1px solid #eee;padding:24px 28px;position:relative;transition:box-shadow 0.2s}
+.phase-card:hover{box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.phase-card-header{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.phase-card-header .phase-tag{font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:white;padding:3px 10px;border-radius:2px;font-weight:700}
+.phase-card-header .phase-tag.p0{background:#666}
+.phase-card-header .phase-tag.p1{background:#003057}
+.phase-card-header .phase-tag.p2{background:#4527a0}
+.phase-card-header .phase-tag.p3{background:#2e7d32}
+.phase-card-header h3{font-size:1rem;font-weight:600;color:#1a1a1a}
+.phase-card-header .timeline{font-size:0.78rem;color:#888;margin-left:auto}
+.phase-card .deliverables{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px}
+.phase-card .deliv{background:#f7f8f9;padding:12px 14px;border-left:2px solid #ddd}
+.phase-card .deliv h5{font-size:0.76rem;color:#003057;margin-bottom:4px;font-weight:600}
+.phase-card .deliv p{font-size:0.72rem;color:#666;line-height:1.5}
+.phase-card .deliv .deliv-target{font-size:0.68rem;color:#00a3e0;margin-top:6px;font-weight:600}
+
+/* Investment table */
+.invest-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.invest-table thead th{background:#003057;color:white;padding:12px 16px;text-align:left;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.8px;font-weight:500}
+.invest-table tbody td{padding:12px 16px;border-bottom:1px solid #eee}
+.invest-table .total-row td{font-weight:700;background:#f7f8f9;border-top:2px solid #003057}
+
+.footer{text-align:center;padding:40px 60px;border-top:3px solid #003057;margin-top:56px}
+.footer p{font-size:0.75rem;color:#999;line-height:1.8}
+.footer .brand{font-size:0.85rem;color:#003057;font-weight:700;letter-spacing:1px;margin-bottom:8px}
+
+@media(max-width:900px){
+  .header{padding:36px 24px 28px}
+  .container{padding:32px 24px 60px}
+  .principles{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .compose-diagram{flex-direction:column}
+  .phase-card .deliverables{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><strong>Document Intelligence</strong> Roadmap</h1>
+  <p class="subtitle">AI Maturity Model — A platform approach to intelligent document processing at scale</p>
+
+</div>
+
+<div class="container">
+
+<!-- ===== SECTION 1: MATURITY MODEL ===== -->
+<div class="section">
+  <div class="section-num">Section 01</div>
+  <h2 class="section-title"><strong>AI Maturity</strong> Framework</h2>
+  <p class="section-lead">
+    We define five maturity levels (L0–L4) that describe the progression of each document skill 
+    from initial design through full autonomous intelligence. This framework provides a shared language 
+    for tracking capability development and setting investment priorities.
+  </p>
+
+  <div class="exhibit">Exhibit 1 — Maturity Level Definitions</div>
+  <table class="mck-table">
+    <thead>
+      <tr>
+        <th style="width:50px">Level</th>
+        <th style="width:110px">Stage</th>
+        <th>Description</th>
+        <th style="width:240px">Key Characteristics</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="lvl lvl-0">L0</span></td>
+        <td><strong>Design</strong></td>
+        <td>Architecture design, scope definition, and requirements gathering. No production API available.</td>
+        <td>Schema design & PoC only. No real-case processing. Output is design documentation.</td>
+      </tr>
+      <tr>
+        <td><span class="lvl lvl-1">L1</span></td>
+        <td><strong>Basic</strong></td>
+        <td>Handles simple cases: 1–3 document types, clean-format inputs only. Requires human review for majority of outputs.</td>
+        <td>1–3 types/tasks. Standard format only. Accuracy 85–89%. Human review &gt;30%.</td>
+      </tr>
+      <tr>
+        <td><span class="lvl lvl-2">L2</span></td>
+        <td><strong>Standard</strong></td>
+        <td>Multi-type processing, stable on real-world data. Conditional logic operational. Production-ready for core use cases.</td>
+        <td>5–10 types/tasks. Non-standard format handling. Accuracy 90–93%. Human review &lt;15%.</td>
+      </tr>
+      <tr>
+        <td><span class="lvl lvl-3">L3</span></td>
+        <td><strong>Advanced</strong></td>
+        <td>Full type/task coverage. Edge case handling (poor scans, multi-page, unusual formats). Deep system integration.</td>
+        <td>10+ types/tasks. Edge case resolution. Accuracy 93–95%. Human review &lt;5%.</td>
+      </tr>
+      <tr>
+        <td><span class="lvl lvl-4">L4</span></td>
+        <td><strong>Intelligent</strong></td>
+        <td>Self-learning from feedback, auto-detection of new patterns, adapts to novel documents without retraining. Near-autonomous.</td>
+        <td>Auto-detect & self-correct. New type adaptation &lt;1 week. Accuracy &gt;95%. Near-autonomous.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== SECTION 2: ROADMAP MATRIX ===== -->
+<div class="section">
+  <div class="section-num">Section 02</div>
+  <h2 class="section-title"><strong>Skill × Phase</strong> Roadmap Matrix</h2>
+  <p class="section-lead">
+    Each document skill evolves independently through the maturity levels. The matrix below maps 
+    target maturity by skill and phase, reflecting demand-driven prioritization: /extract leads 
+    because it unlocks the most downstream use cases.
+  </p>
+
+  <div class="exhibit">Exhibit 2 — Document Skills Maturity Trajectory</div>
+  <table class="mck-table">
+    <thead>
+      <tr>
+        <th style="min-width:200px">AI Skill</th>
+        <th style="text-align:center;background:#eef6fc">Phase 0<br><span style="font-weight:400;text-transform:none;font-size:0.65rem">Q2/2026</span></th>
+        <th style="text-align:center">Phase 1<br><span style="font-weight:400;text-transform:none;font-size:0.65rem">Q3–Q4/2026</span></th>
+        <th style="text-align:center">Phase 2<br><span style="font-weight:400;text-transform:none;font-size:0.65rem">Q1–Q2/2027</span></th>
+        <th style="text-align:center">Phase 3<br><span style="font-weight:400;text-transform:none;font-size:0.65rem">H2/2027</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="section-row" colspan="5">DOCUMENT SKILLS — END-TO-END SCOPE</td>
+      </tr>
+      <tr>
+        <td><strong>/extract</strong><br><span style="font-size:0.72rem;color:#888">Data extraction from 80+ templates → 17 group types</span></td>
+        <td style="text-align:center;background:#fafcfe"><span class="lvl lvl-2">L2</span></td>
+        <td style="text-align:center"><span class="lvl lvl-3">L3</span></td>
+        <td style="text-align:center"><span class="lvl lvl-4">L4</span></td>
+        <td style="text-align:center"><span class="lvl lvl-4p">L4+</span></td>
+      </tr>
+      <tr>
+        <td><strong>/analyze</strong><br><span style="font-size:0.72rem;color:#888">Classification, compliance, risk, quality assessment</span></td>
+        <td style="text-align:center;background:#fafcfe"><span class="lvl lvl-1">L1</span></td>
+        <td style="text-align:center"><span class="lvl lvl-2">L2–L3</span></td>
+        <td style="text-align:center"><span class="lvl lvl-3">L3</span></td>
+        <td style="text-align:center"><span class="lvl lvl-4">L4</span></td>
+      </tr>
+      <tr>
+        <td><strong>/compare</strong><br><span style="font-size:0.72rem;color:#888">Cross-document reconciliation, discrepancy detection</span></td>
+        <td style="text-align:center;background:#fafcfe"><span class="lvl lvl-1">L1</span></td>
+        <td style="text-align:center"><span class="lvl lvl-2">L2–L3</span></td>
+        <td style="text-align:center"><span class="lvl lvl-3">L3</span></td>
+        <td style="text-align:center"><span class="lvl lvl-4">L4</span></td>
+      </tr>
+      <tr>
+        <td><strong>/generate</strong><br><span style="font-size:0.72rem;color:#888">Reports, summaries, emails, meeting minutes</span></td>
+        <td style="text-align:center;background:#fafcfe"><span class="lvl lvl-1">L1</span></td>
+        <td style="text-align:center"><span class="lvl lvl-1">L1–L2</span></td>
+        <td style="text-align:center"><span class="lvl lvl-2">L2</span></td>
+        <td style="text-align:center"><span class="lvl lvl-3">L3</span></td>
+      </tr>
+      <tr>
+        <td><strong>/transform</strong><br><span style="font-size:0.72rem;color:#888">Format conversion, translation, redaction, template filling</span></td>
+        <td style="text-align:center;background:#fafcfe"><span class="lvl lvl-1">L1</span></td>
+        <td style="text-align:center"><span class="lvl lvl-2">L2–L3</span></td>
+        <td style="text-align:center"><span class="lvl lvl-2">L2</span></td>
+        <td style="text-align:center"><span class="lvl lvl-3">L3</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== SECTION 3: PLATFORM PHILOSOPHY ===== -->
+<div class="section">
+  <div class="section-num">Section 03</div>
+  <h2 class="section-title"><strong>Platform Design</strong> Philosophy</h2>
+  <p class="section-lead">
+    Rather than building bespoke AI solutions per project or change request, the platform is architected 
+    as a shared capability layer. Each API endpoint represents an "atomic skill" that can be composed 
+    freely to serve any banking use case — eliminating duplication and accelerating time-to-value.
+  </p>
+
+  <div class="exhibit">Exhibit 3 — Six Governing Principles</div>
+  <div class="principles">
+    <div class="principle">
+      <h4>1. Skill-Centric, Not Project-Centric</h4>
+      <p>We invest in horizontal capabilities (extract, analyze, compare) rather than vertical project silos. One engine serves all business units.</p>
+    </div>
+    <div class="principle">
+      <h4>2. Freely Composable</h4>
+      <p>Each project assembles its workflow from existing skills. Credit appraisal = extract + analyze(risk) + compare(verify) + generate(report). No new build required.</p>
+    </div>
+    <div class="principle">
+      <h4>3. Progressive Maturity</h4>
+      <p>Skills start at L1 and graduate based on real demand. /extract leads (L2) because it unlocks the most downstream value. /generate follows at L1 with lower criticality.</p>
+    </div>
+    <div class="principle">
+      <h4>4. Demand-Driven Prioritization</h4>
+      <p>Investment flows to the skill with the most pending projects/CRs. Skills with 5+ waiting use cases get prioritized for level advancement.</p>
+    </div>
+    <div class="principle">
+      <h4>5. Zero Duplication</h4>
+      <p>New business units consume existing skills via API rather than requesting custom builds. This saves 60–80% effort versus project-by-project approach.</p>
+    </div>
+    <div class="principle">
+      <h4>6. Incremental Type Expansion</h4>
+      <p>Each new CR may require additional document types (e.g., warehouse receipts). Only configuration and training data are needed — no new API development.</p>
+    </div>
+  </div>
+
+  <div class="compose-diagram">
+    <div class="compose-col">
+      <h5>Atomic Skills (Platform Layer)</h5>
+      <div class="compose-pills">
+        <span class="compose-pill" style="background:#e8f5e9;color:#2e7d32">/extract</span>
+        <span class="compose-pill" style="background:#ede7f6;color:#4527a0">/analyze</span>
+        <span class="compose-pill" style="background:#fce4ec;color:#c62828">/compare</span>
+        <span class="compose-pill" style="background:#e3f2fd;color:#1565c0">/generate</span>
+        <span class="compose-pill" style="background:#fff8e1;color:#f57f17">/transform</span>
+      </div>
+    </div>
+    <div class="compose-arrow">→</div>
+    <div class="compose-col">
+      <h5>Composed Solutions (Projects & CRs)</h5>
+      <div class="compose-pills">
+        <span class="compose-pill" style="background:#f5f5f5;color:#444;border:1px solid #ddd">Credit Appraisal</span>
+        <span class="compose-pill" style="background:#f5f5f5;color:#444;border:1px solid #ddd">Auto Disbursement</span>
+        <span class="compose-pill" style="background:#f5f5f5;color:#444;border:1px solid #ddd">Trade Finance</span>
+        <span class="compose-pill" style="background:#f5f5f5;color:#444;border:1px solid #ddd">KYC Onboarding</span>
+        <span class="compose-pill" style="background:#f5f5f5;color:#444;border:1px solid #ddd">Compliance Audit</span>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:0.75rem;color:#999;text-align:center;margin-top:12px;font-style:italic">Each project = N API calls to shared platform. No bespoke development required.</p>
+</div>
+
+<!-- ===== SECTION 4: SKILL CONSUMPTION MAP ===== -->
+<div class="section">
+  <div class="section-num">Section 04</div>
+  <h2 class="section-title"><strong>Skill Consumption</strong> Map</h2>
+  <p class="section-lead">
+    Each enterprise use case consumes a specific combination of platform skills. This map demonstrates 
+    the reuse multiplier: 5 atomic skills serve 12+ distinct use cases without bespoke development.
+  </p>
+
+  <div class="exhibit">Exhibit 4 — Which Skills Does Each Use Case Consume?</div>
+  <table class="consume-table">
+    <thead>
+      <tr>
+        <th style="text-align:left">Use Case</th>
+        <th>/extract</th>
+        <th>/analyze</th>
+        <th>/compare</th>
+        <th>/generate</th>
+        <th>/transform</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Credit Dossier Appraisal</td>
+        <td class="check">collateral, credit-report, contract</td>
+        <td class="check">risk, compliance</td>
+        <td class="check">verify</td>
+        <td class="check">report</td>
+        <td class="dash">—</td>
+      </tr>
+      <tr>
+        <td>Automated Disbursement</td>
+        <td class="check">disbursement, approval</td>
+        <td class="check">compliance</td>
+        <td class="check">verify</td>
+        <td class="dash">—</td>
+        <td class="dash">—</td>
+      </tr>
+      <tr>
+        <td>L/C Document Processing</td>
+        <td class="check">lc, invoice</td>
+        <td class="check">compliance (UCP600)</td>
+        <td class="check">semantic, verify</td>
+        <td class="check">email</td>
+        <td class="check">translate</td>
+      </tr>
+      <tr>
+        <td>Corporate eKYC</td>
+        <td class="check">id-card, business-license</td>
+        <td class="check">classify, quality</td>
+        <td class="check">verify (vs DB)</td>
+        <td class="dash">—</td>
+        <td class="check">digitize</td>
+      </tr>
+      <tr>
+        <td>Document Digitization</td>
+        <td class="check">metadata extraction</td>
+        <td class="check">classify</td>
+        <td class="dash">—</td>
+        <td class="dash">—</td>
+        <td class="check">parse, convert</td>
+      </tr>
+      <tr>
+        <td>Internal Audit</td>
+        <td class="check">contract, table</td>
+        <td class="check">compliance, risk</td>
+        <td class="check">diff, version</td>
+        <td class="check">report, summary</td>
+        <td class="dash">—</td>
+      </tr>
+      <tr>
+        <td>Executive Reporting</td>
+        <td class="check">table (financials)</td>
+        <td class="check">sentiment</td>
+        <td class="dash">—</td>
+        <td class="check">report, summary</td>
+        <td class="check">rewrite (executive)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Value metrics -->
+  <div class="kpi-row" style="margin-top:32px">
+    <div class="kpi">
+      <div class="kpi-val">17+</div>
+      <div class="kpi-label">Enterprise Use Cases</div>
+      <div class="kpi-sub">Enabled by shared platform</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">5</div>
+      <div class="kpi-label">Atomic Skills</div>
+      <div class="kpi-sub">Build once, serve all</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">60–80%</div>
+      <div class="kpi-label">Effort Savings</div>
+      <div class="kpi-sub">vs. project-by-project approach</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">6+</div>
+      <div class="kpi-label">Business Divisions</div>
+      <div class="kpi-sub">Directly benefiting</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 5: PHASE DETAILS ===== -->
+<div class="section">
+  <div class="section-num">Section 05</div>
+  <h2 class="section-title"><strong>Phase</strong> Execution Plan</h2>
+  <p class="section-lead">
+    Detailed deliverables and success criteria for each implementation phase.
+  </p>
+
+  <div class="exhibit">Exhibit 5 — Phase Deliverables & Targets</div>
+  <div class="phase-cards">
+
+    <div class="phase-card">
+      <div class="phase-card-header">
+        <span class="phase-tag p0">Phase 0</span>
+        <h3>Foundation & Core Extract</h3>
+        <span class="timeline">Q2/2026 — In Progress</span>
+      </div>
+      <div class="deliverables">
+        <div class="deliv">
+          <h5>/extract → L2 Standard</h5>
+          <p>17 document types production-ready. Multi-format handling (PDF, scan, image). Conditional logic for credit, payment, legal, asset categories.</p>
+          <div class="deliv-target">Target: 90–93% accuracy</div>
+        </div>
+        <div class="deliv">
+          <h5>/analyze, /compare, /generate, /transform → L1</h5>
+          <p>Basic capabilities deployed. Simple classification, diff comparison, draft generation, parsing & conversion.</p>
+          <div class="deliv-target">Target: Functional, human-reviewed</div>
+        </div>
+        <div class="deliv">
+          <h5>Platform Infrastructure</h5>
+          <p>API Gateway (OAuth2, rate limiting), async operations tracking, health monitoring, processor registry.</p>
+          <div class="deliv-target">Target: Production-ready platform</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-card-header">
+        <span class="phase-tag p1">Phase 1</span>
+        <h3>Intelligence & Edge Cases</h3>
+        <span class="timeline">Q3–Q4/2026</span>
+      </div>
+      <div class="deliverables">
+        <div class="deliv">
+          <h5>/extract → L3 Advanced</h5>
+          <p>Full edge case handling: poor scans, handwriting, multi-page documents. Confidence-based auto-approval. Multi-model cross-validation.</p>
+          <div class="deliv-target">Target: 93–95% accuracy | &lt;5% human review</div>
+        </div>
+        <div class="deliv">
+          <h5>/analyze & /compare → L2–L3</h5>
+          <p>Multi-task analysis (compliance, risk, quality). Semantic comparison with match scoring. Banking regulation auto-checks.</p>
+          <div class="deliv-target">Target: 5 analyze tasks + 4 compare modes live</div>
+        </div>
+        <div class="deliv">
+          <h5>/transform → L2–L3</h5>
+          <p>Vietnamese handwriting digitization. Domain-aware translation. PII auto-redaction. Template engine with conditional logic.</p>
+          <div class="deliv-target">Target: AI-powered transformation suite</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-card-header">
+        <span class="phase-tag p2">Phase 2</span>
+        <h3>Deep Integration & Self-Optimization</h3>
+        <span class="timeline">Q1–Q2/2027</span>
+      </div>
+      <div class="deliverables">
+        <div class="deliv">
+          <h5>/extract → L4 Intelligent</h5>
+          <p>Self-learning from corrections. Auto-detect new document types. Adapt to novel templates in &lt;1 week. Cross-domain transfer learning.</p>
+          <div class="deliv-target">Target: &gt;95% accuracy | Self-correcting</div>
+        </div>
+        <div class="deliv">
+          <h5>/analyze & /compare → L3</h5>
+          <p>Proactive risk detection. Cross-dossier reasoning. Fraud pattern identification. Explainability dashboard for auditors.</p>
+          <div class="deliv-target">Target: Proactive intelligence layer</div>
+        </div>
+        <div class="deliv">
+          <h5>Core Banking Integration</h5>
+          <p>Real-time sync with T24, LOS, CMS. Event-driven architecture. End-to-end workflow automation for priority use cases.</p>
+          <div class="deliv-target">Target: Seamless system orchestration</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-card-header">
+        <span class="phase-tag p3">Phase 3</span>
+        <h3>Autonomous & Ecosystem</h3>
+        <span class="timeline">H2/2027</span>
+      </div>
+      <div class="deliverables">
+        <div class="deliv">
+          <h5>/extract → L4+ Near-Autonomous</h5>
+          <p>Zero-touch processing for 95%+ of cases. Self-evolving schemas. Auto-onboard new document types. Predictive pre-processing.</p>
+          <div class="deliv-target">Target: Near-autonomous operation</div>
+        </div>
+        <div class="deliv">
+          <h5>/analyze & /compare → L4 Intelligent</h5>
+          <p>Self-learning compliance rules. Predictive risk scoring. Knowledge graph reasoning. Anomaly prediction before processing.</p>
+          <div class="deliv-target">Target: Self-learning, predictive</div>
+        </div>
+        <div class="deliv">
+          <h5>Partner API Ecosystem</h5>
+          <p>Open API marketplace for fintech partners. Integration SDK. Usage-based billing. White-label capabilities.</p>
+          <div class="deliv-target">Target: Monetizable platform</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+
+</body>
+</html>

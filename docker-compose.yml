@@ -1,0 +1,200 @@
+services:
+  app:
+    build: .
+    image: dugate:latest
+    ports:
+      - "2023:2023"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://dugate:${DB_PASSWORD}@db:5432/dugate}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:2023}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      UPLOAD_DIR: /app/uploads
+      OUTPUT_DIR: /app/outputs
+      MIGRATION: ${MIGRATION:-true}
+      ALLOWED_PRIVATE_HOSTS: ${ALLOWED_PRIVATE_HOSTS:-}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      MOCK_SERVICE_URL: ${MOCK_SERVICE_URL:-https://mock-service:3099}
+      # mock-service serves HTTPS with a self-signed cert generated at its own
+      # startup into the shared `mock_certs` volume. NODE_EXTRA_CA_CERTS *adds*
+      # that one cert as trusted; it does not weaken verification anywhere else.
+      # Do NOT "fix" a TLS error here by disabling Node's certificate check
+      # globally — that switches verification off for every upstream, not just the
+      # mock, and is a real vulnerability. Add the CA, never drop the check.
+      NODE_EXTRA_CA_CERTS: /certs/mock-service.crt
+      # Seed is opt-in and needs no defaults baked in: SEED_ADMIN_KEY is required
+      # by lib/db/seed.ts, while SEED_ADMIN_EMAILS only matters for an empty
+      # database (SSO-only sign-in has no just-in-time provisioning, so the first
+      # ADMIN rows must be pre-created). Both are runtime values, never build args.
+      SEED: ${SEED:-false}
+      SEED_ADMIN_KEY: ${SEED_ADMIN_KEY:-}
+      SEED_ADMIN_EMAILS: ${SEED_ADMIN_EMAILS:-}
+      # SSO is the only way in; leaving these unset means nobody can sign in.
+      # No on/off switch: these three values being present is what enables sign-in.
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      # Operation content retention — keep identical on app and worker (see .env.example).
+      OPERATION_CONTENT_RETENTION_DAYS: ${OPERATION_CONTENT_RETENTION_DAYS:-7}
+      OPERATION_CONTENT_PURGE_MAX_PER_RUN: ${OPERATION_CONTENT_PURGE_MAX_PER_RUN:-5000}
+      OPERATION_CONTENT_PURGE_DRY_RUN: ${OPERATION_CONTENT_PURGE_DRY_RUN:-false}
+      WORKFLOW_SUBSTEP_KEEP_CONTENT: ${WORKFLOW_SUBSTEP_KEEP_CONTENT:-false}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+      # Read-only: the app only needs to trust the cert, never to write it.
+      - mock_certs:/certs:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # Wait for the cert to exist before Node reads NODE_EXTRA_CA_CERTS at boot.
+      mock-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    #ports:
+    #  - "5432:5432"
+    environment:
+      POSTGRES_USER: dugate
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: dugate
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dugate"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  mock-service:
+    build: ./mock-service
+    # Deliberately NOT published to the host. The app and worker reach it as
+    # `mock-service:3099` over the compose network, so publishing bought nothing
+    # and bound the mock to every interface of the dev machine — anyone on the
+    # same LAN could drive it.
+    # To poke at it by hand: `docker compose exec mock-service node -e ...`, or
+    # temporarily add `ports: ["127.0.0.1:3099:3099"]` to bind loopback only.
+    environment:
+      MOCK_PORT: 3099
+      MOCK_API_KEY: DUMMY_SECRET_KEY
+      MOCK_DELAY_MS: 300
+      MOCK_CERT_DIR: /certs
+      NODE_EXTRA_CA_CERTS: /certs/mock-service.crt
+    volumes:
+      - mock_certs:/certs
+    healthcheck:
+      # Real TLS verify against the generated cert (SAN includes localhost).
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('https').get('https://localhost:3099/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    #ports:
+    #  - "6379:6379"
+    # Dev: in-memory mode (no persistence). Production: add --appendonly yes + volume
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  worker:
+    build: . # Reuse same Dockerfile as Next.js app
+    image: dugate:latest
+    command: ["node", "worker.js"] # Pre-compiled bundle — no tsx needed at runtime
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://dugate:${DB_PASSWORD}@db:5432/dugate}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      MOCK_SERVICE_URL: ${MOCK_SERVICE_URL:-https://mock-service:3099}
+      # Same reasoning as the app service: trust exactly one extra CA, never
+      # disable verification process-wide.
+      NODE_EXTRA_CA_CERTS: /certs/mock-service.crt
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      UPLOAD_DIR: /app/uploads
+      OUTPUT_DIR: /app/outputs
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+      SUBSTEP_WORKER_CONCURRENCY: ${SUBSTEP_WORKER_CONCURRENCY:-10}
+      OPERATION_CONTENT_RETENTION_DAYS: ${OPERATION_CONTENT_RETENTION_DAYS:-7}
+      OPERATION_CONTENT_PURGE_MAX_PER_RUN: ${OPERATION_CONTENT_PURGE_MAX_PER_RUN:-5000}
+      OPERATION_CONTENT_PURGE_DRY_RUN: ${OPERATION_CONTENT_PURGE_DRY_RUN:-false}
+      WORKFLOW_SUBSTEP_KEEP_CONTENT: ${WORKFLOW_SUBSTEP_KEEP_CONTENT:-false}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+      - mock_certs:/certs:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mock-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f worker.ts || pgrep -f worker.js || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  # ─── Example: Dedicated worker for a specific worker group ──────────────────
+  # Uncomment and duplicate this block to add dedicated workers per group.
+  # Each worker consumes only from its assigned group's queues.
+  #
+  # worker-group-a:
+  #   build: .
+  #   image: dugate:latest
+  #   command: ["node", "worker.js"]
+  #   environment:
+  #     DATABASE_URL: ${DATABASE_URL:-postgresql://dugate:${DB_PASSWORD}@db:5432/dugate}
+  #     REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+  #     MOCK_SERVICE_URL: ${MOCK_SERVICE_URL:-https://mock-service:3099}
+  #     NODE_EXTRA_CA_CERTS: /certs/mock-service.crt
+  #     ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+  #     UPLOAD_DIR: /app/uploads
+  #     OUTPUT_DIR: /app/outputs
+  #     WORKER_QUEUE: pipeline.group-a  # ← Routes this worker to group-a queues
+  #     WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+  #     SUBSTEP_WORKER_CONCURRENCY: ${SUBSTEP_WORKER_CONCURRENCY:-10}
+  #   volumes:
+  #     - ./uploads:/app/uploads
+  #     - ./outputs:/app/outputs
+  #     - mock_certs:/certs:ro
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     mock-service:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pgrep -f worker.ts || pgrep -f worker.js || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 20s
+  #   restart: unless-stopped
+
+volumes:
+  pgdata:
+  # Holds the self-signed pair mock-service generates on first boot. Lives only in
+  # the Docker volume, never in the repo. `docker compose down -v` drops it and the
+  # next start regenerates a fresh one.
+  mock_certs:

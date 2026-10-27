@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/common.schema.json",
+  "title": "Common structures v2",
+  "$defs": {
+    "DateString": {
+      "type": "string",
+      "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$",
+      "description": "ISO 8601: YYYY-MM-DD, YYYY-MM hoặc YYYY"
+    },
+    "NullableDate": { "oneOf": [{ "$ref": "#/$defs/DateString" }, { "type": "null" }] },
+    "DateTimeString": { "type": "string", "format": "date-time" },
+    "MoneyVND": { "type": "integer", "minimum": 0, "description": "Số nguyên VND" },
+    "NullableMoney": { "oneOf": [{ "$ref": "#/$defs/MoneyVND" }, { "type": "null" }] },
+    "Percent": { "type": "number", "minimum": 0, "maximum": 100 },
+    "Confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "PageRange": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 1 },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "[start, end], 1-based, khoảng đóng"
+    },
+    "IdNumber": { "type": "string", "pattern": "^\\d{9}$|^\\d{12}$|^[A-Z0-9]{6,15}$" },
+    "NullableIdNumber": { "oneOf": [{ "$ref": "#/$defs/IdNumber" }, { "type": "null" }] },
+    "NullableString": { "type": ["string", "null"] },
+
+    "Address": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["full_text", "street", "ward", "district", "province"],
+      "properties": {
+        "full_text": { "type": ["string", "null"] },
+        "street": { "type": ["string", "null"] },
+        "ward": { "type": ["string", "null"] },
+        "district": { "type": ["string", "null"] },
+        "province": { "type": ["string", "null"] }
+      }
+    },
+    "NullableAddress": { "oneOf": [{ "$ref": "#/$defs/Address" }, { "type": "null" }] },
+
+    "Signatory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["full_name", "position", "organization", "sign_date", "has_seal"],
+      "properties": {
+        "full_name": { "type": ["string", "null"] },
+        "position": { "type": ["string", "null"] },
+        "organization": { "type": ["string", "null"] },
+        "sign_date": { "$ref": "#/$defs/NullableDate" },
+        "has_seal": { "type": ["boolean", "null"] }
+      }
+    },
+    "LegalInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document_title", "form_template_number", "document_number", "issuing_authority", "issue_date", "issue_place", "valid_until", "signatories"],
+      "properties": {
+        "document_title": { "type": ["string", "null"] },
+        "form_template_number": { "type": ["string", "null"] },
+        "document_number": { "type": ["string", "null"] },
+        "issuing_authority": { "type": ["string", "null"] },
+        "issue_date": { "$ref": "#/$defs/NullableDate" },
+        "issue_place": { "type": ["string", "null"] },
+        "valid_until": { "$ref": "#/$defs/NullableDate" },
+        "signatories": { "type": "array", "items": { "$ref": "#/$defs/Signatory" } }
+      }
+    },
+    "NullableLegalInfo": { "oneOf": [{ "$ref": "#/$defs/LegalInfo" }, { "type": "null" }] },
+
+    "PartyOwnership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_index", "ownership_source", "ownership_change_date", "is_current_owner"],
+      "properties": {
+        "asset_index": { "type": "integer", "minimum": 0 },
+        "ownership_source": { "$ref": "_enums.schema.json#/$defs/OwnershipSource" },
+        "ownership_change_date": { "$ref": "#/$defs/NullableDate" },
+        "is_current_owner": { "type": "boolean" }
+      }
+    },
+    "DocumentParty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "party_index", "party_role", "party_role_raw", "party_type", "full_name", "id_number", "id_type",
+        "id_issue_date", "id_issue_place", "previous_id_numbers", "date_of_birth", "gender", "nationality",
+        "permanent_address", "current_address", "phone_number", "tax_id",
+        "representative_name", "representative_position", "ownership"
+      ],
+      "properties": {
+        "party_index": { "type": "integer", "minimum": 0 },
+        "party_role": { "$ref": "_enums.schema.json#/$defs/PartyRole" },
+        "party_role_raw": { "type": ["string", "null"] },
+        "party_type": { "$ref": "_enums.schema.json#/$defs/PartyType" },
+        "full_name": { "type": ["string", "null"] },
+        "id_number": { "$ref": "#/$defs/NullableIdNumber" },
+        "id_type": { "$ref": "_enums.schema.json#/$defs/IdType" },
+        "id_issue_date": { "$ref": "#/$defs/NullableDate" },
+        "id_issue_place": { "type": ["string", "null"] },
+        "previous_id_numbers": { "type": "array", "items": { "$ref": "#/$defs/IdNumber" } },
+        "date_of_birth": { "$ref": "#/$defs/NullableDate" },
+        "gender": { "$ref": "_enums.schema.json#/$defs/Gender" },
+        "nationality": { "type": ["string", "null"] },
+        "permanent_address": { "$ref": "#/$defs/NullableAddress" },
+        "current_address": { "$ref": "#/$defs/NullableAddress" },
+        "phone_number": { "type": ["string", "null"] },
+        "tax_id": { "type": ["string", "null"] },
+        "representative_name": { "type": ["string", "null"] },
+        "representative_position": { "type": ["string", "null"] },
+        "ownership": { "oneOf": [{ "$ref": "#/$defs/PartyOwnership" }, { "type": "null" }] }
+      }
+    },
+
+    "AssetIdentifiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "certificate_number", "certificate_book_number", "land_parcel_number", "map_sheet_number",
+        "apartment_number", "building_name", "project_name",
+        "license_plate", "chassis_number", "engine_number", "registration_number"
+      ],
+      "properties": {
+        "certificate_number": { "type": ["string", "null"] },
+        "certificate_book_number": { "type": ["string", "null"] },
+        "land_parcel_number": { "type": ["string", "null"] },
+        "map_sheet_number": { "type": ["string", "null"] },
+        "apartment_number": { "type": ["string", "null"] },
+        "building_name": { "type": ["string", "null"] },
+        "project_name": { "type": ["string", "null"] },
+        "license_plate": { "type": ["string", "null"] },
+        "chassis_number": { "type": ["string", "null"] },
+        "engine_number": { "type": ["string", "null"] },
+        "registration_number": { "type": ["string", "null"] }
+      }
+    },
+    "AssetDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_index", "asset_type", "identifiers", "address", "description", "usage_context_hint"],
+      "properties": {
+        "asset_index": { "type": "integer", "minimum": 0 },
+        "asset_type": { "$ref": "_enums.schema.json#/$defs/AssetType" },
+        "identifiers": { "$ref": "#/$defs/AssetIdentifiers" },
+        "address": { "$ref": "#/$defs/NullableAddress" },
+        "description": { "type": ["string", "null"] },
+        "usage_context_hint": {
+          "oneOf": [{ "$ref": "_enums.schema.json#/$defs/UsageContext" }, { "type": "null" }]
+        }
+      }
+    },
+
+    "SourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_id", "file_id", "file_name", "doc_type_key", "field_path", "page"],
+      "properties": {
+        "evidence_id": { "type": "string", "pattern": "^ev-" },
+        "file_id": { "type": "string", "pattern": "^file-" },
+        "file_name": { "type": "string" },
+        "doc_type_key": { "$ref": "_enums.schema.json#/$defs/DocTypeKey" },
+        "field_path": { "type": ["string", "null"] },
+        "page": { "type": ["integer", "null"], "minimum": 1 }
+      }
+    },
+
+    "ErrorObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason_code", "message", "details"],
+      "properties": {
+        "reason_code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "message": { "type": "string" },
+        "details": { "type": ["object", "null"] }
+      }
+    },
+
+    "BlockingInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "doc_type_key", "doc_type_label", "person_id", "asset_id", "field_path", "message"],
+      "properties": {
+        "type": { "$ref": "_enums.schema.json#/$defs/BlockingInputType" },
+        "doc_type_key": { "oneOf": [{ "$ref": "_enums.schema.json#/$defs/DocTypeKey" }, { "type": "null" }] },
+        "doc_type_label": { "type": ["string", "null"] },
+        "person_id": { "type": ["string", "null"], "pattern": "^person-\\d+$" },
+        "asset_id": { "type": ["string", "null"], "pattern": "^asset-\\d+$" },
+        "field_path": { "type": ["string", "null"] },
+        "message": { "type": "string" }
+      }
+    },
+
+    "FieldConfidences": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/Confidence" }
+    },
+    "SourcePages": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "integer", "minimum": 1 } }
+    }
+  }
+}

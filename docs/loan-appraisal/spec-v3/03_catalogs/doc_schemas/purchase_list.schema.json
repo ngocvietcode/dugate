@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/purchase_list.schema.json",
+  "title": "purchase_list — data",
+  "description": "Schema của evidence.data cho doc_type_key = purchase_list (Bảng kê mua hàng). Tiêu đề thay đổi theo đơn vị lập (BẢNG KÊ HÀNG HÓA MUA VÀO / HÀNG CẦN NHẬP / MUA HÀNG…). schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "business_info",
+    "funding_plan",
+    "items",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "CUSTOMER = khách hàng lập bảng kê (luôn 1 người, KH vay); SELLER nếu bảng kê ghi bên bán.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 1
+    },
+    "business_info": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "business_line",
+        "business_address"
+      ],
+      "properties": {
+        "business_line": {
+          "description": "Ngành hàng / lĩnh vực kinh doanh ghi trên bảng kê.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "business_address": {
+          "description": "Địa chỉ kinh doanh ghi trên bảng kê.",
+          "$ref": "_common.schema.json#/$defs/NullableAddress"
+        }
+      }
+    },
+    "funding_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total_amount",
+        "loan_amount",
+        "own_capital_amount"
+      ],
+      "properties": {
+        "total_amount": {
+          "description": "Tổng giá trị bảng kê (VND). UAT `total_value`.",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "loan_amount": {
+          "description": "Số tiền đề nghị vay ghi trên bảng kê, nếu có (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "own_capital_amount": {
+          "description": "Vốn tự có ghi trên bảng kê, nếu có (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        }
+      }
+    },
+    "items": {
+      "description": "Danh sách hàng hóa dự kiến mua bằng vốn vay.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "item_no",
+          "item_name",
+          "unit",
+          "quantity",
+          "unit_price",
+          "amount"
+        ],
+        "properties": {
+          "item_no": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "item_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quantity": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "unit_price": {
+            "$ref": "_common.schema.json#/$defs/NullableMoney"
+          },
+          "amount": {
+            "$ref": "_common.schema.json#/$defs/NullableMoney"
+          }
+        }
+      }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày lập bảng kê.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "CUSTOMER",
+                "SELLER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  builder:
+    image: ${IMAGE_NAME:-dugate}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+      shm_size: 2g
+      args:
+        DOCKERHUB_PROXY_REGISTRY: ${DOCKERHUB_PROXY_REGISTRY:-dockerhub-proxy.aws.platform.vpbank.dev}
+        NPM_PROXY_REGISTRY: ${NPM_PROXY_REGISTRY:-https://registry.aws.platform.vpbank.dev/repository/npm-proxy-group}
+        NODE_IMAGE: ${NODE_IMAGE:-library/node:20-slim}
+        IMAGE_TAG: ${IMAGE_TAG:-latest}
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: '4g'
+    entrypoint: ["sh", "-c"]
+    command: 'echo "built ${IMAGE_NAME:-dugate}:${IMAGE_TAG:-latest}" && exit 0'
+    restart: "no"
+
+  inspector:
+    image: ${IMAGE_NAME:-dugate}:${IMAGE_TAG:-latest}
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -eu
+        echo "INSPECT ${IMAGE_NAME:-dugate}:${IMAGE_TAG:-latest}"
+        echo "PWD=$(pwd)"
+        echo "List /app (first 80):"
+        ls -la /app 2>/dev/null | sed -n '1,80p' || true
+        echo "Check .next/standalone:"
+        ls -la /app/.next 2>/dev/null || true
+        echo "Check worker.js:"
+        ls -la /app/worker.js 2>/dev/null || true
+        echo "Sleeping for manual inspection..."
+        sleep 3650000
+    restart: "no"

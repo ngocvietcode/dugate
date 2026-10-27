@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/loan_application.schema.json",
+  "title": "loan_application — data",
+  "description": "Giấy đề nghị vay vốn kiêm phương án vay. Root = EvidenceEnvelope.data. Đặc tả: 04_document_schemas/loan_application.md",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties", "party_details", "assets", "asset_details", "business_info", "loan_info",
+    "financial_info", "collateral_summary", "ltv", "officer_info", "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/LoanApplicationParty" }
+    },
+    "party_details": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/PartyDetail" }
+    },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/CollateralAsset" }
+    },
+    "asset_details": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/AssetDetail" }
+    },
+    "business_info": { "oneOf": [{ "$ref": "#/$defs/BusinessInfo" }, { "type": "null" }] },
+    "loan_info": { "oneOf": [{ "$ref": "#/$defs/LoanInfo" }, { "type": "null" }] },
+    "financial_info": { "oneOf": [{ "$ref": "#/$defs/FinancialInfo" }, { "type": "null" }] },
+    "collateral_summary": { "oneOf": [{ "$ref": "#/$defs/CollateralSummary" }, { "type": "null" }] },
+    "ltv": { "oneOf": [{ "$ref": "_common.schema.json#/$defs/Percent" }, { "type": "null" }] },
+    "officer_info": { "oneOf": [{ "$ref": "#/$defs/OfficerInfo" }, { "type": "null" }] },
+    "legal_info": { "$ref": "_common.schema.json#/$defs/NullableLegalInfo" }
+  },
+  "$defs": {
+    "LoanPurposeCategory": {
+      "description": "Đề xuất bổ sung vào enums.schema.json (chưa có trong registry). Nguồn: _field_dictionary.md loan_info.loan_purpose_categories.",
+      "type": "string",
+      "enum": ["PURCHASE_VEHICLE", "PURCHASE_GOODS", "PURCHASE_FACTORY_LAND", "CONSTRUCTION_REPAIR", "WORKING_CAPITAL", "OTHER"]
+    },
+    "LoanApplicationFormSection": {
+      "description": "Đề xuất bổ sung vào enums.schema.json. Mục trên form nơi party được đọc.",
+      "type": "string",
+      "enum": [
+        "SECTION_2_PERSONAL_INFO",
+        "SECTION_2_SPOUSE_INFO",
+        "SECTION_2_7_REFERENCE_PERSON",
+        "SECTION_4_2_COLLATERAL_OWNER",
+        "SECTION_4_3_COLLATERAL_OWNER",
+        "SECTION_5_SECOND_BORROWER",
+        "SECTION_6_COLLATERAL_OWNER"
+      ]
+    },
+    "LoanApplicationParty": {
+      "allOf": [
+        { "$ref": "_common.schema.json#/$defs/DocumentParty" },
+        {
+          "properties": {
+            "party_role": { "enum": ["BORROWER", "CO_BORROWER", "SPOUSE", "COLLATERAL_OWNER", "REFERENCE_PERSON"] },
+            "ownership": { "type": "null" }
+          }
+        }
+      ]
+    },
+    "PartyDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "party_index", "form_section", "source_page", "is_section_page_verified",
+        "marital_status", "marital_status_raw", "relationship_to_borrower", "relationship_to_borrower_raw"
+      ],
+      "properties": {
+        "party_index": { "type": "integer", "minimum": 0 },
+        "form_section": { "$ref": "#/$defs/LoanApplicationFormSection" },
+        "source_page": { "type": ["integer", "null"], "minimum": 1 },
+        "is_section_page_verified": { "type": ["boolean", "null"] },
+        "marital_status": { "$ref": "_enums.schema.json#/$defs/MaritalStatus" },
+        "marital_status_raw": { "type": ["string", "null"] },
+        "relationship_to_borrower": { "$ref": "_enums.schema.json#/$defs/RelationshipType" },
+        "relationship_to_borrower_raw": { "type": ["string", "null"] }
+      }
+    },
+    "CollateralAsset": {
+      "allOf": [
+        { "$ref": "_common.schema.json#/$defs/AssetDescriptor" },
+        { "properties": { "usage_context_hint": { "const": "collateral" } } }
+      ]
+    },
+    "AssetDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "asset_index", "collateral_type_raw", "owner_names_raw", "owner_party_indexes",
+        "declared_value", "vehicle_brand", "vehicle_model"
+      ],
+      "properties": {
+        "asset_index": { "type": "integer", "minimum": 0 },
+        "collateral_type_raw": { "type": ["string", "null"] },
+        "owner_names_raw": { "type": ["string", "null"] },
+        "owner_party_indexes": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "declared_value": { "$ref": "_common.schema.json#/$defs/NullableMoney" },
+        "vehicle_brand": { "type": ["string", "null"] },
+        "vehicle_model": { "type": ["string", "null"] }
+      }
+    },
+    "BusinessInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["business_name", "business_line", "business_address", "tax_id", "registration_number"],
+      "properties": {
+        "business_name": { "type": ["string", "null"] },
+        "business_line": { "type": ["string", "null"] },
+        "business_address": { "$ref": "_common.schema.json#/$defs/NullableAddress" },
+        "tax_id": { "type": ["string", "null"] },
+        "registration_number": { "type": ["string", "null"] }
+      }
+    },
+    "LoanInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "borrower_type", "requested_amount", "requested_amount_page", "bank_proposed_amount", "bank_proposed_amount_page",
+        "loan_term_months", "interest_rate", "interest_rate_code", "interest_rate_raw", "interest_margin", "preferential_period_months",
+        "loan_purposes", "loan_purpose_detail", "loan_purpose_categories",
+        "disbursement_method", "principal_repayment_method", "interest_repayment_method", "principal_grace_months"
+      ],
+      "properties": {
+        "borrower_type": { "type": ["string", "null"] },
+        "requested_amount": { "$ref": "_common.schema.json#/$defs/NullableMoney" },
+        "requested_amount_page": { "type": ["integer", "null"], "minimum": 1 },
+        "bank_proposed_amount": { "$ref": "_common.schema.json#/$defs/NullableMoney" },
+        "bank_proposed_amount_page": { "type": ["integer", "null"], "minimum": 1 },
+        "loan_term_months": { "type": ["integer", "null"], "minimum": 0 },
+        "interest_rate": { "description": "Lãi suất %/năm in trên giấy. null khi giấy chỉ ghi mã biểu; KHÔNG suy từ mã biểu.", "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "interest_rate_code": { "description": "Mã biểu lãi suất ở ô 'Lãi suất' (VD 'LC10'). Không phải phần trăm.", "type": ["string", "null"] },
+        "interest_rate_raw": { "type": ["string", "null"] },
+        "interest_margin": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "preferential_period_months": { "type": ["integer", "null"], "minimum": 0 },
+        "loan_purposes": { "type": "array", "items": { "type": "string" } },
+        "loan_purpose_detail": { "type": ["string", "null"] },
+        "loan_purpose_categories": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/LoanPurposeCategory" }
+        },
+        "disbursement_method": { "type": ["string", "null"] },
+        "principal_repayment_method": { "type": ["string", "null"] },
+        "interest_repayment_method": { "type": ["string", "null"] },
+        "principal_grace_months": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "IncomeDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "amount", "period"],
+      "properties": {
+        "source": { "type": ["string", "null"] },
+        "amount": { "$ref": "_common.schema.json#/$defs/NullableMoney" },
+        "period": { "$ref": "_enums.schema.json#/$defs/MetricPeriod" }
+      }
+    },
+    "FinancialInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_income", "total_income_period", "repayment_source", "income_details", "has_existing_debt", "existing_monthly_debt_payment"],
+      "properties": {
+        "total_income": { "$ref": "_common.schema.json#/$defs/NullableMoney" },
+        "total_income_period": { "$ref": "_enums.schema.json#/$defs/MetricPeriod" },
+        "repayment_source": { "type": ["string", "null"] },
+        "income_details": { "type": "array", "items": { "$ref": "#/$defs/IncomeDetail" } },
+        "has_existing_debt": { "description": "KH khai có nghĩa vụ nợ tại TCTD: Có → true, Không → false, không khai → null.", "type": ["boolean", "null"] },
+        "existing_monthly_debt_payment": { "description": "Tổng số tiền trả nợ hàng tháng của các khoản vay hiện hữu (VND); 0 khi KH khai không có khoản vay.", "$ref": "_common.schema.json#/$defs/NullableMoney" }
+      }
+    },
+    "CollateralSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_collateral_value", "notes"],
+      "properties": {
+        "total_collateral_value": { "$ref": "_common.schema.json#/$defs/NullableMoney" },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "OfficerInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_code", "dao_code", "branch", "decision_date", "approval_flow_raw"],
+      "properties": {
+        "case_code": { "type": ["string", "null"] },
+        "dao_code": { "type": ["string", "null"] },
+        "branch": { "type": ["string", "null"] },
+        "decision_date": { "$ref": "_common.schema.json#/$defs/NullableDate" },
+        "approval_flow_raw": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "verdict": "APPROVED",
+  "findings": [
+    "(non-blocking, likely) Single-instance header source changed: singleDocument/buildSegment prefers the first full_name/id_number leaf in the segment over the backend party_name/party_id; nested persons (spouse, collateral owner) could mislabel the header. Prefer backend party_name/party_id for single-instance views.",
+    "(non-blocking, likely) normalizeIdNumber strips non-digits and returns null below 9 digits, so passport-style alphanumeric IDs disappear from the header and cannot match participants by ID. Keep the raw value when digit-normalization fails.",
+    "(non-blocking, confirmed, minor) OcrResults subtitle adds up per-file type_count, so one doc type in two files counts as 2 'loại'. Use a distinct set of doc_type_key across groups."
+  ],
+  "reviewDoc": "d:\\Jobs\\dugate\\.agents\\tasks\\loan-appraisal-v2-ui\\review.md"
+}

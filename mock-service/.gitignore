@@ -1,0 +1,6 @@
+# Self-signed TLS material generated at runtime. Must never be committed:
+# a private key in git is a hardcoded-key finding, not a convenience.
+certs/
+*.key
+*.crt
+*.pem

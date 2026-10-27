@@ -1,0 +1,39 @@
+{
+    "test_patterns": {
+        "unit_test": {
+            "description": "Test individual functions/methods in isolation",
+            "jest_template": "describe('{FunctionName}', () => {\n  it('should return expected result for valid input', () => {\n    const result = {functionName}({validInput});\n    expect(result).toEqual({expectedOutput});\n  });\n\n  it('should throw error for invalid input', () => {\n    expect(() => {functionName}({invalidInput})).toThrow();\n  });\n\n  it('should handle edge case', () => {\n    const result = {functionName}({edgeCaseInput});\n    expect(result).toEqual({edgeCaseOutput});\n  });\n});",
+            "pytest_template": "class Test{ClassName}:\n    def test_valid_input(self):\n        result = {function_name}({valid_input})\n        assert result == {expected_output}\n\n    def test_invalid_input(self):\n        with pytest.raises(ValueError):\n            {function_name}({invalid_input})\n\n    def test_edge_case(self):\n        result = {function_name}({edge_case})\n        assert result == {edge_output}"
+        },
+        "integration_test": {
+            "description": "Test interaction between multiple components",
+            "api_test_template": "describe('POST /api/users', () => {\n  it('should create a new user', async () => {\n    const res = await request(app)\n      .post('/api/users')\n      .send({ email: 'test@test.com', password: 'Pass123!' })\n      .expect(201);\n    expect(res.body.data).toHaveProperty('id');\n  });\n\n  it('should return 400 for invalid email', async () => {\n    const res = await request(app)\n      .post('/api/users')\n      .send({ email: 'invalid', password: 'Pass123!' })\n      .expect(400);\n  });\n});"
+        },
+        "component_test": {
+            "description": "Test React/Vue components",
+            "react_template": "describe('{ComponentName}', () => {\n  it('renders correctly', () => {\n    render(<{ComponentName} />);\n    expect(screen.getByText('{expectedText}')).toBeInTheDocument();\n  });\n\n  it('handles click event', () => {\n    const onClick = jest.fn();\n    render(<{ComponentName} onClick={onClick} />);\n    fireEvent.click(screen.getByRole('button'));\n    expect(onClick).toHaveBeenCalledTimes(1);\n  });\n});"
+        }
+    },
+    "coverage_targets": {
+        "minimum": "60% — acceptable for startups",
+        "good": "80% — recommended for production apps",
+        "excellent": "90%+ — critical systems (fintech, healthcare)"
+    },
+    "testing_pyramid": {
+        "unit": {
+            "percentage": "70%",
+            "speed": "fast",
+            "cost": "low"
+        },
+        "integration": {
+            "percentage": "20%",
+            "speed": "medium",
+            "cost": "medium"
+        },
+        "e2e": {
+            "percentage": "10%",
+            "speed": "slow",
+            "cost": "high"
+        }
+    }
+}

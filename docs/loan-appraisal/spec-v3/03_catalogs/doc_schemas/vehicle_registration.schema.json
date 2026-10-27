@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/vehicle_registration.schema.json",
+  "title": "vehicle_registration — data",
+  "description": "Schema của evidence.data cho doc_type_key = vehicle_registration (Chứng nhận đăng ký xe ô tô). Chủ xe theo S2-R13 (chỉ trang bìa → `COVER_PAGE`, `is_current_owner = true`). schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "assets",
+    "asset_details",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "Chủ xe (OWNER).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/OwnerParty"
+      },
+      "minItems": 1
+    },
+    "assets": {
+      "description": "`identifiers.registration_number` = số đăng ký (ô 'Số / Number'); `license_plate` giữ như in (VD '86A-364.34').",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Asset"
+      },
+      "minItems": 1
+    },
+    "asset_details": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset_index",
+          "vehicle_brand",
+          "vehicle_model",
+          "vehicle_type",
+          "manufacture_year",
+          "color",
+          "seats",
+          "engine_capacity_raw",
+          "first_registration_date"
+        ],
+        "properties": {
+          "asset_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "vehicle_brand": {
+            "description": "Nhãn hiệu (VD 'KIA').",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vehicle_model": {
+            "description": "Số loại / model (VD 'CARENS').",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vehicle_type": {
+            "description": "Loại phương tiện (nguyên văn).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manufacture_year": {
+            "description": "Năm sản xuất.",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1900,
+            "maximum": 2100
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "seats": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "engine_capacity_raw": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "first_registration_date": {
+            "description": "Ngày đăng ký lần đầu.",
+            "$ref": "_common.schema.json#/$defs/NullableDate"
+          }
+        }
+      }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày cấp đăng ký; valid_until = hạn đăng ký nếu in (xe kinh doanh).",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "OwnerParty": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "OWNER"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Asset": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/AssetDescriptor"
+        },
+        {
+          "properties": {
+            "asset_type": {
+              "enum": [
+                "vehicle"
+              ]
+            },
+            "usage_context_hint": {
+              "const": null
+            }
+          }
+        }
+      ]
+    }
+  }
+}

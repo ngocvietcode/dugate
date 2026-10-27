@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/goods_purchase_contract.schema.json",
+  "title": "goods_purchase_contract — data",
+  "description": "Schema của evidence.data cho doc_type_key = goods_purchase_contract (Hợp đồng mua bán hàng hóa). Bên bán là doanh nghiệp: `party_type = ORGANIZATION`, mã số thuế ở `tax_id`, người đại diện ở `representative_name`; là cá nhân: số CCCD ở `id_number`. schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "contract_info",
+    "goods_summary",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "SELLER (bên bán hàng hóa / thi công) và BUYER (thường là khách hàng vay; `current_address` = địa chỉ bên mua).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 2
+    },
+    "contract_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_number",
+        "sign_date",
+        "total_amount",
+        "payment_terms_raw",
+        "delivery_terms_raw"
+      ],
+      "properties": {
+        "contract_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sign_date": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "total_amount": {
+          "description": "Tổng giá trị hợp đồng (VND). UAT `total_value`.",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "payment_terms_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "delivery_terms_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "goods_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goods_description",
+        "items"
+      ],
+      "properties": {
+        "goods_description": {
+          "description": "Mô tả chung hàng hóa / công trình (nguyên văn).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "item_no",
+              "item_name",
+              "unit",
+              "quantity",
+              "unit_price",
+              "amount"
+            ],
+            "properties": {
+              "item_no": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "item_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "unit": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "quantity": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "unit_price": {
+                "$ref": "_common.schema.json#/$defs/NullableMoney"
+              },
+              "amount": {
+                "$ref": "_common.schema.json#/$defs/NullableMoney"
+              }
+            }
+          }
+        }
+      }
+    },
+    "legal_info": {
+      "description": "document_number = số hợp đồng; issue_date = ngày ký.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "SELLER",
+                "BUYER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

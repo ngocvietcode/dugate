@@ -1,0 +1,397 @@
+{
+  "version": "3.0.0",
+  "description": "Chương trình checklist (S4-R24, D-37): mỗi chương trình gom các sản phẩm vay (product_code, quan hệ nhiều-một), khai báo các luồng của nó và mức yêu cầu của từng mục checklist theo luồng. Định nghĩa mục (chứng từ chấp nhận, thay thế, hiệu lực, điều kiện) ở checklist_catalog.json. Mục không có trong `requirements`, hoặc giá trị null ở một luồng → không sinh dòng ở luồng đó. Luồng đầu tiên trong `flows` là luồng mặc định.",
+  "programs": [
+    {
+      "program_key": "hkd_secured",
+      "program_label": "Hộ kinh doanh — vay có TSBĐ",
+      "product_codes": [
+        "hkd-loan"
+      ],
+      "flows": [
+        {
+          "flow_key": "FULL",
+          "flow_label": "FULL: thẩm định đầy đủ"
+        },
+        {
+          "flow_key": "FAST",
+          "flow_label": "FAST: tối giản chứng từ nguồn thu"
+        },
+        {
+          "flow_key": "SIMPLE",
+          "flow_label": "SIMPLE: rút gọn chứng từ nguồn thu"
+        }
+      ],
+      "requirements": {
+        "legal_id_card": {
+          "FULL": "REQUIRED",
+          "FAST": "REQUIRED",
+          "SIMPLE": "REQUIRED"
+        },
+        "legal_qr_code_info": {
+          "FULL": "NOT_REQUIRED",
+          "FAST": "NOT_REQUIRED",
+          "SIMPLE": "NOT_REQUIRED"
+        },
+        "legal_vneid": {
+          "FULL": "REQUIRED",
+          "FAST": "REQUIRED",
+          "SIMPLE": "REQUIRED"
+        },
+        "legal_residence_confirmation": {
+          "FULL": "REQUIRED",
+          "FAST": "REQUIRED",
+          "SIMPLE": "REQUIRED"
+        },
+        "legal_marriage_certificate": {
+          "FULL": "CONDITIONAL",
+          "FAST": "CONDITIONAL",
+          "SIMPLE": "CONDITIONAL"
+        },
+        "legal_marital_status_confirmation": {
+          "FULL": "CONDITIONAL",
+          "FAST": "CONDITIONAL",
+          "SIMPLE": "CONDITIONAL"
+        },
+        "legal_same_person_commitment": {
+          "FULL": "CONDITIONAL",
+          "FAST": "CONDITIONAL",
+          "SIMPLE": "CONDITIONAL"
+        },
+        "legal_local_cmnd_confirmation": {
+          "FULL": "CONDITIONAL",
+          "FAST": "CONDITIONAL",
+          "SIMPLE": "CONDITIONAL"
+        },
+        "legal_birth_certificate": {
+          "FULL": "CONDITIONAL",
+          "FAST": "CONDITIONAL",
+          "SIMPLE": "CONDITIONAL"
+        },
+        "loan_plan_loan_application": {
+          "FULL": "REQUIRED",
+          "FAST": "REQUIRED",
+          "SIMPLE": "REQUIRED"
+        },
+        "loan_plan_purchase_list": {
+          "FULL": "REQUIRED",
+          "FAST": "REQUIRED",
+          "SIMPLE": "REQUIRED"
+        },
+        "loan_plan_goods_purchase_contract": {
+          "FULL": "REQUIRED",
+          "FAST": "REQUIRED",
+          "SIMPLE": "REQUIRED"
+        },
+        "loan_plan_vehicle_sale_contract": {
+          "FULL": "CONDITIONAL",
+          "FAST": "CONDITIONAL",
+          "SIMPLE": "CONDITIONAL"
+        },
+        "loan_plan_land_use_cert_to_buy": {
+          "FULL": "CONDITIONAL",
+          "FAST": "CONDITIONAL",
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_general_income_statement": {
+          "FULL": "NOT_REQUIRED",
+          "FAST": "REQUIRED",
+          "SIMPLE": "NOT_REQUIRED"
+        },
+        "income_salary_labor_contract": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": null
+        },
+        "income_salary_payroll_bank_statement": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_salary_salary_confirmation": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_salary_vssid_social_insurance": {
+          "FULL": "NOT_REQUIRED",
+          "FAST": null,
+          "SIMPLE": "NOT_REQUIRED"
+        },
+        "income_rental_real_estate_certificate": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_rental_vehicle_registration": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_rental_lease_contract": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_rental_payment_receipt": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": null
+        },
+        "income_rental_asset_photo": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_household_business_license": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_household_business_local_confirmation": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_household_business_tax_payment_receipt": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_household_business_account_ledger": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": null
+        },
+        "income_household_business_photo": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_enterprise_registration_license": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_enterprise_board_meeting_minutes": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": null
+        },
+        "income_enterprise_vat_tax_return": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "income_enterprise_balance_sheet": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": null
+        },
+        "income_enterprise_financial_performance_report": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": null
+        },
+        "income_enterprise_photo": {
+          "FULL": "CONDITIONAL",
+          "FAST": null,
+          "SIMPLE": "CONDITIONAL"
+        },
+        "collateral_vehicle_registration": {
+          "FULL": "CONDITIONAL",
+          "FAST": "CONDITIONAL",
+          "SIMPLE": "CONDITIONAL"
+        },
+        "collateral_vehicle_inspection": {
+          "FULL": "CONDITIONAL",
+          "FAST": "CONDITIONAL",
+          "SIMPLE": "CONDITIONAL"
+        },
+        "collateral_asset_quote": {
+          "FULL": "NOT_REQUIRED",
+          "FAST": "NOT_REQUIRED",
+          "SIMPLE": "NOT_REQUIRED"
+        },
+        "collateral_movable_asset_valuation_report": {
+          "FULL": "NOT_REQUIRED",
+          "FAST": "NOT_REQUIRED",
+          "SIMPLE": "NOT_REQUIRED"
+        },
+        "collateral_real_estate_certificate": {
+          "FULL": "CONDITIONAL",
+          "FAST": "CONDITIONAL",
+          "SIMPLE": "CONDITIONAL"
+        },
+        "collateral_real_estate_valuation_report": {
+          "FULL": "NOT_REQUIRED",
+          "FAST": "NOT_REQUIRED",
+          "SIMPLE": "NOT_REQUIRED"
+        },
+        "collateral_external_valuation_certificate": {
+          "FULL": "NOT_REQUIRED",
+          "FAST": "NOT_REQUIRED",
+          "SIMPLE": "NOT_REQUIRED"
+        },
+        "credit_cic_report": {
+          "FULL": "REQUIRED",
+          "FAST": "REQUIRED",
+          "SIMPLE": "REQUIRED"
+        }
+      }
+    },
+    {
+      "program_key": "sme_secured",
+      "program_label": "Doanh nghiệp vừa và nhỏ (SME) — vay có TSBĐ (khung, chờ nghiệp vụ chốt danh mục)",
+      "product_codes": [
+        "sme"
+      ],
+      "flows": [
+        {
+          "flow_key": "FLOW_A",
+          "flow_label": "FLOW_A: luồng A của SME"
+        }
+      ],
+      "requirements": {
+        "legal_id_card": {
+          "FLOW_A": "REQUIRED"
+        },
+        "legal_qr_code_info": {
+          "FLOW_A": "NOT_REQUIRED"
+        },
+        "legal_vneid": {
+          "FLOW_A": "REQUIRED"
+        },
+        "legal_residence_confirmation": {
+          "FLOW_A": "REQUIRED"
+        },
+        "legal_marriage_certificate": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "legal_marital_status_confirmation": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "legal_same_person_commitment": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "legal_local_cmnd_confirmation": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "legal_birth_certificate": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "loan_plan_loan_application": {
+          "FLOW_A": "REQUIRED"
+        },
+        "loan_plan_purchase_list": {
+          "FLOW_A": "REQUIRED"
+        },
+        "loan_plan_goods_purchase_contract": {
+          "FLOW_A": "REQUIRED"
+        },
+        "loan_plan_vehicle_sale_contract": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "loan_plan_land_use_cert_to_buy": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_general_income_statement": {
+          "FLOW_A": "NOT_REQUIRED"
+        },
+        "income_salary_labor_contract": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_salary_payroll_bank_statement": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_salary_salary_confirmation": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_salary_vssid_social_insurance": {
+          "FLOW_A": "NOT_REQUIRED"
+        },
+        "income_rental_real_estate_certificate": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_rental_vehicle_registration": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_rental_lease_contract": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_rental_payment_receipt": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_rental_asset_photo": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_household_business_license": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_household_business_local_confirmation": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_household_business_tax_payment_receipt": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_household_business_account_ledger": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_household_business_photo": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_enterprise_registration_license": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_enterprise_board_meeting_minutes": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_enterprise_vat_tax_return": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_enterprise_balance_sheet": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_enterprise_financial_performance_report": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "income_enterprise_photo": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "collateral_vehicle_registration": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "collateral_vehicle_inspection": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "collateral_asset_quote": {
+          "FLOW_A": "NOT_REQUIRED"
+        },
+        "collateral_movable_asset_valuation_report": {
+          "FLOW_A": "NOT_REQUIRED"
+        },
+        "collateral_real_estate_certificate": {
+          "FLOW_A": "CONDITIONAL"
+        },
+        "collateral_real_estate_valuation_report": {
+          "FLOW_A": "NOT_REQUIRED"
+        },
+        "collateral_external_valuation_certificate": {
+          "FLOW_A": "NOT_REQUIRED"
+        },
+        "credit_cic_report": {
+          "FLOW_A": "REQUIRED"
+        },
+        "loan_plan_exception_approval_memo": {
+          "FLOW_A": null
+        },
+        "credit_other_institution_contract": {
+          "FLOW_A": null
+        },
+        "collateral_cic_check": {
+          "FLOW_A": null
+        }
+      }
+    }
+  ]
+}

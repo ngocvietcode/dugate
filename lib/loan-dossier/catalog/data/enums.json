@@ -1,0 +1,421 @@
+{
+  "version": "3.0.0",
+  "enums": {
+    "ExtractableDocTypeKey": [
+      "id_card",
+      "vneid",
+      "qr_code_info",
+      "residence_confirmation",
+      "marital_status_confirmation",
+      "local_cmnd_confirmation",
+      "same_person_commitment",
+      "marriage_certificate",
+      "birth_certificate",
+      "loan_application",
+      "purchase_list",
+      "goods_purchase_contract",
+      "vehicle_sale_contract",
+      "land_use_cert_to_buy",
+      "vehicle_registration",
+      "vehicle_inspection",
+      "asset_quote",
+      "movable_asset_valuation_report",
+      "land_use_certificate",
+      "apartment_ownership_certificate",
+      "real_estate_valuation_report",
+      "external_valuation_certificate",
+      "income_statement",
+      "labor_contract",
+      "salary_confirmation",
+      "cic",
+      "credit_contract"
+    ],
+    "RecognitionOnlyDocTypeKey": [
+      "deposit_certificate",
+      "payroll_bank_statement",
+      "vssid_social_insurance",
+      "household_business_license",
+      "local_business_confirmation",
+      "tax_payment_receipt",
+      "business_account_ledger",
+      "household_business_photo",
+      "enterprise_registration_license",
+      "vat_tax_return",
+      "balance_sheet",
+      "financial_performance_report",
+      "enterprise_photo",
+      "board_meeting_minutes",
+      "passport",
+      "asset_lease_contract",
+      "construction_estimate_report",
+      "rental_payment_receipt",
+      "rental_asset_photo",
+      "exception_approval_memo"
+    ],
+    "Role": [
+      "borrower",
+      "co_borrower",
+      "collateral_owner",
+      "other"
+    ],
+    "OtherRoleDetail": [
+      "spouse",
+      "reference_person",
+      "guarantor",
+      "unspecified"
+    ],
+    "ChecklistGroup": [
+      "legal",
+      "loan_plan",
+      "income_source",
+      "collateral",
+      "credit_relationship"
+    ],
+    "ChecklistSubgroup": [
+      "general",
+      "salary",
+      "rental",
+      "household_business",
+      "enterprise",
+      "movable",
+      "real_estate",
+      "deposit",
+      null
+    ],
+    "UsageContext": [
+      "collateral",
+      "rental_income"
+    ],
+    "AssetType": [
+      "real_estate",
+      "apartment",
+      "vehicle",
+      "deposit",
+      "other"
+    ],
+    "StageStatus": [
+      "RUNNING",
+      "SUCCESS",
+      "PARTIAL_SUCCESS",
+      "INSUFFICIENT_DATA",
+      "NOT_EVALUATED",
+      "UNAVAILABLE",
+      "FAILED"
+    ],
+    "FileStatus": [
+      "CLASSIFIED",
+      "UNKNOWN",
+      "UNSUPPORTED_FILE",
+      "PASSWORD_PROTECTED",
+      "CORRUPTED_FILE"
+    ],
+    "EvidenceStatus": [
+      "SUCCESS",
+      "ERROR"
+    ],
+    "DuplicateStatus": [
+      "DUPLICATE_CANDIDATE",
+      "CONFIRMED_DUPLICATE",
+      "CONFLICTING_DUPLICATES",
+      null
+    ],
+    "PartyType": [
+      "INDIVIDUAL",
+      "ORGANIZATION"
+    ],
+    "PartyRole": [
+      "HOLDER",
+      "HUSBAND",
+      "WIFE",
+      "CHILD",
+      "FATHER",
+      "MOTHER",
+      "HOUSEHOLD_MEMBER",
+      "SELLER",
+      "BUYER",
+      "EMPLOYER",
+      "EMPLOYEE",
+      "OWNER",
+      "CUSTOMER",
+      "BORROWER",
+      "CO_BORROWER",
+      "SPOUSE",
+      "COLLATERAL_OWNER",
+      "REFERENCE_PERSON",
+      "TAXPAYER",
+      "LENDER",
+      "OTHER"
+    ],
+    "IdType": [
+      "CCCD",
+      "CMND",
+      "CAN_CUOC",
+      "PASSPORT",
+      "TAX_ID",
+      "OTHER",
+      null
+    ],
+    "IdStatus": [
+      "CURRENT",
+      "HISTORICAL",
+      "OBSERVED"
+    ],
+    "Gender": [
+      "MALE",
+      "FEMALE",
+      null
+    ],
+    "MaritalStatus": [
+      "SINGLE",
+      "MARRIED",
+      "DIVORCED",
+      "WIDOWED",
+      null
+    ],
+    "MatchedBy": [
+      "ANCHOR",
+      "ID_NUMBER",
+      "FULL_NAME"
+    ],
+    "IdNumberCheckStatus": [
+      "CONSISTENT",
+      "HISTORICAL_ID_NUMBER",
+      "CURRENT_ID_NUMBER_CONFLICT",
+      "NOT_VERIFIABLE"
+    ],
+    "RelationshipType": [
+      "PARENT_CHILD",
+      "SIBLING",
+      "SPOUSE",
+      "OTHER",
+      null
+    ],
+    "ContextStatus": [
+      "CONFIRMED",
+      "AMBIGUOUS",
+      "UNRESOLVED"
+    ],
+    "OwnershipSource": [
+      "COVER_PAGE",
+      "CHANGE_RECORD"
+    ],
+    "ChecklistItemStatus": [
+      "PRESENT",
+      "SUBSTITUTED",
+      "MISSING",
+      "NEEDS_RESCAN",
+      "NEEDS_REVIEW",
+      "NOT_APPLICABLE"
+    ],
+    "ConditionSource": [
+      "OCR",
+      "EXTERNAL_INPUT",
+      null
+    ],
+    "ChecklistScope": [
+      "PERSON",
+      "DOSSIER",
+      "ASSET"
+    ],
+    "FlowRequirement": [
+      "REQUIRED",
+      "CONDITIONAL",
+      "NOT_REQUIRED"
+    ],
+    "ConditionResult": [
+      "MET",
+      "NOT_MET",
+      "INPUT_NOT_PROVIDED",
+      null
+    ],
+    "ConditionMissingBehavior": [
+      "REQUIRED",
+      "NOT_REQUIRED",
+      "NEEDS_REVIEW"
+    ],
+    "ConditionEvaluationMode": [
+      "RULE",
+      "LLM_SEMANTIC"
+    ],
+    "ChecklistSuggestedAction": [
+      "NONE",
+      "UPLOAD",
+      "RESCAN",
+      "REVIEW_CONTEXT"
+    ],
+    "OriginalOrCopy": [
+      "ORIGINAL",
+      "COPY",
+      "BOTH",
+      null
+    ],
+    "CrossCheckMatchStatus": [
+      "MATCH",
+      "NEAR_MATCH",
+      "MISMATCH",
+      "UNDETERMINED"
+    ],
+    "SlCompareStatus": [
+      "MATCH",
+      "MISMATCH",
+      "OCR_VALUE_MISSING",
+      "SL_VALUE_MISSING",
+      "NOT_APPLICABLE",
+      "UNDETERMINED"
+    ],
+    "Severity": [
+      "INFO",
+      "REVIEW",
+      "HIGH"
+    ],
+    "ComparisonMethod": [
+      "EXACT",
+      "SEMANTIC",
+      "ADDRESS_REFERENCE",
+      "METRIC"
+    ],
+    "ComparisonScope": [
+      "PERSON",
+      "ASSET",
+      "PERSON_ASSET",
+      "DOSSIER"
+    ],
+    "ValueAttribution": [
+      "PARTY",
+      "SUBJECT_PARTY_ROLE",
+      "PARTY_INDEX_FIELD",
+      "ASSET",
+      "ASSET_INDEX_FIELD",
+      "DOCUMENT"
+    ],
+    "CanonicalSourceRule": [
+      "CURRENT_IDENTITY_DOCUMENT",
+      "LATEST_VALID_RESIDENCE_RECORD",
+      "LATEST_OWNERSHIP_RECORD",
+      "VALUATION_REPORT",
+      "BANK_PROPOSED_AMOUNT",
+      "INCOME_STATEMENT",
+      "NO_CANONICAL_SOURCE"
+    ],
+    "MetricPeriod": [
+      "MONTHLY",
+      "ANNUAL",
+      "POINT_IN_TIME",
+      null
+    ],
+    "MetricUnit": [
+      "VND",
+      "SQUARE_METER",
+      "MONTH",
+      null
+    ],
+    "AppraisalCompany": [
+      "THINH_DIEN",
+      "SBA",
+      "CITICS",
+      "FARGO",
+      "VVFC",
+      "OTHER",
+      null
+    ],
+    "RealEstateValuationFormVariant": [
+      "TD_VALUATION_REPORT",
+      "TD_PRICE_ADVISORY",
+      "AUTO_VALUATION",
+      null
+    ],
+    "StageKey": [
+      "classify",
+      "extract_evidence",
+      "map_dossier_roles",
+      "check_checklist",
+      "cross_check_documents",
+      "compare_ocr_sl"
+    ],
+    "SlInputSource": [
+      "FORM",
+      "API"
+    ],
+    "FormValueSource": [
+      "SL_IMPORT",
+      "RM_INPUT",
+      "OCR_ACCEPTED"
+    ],
+    "SuggestedValueSource": [
+      "SL",
+      "OCR"
+    ],
+    "ConfirmationMode": [
+      "RM",
+      "AUTO"
+    ],
+    "AutoConfirmReason": [
+      "AUTO_BLOCKING_ISSUE",
+      "AUTO_DUPLICATE_CONFLICT",
+      "AUTO_NO_LOAN_APPLICATION",
+      "AUTO_NO_BORROWER_IDENTITY",
+      "AUTO_LOW_CONFIDENCE"
+    ],
+    "CheckRunStatus": [
+      "COMPLETED",
+      "AUTO_NOT_ALLOWED",
+      "AUTO_NOT_ELIGIBLE"
+    ],
+    "EditSkipCode": [
+      "ORPHAN_EDIT",
+      "FIELD_NOT_EDITABLE",
+      "EDIT_ON_ERROR_EVIDENCE",
+      "EDIT_BASE_CHANGED",
+      "INVALID_VALUE"
+    ],
+    "ReviewIssueSeverity": [
+      "BLOCK",
+      "REVIEW",
+      "INFO"
+    ],
+    "SlFieldGroup": [
+      "identity",
+      "residence",
+      "loan_plan",
+      "collateral"
+    ],
+    "SlValueType": [
+      "TEXT",
+      "DATE",
+      "MONEY",
+      "INTEGER",
+      "ID_NUMBER",
+      "GENDER",
+      "ASSET_TYPE",
+      "ADDRESS"
+    ],
+    "MasterFieldStatus": [
+      "AGREED",
+      "OCR_NORMALIZED",
+      "SINGLE_SOURCE",
+      "CONFLICT",
+      "MISSING",
+      "CORRECTED"
+    ],
+    "MasterCopyRole": [
+      "PRIMARY",
+      "DUPLICATE",
+      "SUPERSEDED",
+      "EXCLUDED"
+    ],
+    "SummaryFieldKey": [
+      "full_name",
+      "id_number",
+      "previous_id_number",
+      "marital_status",
+      "amount",
+      "issue_date",
+      "certificate_number",
+      "license_plate",
+      "chassis_number",
+      "collateral_identifier",
+      "loan_purpose",
+      "income_source"
+    ]
+  }
+}
