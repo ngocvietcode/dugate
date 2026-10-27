@@ -29,6 +29,12 @@ import { allFlowKeys, defaultFlow, programFlowKeys, programForProduct } from '@/
 export function isKnownInput(entry: string): boolean {
   const m = entry.match(/^evidence\.([a-z0-9_]+)$/);
   if (m) return docTypeByKey(m[1]) !== undefined;
+  // Loan Application Context (LAC-R11, D-103): lac.loan | lac.business | lac.relations | lac.person[.<role>] | lac.asset[.<usage>] | lac.document.<doc>.
+  if (entry.startsWith('lac.')) {
+    const doc = entry.match(/^lac\.document\.([a-z0-9_]+)$/);
+    if (doc) return docTypeByKey(doc[1]) !== undefined;
+    return /^lac\.(loan|business|relations|person(\.[a-z_]+)?|asset(\.[a-z_]+)?)$/.test(entry);
+  }
   if (!entry.startsWith('master.')) return true;
   const d = entry.match(/^master\.document\.([a-z0-9_]+)$/);
   if (d) return loadChecklistCatalog().items.some((it) => it.item_key === d[1]);
@@ -81,6 +87,11 @@ export interface LoanCheckDefinition {
   outputs?: { codes: string[] };
   /** Chỉ dùng cho PROMPT: ngưỡng confidence tối thiểu để được coi là kết luận. */
   threshold?: number;
+  /**
+   * Chỉ PROMPT, chỉ có tác dụng khi `lac_mode = on` (LAC-R13, D-103): cho phép PASS khi MỌI dữ kiện dẫn chiếu chỉ là lời khai
+   * trên đơn vay (DECLARED) — dành cho rule chỉ đọc lời khai (VD số tiền đề nghị ≤ hạn mức). Vắng = PASS chỉ dựa lời khai bị hạ REVIEW.
+   */
+  allow_declared_pass?: boolean;
 }
 
 export interface LoanCheckSet {
@@ -531,6 +542,7 @@ export function parseCheckSet(
       ...(prompt ? { prompt } : {}),
       ...(codes && codes.length > 0 ? { outputs: { codes } } : {}),
       ...(threshold !== undefined ? { threshold } : {}),
+      ...(kind === 'PROMPT' && (item.allow_declared_pass ?? fallback?.allow_declared_pass) === true ? { allow_declared_pass: true } : {}),
     });
   }
 
@@ -717,6 +729,11 @@ export function validateCheckSetValue(value: unknown): ConfigValidation {
       if (item.threshold !== undefined && cleanNumberInRange(item.threshold, { min: 0, max: 1 }) === null) {
         return invalid(`threshold của "${id}" phải là số trong [0, 1].`);
       }
+      if (item.allow_declared_pass !== undefined && typeof item.allow_declared_pass !== 'boolean') {
+        return invalid(`allow_declared_pass của "${id}" phải là true hoặc false.`);
+      }
+    } else if (item.allow_declared_pass !== undefined) {
+      return invalid(`"${id}" là rule engine nên không dùng allow_declared_pass.`);
     } else if (item.prompt !== undefined && String(item.prompt).trim() !== '') {
       return invalid(`"${id}" là rule engine nên không nhận prompt; chỉ cấu hình tham số.`);
     }
@@ -754,7 +771,7 @@ function checksById(value: unknown): Map<string, Record<string, unknown>> {
   return map;
 }
 
-const AUDITED_CHECK_FIELDS = ['enabled', 'group', 'flows', 'products', 'action', 'severity', 'exception_allowed', 'threshold', 'params', 'name', 'version', 'outputs'] as const;
+const AUDITED_CHECK_FIELDS = ['enabled', 'group', 'flows', 'products', 'action', 'severity', 'exception_allowed', 'threshold', 'allow_declared_pass', 'params', 'name', 'version', 'outputs'] as const;
 
 /** So sánh hai giá trị loan_check_set thô. Trả null khi không có thay đổi. */
 export function summarizeCheckSetChange(before: unknown, after: unknown): string | null {
