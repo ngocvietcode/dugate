@@ -36,7 +36,7 @@ function isTruthyFlag(v: unknown): boolean {
 
 /**
  * D-53: `stop_after_intake` mặc định true — không truyền (hoặc rỗng) thì dừng sau giai đoạn 1.
- * Chỉ chạy hết 8 stage khi truyền rõ false/"false"/"0"/"no".
+ * Chỉ chạy hết 5 stage một lần khi truyền rõ false/"false"/"0"/"no".
  */
 function shouldStopAfterIntake(v: unknown): boolean {
   if (v === undefined || v === null) return true;

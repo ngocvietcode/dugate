@@ -240,7 +240,7 @@ mũ; ghi prompt/output vào log job ở Bull Board (D-95); chi phí và token th
 
 | # | Khoảng trống | Bằng chứng / rủi ro |
 |---|---|---|
-| E1 | Không tái lập được kết quả AI | `snapshotPolicy` không ghi prompt hash, model, reasoning, version danh mục/schema |
+| E1 | ~~Không tái lập được kết quả AI~~ **Đã xử lý (D-97):** `config_snapshot.reproducibility` ghi phiên bản danh mục, nguồn + sha256 template prompt, model / reasoning ghi đè của 4 bước AI (`reproducibility.ts`) | Còn thiếu: phiên bản từng schema S2 (hiện chỉ có version của `doc_types.json`), commit của bản build |
 | E2 | Đổi policy tín dụng không qua maker-checker | Ngưỡng và rule sửa trên trang cấu hình, hiệu lực ngay, không có người duyệt hay ngày hiệu lực |
 | E3 | Retry không idempotent ở cấp lời gọi AI | `enqueueSubStep` tạo `subOpId` ngẫu nhiên; checkpoint chỉ ở cấp stage. Một file lỗi ở S2 làm chạy lại cả stage |
 | E4 | Job cha giữ slot worker khi chờ sub-step | Thông lượng bị giới hạn bởi thời gian chờ LLM (pipeline concurrency 5); fan-out `Promise.all` không giới hạn |
@@ -368,10 +368,10 @@ CIC/core hay đọc file); phạm vi scorecard.
 | Tài liệu | Dùng để | Lưu ý |
 |---|---|---|
 | **File này** | Tham chiếu kiến trúc | Cập nhật cùng PR đổi kiến trúc |
-| [lib/pipelines/workflows/loan-appraisal/README.md](../../lib/pipelines/workflows/loan-appraisal/README.md) | Chi tiết domain thẩm định | Đầu file và mục "tạm tắt" đúng với code; một số mục (mẫu biểu `form_code`, bảng "Hai phase", `LOAN.INTAKE.REQUIRED_DOCUMENTS`) đã cũ |
+| [lib/pipelines/workflows/loan-appraisal/README.md](../../lib/pipelines/workflows/loan-appraisal/README.md) | Chi tiết domain thẩm định | Đã đối chiếu lại với code ở D-97 |
 | [INTEGRATION-CONTRACT.md](INTEGRATION-CONTRACT.md) | Contract cho hệ thống ngoài | — |
 | [ADD-NEW-PRODUCT-FLOW.md](ADD-NEW-PRODUCT-FLOW.md) | Thêm sản phẩm / luồng | Chỉ phủ danh mục và cấu hình; chưa có Segment Pack |
-| [spec-v3/cross_cutting/v2_integration.md](spec-v3/cross_cutting/v2_integration.md) | Rule V2-R* | **Đã cũ:** mô tả 8 stage, `consolidate_dossier`, `intake_review` / `master_dossier` ở giai đoạn 2 |
+| [spec-v3/cross_cutting/v2_integration.md](spec-v3/cross_cutting/v2_integration.md) | Rule V2-R* | Thân bài mô tả 8 stage; **ghi chú trạng thái ở đầu file** (D-97) liệt kê các rule không còn đúng với code |
 | [spec-v3/stages/S1…S5](spec-v3/stages/) | Rule và AC của từng stage | S4, S5 đang không được workflow gọi |
 | [spec-v3/cross_cutting/master_dossier.md](spec-v3/cross_cutting/master_dossier.md) | Master dossier, hiệu chỉnh | Đang tắt cùng S4/S5 |
 | [spec-v3/cross_cutting/loan_application_context.md](spec-v3/cross_cutting/loan_application_context.md) | LAC | Đề xuất, chưa duyệt |
@@ -389,7 +389,7 @@ Quyết định chi tiết ở `spec-v3/IMPLEMENT.md` (D-*). Bảng dưới ch�
 | D-51 / D-53 | Tách 2 giai đoạn, `stop_after_intake` mặc định `true` | Sale xem tiếp nhận trước khi tốn chi phí OCR | Đang áp dụng |
 | D-73 / D-81 / D-90 | Giai đoạn 1 = S1 + precheck LLM, dừng ngay sau precheck | Phản hồi sớm, rẻ | Đang áp dụng |
 | D-96 | Danh mục sản phẩm cấu hình được, rule id `LOAN.*`, khung `sme` | Bước đầu đa sản phẩm | Đang áp dụng (SME chưa có giá trị nghiệp vụ) |
-| — | Tạm tắt S4/S5, master_dossier, intake_review, readiness ở giai đoạn 2 | Theo README; chưa có mã D-* | Cần ghi D-* |
+| D-97 | Ghi nhận: tạm tắt S4/S5, master_dossier, intake_review, readiness ở giai đoạn 2; DAG 5 stage. Thêm `config_snapshot.reproducibility` | Trạng thái chưa từng được ghi; tái lập kết quả (E1) | Đang áp dụng |
 | ADR-01 | Lõi chung + Segment Pack (§9) | Mở rộng SME mà không rẽ nhánh lõi | **Đề xuất** |
 | ADR-02 | Loan Application Context làm nguồn duy nhất cho LLM giai đoạn 2 | Dẫn nguồn được, có trạng thái tin cậy | **Đề xuất** |
 | ADR-03 | Kho policy bất biến có maker-checker; Profile chỉ chọn version | Kiểm soát nội bộ, kiểm toán | **Đề xuất** |

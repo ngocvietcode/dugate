@@ -10,13 +10,13 @@
 > `docs/loan-appraisal/spec-v3/cross_cutting/v2_integration.md`. Các mục bên dưới mô tả kiến trúc cũ ở stage 0–2 chỉ để tra cứu.
 
 Workflow thẩm định hồ sơ vay có tài sản bảo đảm (HKD, SME...; sản phẩm cấu hình trong `loan_products.json`). Chạy qua
-`process=loan-appraisal`. Kiến trúc: 3 stage trích xuất và tổng hợp bằng chứng (evidence)
-từ chứng từ gốc, sau đó 5 stage **thuần tính toán bằng code** (deterministic)
-suy ra chỉ số tài chính, kết quả bộ rule (engine + LLM), tuân thủ policy và khuyến nghị — không có
-bước nào để LLM tự quyết định số liệu hay kết luận tín dụng.
+`process=loan-appraisal`. Kiến trúc: 5 stage. 2 stage AI (phân loại S1, bóc tách S2) lập evidence có nguồn từ chứng từ
+gốc; sau đó 3 stage **tính bằng code** (deterministic; rule LLM ở stage 3 có rào chắn) suy ra chỉ số tài chính, kết
+quả bộ rule (engine + LLM) và khuyến nghị — không có bước nào để LLM tự quyết định số liệu hay kết luận tín dụng.
 
 Entry point: `lib/pipelines/workflows/loan-appraisal.ts` (`runLoanAppraisal`).
-Toàn bộ logic domain nằm trong thư mục này (`lib/pipelines/workflows/loan-appraisal/`).
+Logic thẩm định nằm trong thư mục này; logic hồ sơ spec-v3 (S1–S5, graph, claims, catalog) nằm ở `lib/loan-dossier/`.
+Kiến trúc tổng thể, khoảng trống và lộ trình SME: [docs/loan-appraisal/ARCHITECTURE.md](../../../../docs/loan-appraisal/ARCHITECTURE.md).
 
 ## Nguyên tắc cốt lõi
 
@@ -59,34 +59,30 @@ Giai đoạn 1 (phân loại + kiểm tra sơ bộ) giữ nguyên. **Operation c
 
 | # | `stage_key` | Loại | Việc làm | File chính |
 |---|---|---|---|---|
-| 0 | `classify` | AI (fan-out theo file) | Phân loại tài liệu vào các loại chứng từ của sản phẩm | `prompts/loan-appraisal-prompts.ts` |
-| 1 | `extract_evidence` | AI (fan-out theo file) | Bóc tách trường dữ liệu, lập evidence có nguồn | `prompts/loan-appraisal-prompts.ts` |
+| 0 | `classify` | AI (fan-out theo file / batch trang) | Phân loại tài liệu vào 47 loại chứng từ (`doc_types.json`); kiểm tra sơ bộ (`dossier_precheck`) chạy ngay sau, kết quả lưu ở checkpoint của stage này | `lib/loan-dossier/s1/`, `dossier-stages.ts`, `dossier-precheck.ts` |
+| 1 | `extract_evidence` | AI (fan-out theo bản thể chứng từ) | Bóc tách theo schema spec-v3 (27 loại FULL, 20 loại LIGHT), lập evidence có nguồn | `lib/loan-dossier/s2/`, `dossier-stages.ts` |
 | 2 | `calculate_financials` | Deterministic | Tính CFADS, DSCR, LTV, operating margin (từ OCR + `asset_registry` của S3 cho giá trị TSBĐ; S3 lỗi thì không đánh giá TSBĐ/LTV) | `strategies.ts` (`HkdSecuredFinancialStrategy`) |
 | 3 | `evaluate_policy_compliance` | Rule engine + rule LLM | Chạy bộ rule cấu hình được theo sản phẩm; mỗi rule thuộc một nhóm (`group`, xem `rule-groups.ts`) | `rules.ts`, `check-set.ts`, `prompt-checks.ts`, `rule-groups.ts` |
 | 4 | `synthesize_recommendation` | Decision strategy | Khuyến nghị có giới hạn + định tuyến rà soát; chạy sau cùng, chỉ dựa trên chỉ số tài chính và kết quả rule | `strategies.ts` (`RecommendationStrategy`) |
 
-Stage 0-1 là AI, ghi kết quả theo shape tương thích ngược với V1
-(`ClassifiedDoc[]`, `ExtractedDoc[]`, `AppraisalResult`). Stage 2-4 thuần
-tính toán (trừ rule LLM ở stage 3), được **dựng lại mỗi lần resume** (không đọc từ checkpoint) để một
-checkpoint cũ không thể mang theo kết luận đã lỗi thời khi logic/policy thay đổi.
+Stage 0-1 là AI, checkpoint là `data` của S1 / S2 theo spec-v3 (V2-R09: không còn shape V1 `ClassifiedDoc[]` /
+`ExtractedDoc[]`). Giữa stage 1 và 2, S3 (gom người & tài sản), `DossierGraph` và sổ Claim chạy bằng code, không có
+checkpoint. Stage 2-4 thuần tính toán (trừ rule LLM ở stage 3), được **dựng lại mỗi lần resume** (không đọc từ
+checkpoint) để một checkpoint cũ không thể mang theo kết luận đã lỗi thời khi logic/policy thay đổi.
 
 `LOAN_STAGE_DEFINITIONS` (`state-machine.ts`) là nguồn sự thật duy nhất cho thứ
 tự stage, `stage_key`, và mỗi stage thuộc phase nào.
 
-## Mẫu biểu và mục checklist
+## Loại chứng từ và schema
 
-Phân loại và bóc tách làm việc theo **mẫu biểu** (`form_code`, 45 mẫu trong
-`form-catalog.ts`). Mỗi mẫu thuộc đúng một **mục checklist** (`doc_type_key`,
-VD `id_card` = cccd | vneid | qr_code | xac_nhan_cmnd_dia_phuong |
-cam_ket_cmnd_cccd). Checklist, rule, gom nhóm và chỉ số tài chính làm việc
-trên mục checklist; `form_code` đi kèm trên `DocMatch`, `ExtractedDoc`,
-`EvidenceRecord`, dòng intake và `document_views`.
+Từ spec-v3 (V2-R02) phân loại và bóc tách làm việc theo **loại chứng từ** (`doc_type_key`, 47 loại trong
+`lib/loan-dossier/catalog/data/doc_types.json`); danh mục mẫu biểu `form_code` / `form-catalog.ts` / `forms.ts` đã gỡ.
 
-- Classify trả `doc_types[].form_code`; mẫu không OCR (`cic_tsbd`) không có trong prompt.
-- Extract trả `documents[].form_code` + `fields` phẳng đúng key của danh mục; mọi
-  giá trị là chuỗi (hoặc mảng chuỗi), giữ nguyên như in, địa chỉ không tách.
-- "Lãi suất" trên giấy đề nghị vay là **mã biểu** (LC10…), không phải %/năm, nên
-  không dùng để tính niên kim; DSCR chỉ tính khi có `interest_rate_percent`.
+- 27 loại `extraction_level = FULL` có schema riêng (`catalog/data/doc_schemas/`, zod ở `lib/loan-dossier/s2/schemas/`):
+  ngày ISO, tiền là số nguyên, địa chỉ là object, `parties[]`, `assets[]` (`02_conventions`).
+- 20 loại `LIGHT` chỉ có `{parties, legal_info, fields}` với vài field khai trong `light_extraction.json`.
+- Trên giấy đề nghị vay, ô "Lãi suất" ghi **mã biểu** (LC10…) → `loan_info.interest_rate_code`, không dùng để tính;
+  `loan_info.interest_rate` là %/năm in trên giấy. DSCR chỉ tính khi có `interest_rate` (V2-R06).
 
 ## Hai phase nghiệp vụ
 
@@ -94,8 +90,8 @@ Stage được nhóm vào 2 phase hiển thị trên UI, không đổi `stage_ke
 
 | Phase | Gồm stage | Ý nghĩa |
 |---|---|---|
-| `DOSSIER_INTAKE` | 0 | Phân loại & kiểm tra sơ bộ (`dossier_precheck` AI); dừng chờ người dùng |
-| `CREDIT_APPRAISAL` | 1-7 | Bóc tách OCR (S2), kiểm tra nháp & tổng kết, gom hồ sơ (S3–S5), thẩm định & khuyến nghị |
+| `DOSSIER_INTAKE` | 0 | Phân loại & kiểm tra sơ bộ (`dossier_precheck` AI); mặc định dừng chờ người dùng (`stop_after_intake`) |
+| `CREDIT_APPRAISAL` | 1-4 | Bóc tách OCR (S2), gom người & tài sản (S3, không phải stage), tài chính, bộ rule, khuyến nghị |
 
 `derivePhaseStatus()` tổng hợp trạng thái theo nguyên tắc **xấu nhất thắng**:
 một stage `FAILED` → phase `BLOCKED`; thiếu stage bắt buộc → `RUNNING`; không
@@ -106,16 +102,20 @@ suy ra `COMPLETE` khi còn stage bắt buộc chưa chạy.
 | File | Vai trò |
 |---|---|
 | `types.ts` | Toàn bộ type của output V2 (`AppraisalResultV2`), `MetricResult`, `RuleResult`, v.v. |
-| `form-catalog.ts` | **Sinh tự động** từ `docs/loan-appraisal/uat-analysis/03-field-catalog.json` bằng `node scripts/gen-loan-form-catalog.js <json> <ts>`: 45 mẫu biểu (`form_code`), trường, mục checklist, tiêu chí nhận dạng. Không sửa tay |
-| `forms.ts` | Tra cứu danh mục: mẫu theo mục checklist, format của trường (name, id_number…) |
+| `dossier-stages.ts`, `stage-adapters.ts` | Nối S1 / S2 (`lib/loan-dossier`) vào workflow: port → `enqueueSubStep`, cắt dải trang PDF |
+| `dossier-precheck.ts`, `precheck-intake.ts` | Kiểm tra sơ bộ bằng LLM sau S1 và output giai đoạn 1 |
+| `dossier-map.ts`, `evidence-v3.ts`, `financial-inputs.ts` | S3 cho stage sau, registry evidence spec-v3, đầu vào tài chính (V2-R06) |
+| `product-config.ts`, `step-catalog.ts` | Cấu hình theo sản phẩm (`loan_product_config`), danh mục bước AI |
+| `reproducibility.ts` | Bản ghi tái lập `config_snapshot.reproducibility` (danh mục, sha256 template prompt, model / reasoning ghi đè) |
+| `integration-contract.ts`, `integration-payload.ts`, `check-contract.ts` | Contract tích hợp 5.x |
 | `state-machine.ts` | `LOAN_STAGE_DEFINITIONS`, phase, `deriveProcessingStatus`, readiness gate |
 | `product-policy.ts` | Ngưỡng policy theo sản phẩm (`LoanProductPolicy`), resolve override từ Profile |
 | `check-set.ts` | Bộ rule cấu hình được: đọc khoan dung (runtime) + ghi fail-closed (API) |
 | `rules.ts` | Rule engine deterministic (`MinimumDscrRule`, `MaximumLtvRule`, ...) |
 | `prompt-checks.ts` | Rule LLM: build prompt gộp, parse kết quả có rào an toàn |
-| `evidence.ts` | `EvidenceRegistry` — mọi giá trị bóc tách được, có `evidence_id` truy nguồn |
-| `master-data.ts` | Provenance: mỗi trường Customer 360 lấy từ evidence nào |
-| `strategies.ts` | Strategy pattern cho các stage deterministic (financial, policy, score, recommendation) |
+| `evidence.ts` | Kiểu và tiện ích của `EvidenceRegistry` (registry spec-v3 dựng ở `evidence-v3.ts`) |
+| `strategies.ts` | Strategy pattern cho các stage deterministic (financial, policy, recommendation) |
+| `intake-review.ts`, `intake-assessment.ts`, `master-dossier.ts`, `master-correction.ts`, `dossier-consolidate.ts` | Logic của các bước **đang tắt** (xem "Các bước kiểm tra hồ sơ tạm tắt"). Lưu ý: đường chạy chính vẫn dùng vài hàm chung trong đó — `renderPrompt`, `buildDossierFacts` (`intake-review.ts`), `consolidateParams` (`dossier-consolidate.ts`) — và vài kiểu (`IntakeAssessment`) |
 
 ## Sản phẩm & ngưỡng policy
 
@@ -154,11 +154,11 @@ Hai loại kiểm tra, khác nhau về mức độ tin cậy:
 | **Rule engine** (`DETERMINISTIC`) | Nằm trong code TypeScript, tái lập 100% | Tham số ngưỡng (`params`), severity, action, exception | Phép so sánh; **không tạo rule engine mới** — id phải nằm trong `DETERMINISTIC_CHECK_IDS` |
 | **Rule LLM** (`PROMPT`) | Model phán đoán trên nội dung chứng từ | Toàn bộ prompt + ngưỡng confidence | Mặc định chỉ `warn`; muốn `block` phải khai severity `BLOCKER` tường minh |
 
-4 rule engine có cài đặt sẵn (`rules.ts`):
+3 rule engine có cài đặt sẵn (`rules.ts`). `LOAN.INTAKE.REQUIRED_DOCUMENTS` đã gỡ cùng checklist S4
+(`RETIRED_CHECK_IDS`; cấu hình đã lưu còn id này bị bỏ êm):
 
 | `id` | Kiểm tra |
 |---|---|
-| `LOAN.INTAKE.REQUIRED_DOCUMENTS` | Đủ chứng từ bắt buộc |
 | `LOAN.CAPACITY.MIN_DSCR` | DSCR ≥ ngưỡng tối thiểu |
 | `LOAN.COLLATERAL.MAX_LTV` | LTV ≤ ngưỡng tối đa |
 | `LOAN.PRODUCT.MAX_AMOUNT` | Số tiền đề nghị ≤ hạn mức sản phẩm |
@@ -238,18 +238,14 @@ rule chỉ thấy dữ liệu của loại đã khai.
 
 ## Evidence & provenance
 
-`evidence.ts` xây `EvidenceRegistry`: mỗi giá trị bóc tách được là một
-`EvidenceRecord` có `evidence_id`, `field_path`, nguồn file, và
-`review_status` (`ACCEPTED` khi độ tin cậy phân loại ≥ 0.75, ngược lại
-`REVIEW`). Chỉ mục ngược `by_file`/`by_document_type` và bản ghi trạng thái
-checklist (`CHECKLIST_STATUS`) chỉ dùng trong bộ nhớ lúc chạy (strategy, rule LLM);
-kết quả LƯU chỉ giữ `records` của trường bóc tách (`toStoredEvidence`).
+`evidence-v3.ts` (`buildEvidenceRegistryV3`, V2-R04) xây `EvidenceRegistry` từ EvidenceEnvelope của S2: mỗi lá của
+`data` là một `EvidenceRecord`, `evidence_id = "{envelope}#{field_path}"`, `review_status = ACCEPTED` khi độ tin cậy
+đọc của field cấp 1 ≥ 0.80 (`ACCEPT_CONFIDENCE`), ngược lại `REVIEW`. Evidence `ERROR` và bản bị thay thế (S3-R27)
+không vào registry. Kết quả LƯU chỉ giữ `records` của trường bóc tách (`toStoredEvidence`).
 
-`master-data.ts` (`buildMasterDataProvenance`) đối chiếu từng trường Customer
-360 với evidence để trả lời "giá trị này lấy từ chứng từ nào" — **không** dựng
-golden record, chỉ truy nguồn. Kết quả: `VERIFIED` (khớp evidence đã chấp
-nhận), `NEEDS_REVIEW` (chỉ khớp evidence chờ soát), `UNVERIFIED` (không truy
-được nguồn).
+Truy nguồn của người & tài sản: `customer_360` / `asset_registry` của S3 mang `mapped_evidences` / `sources`;
+`DossierGraph` (cạnh `MENTIONED_IN`) và sổ Claim (`lib/loan-dossier/graph/claims.ts`, mỗi lá OCR thuộc đúng một Claim,
+có trạng thái `CORROBORATED` / `DISPUTED` / …) dựng từ đó. `master-data.ts` (provenance cũ, D-42) đã gỡ ở D-66.
 
 ## Ranh giới đã quản trị (governed boundaries)
 
