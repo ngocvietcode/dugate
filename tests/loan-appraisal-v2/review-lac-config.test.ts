@@ -64,6 +64,18 @@ describe('Tóm tắt ngữ cảnh đơn vay', () => {
 });
 
 describe('Lưu quyền PASS theo lời khai', () => {
+  it('giữ nguồn dữ liệu và phiên bản của rule khi lưu lại', () => {
+    const saved = { checks: [
+      { id: 'LOAN.CUSTOM.TEST', input: ['evidence.id_card'], version: '2.3.0', prompt: 'Kiểm tra' },
+      { id: 'LOAN.CAPACITY.MIN_DSCR', input: ['evidence.loan_application'], version: '4.0.0' },
+    ] };
+    const serialized = serialize(readChecks(saved));
+    expect(serialized.find((c) => c.id === 'LOAN.CUSTOM.TEST')).toMatchObject(saved.checks[0]);
+    expect(serialized.find((c) => c.id === 'LOAN.CAPACITY.MIN_DSCR')).toMatchObject({
+      input: ['evidence.loan_application', 'financial.dscr'], version: '4.0.0',
+    });
+    expect(serialize(readChecks({ checks: serialized }))).toEqual(serialized);
+  });
   it('đọc và lưu lại true cùng ngưỡng và ngoại lệ', () => {
     const saved = { checks: [{ id: 'LOAN.CUSTOM.TEST', kind: 'PROMPT', allow_declared_pass: true, threshold: 0.9, exception_allowed: true, prompt: 'Kiểm tra' }] };
     const serialized = serialize(readChecks(saved));

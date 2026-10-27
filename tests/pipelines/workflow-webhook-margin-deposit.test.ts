@@ -108,4 +108,34 @@ describe('margin-deposit workflow callback transaction_id', () => {
     const [, requestInit] = ssrfSafeFetchMock.mock.calls[0] as [string, { body: string }];
     expect(JSON.parse(requestInit.body)).not.toHaveProperty('transaction_id');
   });
+
+  it('logs the transformed wire body and HTTP status after exhausted retries', async () => {
+    jest.useFakeTimers();
+    try {
+      ssrfSafeFetchMock.mockResolvedValue({ ok: false, status: 400, text: jest.fn().mockResolvedValue('') });
+      const body = JSON.stringify({ encrypted_payload: 'test-ciphertext', encryption: { mode: 'full', fields: [] } });
+      const ctx = makeContext({ transformWebhookPayload: async () => ({ body, headers: {} }) });
+      const pending = completeWorkflow(ctx, null, { result: true });
+      await jest.runAllTimersAsync();
+      await pending;
+      expect(ssrfSafeFetchMock).toHaveBeenCalledTimes(3);
+      expect(ctx.logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Webhook delivery failed after 3 attempts'),
+        expect.objectContaining({ sent_body: body, body_bytes: Buffer.byteLength(body), encrypted: true, http_status: 400, last_error: 'HTTP 400' }),
+      );
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('logs only payload keys when encryption fails and never dispatches plaintext', async () => {
+    const ctx = makeContext({ transformWebhookPayload: async () => { throw new Error('test transform failure'); } });
+    await expect(completeWorkflow(ctx, null, { result: true })).rejects.toThrow('Webhook payload transform failed');
+    expect(ssrfSafeFetchMock).not.toHaveBeenCalled();
+    expect(ctx.logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('Webhook payload transform failed'),
+      { encryption_failed: true, payload_keys: ['operation_id', 'state', 'done', 'transaction_id', 'extracted_data'] },
+      expect.any(Error),
+    );
+  });
 });

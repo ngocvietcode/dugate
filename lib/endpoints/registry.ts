@@ -1021,6 +1021,16 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
             description: 'Giải trình cho các điểm của intake_assessment khi chạy lại hồ sơ: JSON [{ "finding_code": "...", "reason": "..." }] ' +
               '(tối đa 200 mục, lý do ≤ 500 ký tự). Mã lấy từ intake_assessment.criteria[].findings[].code của lần chạy trước; thiếu chứng từ bắt buộc không giải trình được.',
           },
+          lac_mode: {
+            type: 'string',
+            description: 'Loan Application Context (D-103) cho rule LLM (stage 3): "off" (mặc định) chạy như cũ; ' +
+              '"shadow" dựng ngữ cảnh đơn vay chỉ để thống kê (loan_application_context_summary, content_preview.lac), không đổi prompt; ' +
+              '"on" prompt rule LLM dùng {{context}} (dữ kiện mã F<n> có trạng thái tin cậy, mâu thuẫn, khoảng trống) thay cho {{master_data}} + {{evidence}}, ' +
+              'kèm rào hạ PASS khi dữ kiện bị tranh chấp hoặc chỉ dựa trên lời khai (allow_declared_pass của từng rule). ' +
+              'Dựng ngữ cảnh lỗi thì tự chạy đường cũ và ghi cảnh báo. Giá trị khác coi như "off".',
+            options: ['off', 'shadow', 'on'],
+            default: 'off',
+          },
           loan_product_config: {
             type: 'object',
             description: 'Cấu hình workflow THEO SẢN PHẨM: { version, products: { <product_code>: { prompts, models, reasoning, policy, checks, checklist, flows } } }. ' +

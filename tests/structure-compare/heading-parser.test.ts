@@ -60,31 +60,19 @@ describe('heading-parser', () => {
       expect(result[0].level).toBe(4);
     });
 
-    it('parses Khoản (Clause) at level 5', () => {
+    it('keeps Khoản (Clause) inside article content', () => {
       const text = 'Khoản 3 Nội dung khoản';
-      const result = parseHeadings(text);
-      expect(result).toHaveLength(1);
-      expect(result[0].identifier).toBe('Khoản 3');
-      expect(result[0].title).toBe('Nội dung khoản');
-      expect(result[0].level).toBe(5);
+      expect(parseHeadings(text)).toEqual([]);
     });
 
-    it('parses Điểm (Point) at level 6', () => {
+    it('keeps Điểm (Point) inside article content', () => {
       const text = 'Điểm a Nội dung điểm';
-      const result = parseHeadings(text);
-      expect(result).toHaveLength(1);
-      expect(result[0].identifier).toBe('Điểm a');
-      expect(result[0].title).toBe('Nội dung điểm');
-      expect(result[0].level).toBe(6);
+      expect(parseHeadings(text)).toEqual([]);
     });
 
-    it('parses Điểm with closing parenthesis', () => {
+    it('keeps Điểm with closing parenthesis inside article content', () => {
       const text = 'Điểm b) Nội dung điểm b';
-      const result = parseHeadings(text);
-      expect(result).toHaveLength(1);
-      expect(result[0].identifier).toBe('Điểm b');
-      expect(result[0].title).toBe('Nội dung điểm b');
-      expect(result[0].level).toBe(6);
+      expect(parseHeadings(text)).toEqual([]);
     });
 
     it('parses a full Vietnamese legal document structure', () => {
@@ -103,20 +91,12 @@ describe('heading-parser', () => {
       ].join('\n');
 
       const result = parseHeadings(text);
-      expect(result).toHaveLength(11);
-
-      // Verify hierarchy levels
-      expect(result[0].level).toBe(1); // Phần
-      expect(result[1].level).toBe(2); // Chương
-      expect(result[2].level).toBe(4); // Điều
-      expect(result[3].level).toBe(5); // Khoản
-      expect(result[4].level).toBe(6); // Điểm
-      expect(result[5].level).toBe(6); // Điểm
-      expect(result[6].level).toBe(5); // Khoản
-      expect(result[7].level).toBe(4); // Điều
-      expect(result[8].level).toBe(2); // Chương
-      expect(result[9].level).toBe(3); // Mục
-      expect(result[10].level).toBe(4); // Điều
+      expect(result.map((heading) => heading.level)).toEqual([1, 2, 4, 4, 2, 3, 4]);
+      expect(result.map((heading) => heading.identifier)).toEqual([
+        'Phần I', 'Chương I', 'Điều 1', 'Điều 2',
+        'Chương II', 'Mục 1', 'Điều 3',
+      ]);
+      expect(text.slice(result[2].endPos, result[3].startPos)).toContain('Khoản 2');
     });
   });
 

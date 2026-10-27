@@ -20,14 +20,14 @@ function rowToText(row: unknown[]): string {
 
 // ─── Arbitraries ──────────────────────────────────────────────────────────────
 
-/** Generate a non-empty text cell that is NOT a pure integer and NOT "stt" variants. */
+/** Generate a non-empty text cell that is NOT a pure integer and NOT recognized header aliases. */
 const lowerAlphaArb = fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz'.split(''));
 const textCellArb = fc
   .array(lowerAlphaArb, { minLength: 2, maxLength: 12 })
   .map((chars) => chars.join(''))
   .filter((s) => {
     const trimmed = s.trim().toLowerCase();
-    return trimmed.length > 0 && trimmed !== 'stt' && !/^\d+$/.test(trimmed.replace(/\./g, ''));
+    return trimmed.length > 0 && !['stt', 's\u1ed1 tt', 'no.', 'no'].includes(trimmed) && !/^\d+$/.test(trimmed.replace(/\./g, ''));
   });
 
 /** Generate a row of random text cells (for above-header or below-table rows). */

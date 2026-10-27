@@ -37,6 +37,7 @@ export async function runWithConcurrency<T, R>(
   let cursor = 0;
   // Mốc thời gian sớm nhất mà task tiếp theo được phép khởi chạy (dùng chung giữa các worker).
   let nextLaunchAt = 0;
+  let lastLaunchAt: number | null = null;
   // CODE-REVIEW-01 mục 19: khi MỘT task throw, Promise.all reject ngay nhưng các worker khác
   // vẫn tiếp tục rút task mới — vẫn gọi AI (tốn token) và vẫn push uploadedKeys SAU khi
   // orchestrator đã chạy `finally { cleanupChunks(uploadedKeys) }` → file tạm thành orphan.
@@ -58,6 +59,13 @@ export async function runWithConcurrency<T, R>(
         if (wait > 0) await sleep(wait);
         // Kiểm tra lại sau khi ngủ: có thể task khác đã throw trong lúc chờ.
         if (aborted) return;
+        // Event loop bị chặn có thể làm nhiều timer trả về cùng lúc. Kiểm tra lại
+        // lần khởi chạy thực tế để các slot quá hạn không tạo burst.
+        while (lastLaunchAt !== null && Date.now() - lastLaunchAt < stagger) {
+          await sleep(stagger - (Date.now() - lastLaunchAt));
+          if (aborted) return;
+        }
+        lastLaunchAt = Date.now();
       }
 
       try {

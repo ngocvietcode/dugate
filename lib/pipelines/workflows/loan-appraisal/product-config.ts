@@ -19,6 +19,8 @@ import {
   checkAppliesTo,
   parseCheckSet,
   parsePolicyOverrides,
+  summarizeCheckSetChange,
+  summarizePolicyChange,
   validateCheckSetValue,
   validatePolicyValue,
   type LoanPolicyOverrides,
@@ -328,7 +330,11 @@ export function summarizeLoanProductConfigChange(before: unknown, after: unknown
     const y = asRecord(b[code]) ?? {};
     const changed = ['prompts', 'models', 'reasoning', 'policy', 'checks', 'checklist', 'flows']
       .filter((k) => JSON.stringify(x[k] ?? null) !== JSON.stringify(y[k] ?? null));
-    if (changed.length) parts.push(`${code}: ${changed.join(', ')}`);
+    if (changed.length) {
+      // Audit đã che toàn bộ parameters: giữ vết rule/field và ngưỡng đã đổi, không ghi prompt.
+      const details = [summarizeCheckSetChange(x.checks, y.checks), summarizePolicyChange(x.policy, y.policy)].filter(Boolean);
+      parts.push(`${code}: ${changed.join(', ')}${details.length ? ` (${details.join(' ')})` : ''}`);
+    }
   }
   return parts.length ? `loan_product_config đổi — ${parts.join('; ')}.` : null;
 }

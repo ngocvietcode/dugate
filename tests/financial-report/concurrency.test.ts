@@ -4,6 +4,30 @@
 import { runWithConcurrency, sleep } from '@/lib/pipelines/workflows/financial-report/concurrency';
 
 describe('runWithConcurrency', () => {
+  it('keeps overdue timer reservations separated after an event-loop stall', async () => {
+    jest.useFakeTimers({ now: 0 });
+    let stalled = false;
+    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => stalled ? Math.max(100, jest.now()) : jest.now());
+    try {
+      const startedAt: number[] = [];
+      // Reserve slots first, then simulate delayed callbacks observing the same clock.
+      const pending = runWithConcurrency([0, 1, 2, 3], { limit: 4, staggerDelayMs: 20 }, async () => {
+        startedAt.push(Date.now());
+        await sleep(5);
+        stalled = true;
+      });
+      await jest.runAllTimersAsync();
+      await pending;
+      expect(startedAt).toHaveLength(4);
+      for (let i = 1; i < startedAt.length; i++) {
+        expect(startedAt[i] - startedAt[i - 1]).toBeGreaterThanOrEqual(20);
+      }
+    } finally {
+      nowSpy.mockRestore();
+      jest.useRealTimers();
+    }
+  });
+
   it('không bao giờ vượt quá `limit` task đồng thời', async () => {
     const limit = 3;
     let running = 0;
