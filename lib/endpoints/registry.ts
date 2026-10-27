@@ -1031,6 +1031,14 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
             options: ['off', 'shadow', 'on'],
             default: 'off',
           },
+          s3_matcher: {
+            type: 'string',
+            description: 'Cách ghép người trên chứng từ (D-109): "rules" (mặc định) theo luật số định danh rồi tên; ' +
+              '"shadow" chạy thêm bộ chấm Fellegi-Sunter chỉ để thống kê khác biệt (s3_matcher_summary, chỉ số đếm), không đổi kết quả. ' +
+              'Giá trị khác coi như "rules".',
+            options: ['rules', 'shadow'],
+            default: 'rules',
+          },
           loan_product_config: {
             type: 'object',
             description: 'Cấu hình workflow THEO SẢN PHẨM: { version, products: { <product_code>: { prompts, models, reasoning, policy, checks, checklist, flows } } }. ' +

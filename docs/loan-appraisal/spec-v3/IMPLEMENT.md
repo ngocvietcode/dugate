@@ -199,6 +199,10 @@ Xem [open_questions.md](open_questions.md).
   **Đã cài T-FS-01** (`match-parties.ts`): chỉ so với lời khai trên anchor, không so với thẻ đã ghép theo tên, nên S3-AC06 / S4-AC29
   (hai thẻ cùng tên → `role_conflict`) giữ nguyên. T-FS-02…05 giao Codex: `.agents/tasks/fs-scorer/plan.md`, `.agents/tasks/fs-splink/plan.md`
   (đợt này chỉ `rules` / `shadow`, chế độ `fs` để sau T-FS-06).
+  **Đã cài T-FS-02…04** (Claude làm thay Codex, nhánh `codex/fs-scorer`): `lib/loan-dossier/s3/fs/{params,compare,score,shadow}.ts`,
+  `catalog/data/fs_params.json` (tham số chuyên gia §3.4), tham số chạy `s3_matcher` (`rules` | `shadow`), `s3_matcher_summary` trong kết
+  quả cuối, `scripts/fs-shadow-report.ts`. LỆCH SPEC: thống kê shadow nằm ở `s3_matcher_summary` thay `content_preview.fs` (S3 không có step
+  riêng ở giai đoạn 2); `fs` chưa mở. Kiểm tra: `tsc` 0 lỗi; full jest 337 suite / 3556 test qua (5 suite skip có từ trước).
 - **D-110 (2026-10-27)** Cài một phần loan_360 (D-108): `lib/loan-dossier/profile360/` — T-360-07 (đơn vị HKD, `OPERATES`), T-360-10
   (`catalog/data/merge_policies.json`, chỉ khóa `income_monthly_amount` đang dùng), T-360-12 (luồng thu nhập giữ danh tính dòng,
   gộp lương theo bên trả lương trên bảng kê / HĐ lao động / xác nhận lương, cho thuê theo `asset_id`, `evidenced` từ chứng từ bóc tách

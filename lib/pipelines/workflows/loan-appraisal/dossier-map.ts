@@ -2,6 +2,8 @@
 // không cần checkpoint và không thêm stage vào DAG. Lỗi S3 không làm đổ workflow: trả null kèm cảnh báo không chứa PII.
 import type { MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
+import { loadFsParams } from '@/lib/loan-dossier/s3/fs/params';
+import { fsShadow, resolveS3Matcher, type FsShadowSummary } from '@/lib/loan-dossier/s3/fs/shadow';
 import { runMapDossier } from '@/lib/loan-dossier/s3/run';
 import { checkInvariants } from '@/lib/loan-dossier/s3/status';
 
@@ -14,6 +16,8 @@ export interface MapStageOutcome {
   status_code: string | null;
   /** Chỉ nêu loại lỗi / số lượng, không nêu tên hay số định danh. */
   warning: string | null;
+  /** D-109: chỉ khi `s3_matcher = shadow` và catalog tham số hợp lệ. `data` luôn là kết quả luật. */
+  fs_shadow?: FsShadowSummary;
 }
 
 /**
@@ -30,11 +34,20 @@ export function runMapStage(
     const result = runMapDossier({ evidences, dossier_submitted_at, now });
     if (!result.data) return { data: null, status: result.status, status_code: result.status_code, warning: 'MAP_DOSSIER_NO_DATA: S3 không trả dữ liệu.' };
     const violations = checkInvariants(result.data, new Set(evidences.filter((e) => e.status === 'SUCCESS').map((e) => e.evidence_id)));
+    const warnings = violations.length > 0 ? [`MAP_DOSSIER_INVARIANT: ${violations.length} vi phạm nhất quán ở kết quả gom người & tài sản.`] : [];
+    let fs_shadow: FsShadowSummary | undefined;
+    if (resolveS3Matcher(pipelineVars.s3_matcher) === 'shadow') {
+      // FS-R09: catalog hỏng thì bỏ shadow, không đoán tham số.
+      const params = loadFsParams();
+      if (params.ok) fs_shadow = fsShadow(evidences, result.data, params.params);
+      else warnings.push('FS_PARAMS_INVALID: catalog fs_params.json không hợp lệ, bỏ chạy shadow.');
+    }
     return {
       data: result.data,
       status: result.status,
       status_code: result.status_code,
-      warning: violations.length > 0 ? `MAP_DOSSIER_INVARIANT: ${violations.length} vi phạm nhất quán ở kết quả gom người & tài sản.` : null,
+      warning: warnings.length > 0 ? warnings.join(' ') : null,
+      ...(fs_shadow ? { fs_shadow } : {}),
     };
   } catch (error) {
     const name = error instanceof Error ? error.name : 'Error';

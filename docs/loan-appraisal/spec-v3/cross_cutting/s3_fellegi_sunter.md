@@ -109,7 +109,7 @@ khi nạp. Bản đầu dùng tham số chuyên gia (giá trị đã thử ở �
 | **FS-R05** | Ràng buộc cứng giữ nguyên: cá nhân ≠ pháp nhân; pháp nhân ghép theo S3-R06 hiện tại. FS không bao giờ ghép hai party của **cùng** một evidence vào một người, trừ khi luật tách chủ sở hữu ghép (T-S3-02) đã tách |
 | **FS-R06** | `mapped_evidences[]` khi `fs`: `matched_by = FS`, `match_confidence = P`, thêm `match_weight = W` và `match_breakdown = {trường: mức}` (**chỉ mức, không giá trị**). LAC giữ ngưỡng `LOW_MATCH_CONFIDENCE < 0.80` trên `P` |
 | **FS-R07** | `POSSIBLE_MATCH` là lý do mới của `unmapped_evidences` (mở rộng S3-R10), kèm `candidate_person_id` và `match_weight`. Không tự ghép (OQ-FS-01). Người duyệt xác nhận theo luồng CO của [loan_360.md](loan_360.md) |
-| **FS-R08** | **Chế độ** qua tham số `s3_matcher`: `rules` (mặc định), `shadow`, `fs`. Khai báo trong `lib/endpoints/registry.ts` như `lac_mode`, Profile khóa được. `shadow`: chạy cả hai, output lấy từ `rules`, ghi thống kê khác biệt vào `content_preview.fs` của S3 |
+| **FS-R08** | **Chế độ** qua tham số `s3_matcher`: `rules` (mặc định), `shadow`, `fs` (**chưa mở**: đợt D-109 chỉ khai `rules` / `shadow`, `fs` mở ở T-FS-06; giá trị lạ → `rules`). Khai báo trong `lib/endpoints/registry.ts` như `lac_mode`, Profile khóa được. `shadow`: chạy cả hai, output lấy từ `rules`, ghi thống kê khác biệt vào `s3_matcher_summary` của kết quả cuối (S3 ở giai đoạn 2 không lưu step riêng nên không có `content_preview` của S3) |
 | **FS-R09** | **Catalog lỗi thì không đoán.** `fs_params.json` không qua zod (thiếu mức, `m`/`u` ∉ (0, 1], `Σm` hoặc `Σu` của một trường lệch 1 quá 0,01, `upper ≤ lower`) → chạy `rules`, warning `FS_PARAMS_INVALID`. Mọi Operation ghi `params_version` đã dùng |
 | **FS-R10** | **Ước lượng `u` trong cùng hồ sơ**: cặp không phải cùng người lấy từ party **cùng Operation** (blocking theo `operation_id`), không lấy cặp giữa các hồ sơ, vì người khác trong cùng hồ sơ thường là người nhà nên trùng họ, trùng địa chỉ nhiều hơn hai người ngẫu nhiên |
 | **FS-R11** | **Mức so sánh của Splink phải trùng mức của TS.** Có file vector chuẩn (cặp giá trị giả → mức mong đợi) chạy được ở cả hai phía; lệch một dòng là không được xuất tham số |
@@ -147,7 +147,7 @@ Phiên bản Splink và các gói Python ghim chính xác trong `scripts/er/requ
 |---|---|
 | FS-AC01 | `s3_matcher = rules` (mặc định): output S3 **giống hệt** hiện tại trên mọi fixture, trừ ca FS-R01 |
 | FS-AC02 | Chế độ `rules`: cùng tên, khác số, khác ngày sinh → không ghép, `unmapped` `NO_IDENTITY_MATCH` (ca 1 của §1, FS-R01) |
-| FS-AC03 | `shadow`: output S3 giống `rules`; `content_preview.fs` có `params_version` và số đếm theo loại khác biệt, không có tên / số / ngày sinh |
+| FS-AC03 | `shadow`: output S3 giống `rules`; `s3_matcher_summary` có `params_version` và số đếm theo loại khác biệt, không có tên / số / ngày sinh |
 | FS-AC04 | `fs`, tham số chuyên gia: 5 ca §1 cho đúng cột FS (ca 1 không ghép, ca 2 ghép, ca 3 ghép, ca 4 `POSSIBLE_MATCH` kèm `candidate_person_id`, ca 5 ghép) |
 | FS-AC05 | `fs`: hai người cùng tên, cùng ngày sinh, party mới không có số → `AMBIGUOUS_IDENTITY_MATCH` |
 | FS-AC06 | `fs`: số 12 chữ số của party mới mã hóa giới tính / năm sinh trái với người → `id_structure = INCONSISTENT`, điểm giảm so với cùng ca có `CONSISTENT` |

@@ -9,6 +9,7 @@ jest.mock('@/lib/crypto', () => ({ decrypt: (v: string) => v }));
 import { SERVICE_REGISTRY } from '@/lib/endpoints/registry';
 import { mergeParameters } from '@/lib/endpoints/profile-resolver';
 import { resolveLacMode } from '@/lib/pipelines/workflows/loan-appraisal/prompt-checks';
+import { resolveS3Matcher } from '@/lib/loan-dossier/s3/fs/shadow';
 
 const params = SERVICE_REGISTRY.workflows.subCases['loan-appraisal'].parameters;
 
@@ -40,5 +41,14 @@ describe('lac_mode run parameter', () => {
     fd.append('lac_mode', 'on');
     const result = mergeParameters(fd, params, { lac_mode: { value: 'off', isLocked: true } });
     expect(result.ok).toBe(false);
+  });
+});
+
+// D-109: `s3_matcher` cùng cơ chế khai báo; chỉ `rules` / `shadow` ở đợt này.
+describe('s3_matcher run parameter', () => {
+  it('is declared, reaches pipelineVars and resolves unknown values to rules', () => {
+    expect(params.s3_matcher).toMatchObject({ type: 'string', options: ['rules', 'shadow'], default: 'rules' });
+    expect(resolveS3Matcher(merge({ s3_matcher: 'shadow' }).s3_matcher)).toBe('shadow');
+    expect(resolveS3Matcher('fs')).toBe('rules');
   });
 });
