@@ -1,0 +1,16 @@
+{
+  "params_version": "0.1.0-expert",
+  "source": "EXPERT",
+  "estimated_at": null,
+  "dataset_ref": null,
+  "prior_match_probability": 0.2,
+  "thresholds": { "upper": 10, "lower": 0, "ambiguity_margin": 6 },
+  "comparisons": {
+    "id_number": { "AGREE": { "m": 0.95, "u": 0.000001 }, "OLD_NEW": { "m": 0.02, "u": 0.01 }, "NEAR": { "m": 0.02, "u": 0.00001 }, "DISAGREE": { "m": 0.01, "u": 0.98899 } },
+    "full_name": { "EXACT": { "m": 0.80, "u": 0.01 }, "REORDERED": { "m": 0.05, "u": 0.001 }, "SPELLING_DIFFERENCE": { "m": 0.12, "u": 0.005 }, "NO_MATCH": { "m": 0.03, "u": 0.984 } },
+    "date_of_birth": { "AGREE": { "m": 0.96, "u": 0.0001 }, "DAY_MONTH_SWAPPED": { "m": 0.01, "u": 0.0001 }, "DISAGREE": { "m": 0.03, "u": 0.9998 } },
+    "gender": { "AGREE": { "m": 0.99, "u": 0.5 }, "DISAGREE": { "m": 0.01, "u": 0.5 } },
+    "permanent_address": { "AGREE": { "m": 0.6, "u": 0.3 }, "SAME_PROVINCE": { "m": 0.3, "u": 0.4 }, "DISAGREE": { "m": 0.1, "u": 0.3 } },
+    "id_structure": { "CONSISTENT": { "m": 0.97, "u": 0.3 }, "INCONSISTENT": { "m": 0.03, "u": 0.7 } }
+  }
+}

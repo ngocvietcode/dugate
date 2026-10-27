@@ -11,6 +11,7 @@ import type { ClassifyData } from '@/lib/loan-dossier/contracts/stage-result';
 import type { MasterDossier } from '@/lib/loan-dossier/contracts/master-dossier';
 import type { StoredClaims } from '@/lib/loan-dossier/graph/claims-store';
 import type { DossierGraphView } from '@/lib/loan-dossier/graph/view-contract';
+import type { FsShadowSummary } from '@/lib/loan-dossier/s3/fs/shadow';
 import type { IntakeAssessment } from './intake-assessment';
 import type { DossierPrecheck } from './dossier-precheck';
 import type { ReproducibilitySnapshot } from './reproducibility';
@@ -349,6 +350,11 @@ export interface DossierOutputV3 {
    * không lưu: dựng lại được từ documents.evidences + S3 (`source_hash` để đối chiếu). Vắng khi lac_mode = off hoặc kết quả cũ.
    */
   loan_application_context_summary?: LoanApplicationContextSummary | null;
+  /**
+   * D-109 (FS-R08): so khớp party của bộ chấm Fellegi-Sunter với luật S3 khi `s3_matcher = shadow` — chỉ số đếm, không giá trị.
+   * Vắng khi `s3_matcher = rules` (mặc định), catalog tham số hỏng, hoặc kết quả cũ.
+   */
+  s3_matcher_summary?: S3MatcherSummary | null;
   /** S4. `items` rỗng khi S4 FAILED (VD flow sai). */
   checklist: {
     status: string;
@@ -383,6 +389,8 @@ export interface LoanApplicationContextSummary {
   conflicts: number;
   gaps: Array<{ code: string; count: number }>;
 }
+
+export type S3MatcherSummary = { mode: 'shadow' } & FsShadowSummary;
 
 export interface AppraisalResultV2 extends DossierOutputV3 {
   risk_notes: string[];

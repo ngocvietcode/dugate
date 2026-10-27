@@ -473,6 +473,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
           gaps: lac.gaps.map((g) => ({ code: g.code, count: g.count })),
         },
       } : {}),
+      ...(mapOutcome.fs_shadow ? { s3_matcher_summary: { mode: 'shadow' as const, ...mapOutcome.fs_shadow } } : {}),
       risk_notes: [],
       system_notes: [
         'Các bước kiểm tra hồ sơ (checklist, đối chiếu chéo, master data, kiểm tra nháp) đang tạm tắt ở giai đoạn 2; kết quả gồm OCR, gom người & tài sản, chỉ số tài chính, bộ rule và khuyến nghị.',
