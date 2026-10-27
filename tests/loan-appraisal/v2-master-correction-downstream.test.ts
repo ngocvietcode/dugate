@@ -118,7 +118,7 @@ describe('giao diện (MD-R19 e)', () => {
       CORRECTED: 'Đã hiệu chỉnh (cần xác nhận)',
     });
     expect(masterStatusTone('CORRECTED', 'REVIEW')).toBe('warning');
-    expect(masterStatusTone('CONFLICT', 'REVIEW')).toBe('danger');
+    expect(masterStatusTone('CONFLICT', 'REVIEW')).toBe('warning');
     expect(masterStatusTone('OCR_NORMALIZED', 'ACCEPTED')).toBe('info');
   });
   it('dòng CORRECTED hiện giá trị đã chọn và giá trị bị loại kèm nơi ghi; CONFLICT vẫn "Chưa thống nhất"', async () => {
@@ -127,7 +127,7 @@ describe('giao diện (MD-R19 e)', () => {
     const where = evidenceWhere(r.evidences);
     const pick = (m: typeof r.master) => [...m.documents, ...m.other_documents].filter((d) => d.doc_type_key === 'land_use_certificate').flatMap((d) => d.fields).find((f) => f.path.endsWith('certificate_book_number'))!;
     const before = masterFieldRows([pick(r.master)], where)[0];
-    expect(before).toMatchObject({ value: 'Chưa thống nhất', status_label: 'Chưa thống nhất', tone: 'danger' });
+    expect(before).toMatchObject({ value: 'Chưa thống nhất', status_label: 'Chưa thống nhất', tone: 'warning' });
     const row = masterFieldRows([pick(r.fixed)], where)[0];
     expect(row).toMatchObject({ value: 'CN 6475', status: 'CORRECTED', status_label: 'Đã hiệu chỉnh (cần xác nhận)', tone: 'warning' });
     expect(row.details.filter((d) => d.startsWith('Bản lệch: CN 6457')).length).toBeGreaterThan(0);

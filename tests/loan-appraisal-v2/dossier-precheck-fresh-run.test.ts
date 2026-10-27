@@ -1,4 +1,4 @@
-// T-V2-13 — đường chạy mới hoàn toàn (currentStep = 0): S1 chạy trong cùng lần rồi mới kiểm tra sơ bộ, trước S2.
+// T-V2-13 — đường chạy mới hoàn toàn (currentStep = 0): D-90/D-91: S1 và kiểm tra sơ bộ rồi dừng trước S2.
 const enqueueMock = jest.fn();
 const pauseMock = jest.fn();
 const order: string[] = [];
@@ -56,6 +56,7 @@ jest.mock('@/lib/pipelines/workflows/loan-appraisal/stage-adapters', () => {
 });
 
 import { runLoanAppraisal } from '@/lib/pipelines/workflows/loan-appraisal';
+import { runExtractStage } from '@/lib/pipelines/workflows/loan-appraisal/dossier-stages';
 import { isDossierPrecheck } from '@/lib/pipelines/workflows/loan-appraisal/dossier-precheck';
 
 const MARKER = 'kiểm tra SƠ BỘ bộ hồ sơ vay';
@@ -81,28 +82,35 @@ beforeEach(() => {
 });
 
 describe('T-V2-13: đường chạy mới hoàn toàn', () => {
-  it('thứ tự: S1 → LLM kiểm tra sơ bộ → S2; checkpoint bước 0 lưu precheck; tiến độ báo ngay sau S1', async () => {
+  it('D-90/D-91: S1 → LLM kiểm tra sơ bộ → dừng trước S2; checkpoint lưu precheck', async () => {
     const ctx = fresh();
     await runLoanAppraisal(ctx as never);
     const seq = order.filter((x) => x === 'S1' || x === 'LLM-precheck' || x.startsWith('S2'));
-    expect(seq).toEqual(['S1', 'LLM-precheck', 'S2(sau precheck)']);
+    // D-90/D-91: dừng sau precheck; S2 và intake_assessment thuộc giai đoạn 2.
+    expect(seq).toEqual(['S1', 'LLM-precheck']);
+    expect(runExtractStage).not.toHaveBeenCalled();
     const progress = order.filter((x) => x.startsWith('progress:'));
     const iS1 = progress.findIndex((m) => m.includes('Bước 1 hoàn tất'));
     const iPre = progress.findIndex((m) => m.includes('Kiểm tra sơ bộ xong'));
     const iS2 = progress.findIndex((m) => m.includes('Bước 2 hoàn tất'));
     expect(iS1).toBeGreaterThanOrEqual(0);
     expect(iPre).toBeGreaterThan(iS1);
-    expect(iS2).toBeGreaterThan(iPre);
+    expect(iS2).toBe(-1);
     const step0 = ctx.stepsResult.find((s) => (s as { stage_key: string }).stage_key === 'classify') as { extracted_data: { precheck?: unknown } };
     expect(isDossierPrecheck(step0.extracted_data.precheck)).toBe(true);
     expect(pauseMock).toHaveBeenCalledTimes(1);
     expect(pauseMock.mock.calls[0][3].dossier_precheck).toMatchObject({ status: 'COMPLETED' });
-    expect(pauseMock.mock.calls[0][3].intake_assessment.criteria).toHaveLength(4);
+    expect(pauseMock.mock.calls[0][2]).toBe(1);
+    expect(ctx.currentStep).toBe(1);
+    expect(pauseMock.mock.calls[0][3]).not.toHaveProperty('intake_assessment');
   });
 
-  it('dossier_precheck = false: S1 → S2 không có LLM kiểm tra sơ bộ', async () => {
+  it('D-90: dossier_precheck = false vẫn dừng sau S1, không chạy S2', async () => {
     await runLoanAppraisal(fresh({ dossier_precheck: 'false' }) as never);
-    expect(order.filter((x) => x === 'S1' || x === 'LLM-precheck' || x.startsWith('S2'))).toEqual(['S1', 'S2(sau precheck)']);
+    expect(order.filter((x) => x === 'S1' || x === 'LLM-precheck' || x.startsWith('S2'))).toEqual(['S1']);
+    expect(runExtractStage).not.toHaveBeenCalled();
+    expect(pauseMock).toHaveBeenCalledTimes(1);
+    expect(pauseMock.mock.calls[0][2]).toBe(1);
     expect(pauseMock.mock.calls[0][3].dossier_precheck.status).toBe('SKIPPED');
   });
 });

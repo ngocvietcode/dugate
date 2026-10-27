@@ -10,12 +10,13 @@ describe('financial-report-translation Profile parameters — Round 14.5 P7–P9
     }
   });
 
-  it('shows exactly the eight supported default Profile parameters', () => {
+  it('shows the shared encryption toggle and eight workflow default Profile parameters', () => {
     const defaultVisible = Object.entries(parameters)
       .filter(([, schema]) => !schema.hidden)
       .map(([key]) => key);
 
     expect(defaultVisible).toEqual([
+      'encryption_enabled',
       'target_lang',
       'pages_per_chunk',
       'classify_pages_per_call',
