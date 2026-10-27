@@ -158,7 +158,7 @@ So sánh sự khác biệt (Delta) giữa tài liệu thứ nhất `source_file`
 - **`mode=version`**: Được tối ưu chuyên biệt cho việc tạo Changelog tóm lược (Lịch sử Sửa đổi). Đọc 2 phiên bản của một tập quy định/chính sách và tự sinh ra lời tổng kết ở đầu trang: "Ở version này quy định đã Update việc thêm quyền lợi phép năm, Xóa bỏ phụ cấp thưởng ngoài".
 
 #### 3.7. Thẩm Định Hồ Sơ Vay — JSON Tích Hợp (`process=loan-appraisal`)
-Gửi hồ sơ qua `POST /docs/workflows` với `process=loan-appraisal`, `product_code=hkd-loan`, `files[]`. Hệ thống ngoài nhận kết quả theo JSON `schema = "dugate.loan-appraisal.integration"` (`schema_version = "5.1"`) — **chỉ kết quả cuối** của bộ hồ sơ, không có tiến trình xử lý và không có evidence. Đặc tả đầy đủ và quy tắc phiên bản: `docs/loan-appraisal/INTEGRATION-CONTRACT.md`.
+Gửi hồ sơ qua `POST /docs/workflows` với `process=loan-appraisal`, `product_code=hkd-loan`, `files[]`. Hệ thống ngoài nhận kết quả theo JSON `schema = "dugate.loan-appraisal.integration"` (`schema_version = "5.2"`) — **chỉ kết quả cuối** của bộ hồ sơ, không có tiến trình xử lý và không có evidence. Đặc tả đầy đủ và quy tắc phiên bản: `docs/loan-appraisal/INTEGRATION-CONTRACT.md`.
 
 Giai đoạn 2 hiện **tạm tắt các bước kiểm tra hồ sơ** (Customer 360, checklist, đối chiếu chéo, master data): kết quả chỉ có OCR, chỉ số tài chính, bộ rule (rule engine + rule LLM) và khuyến nghị. Các khối đánh dấu *tuỳ chọn* dưới đây vắng mặt cho tới khi các bước đó được bật lại; consumer phải xử lý trường hợp vắng.
 

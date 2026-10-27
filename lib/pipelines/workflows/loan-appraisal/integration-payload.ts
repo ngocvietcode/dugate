@@ -346,6 +346,7 @@ function buildFinancials(f: FinancialMetrics | undefined): IntegrationPayload['f
       unit: m.unit,
       status: m.status,
       ...(m.input_conflict ? { conflict: true as const } : {}),
+      ...(m.needs_review ? { review: true as const } : {}),
     };
   });
 }

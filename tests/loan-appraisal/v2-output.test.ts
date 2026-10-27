@@ -77,13 +77,13 @@ describe('AppraisalResultV2 3.0 (giai đoạn 2: chỉ OCR + rule)', () => {
     expect((r.system_notes ?? []).some((n) => n.includes('tạm tắt'))).toBe(true);
   });
 
-  it('payload tích hợp 5.1: hợp lệ theo contract; extractions (OCR) + financials + checks + decision; không khối kiểm tra hồ sơ, không tiến trình, không evidence, không log PII', async () => {
+  it('payload tích hợp 5.2: hợp lệ theo contract; extractions (OCR) + financials + checks + decision; không khối kiểm tra hồ sơ, không tiến trình, không evidence, không log PII', async () => {
     const spies = (['log', 'info', 'warn', 'error'] as const).map((m) => jest.spyOn(console, m).mockImplementation(() => undefined));
     const r = await finalResult();
     const payload = buildLoanAppraisalIntegrationPayload(r, [], { operation_id: 'op-1', state: 'SUCCEEDED', created_at: '2026-10-23T00:00:00Z', completed_at: '2026-10-23T01:00:00Z' });
     const parsed = IntegrationPayloadSchema.safeParse(payload);
     expect(parsed.success ? null : parsed.error.issues).toBeNull();
-    expect(payload.schema_version).toBe('5.1');
+    expect(payload.schema_version).toBe('5.2');
     expect(Object.keys(payload)).toEqual(['schema', 'schema_version', 'case', 'decision', 'extractions', 'financials', 'checks', 'checks_summary', 'notes']);
     expect(payload.case).toMatchObject({ id: 'op-1', completed_at: '2026-10-23T01:00:00Z', profile: { segment: 'HKD', product: 'hkd-loan', flow: 'FULL' } });
 
@@ -152,7 +152,19 @@ describe('AppraisalResultV2 3.0 (giai đoạn 2: chỉ OCR + rule)', () => {
     expect(rest).toEqual(base);
   });
 
-  it('payload 5.1 nhỏ hơn rõ rệt so với kết quả đầy đủ trong DB', async () => {
+  it('5.2 (D-101): chỉ số needs_review → financials[].review = true; chỉ số đã chấp nhận không có khóa review; vẫn hợp lệ contract', async () => {
+    const r = await finalResult();
+    const metrics = r.financial_metrics as unknown as Record<string, { needs_review?: boolean }>;
+    for (const m of Object.values(metrics)) delete m.needs_review;
+    metrics.dscr.needs_review = true;
+    const payload = buildLoanAppraisalIntegrationPayload(r, [], { operation_id: 'op-1', state: 'SUCCEEDED', created_at: null, completed_at: null });
+    expect(IntegrationPayloadSchema.safeParse(payload).success).toBe(true);
+    const byMetric = new Map(payload.financials.map((f) => [f.metric, f]));
+    expect(byMetric.get('dscr')).toMatchObject({ review: true });
+    for (const [metric, f] of byMetric) if (metric !== 'dscr') expect(f).not.toHaveProperty('review');
+  });
+
+  it('payload 5.2 nhỏ hơn rõ rệt so với kết quả đầy đủ trong DB', async () => {
     const r = await finalResult();
     const payload = buildLoanAppraisalIntegrationPayload(r, [], { operation_id: 'op-1', state: 'SUCCEEDED', created_at: null, completed_at: null });
     expect(JSON.stringify(payload).length).toBeLessThan(JSON.stringify(r).length * 0.5);
