@@ -10,6 +10,7 @@ import { operations, profileEndpoints } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
 import { resolveCallbackDeliveryConfig } from '@/lib/delivery/webhook-sender';
+import { describeSentBody } from '@/lib/delivery/failed-payload-meta';
 import { buildEncryptTransform } from '@/lib/crypto/build-transform';
 import {
   getWorkflowStepsQueue,
@@ -913,7 +914,7 @@ async function sendWebhook(
       bodyToSend = transformed.body;
       Object.assign(encryptionHeaders, transformed.headers);
     } catch (err) {
-      ctx.logger.error('[WORKFLOW] Webhook payload transform failed — aborting webhook dispatch', undefined, err);
+      ctx.logger.error('[WORKFLOW] Webhook payload transform failed — aborting webhook dispatch', { encryption_failed: true, payload_keys: Object.keys(payload) }, err);
       throw new Error(`Webhook payload transform failed: ${(err as Error).message}`);
     }
   } else {
@@ -1044,7 +1045,10 @@ async function sendWebhook(
     webhookLastError: lastError ?? (lastResponseStatus === null ? 'Webhook delivery failed' : `HTTP ${lastResponseStatus}`),
     stepsResultJson: JSON.stringify(ctx.stepsResult),
   }).where(eq(operations.id, ctx.operationId));
-  ctx.logger.error(`[WORKFLOW] Webhook delivery failed after 3 attempts for ${ctx.operationId}`);
+  ctx.logger.error(
+    `[WORKFLOW] Webhook delivery failed after 3 attempts for ${ctx.operationId}`,
+    describeSentBody(bodyToSend, { last_error: lastError, http_status: lastResponseStatus }),
+  );
 }
 
 // ─── Context Factory ──────────────────────────────────────────────────────────
