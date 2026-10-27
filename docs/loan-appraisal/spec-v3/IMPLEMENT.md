@@ -196,3 +196,15 @@ Xem [open_questions.md](open_questions.md).
   `catalog/data/fs_params.json`, ước lượng ngoài hệ thống bằng Splink; chế độ `s3_matcher` = `rules` | `shadow` | `fs`. Phát hiện khi
   chạy thử S3 thật: party cùng tên nhưng khác số CCCD và khác ngày sinh vẫn bị gộp vào khách vay theo tên (S3-R07), chỉ gắn
   `DECLARED_ID_DIFFERS` giống hệt ca số đọc lệch 1 ký tự; vá bằng luật ở T-FS-01, không chờ FS.
+  **Đã cài T-FS-01** (`match-parties.ts`): chỉ so với lời khai trên anchor, không so với thẻ đã ghép theo tên, nên S3-AC06 / S4-AC29
+  (hai thẻ cùng tên → `role_conflict`) giữ nguyên. T-FS-02…05 giao Codex: `.agents/tasks/fs-scorer/plan.md`, `.agents/tasks/fs-splink/plan.md`
+  (đợt này chỉ `rules` / `shadow`, chế độ `fs` để sau T-FS-06).
+- **D-110 (2026-10-27)** Cài một phần loan_360 (D-108): `lib/loan-dossier/profile360/` — T-360-07 (đơn vị HKD, `OPERATES`), T-360-10
+  (`catalog/data/merge_policies.json`, chỉ khóa `income_monthly_amount` đang dùng), T-360-12 (luồng thu nhập giữ danh tính dòng,
+  gộp lương theo bên trả lương trên bảng kê / HĐ lao động / xác nhận lương, cho thuê theo `asset_id`, `evidenced` từ chứng từ bóc tách
+  nhẹ, `EARNS_FROM`). LỆCH SPEC: (1) T-360-01 (tách `trust.ts`, property test) chưa làm, T-360-02 chỉ có `loan`, `parties`, `assets`,
+  `business_units`, `income_streams` (chưa có `Obligation`, chờ T-360-11); (2) **chưa nối** vào stage tài chính, rule hay LAC render
+  (T-360-03): DSCR vẫn đọc `financial-inputs.ts`, LAC vẫn có `business-1`; (3) `financial_info.income_details` của đơn vay chưa phân
+  loại được nên chỉ ghi gap `DECLARED_INCOME_NOT_LINKED`; (4) L360-B02 sửa theo AC-12: khác số GCN thì không gộp, cùng chủ + cùng tên
+  thì gắn `BUSINESS_NUMBER_MISMATCH`; (5) test gộp một file `tests/loan-dossier/profile360.test.ts` (6 ca: AC-8, AC-9, AC-10, AC-12,
+  AC-18, catalog hỏng). Kiểm tra: `tsc` 0 lỗi; `tests/loan-dossier` 80 suite / 1010 test qua.

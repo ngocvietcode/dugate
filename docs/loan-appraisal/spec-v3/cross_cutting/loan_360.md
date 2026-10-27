@@ -96,7 +96,7 @@ khung: chương trình `sme_secured` ghi "chờ nghiệp vụ chốt danh mục"
 | ID | Rule |
 |---|---|
 | **L360-B01** | **Gom `BusinessUnit` bằng code, tất định.** Khóa theo thứ tự: mã số thuế / số đăng ký chuẩn hóa (`normIdNumber`) → số GCN ĐKHKD → tên đơn vị (luật tên pháp nhân `orgNameLevel`, bỏ loại hình) **cùng** một chủ `OPERATES`. Không gom chỉ bằng tên. Hai ứng viên cùng khớp → không gom, giữ hai đơn vị và gắn cờ `BUSINESS_MATCH_REVIEW` |
-| **L360-B02** | **Mâu thuẫn của đơn vị.** Số GCN / số ĐK / mã số thuế khác nhau trên cùng đơn vị → `DISPUTED` (như trường định danh của người). Tên: luật tên pháp nhân (khác dấu → `SPELLING_VARIANT`). Ngành và địa chỉ **không** tự sinh mâu thuẫn (địa điểm KD và trụ sở khác nhau là bình thường): render cạnh nhau, rule quyết |
+| **L360-B02** | **Mâu thuẫn của đơn vị.** Hai lần nhắc khác số GCN / mã số thuế không bao giờ gộp (AC-12); cùng chủ và cùng tên mà khác số → hai đơn vị, cả hai gắn cờ `BUSINESS_NUMBER_MISMATCH`. Trong một đơn vị (gộp theo số GCN, mã số thuế còn lại khác nhau) → trường đó `DISPUTED`, không chọn giá trị. Tên: chọn giá trị nhắc nhiều nhất, mọi fact vẫn nằm trong `fact_ids`. Ngành và địa chỉ **không** tự sinh mâu thuẫn (địa điểm KD và trụ sở khác nhau là bình thường): render cạnh nhau, rule quyết |
 | **L360-B03** | Mỗi cạnh có `verification.status` (`VERIFIED` khi khớp bằng CCCD / mã số thuế, `PARTIAL` khi chỉ khớp tên với đúng một ứng viên, `UNVERIFIED` khi khai mà không có chứng từ) và `support_fact_ids` như LAC-R08. Không dựng cạnh từ tên khi có > 1 ứng viên |
 | **L360-B04** | **`IncomeStream` giữ danh tính dòng** (`evidence_id` + `source_index`): không gộp hai dòng cùng số tiền, không tách loại thu nhập khỏi số tiền của nó. Thay cho cách LAC hiện bỏ chỉ số mảng và gộp trùng giá trị (`build.ts`, bước gộp bản nháp) |
 | **L360-B05** | **`TRADES_WITH` chỉ cảnh báo.** Bên bán khớp (CCCD / mã số thuế) một Party trong registry, hoặc nối qua `SPOUSE_OF` / `RELATIVE_OF` / `MEMBER_OF` với khách vay → cờ `RELATED_COUNTERPARTY` cho rule đọc. Khớp chỉ bằng tên → `REVIEW`, không kết luận |
@@ -245,7 +245,7 @@ khi chúng ghi khác nhau (chính sách, Risk duyệt).
 - Refs: §3.1, L360-B01, L360-B02, L360-B03, L360-B04, L360-B06, L360-B07, AC-8, AC-9, AC-10
 - Làm: L360-B01…B04, B06, B07 cho `kind = HKD`; nguồn: `business_info` của đơn vay, GCN ĐKHKD, `income_sources[].household_business`, xác nhận địa phương; cạnh `OPERATES`, `EARNS_FROM`. LAC render `BusinessUnit` thay `business-1`.
 - DoD: AC-8, AC-9, AC-10.
-- Verify: `npx jest tests/loan-dossier/profile360-business.test.ts`
+- Verify: `npx jest tests/loan-dossier/profile360.test.ts`
 
 ### T-360-08 — P1: Khóa mã số thuế, giao dịch, mặt bằng, nghĩa vụ
 - Depends: T-360-07
@@ -271,7 +271,7 @@ khi chúng ghi khác nhau (chính sách, Risk duyệt).
 - DoD:
   - test: file mẫu qua schema; thiếu `policy_id` hoặc phiên bản → bị từ chối
   - test: catalog hỏng → giá trị để trống kèm gap, không throw
-- Verify: `npx jest tests/loan-dossier/profile360-policies.test.ts`
+- Verify: `npx jest tests/loan-dossier/profile360.test.ts`
 
 ### T-360-11 — P1: Nghĩa vụ nợ
 - Depends: T-360-10
@@ -293,7 +293,7 @@ khi chúng ghi khác nhau (chính sách, Risk duyệt).
   - test: AC-10, AC-18
   - test: lương ở hai chủ lao động khác nhau → hai luồng
   - test: thu nhập cho thuê nối đúng `asset_id`
-- Verify: `npx jest tests/loan-dossier/profile360-income.test.ts`
+- Verify: `npx jest tests/loan-dossier/profile360.test.ts`
 
 ### T-360-13 — P2: Giao dịch mua
 - Depends: T-360-18
