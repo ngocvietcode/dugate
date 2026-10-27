@@ -1,4 +1,4 @@
-import type { FinancialMetrics, RuleResult } from './types';
+import type { FinancialMetrics, MetricResult, RuleResult } from './types';
 import type { LoanProductPolicy } from './product-policy';
 import type { LoanCheckDefinition, LoanCheckSet } from './check-set';
 import { resolveRuleGroup } from './rule-groups';
@@ -37,7 +37,16 @@ abstract class BaseRule implements CreditRule<LoanRuleFacts> {
 
   protected result(
     input: Omit<RuleResult, 'rule_id' | 'rule_version' | 'severity' | 'exception_allowed' | 'check_kind' | 'check_name' | 'group'>,
+    metric?: MetricResult,
   ): RuleResult {
+    // D-101: đầu vào đọc với độ tin cậy thấp phải được rà soát trước khi công nhận PASS.
+    if (input.result === 'PASS' && metric?.needs_review === true) {
+      input = {
+        ...input, result: 'REVIEW', reason_code: 'INPUT_NEEDS_REVIEW',
+        message: `${input.message} Đầu vào được đọc với độ tin cậy thấp; cần kiểm tra trước khi công nhận kết quả đạt.`,
+        evidence_ids: metric.evidence_ids,
+      };
+    }
     return {
       rule_id: this.ruleId,
       rule_version: this.version,
@@ -70,7 +79,7 @@ export class MinimumDscrRule extends BaseRule {
       reason_code: pass ? 'DSCR_THRESHOLD_MET' : 'DSCR_BELOW_MINIMUM',
       message: `DSCR ${metric.value.toFixed(2)}×; ngưỡng ${this.minimum.toFixed(2)}×.`,
       evidence_ids: metric.evidence_ids,
-    });
+    }, metric);
   }
 }
 
@@ -100,7 +109,7 @@ export class MaximumLtvRule extends BaseRule {
       reason_code: pass ? 'LTV_THRESHOLD_MET' : 'LTV_ABOVE_MAXIMUM',
       message: `LTV ${(metric.value * 100).toFixed(1)}%; trần ${(this.maximum * 100).toFixed(1)}%.`,
       evidence_ids: metric.evidence_ids,
-    });
+    }, metric);
   }
 }
 
@@ -123,7 +132,7 @@ export class MaximumAmountRule extends BaseRule {
       reason_code: pass ? 'AMOUNT_WITHIN_PRODUCT_LIMIT' : 'AMOUNT_ABOVE_PRODUCT_LIMIT',
       message: pass ? 'Số tiền đề nghị trong hạn mức sản phẩm.' : 'Số tiền đề nghị vượt hạn mức sản phẩm.',
       evidence_ids: metric.evidence_ids,
-    });
+    }, metric);
   }
 }
 
