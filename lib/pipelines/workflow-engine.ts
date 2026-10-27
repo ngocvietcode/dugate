@@ -3,6 +3,8 @@
 // Each workflow is a separate file in lib/pipelines/workflows/*.ts
 // This file provides: types, helpers (enqueueSubStep, updateProgress), and the router.
 
+import { createHash } from 'crypto';
+
 import { db } from '@/lib/db';
 import { operations, profileEndpoints } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -108,6 +110,14 @@ export interface WorkflowContext {
    */
   _persistedStepsJson?: string;
   /**
+   * D-102: id các sub-operation đã cộng usage vào ctx trong tiến trình này. Sub-step dùng lại (reuseKey) cộng usage của
+   * row cũ đúng MỘT lần: tổng của cha chỉ được ghi ở điểm kết thúc (pause / complete / fail / cancel), nên lần chạy bị
+   * gián đoạn chưa có usage của nó trong tổng nạp lại từ DB.
+   */
+  _accountedSubOps?: Set<string>;
+  /** D-102: lời gọi cùng reuseKey đang chạy trong tiến trình này — gọi trùng song song dùng chung một promise. */
+  _subStepInFlight?: Map<string, Promise<SubStepResult>>;
+  /**
    * Optional workflow-owned business payload for the SUCCEEDED webhook. When set,
    * it replaces `extracted_data` in the callback body; the envelope
    * (operation_id, state, done, extracted_data) and the stored result are unchanged.
@@ -187,6 +197,20 @@ export function boundSubStepTimeout(configuredTimeoutMs: number, maxWaitMs?: num
   return Math.max(1, Math.min(configured, Math.floor(maxWaitMs)));
 }
 
+export interface SubStepOptions {
+  /**
+   * D-102 (ARCHITECTURE E3): khoá TẤT ĐỊNH của lời gọi — mọi thứ quyết định output (processor, prompt, nội dung file theo
+   * hash, dải trang, model, reasoning). Có khoá ⇒ retry / resume của CÙNG operation cha dùng lại sub-step đã SUCCEEDED
+   * thay vì gọi lại model. Không truyền ⇒ hành vi cũ (luôn gọi). Không bao giờ dùng lại giữa hai operation cha.
+   */
+  reuseKey?: string;
+}
+
+/** idempotencyKey của sub-step: gắn với operation cha, băm phần còn lại (không chứa prompt hay dữ liệu hồ sơ). */
+export function subStepIdempotencyKey(parentOperationId: string, processorSlug: string, reuseKey: string): string {
+  return `wfstep:${parentOperationId}:${createHash('sha256').update(`${processorSlug}\u0000${reuseKey}`, 'utf8').digest('hex')}`;
+}
+
 export async function enqueueSubStep(
   ctx: WorkflowContext,
   processorSlug: string,
@@ -195,6 +219,52 @@ export async function enqueueSubStep(
   modelOverride?: string | null,
   reasoningEffortOverride?: string | null,
   maxWaitMs?: number,
+  options?: SubStepOptions,
+): Promise<SubStepResult> {
+  if (!options?.reuseKey) {
+    return executeSubStep(ctx, processorSlug, variables, filesJson, modelOverride, reasoningEffortOverride, maxWaitMs, null);
+  }
+  const key = subStepIdempotencyKey(ctx.operationId, processorSlug, options.reuseKey);
+  const inFlight = (ctx._subStepInFlight ??= new Map());
+  const pending = inFlight.get(key);
+  if (pending) return pending;
+  const run = (async () => {
+    const previous = await reusableSubStep(key);
+    if (previous) {
+      ctx.logger.info(`[WORKFLOW] Reused sub-step ${processorSlug} → subOpId=${previous.id} (đã SUCCEEDED ở lần chạy trước)`);
+      return toSubStepResult(ctx, previous, processorSlug);
+    }
+    return executeSubStep(ctx, processorSlug, variables, filesJson, modelOverride, reasoningEffortOverride, maxWaitMs, key);
+  })();
+  inFlight.set(key, run);
+  try {
+    return await run;
+  } finally {
+    inFlight.delete(key);
+  }
+}
+
+/**
+ * Sub-step đã SUCCEEDED với khoá này và còn nội dung → dùng lại. Row không dùng được (FAILED, còn RUNNING từ lần chạy
+ * bị gián đoạn, đã xoá nội dung) thì NHẢ khoá để lần gọi mới giữ khoá; row cũ giữ nguyên để truy vết.
+ */
+async function reusableSubStep(key: string): Promise<Operation | null> {
+  const [row] = await db.select().from(operations).where(eq(operations.idempotencyKey, key)).limit(1);
+  if (!row) return null;
+  if (row.done && row.state === 'SUCCEEDED' && !row.contentPurgedAt && row.outputContent !== null) return row;
+  await db.update(operations).set({ idempotencyKey: null }).where(eq(operations.id, row.id));
+  return null;
+}
+
+async function executeSubStep(
+  ctx: WorkflowContext,
+  processorSlug: string,
+  variables: Record<string, unknown>,
+  filesJson: string | null,
+  modelOverride: string | null | undefined,
+  reasoningEffortOverride: string | null | undefined,
+  maxWaitMs: number | undefined,
+  idempotencyKey: string | null,
 ): Promise<SubStepResult> {
   const subOpId = crypto.randomUUID();
 
@@ -214,7 +284,7 @@ export async function enqueueSubStep(
     ctx.logger.info(`[WORKFLOW] reasoning_effort override configured for sub-step ${processorSlug}`);
   }
 
-  await insertOperation({
+  const childRow = {
     id: subOpId,
     endpointSlug: processorSlug,
     apiKeyId: ctx.apiKeyId,
@@ -231,7 +301,16 @@ export async function enqueueSubStep(
     progressPercent: 0,
     progressMessage: `Sub-step: ${processorSlug}`,
     ...workflowChildVisibility(),
-  });
+  };
+  try {
+    await insertOperation({ ...childRow, idempotencyKey });
+  } catch (err) {
+    const unique = err instanceof Error && 'code' in err && (err as { code?: string }).code === '23505';
+    if (!unique || idempotencyKey === null) throw err;
+    // Khoá vừa bị tiến trình khác giữ (hiếm): gọi như không có khoá thay vì chờ, kết quả vẫn đúng.
+    ctx.logger.warn(`[WORKFLOW] idempotencyKey của sub-step ${processorSlug} đang được giữ; gọi không dùng lại.`);
+    await insertOperation(childRow);
+  }
 
   ctx.logger.info(`[WORKFLOW] Enqueued sub-step: ${processorSlug} → subOpId=${subOpId}`);
 
@@ -369,7 +448,11 @@ export async function enqueueSubStep(
   const [subOp] = await db.select().from(operations).where(eq(operations.id, subOpId)).limit(1);
   if (!subOp) throw new Error(`Sub-operation ${subOpId} not found after completion`);
   if (subOp.state === 'FAILED') throw new Error(`Sub-step ${processorSlug} failed: ${subOp.errorMessage}`);
+  return toSubStepResult(ctx, subOp, processorSlug);
+}
 
+/** Đọc output của sub-operation đã xong và cộng usage vào ctx đúng một lần cho mỗi sub-operation (D-102). */
+function toSubStepResult(ctx: WorkflowContext, subOp: Operation, processorSlug: string): SubStepResult {
   let extractedData: unknown = null;
   if (subOp.extractedData) {
     try {
@@ -379,35 +462,40 @@ export async function enqueueSubStep(
     }
   }
 
-  // Track usage. The child keeps nullable-source flags; the parent rolls those
-  // flags up while normalizing only its aggregate totals.
-  ctx.totalInputTokens += subOp.totalInputTokens ?? 0;
-  ctx.totalOutputTokens += subOp.totalOutputTokens ?? 0;
-  ctx.totalCost += subOp.totalCostUsd ?? 0;
-  ctx.inputTokensMissing ||= subOp.inputTokensMissing;
-  ctx.outputTokensMissing ||= subOp.outputTokensMissing;
-  ctx.costMissing ||= subOp.costMissing;
-  ctx.hasUnpricedCost ||= subOp.hasUnpricedCost;
+  // Một sub-operation chỉ cộng usage một lần mỗi tiến trình (gọi trùng song song / dùng lại nhiều lần).
+  const accounted = (ctx._accountedSubOps ??= new Set());
+  if (!accounted.has(subOp.id)) {
+    accounted.add(subOp.id);
+    // Track usage. The child keeps nullable-source flags; the parent rolls those
+    // flags up while normalizing only its aggregate totals.
+    ctx.totalInputTokens += subOp.totalInputTokens ?? 0;
+    ctx.totalOutputTokens += subOp.totalOutputTokens ?? 0;
+    ctx.totalCost += subOp.totalCostUsd ?? 0;
+    ctx.inputTokensMissing ||= subOp.inputTokensMissing;
+    ctx.outputTokensMissing ||= subOp.outputTokensMissing;
+    ctx.costMissing ||= subOp.costMissing;
+    ctx.hasUnpricedCost ||= subOp.hasUnpricedCost;
 
-  // Roll up the sub-operation's per-processor usage breakdown onto the parent,
-  // so a business workflow keeps full cost transparency (incl. cost_source).
-  if (subOp.usageBreakdown) {
-    try {
-      const subBreakdown = JSON.parse(subOp.usageBreakdown) as WorkflowContext['usageBreakdown'];
-      if (Array.isArray(subBreakdown)) {
-        for (const item of subBreakdown) {
-          ctx.usageBreakdown.push({
-            processor: `${processorSlug}:${item.processor ?? ''}`.replace(/:$/, ''),
-            model: item.model,
-            input_tokens: item.input_tokens ?? null,
-            output_tokens: item.output_tokens ?? null,
-            cost_usd: item.cost_usd ?? null,
-            cost_source: item.cost_source,
-          });
+    // Roll up the sub-operation's per-processor usage breakdown onto the parent,
+    // so a business workflow keeps full cost transparency (incl. cost_source).
+    if (subOp.usageBreakdown) {
+      try {
+        const subBreakdown = JSON.parse(subOp.usageBreakdown) as WorkflowContext['usageBreakdown'];
+        if (Array.isArray(subBreakdown)) {
+          for (const item of subBreakdown) {
+            ctx.usageBreakdown.push({
+              processor: `${processorSlug}:${item.processor ?? ''}`.replace(/:$/, ''),
+              model: item.model,
+              input_tokens: item.input_tokens ?? null,
+              output_tokens: item.output_tokens ?? null,
+              cost_usd: item.cost_usd ?? null,
+              cost_source: item.cost_source,
+            });
+          }
         }
+      } catch {
+        ctx.logger.warn(`[WORKFLOW] Không parse được usageBreakdown của sub-step ${processorSlug}`);
       }
-    } catch {
-      ctx.logger.warn(`[WORKFLOW] Không parse được usageBreakdown của sub-step ${processorSlug}`);
     }
   }
 

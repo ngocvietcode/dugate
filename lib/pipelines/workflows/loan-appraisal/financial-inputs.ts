@@ -3,7 +3,13 @@ import type { MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 import { pickAnchor } from '@/lib/loan-dossier/s3/anchor';
 
-export interface SourcedNumber { value: number; evidenceIds: string[] }
+import { ACCEPT_CONFIDENCE } from './evidence-v3';
+
+/**
+ * `reviewIds` (E9, D-101): nguồn có độ tin cậy đọc của field cấp 1 < ACCEPT_CONFIDENCE hoặc không có (cùng quy tắc REVIEW của
+ * V2-R04). Đầu vào vẫn được dùng để tính; chỉ số phụ thuộc mang cờ `needs_review`. Vắng / rỗng = mọi nguồn đã ACCEPTED.
+ */
+export interface SourcedNumber { value: number; evidenceIds: string[]; reviewIds?: string[] }
 
 export interface FinancialInputs {
   requested: SourcedNumber | null;
@@ -20,11 +26,25 @@ export interface FinancialInputs {
 
 export const VALUATION_TYPES = ['real_estate_valuation_report', 'external_valuation_certificate', 'movable_asset_valuation_report'];
 const get = (o: unknown, path: string): unknown => path.split('.').reduce<unknown>((x, k) => (x && typeof x === 'object' ? (x as Record<string, unknown>)[k] : undefined), o);
-const num = (e: EvidenceEnvelope, path: string): SourcedNumber | null => {
-  const v = get(e.data, path);
-  return typeof v === 'number' && Number.isFinite(v) ? { value: v, evidenceIds: [`${e.evidence_id}#${path}`] } : null;
+/** Độ tin cậy đọc là của field CẤP 1 (`field_confidences`), giống `buildEvidenceRegistryV3`. */
+const isLowConfidence = (e: EvidenceEnvelope, path: string): boolean => {
+  const conf = e.field_confidences[path.split(/[.[]/)[0]];
+  return !(typeof conf === 'number' && conf >= ACCEPT_CONFIDENCE);
 };
-const sum = (xs: SourcedNumber[]): SourcedNumber | null => (xs.length === 0 ? null : { value: xs.reduce((a, b) => a + b.value, 0), evidenceIds: xs.flatMap((x) => x.evidenceIds) });
+/** `path` đọc giá trị (dạng chấm); `id` là field_path ghi vào evidence_id (dạng V2-R04, có thể dùng [i]). */
+const sourced = (e: EvidenceEnvelope, value: number, path: string, id = path): SourcedNumber => {
+  const evidenceId = `${e.evidence_id}#${id}`;
+  return { value, evidenceIds: [evidenceId], ...(isLowConfidence(e, path) ? { reviewIds: [evidenceId] } : {}) };
+};
+const num = (e: EvidenceEnvelope, path: string, id = path): SourcedNumber | null => {
+  const v = get(e.data, path);
+  return typeof v === 'number' && Number.isFinite(v) ? sourced(e, v, path, id) : null;
+};
+const sum = (xs: SourcedNumber[]): SourcedNumber | null => {
+  if (xs.length === 0) return null;
+  const reviewIds = xs.flatMap((x) => x.reviewIds ?? []);
+  return { value: xs.reduce((a, b) => a + b.value, 0), evidenceIds: xs.flatMap((x) => x.evidenceIds), ...(reviewIds.length ? { reviewIds } : {}) };
+};
 
 /**
  * - Số tiền vay = `loan_info.bank_proposed_amount` ("Số tiền cho vay"); null → thiếu dữ liệu, KHÔNG thay bằng requested_amount.
@@ -43,7 +63,7 @@ export function financialInputsV3(envelopes: ReadonlyArray<EvidenceEnvelope>, s3
   if (anchor) {
     existingMonthly = num(anchor, 'financial_info.existing_monthly_debt_payment');
     if (!existingMonthly && get(anchor.data, 'financial_info.has_existing_debt') === false) {
-      existingMonthly = { value: 0, evidenceIds: [`${anchor.evidence_id}#financial_info.has_existing_debt`] };
+      existingMonthly = sourced(anchor, 0, 'financial_info.has_existing_debt');
     }
   }
 
@@ -53,10 +73,10 @@ export function financialInputsV3(envelopes: ReadonlyArray<EvidenceEnvelope>, s3
     const sources = (e.data!.income_sources as Array<{ income_type: string; household_business?: Record<string, unknown> | null }> | undefined) ?? [];
     sources.forEach((s, i) => {
       if (s.income_type !== 'household_business') return;
-      const r = num(e, `income_sources.${i}.household_business.net_revenue_annual`);
-      const p = num(e, `income_sources.${i}.household_business.net_profit_annual`);
-      if (r) revenues.push({ ...r, evidenceIds: [`${e.evidence_id}#income_sources[${i}].household_business.net_revenue_annual`] });
-      if (p) profits.push({ ...p, evidenceIds: [`${e.evidence_id}#income_sources[${i}].household_business.net_profit_annual`] });
+      const r = num(e, `income_sources.${i}.household_business.net_revenue_annual`, `income_sources[${i}].household_business.net_revenue_annual`);
+      const p = num(e, `income_sources.${i}.household_business.net_profit_annual`, `income_sources[${i}].household_business.net_profit_annual`);
+      if (r) revenues.push(r);
+      if (p) profits.push(p);
     });
     // Mỗi bảng kê chỉ lấy 1 lần; nhiều bảng kê → bản đầu tiên (không cộng trùng thu nhập).
     if (revenues.length || profits.length) break;
@@ -75,7 +95,7 @@ export function financialInputsV3(envelopes: ReadonlyArray<EvidenceEnvelope>, s3
       const v = i >= 0 ? details[i].valuation_value : null;
       if (typeof v !== 'number') continue;
       candidates.push({
-        v: { value: v, evidenceIds: [`${e.evidence_id}#asset_details[${i}].valuation_value`] },
+        v: sourced(e, v, 'asset_details', `asset_details[${i}].valuation_value`),
         issue: (get(e.data, 'legal_info.issue_date') as string | null | undefined) ?? null,
         order: usable.indexOf(e),
       });

@@ -8,7 +8,6 @@ import type {
   LoanStageKey,
 } from '@/app/loan-appraisal/types';
 import type { DossierPrecheck } from '@/lib/pipelines/workflows/loan-appraisal/dossier-precheck';
-import { areDossierChecksDisabled, isDeferredToPhase2 } from './selectors';
 import { LEGACY_STAGE_KEYS, STAGES, completedStageCount, initialStages, isStageKey, type StageMap } from './stages';
 import type { OperationUsage } from './usage';
 
@@ -99,18 +98,10 @@ export function isTerminalPhase(phase: RunPhase): boolean {
 
 const CAN_START: ReadonlyArray<RunPhase> = ['idle', 'succeeded', 'failed', 'cancelled', 'stalled', 'paused'];
 
-/**
- * Số bước hiển thị của giai đoạn 1: `classify` và `dossier_precheck`. D-90, D-91: `extract_evidence` (S2) và `consolidate_dossier` (S3–S5)
- * thuộc giai đoạn 2. Operation cũ dừng sau khi đã chạy S2–S5 (không có DEFERRED_TO_PHASE_2) vẫn tính 4 bước xong (kể cả kiểm tra sơ bộ), xem `intakeStageCount`.
- */
+/** Số bước hiển thị của giai đoạn 1: `classify` và `dossier_precheck` (D-90, D-91). S2 trở đi thuộc giai đoạn 2. */
 export const INTAKE_STAGE_COUNT = 2;
-/** classify, kiểm tra sơ bộ, OCR đã xong (operation cũ dừng sau S2–S5; bước hợp nhất đã gỡ khỏi danh sách stage nên chỉ còn 3). */
+/** Kết quả V1 CŨ đã hoàn tất: classify, kiểm tra sơ bộ, OCR được coi là xong khi hiển thị (xem SUCCEEDED). */
 const LEGACY_INTAKE_STAGE_COUNT = 3;
-
-function intakeStageCount(result: AppraisalResult | null | undefined): number {
-  // Chỉ operation CŨ đã chạy S2–S5 ở giai đoạn 1 mới có checklist thật. Giai đoạn 1 mới (DEFERRED_TO_PHASE_2) và kết quả mới (DOSSIER_CHECKS_DISABLED) thì không.
-  return result && !isDeferredToPhase2(result) && !areDossierChecksDisabled(result) && result.checklist ? LEGACY_INTAKE_STAGE_COUNT : INTAKE_STAGE_COUNT;
-}
 
 function revealStage(stages: StageMap, stageKey: string, failed: boolean): StageMap {
   if (!isStageKey(stageKey)) return stages;
@@ -233,7 +224,8 @@ export function runReducer(state: RunState, action: RunAction): RunState {
     case 'PAUSED': {
       if (phase !== 'running' && phase !== 'cancelling') return state;
       const stages = { ...state.stages };
-      const doneCount = intakeStageCount(action.result ?? state.result);
+      // Operation dừng kiểu cũ (S2–S5 chạy ở giai đoạn 1) không còn (D-99): giai đoạn 1 luôn là 2 bước.
+      const doneCount = INTAKE_STAGE_COUNT;
       STAGES.forEach((stage, index) => { stages[stage.id] = index < doneCount ? 'done' : 'pending'; });
       const progressLog = action.message && action.message !== state.progressMessage
         ? [...state.progressLog, action.message].slice(-MAX_LOG_LINES) : state.progressLog;

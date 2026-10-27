@@ -13,6 +13,8 @@ import type { StoredClaims } from '@/lib/loan-dossier/graph/claims-store';
 import type { DossierGraphView } from '@/lib/loan-dossier/graph/view-contract';
 import type { IntakeAssessment } from './intake-assessment';
 import type { DossierPrecheck } from './dossier-precheck';
+import type { ReproducibilitySnapshot } from './reproducibility';
+import type { SegmentPackSnapshot } from './segment-packs/types';
 import type { RuleGroupKey } from './rule-groups';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 
@@ -152,6 +154,12 @@ export interface MetricResult {
   warnings: string[];
   /** MD-R13: thiếu vì các bản của cùng chứng từ ghi khác nhau (master_dossier CONFLICT) — rule ra REVIEW, không FAIL. */
   input_conflict?: boolean;
+  /**
+   * E9 / D-101: đã tính được nhưng ít nhất một đầu vào đọc với độ tin cậy thấp (field cấp 1 < 0.80 hoặc không có) — cần
+   * rà soát trước khi dùng. `review_evidence_ids` là các nguồn đó. Vắng = mọi đầu vào đã ACCEPTED.
+   */
+  needs_review?: boolean;
+  review_evidence_ids?: string[];
 }
 
 export interface FinancialMetrics {
@@ -289,6 +297,10 @@ export interface LoanConfigSnapshot {
   };
   /** Cảnh báo cấu hình của lần chạy (VD prompt ghi đè bị bỏ qua — V2-R08, input rule khóa cũ — V2-R07). */
   warnings?: string[];
+  /** Segment pack đã tính stage 2–4 (D-100). Kết quả cũ không có (tương đương hkd-secured). */
+  segment_pack?: SegmentPackSnapshot;
+  /** Danh mục, template prompt (sha256), model / reasoning ghi đè của các bước AI (ARCHITECTURE E1). Kết quả cũ không có. */
+  reproducibility?: ReproducibilitySnapshot;
 }
 
 export interface AppraisalAudit {

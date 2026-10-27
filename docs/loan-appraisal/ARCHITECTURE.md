@@ -229,7 +229,7 @@ mũ; ghi prompt/output vào log job ở Bull Board (D-95); chi phí và token th
 | # | Khoảng trống | Bằng chứng |
 |---|---|---|
 | G1 | Chứng từ tài chính doanh nghiệp chỉ bóc tách LIGHT | `balance_sheet`, `financial_performance_report` chỉ có `period`; `vat_tax_return` chỉ `tax_period`; `enterprise_registration_license` chỉ số ĐK và địa chỉ; `board_meeting_minutes` không có field |
-| G2 | Strategy tài chính gắn cứng HKD | `loan-appraisal.ts` luôn `new HkdSecuredFinancialStrategy()`; `financial-inputs.ts` chỉ đọc `income_type = household_business`; mọi `strategyId` là `hkd-secured-v2:*` |
+| G2 | Strategy tài chính gắn cứng HKD | **Một phần đã xử lý (D-100):** workflow chọn logic stage 2–4 qua segment pack theo `segment` của sản phẩm. Chỉ có pack `hkd-secured`; `sme` được ánh xạ tường minh vào pack đó (`config_snapshot.segment_pack.pack_id = hkd-secured`). Còn lại: viết SME pack (giai đoạn 4) |
 | G3 | Policy SME là bản sao HKD (`0.1.0-draft`) | `loan_products.json`: cùng DSCR 1.25 / LTV 0.7 / 3 tỷ / 18 tháng |
 | G4 | Policy chỉ có 4 tham số phẳng | Không có ngưỡng theo loại cấp tín dụng, loại TSBĐ, hạng khách hàng, giới hạn exposure |
 | G5 | Mô hình "một khoản vay – một đơn" | Đầu vào từ một anchor `loan_application`; khuyến nghị `min(đề nghị, hạn mức, TSBĐ × LTV)`; không có facility hay exposure |
@@ -240,11 +240,12 @@ mũ; ghi prompt/output vào log job ở Bull Board (D-95); chi phí và token th
 
 | # | Khoảng trống | Bằng chứng / rủi ro |
 |---|---|---|
-| E1 | Không tái lập được kết quả AI | `snapshotPolicy` không ghi prompt hash, model, reasoning, version danh mục/schema |
+| E1 | ~~Không tái lập được kết quả AI~~ **Đã xử lý (D-97):** `config_snapshot.reproducibility` ghi phiên bản danh mục, nguồn + sha256 template prompt, model / reasoning ghi đè của 4 bước AI (`reproducibility.ts`) | Còn thiếu: phiên bản từng schema S2 (hiện chỉ có version của `doc_types.json`), commit của bản build |
 | E2 | Đổi policy tín dụng không qua maker-checker | Ngưỡng và rule sửa trên trang cấu hình, hiệu lực ngay, không có người duyệt hay ngày hiệu lực |
-| E3 | Retry không idempotent ở cấp lời gọi AI | `enqueueSubStep` tạo `subOpId` ngẫu nhiên; checkpoint chỉ ở cấp stage. Một file lỗi ở S2 làm chạy lại cả stage |
-| E4 | Job cha giữ slot worker khi chờ sub-step | Thông lượng bị giới hạn bởi thời gian chờ LLM (pipeline concurrency 5); fan-out `Promise.all` không giới hạn |
-| E5 | Code tắt nằm lẫn trong luồng chính | S4/S5/master_dossier/intake_review/readiness, nhánh legacy; docs spec-v3 vẫn mô tả 8 stage |
+| E3 | ~~Retry không idempotent ở cấp lời gọi AI~~ **Đã xử lý cho S1/S2 (D-102):** `enqueueSubStep(..., { reuseKey })` dùng lại sub-step đã SUCCEEDED của cùng operation cha (khoá `wfstep:<parent>:<sha256>` trên cột `idempotencyKey` có sẵn). Stage vẫn chạy lại, nhưng file / bản thể đã đọc xong không gọi model lần nữa | Precheck đã có checkpoint; rule LLM (stage 3) cố ý không dùng lại (P6) |
+| E4 | Job cha giữ slot worker khi chờ sub-step | Thông lượng bị giới hạn bởi thời gian chờ LLM (pipeline concurrency 5). *Đính chính:* fan-out S1/S2 **đã có** giới hạn 4 lời gọi đồng thời mỗi operation (`MAX_PARALLEL_MODEL_CALLS`, `stage-adapters.ts`); `Promise.all` ở tầng domain chỉ xếp hàng. Còn mở: job cha không giữ slot khi chờ |
+| E5 | ~~Code tắt nằm lẫn trong luồng chính~~ **Đã xử lý (D-97…D-99):** S4, S5, `dossier-consolidate`, dựng `master_dossier` không còn trong đồ thị import lúc chạy (test khóa); trang cấu hình chỉ còn bước AI thực sự chạy; đường resume operation cũ và đầu vào tài chính kiểu v2 cũ đã gỡ | — |
+| E9 | ~~Đầu vào tài chính không lọc evidence `REVIEW`~~ **Đã xử lý (D-101, chọn "vẫn tính nhưng gắn cờ"):** đầu vào có độ tin cậy đọc < 0.80 (hoặc không có) mang `reviewIds`; chỉ số tính từ chúng có `needs_review` + `review_evidence_ids` + cảnh báo đầu danh sách (UI hiện) | Còn mở: rule engine (`MIN_DSCR`, `MAX_LTV`, `MAX_AMOUNT`) vẫn ra `PASS` trên chỉ số `needs_review`; payload tích hợp chưa mang cờ (cần nâng `schema_version` 5.2) |
 | E6 | Rule LLM nhận hai khối dữ liệu tách rời | Graph render không dẫn nguồn được; `customer360: {}`; xem [LAC](spec-v3/cross_cutting/loan_application_context.md) |
 | E7 | Một điểm phụ thuộc: anchor `loan_application` | Không có đơn vay thì không gom được người nào và không có đầu vào khoản vay |
 | E8 | Thiếu quan sát chất lượng nghiệp vụ | Không có chỉ số drift: tỉ lệ `REVIEW`, dẫn chiếu bị loại, độ chính xác trên bộ UAT |
@@ -333,8 +334,8 @@ interface FinancialStrategy {
 | Giai đoạn | Việc chính | Điều kiện xong |
 |---|---|---|
 | **0. Dọn nền** | Tách code tắt ra sau feature flag hoặc module `legacy/`; cập nhật spec-v3 theo 5 stage; snapshot tái lập (E1) | Docs khớp code; mỗi kết quả có `prompt_hash`, `model`, `catalog_version` |
-| **1. Segment Pack cho HKD** | Định nghĩa interface §9.2; đóng gói phần HKD; registry + kiểm tra khi khởi động | Toàn bộ test hồi quy giữ nguyên; `config_snapshot.pack_id = hkd-secured` |
-| **2. Idempotency & thông lượng** | Checkpoint theo file, khoá idempotency sub-step, giới hạn fan-out, job cha không chờ (E3, E4) | Retry S2 chỉ gọi lại file lỗi; tải 20 hồ sơ đồng thời không chặn hàng đợi |
+| **1. Segment Pack cho HKD** ✅ D-100 | Định nghĩa interface §9.2; đóng gói phần HKD; registry + kiểm tra khi khởi động | Toàn bộ test hồi quy giữ nguyên; `config_snapshot.segment_pack.pack_id = hkd-secured`. Interface v1 chỉ gồm stage 2–4 (`calculateFinancials`, `evaluatePolicy`, `recommend`); danh mục chứng từ, anchor, vai trò vào pack khi xây SME pack |
+| **2. Idempotency & thông lượng** 🟡 D-102 | ✅ khoá idempotency sub-step S1/S2 (thay cho checkpoint theo file: cùng hiệu quả, không đổi cấu trúc checkpoint); ✅ giới hạn fan-out (đã có sẵn); ⬜ job cha không chờ (E4) | Retry S2 chỉ gọi lại file lỗi (✅); tải 20 hồ sơ đồng thời không chặn hàng đợi (⬜ cần thiết kế lại hàng đợi) |
 | **3. LAC** | Theo spec LAC (`lac_mode` off → shadow → on) | Tiêu chí bật trong T-LAC-07 đạt trên bộ UAT |
 | **4. SME Pack** | Schema FULL cho chứng từ SME; strategy tài chính SME; policy pack thật; rule pack SME; facility & exposure | Bộ UAT SME (do nghiệp vụ cung cấp) đạt ngưỡng chính xác đã thống nhất |
 | **5. Quản trị** | Kho policy có maker-checker; dashboard chất lượng (E2, E8) | Policy chỉ đổi được qua phê duyệt; có cảnh báo khi chất lượng giảm |
@@ -368,10 +369,10 @@ CIC/core hay đọc file); phạm vi scorecard.
 | Tài liệu | Dùng để | Lưu ý |
 |---|---|---|
 | **File này** | Tham chiếu kiến trúc | Cập nhật cùng PR đổi kiến trúc |
-| [lib/pipelines/workflows/loan-appraisal/README.md](../../lib/pipelines/workflows/loan-appraisal/README.md) | Chi tiết domain thẩm định | Đầu file và mục "tạm tắt" đúng với code; một số mục (mẫu biểu `form_code`, bảng "Hai phase", `LOAN.INTAKE.REQUIRED_DOCUMENTS`) đã cũ |
+| [lib/pipelines/workflows/loan-appraisal/README.md](../../lib/pipelines/workflows/loan-appraisal/README.md) | Chi tiết domain thẩm định | Đã đối chiếu lại với code ở D-97 |
 | [INTEGRATION-CONTRACT.md](INTEGRATION-CONTRACT.md) | Contract cho hệ thống ngoài | — |
 | [ADD-NEW-PRODUCT-FLOW.md](ADD-NEW-PRODUCT-FLOW.md) | Thêm sản phẩm / luồng | Chỉ phủ danh mục và cấu hình; chưa có Segment Pack |
-| [spec-v3/cross_cutting/v2_integration.md](spec-v3/cross_cutting/v2_integration.md) | Rule V2-R* | **Đã cũ:** mô tả 8 stage, `consolidate_dossier`, `intake_review` / `master_dossier` ở giai đoạn 2 |
+| [spec-v3/cross_cutting/v2_integration.md](spec-v3/cross_cutting/v2_integration.md) | Rule V2-R* | Thân bài mô tả 8 stage; **ghi chú trạng thái ở đầu file** (D-97) liệt kê các rule không còn đúng với code |
 | [spec-v3/stages/S1…S5](spec-v3/stages/) | Rule và AC của từng stage | S4, S5 đang không được workflow gọi |
 | [spec-v3/cross_cutting/master_dossier.md](spec-v3/cross_cutting/master_dossier.md) | Master dossier, hiệu chỉnh | Đang tắt cùng S4/S5 |
 | [spec-v3/cross_cutting/loan_application_context.md](spec-v3/cross_cutting/loan_application_context.md) | LAC | Đề xuất, chưa duyệt |
@@ -389,8 +390,10 @@ Quyết định chi tiết ở `spec-v3/IMPLEMENT.md` (D-*). Bảng dưới ch�
 | D-51 / D-53 | Tách 2 giai đoạn, `stop_after_intake` mặc định `true` | Sale xem tiếp nhận trước khi tốn chi phí OCR | Đang áp dụng |
 | D-73 / D-81 / D-90 | Giai đoạn 1 = S1 + precheck LLM, dừng ngay sau precheck | Phản hồi sớm, rẻ | Đang áp dụng |
 | D-96 | Danh mục sản phẩm cấu hình được, rule id `LOAN.*`, khung `sme` | Bước đầu đa sản phẩm | Đang áp dụng (SME chưa có giá trị nghiệp vụ) |
-| — | Tạm tắt S4/S5, master_dossier, intake_review, readiness ở giai đoạn 2 | Theo README; chưa có mã D-* | Cần ghi D-* |
-| ADR-01 | Lõi chung + Segment Pack (§9) | Mở rộng SME mà không rẽ nhánh lõi | **Đề xuất** |
+| D-97 | Ghi nhận: tạm tắt S4/S5, master_dossier, intake_review, readiness ở giai đoạn 2; DAG 5 stage. Thêm `config_snapshot.reproducibility` | Trạng thái chưa từng được ghi; tái lập kết quả (E1) | Đang áp dụng |
+| D-98 | Tách hàm dùng chung (`prompt-render`, `dossier-facts`, `run-params`) để S4/S5/consolidate/master rời đồ thị import lúc chạy; không xóa code | Đường chạy chính không mang code đang tắt; giữ D-82 | Đang áp dụng (test khóa) |
+| D-99 | Gỡ 4 bước AI không chạy khỏi danh mục cấu hình (`RETIRED_STEP_KEYS`, bỏ êm khi đọc/ghi); gỡ đường resume operation cũ và đầu vào tài chính kiểu v2 cũ | Người dùng xác nhận không còn operation đang dừng | Đang áp dụng |
+| D-100 / ADR-01 | Lõi chung + Segment Pack (§9). v1: stage 2–4, registry phân khúc → pack, fail-closed khi worker khởi động, `config_snapshot.segment_pack` | Mở rộng SME mà không rẽ nhánh lõi | **Đang áp dụng** (chỉ pack HKD) |
 | ADR-02 | Loan Application Context làm nguồn duy nhất cho LLM giai đoạn 2 | Dẫn nguồn được, có trạng thái tin cậy | **Đề xuất** |
 | ADR-03 | Kho policy bất biến có maker-checker; Profile chỉ chọn version | Kiểm soát nội bộ, kiểm toán | **Đề xuất** |
-| ADR-04 | Idempotency theo file/bản thể cho sub-step AI | Retry rẻ, kết quả ổn định | **Đề xuất** |
+| D-102 / ADR-04 | Idempotency theo file/bản thể cho sub-step AI: `reuseKey` → `operations.idempotencyKey`, chỉ trong cùng operation cha, usage cộng đúng một lần | Retry rẻ, kết quả ổn định | **Đang áp dụng** (S1, S2) |

@@ -7,7 +7,7 @@ import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 import type { ChecklistItemResult, LoanProduct } from '../prompts/loan-appraisal-prompts';
 import type { DossierPrecheck, PrecheckLine, PrecheckRelation } from './dossier-precheck';
 import type { Acknowledgement, IntakeAssessment, IntakeCriterion, IntakeFinding, IntakePassed } from './intake-assessment';
-import { buildDossierFacts } from './intake-review';
+import { buildDossierFacts } from './dossier-facts';
 import type { DossierOutputV3, DossierReadinessResult, IntakeResult } from './types';
 
 /** `status_code` của checklist / cross_check ở giai đoạn 1 tinh gọn: S3–S5 chưa chạy, sẽ chạy ở giai đoạn 2. */

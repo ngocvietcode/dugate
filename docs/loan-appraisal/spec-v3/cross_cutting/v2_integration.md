@@ -2,6 +2,16 @@
 
 > **Nguồn chuẩn về kiến trúc từ 2026-10-16 (IMPLEMENT D-32).** Khi file này mâu thuẫn với phần mô tả W1/W2, `CheckInput`, giao diện `/loan-dossier` ở `01_overview.md`, `04_data_model.md`, `cross_cutting/{api,foundation,rbac,security}.md`, `ui/U1…U4`, thì file này thắng.
 
+> **Trạng thái hiện tại (đối chiếu code 2026-10-27, D-97).** Workflow chạy **5 stage**, không phải 8: `0 classify` (S1 + `dossier_precheck`) · `1 extract_evidence` (S2) · `2 calculate_financials` · `3 evaluate_policy_compliance` · `4 synthesize_recommendation` (`LOAN_STAGE_DEFINITIONS`). S3 chạy bằng code giữa stage 1 và 2, không có stage riêng. Các bước kiểm tra hồ sơ ở giai đoạn 2 đang **tạm tắt** (code còn, workflow không gọi). Vì vậy các mục sau **không mô tả hành vi hiện tại**; chúng giữ nguyên để tra cứu và bật lại:
+> - §2 hàng `consolidate_dossier` (stage 2) và số thứ tự "3–7": stage tài chính nay là 2, rule là 3, khuyến nghị là 4. Operation cũ có checkpoint `consolidate_dossier` vẫn resume được (chạy lại từ stage tài chính).
+> - V2-R09 `checklist` = S4, `cross_check` = S5: hai khối nay rỗng, `status_code = DOSSIER_CHECKS_DISABLED`.
+> - V2-R07 `HKD.INTAKE.REQUIRED_DOCUMENTS`: đã gỡ (`RETIRED_CHECK_IDS`); id rule nay là `LOAN.*` (D-96).
+> - V2-R12 `master_dossier`, V2-R13 / V2-R15 / V2-R22 / V2-R23 `intake_assessment`, `intake_review`, `dossier_summary`: không chạy ở giai đoạn 2.
+> - V2-R14 "Giao diện luôn gửi `true`": UI v2 gửi `stop_after_intake` tường minh, mặc định `false` (chạy hết), `true` khi người dùng chọn dừng sau giai đoạn 1.
+> - V2-R21 đường resume: S2 → S3 → stage 2–4 (không có `intake_assessment`, S4, S5, `master_dossier`).
+>
+> Tổng quan kiến trúc hiện tại và lộ trình: [ARCHITECTURE.md](../../ARCHITECTURE.md).
+
 Người dùng chốt: **kiến trúc** giữ workflow v2 tám stage (`process=loan-appraisal`, `lib/pipelines/workflows/loan-appraisal.ts`); **kiểu dữ liệu** theo spec (`02_conventions`, `doc_schemas/`: ngày ISO, tiền số nguyên, địa chỉ object, `parties[]`, `assets[]`); **danh mục loại chứng từ** theo spec (`doc_types.json`, 47 loại) và kéo theo checklist, ma trận đối chiếu của spec. Không giữ tương thích ngược với output v2 hiện tại.
 
 ## 1. Phần nào của spec áp dụng

@@ -15,7 +15,7 @@ import {
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 
 import { untrustedBlock } from '../prompts/loan-appraisal-prompts';
-import { renderPrompt } from './intake-review';
+import { renderPrompt } from './prompt-render';
 
 export const MASTER_CORRECTION_STEP = 'master_correction';
 /** Số trường tối đa gửi trong một lời gọi; phần còn lại giữ CONFLICT (có cảnh báo). */

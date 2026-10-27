@@ -5,7 +5,7 @@ import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 import { runMapDossier } from '@/lib/loan-dossier/s3/run';
 import { checkInvariants } from '@/lib/loan-dossier/s3/status';
 
-import { consolidateParams } from './dossier-consolidate';
+import { consolidateParams } from './run-params';
 
 export interface MapStageOutcome {
   /** null khi S3 lỗi hoặc không có dữ liệu. Có thể rỗng (`role_registry = []`) khi thiếu giấy đề nghị vay. */
