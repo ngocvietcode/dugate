@@ -139,7 +139,11 @@ export function sanitizeFileName(name: string): string {
 
 /** Bọc dữ liệu không tin cậy; gỡ thẻ trùng tên bên trong để dữ liệu không "thoát" khỏi khối. */
 export function untrustedBlock(tag: string, content: string): string {
-  const safe = content.replace(new RegExp(`</?\\s*${tag}\\s*>`, 'gi'), '');
+  // [SEC 2026-10-27 LAC-review] Một lượt replace không đủ: "</untrusted_x</untrusted_x>ext>" sau khi xóa thẻ bên trong lại thành
+  // thẻ đóng thật, giá trị OCR thoát khỏi khối dữ liệu và đứng ngoài UNTRUSTED_DATA_GUARD. Lặp đến khi không còn thẻ nào.
+  const pattern = new RegExp(`</?\\s*${tag}\\s*>`, 'gi');
+  let safe = content;
+  for (let previous = ''; previous !== safe;) { previous = safe; safe = safe.replace(pattern, ''); }
   return `<${tag}>\n${safe}\n</${tag}>`;
 }
 
