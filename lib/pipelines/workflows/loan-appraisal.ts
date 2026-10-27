@@ -73,6 +73,7 @@ import { buildDossierGraph, toDossierGraphView, type DossierGraph } from '@/lib/
 import { buildClaimLedger } from '@/lib/loan-dossier/graph/claims';
 import { selectNotableClaims } from '@/lib/loan-dossier/graph/claims-store';
 import { resolveLoanProductPolicy, snapshotPolicy } from './loan-appraisal/product-policy';
+import { buildReproducibilitySnapshot } from './loan-appraisal/reproducibility';
 import { resolveLoanConfig, LOAN_PRODUCT_CONFIG_PARAM } from './loan-appraisal/product-config';
 import { resolveLoanFlow } from './loan-appraisal/check-set';
 import { buildLoanAppraisalIntegrationPayload } from './loan-appraisal/integration-payload';
@@ -190,7 +191,11 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
     logger.warn(`[LOAN-APPRAISAL] Cấu hình: ${warning}`);
   }
   const productPolicy = resolveLoanProductPolicy(product.code, loanConfig.policyOverrides);
-  const configSnapshot = { ...snapshotPolicy(productPolicy, checkSet), ...(configWarnings.length ? { warnings: configWarnings } : {}) };
+  const configSnapshot = {
+    ...snapshotPolicy(productPolicy, checkSet),
+    ...(configWarnings.length ? { warnings: configWarnings } : {}),
+    reproducibility: buildReproducibilitySnapshot(ctx),
+  };
   const fileCount = filesData.length;
 
   // Checkpoint spec-v3 của bước 0–2 (S1, S2, S3–S5). Không còn đường đọc checkpoint v2 cũ (V2-R09).
