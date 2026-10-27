@@ -105,11 +105,11 @@ describe('quan hệ, mâu thuẫn, khoảng trống', () => {
     for (const id of owns!.support_fact_ids) expect(c.facts.find((f) => f.fact_id === id)?.subject_id).toBe(ownerId);
   });
 
-  it('lá liên kết nội bộ (party_index…) có trong facts nhưng đánh dấu internal', () => {
+  it('lá không mang thông tin (party_index, party_role, ownership, thành phần địa chỉ) có trong facts nhưng hidden', () => {
     const { lac: c } = lac([app(), idCard(borrower)]);
-    const internal = c.facts.filter((f) => f.internal);
-    expect(internal.length).toBeGreaterThan(0);
-    for (const f of internal) expect(f.field).toMatch(/index/);
+    const hiddenFacts = c.facts.filter((f) => f.hidden);
+    expect(hiddenFacts.length).toBeGreaterThan(0);
+    for (const f of hiddenFacts) expect(f.field).toMatch(/index|party_role|party_type|ownership|address\.(street|ward|district|province)/);
   });
 
   it('AC-4: S3 lỗi → LAC vẫn dựng (loan + doc-*), có gap S3_UNAVAILABLE, không rỗng', () => {

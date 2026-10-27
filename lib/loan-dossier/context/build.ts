@@ -36,8 +36,19 @@ const LOAN_SUBJECT = 'loan';
 const BUSINESS_SUBJECT = 'business-1';
 /** Trường định danh khoản vay: hai đơn vay ghi khác nhau là mâu thuẫn thật (LAC-R03). */
 const LOAN_IDENTITY_FIELDS = new Set(['loan_info.requested_amount', 'loan_info.bank_proposed_amount', 'loan_info.loan_term_months', 'loan_info.interest_rate']);
-/** Lá liên kết nội bộ của chứng từ (cùng tập NEVER_CONTRADICT của sổ Claim): giữ cho lossless, không render. */
-const INTERNAL_FIELD = /(^|\.)(party_index|party_indexes\[\]|owner_party_indexes\[\]|asset_index)$|_index$|_indexes\[\]$/;
+/**
+ * Lá giữ trong facts (lossless) nhưng KHÔNG render vì không mang thông tin cho rule hoặc đã có ở chỗ khác:
+ *  - liên kết nội bộ của chứng từ (cùng tập NEVER_CONTRADICT của sổ Claim): party_index, asset_index…;
+ *  - mã vai trò / loại party theo từng chứng từ (BORROWER, HOLDER, INDIVIDUAL…): vai trò đã gom nằm ở dòng định danh;
+ *  - thông tin `ownership` của party: đã thành quan hệ OWNS / OWNED_FORMERLY;
+ *  - thành phần địa chỉ (street, ward…): `full_text` cùng địa chỉ đã có.
+ */
+const HIDDEN_FIELD = new RegExp([
+  String.raw`(^|\.)(party_index|party_indexes\[\]|owner_party_indexes\[\]|asset_index)$`, String.raw`_index$`, String.raw`_indexes\[\]$`,
+  String.raw`(^|\.)(party_role|party_type)$`,
+  String.raw`(^|\.)ownership\.`,
+  String.raw`address\.(street|ward|district|province|country|commune|city)$`,
+].join('|'));
 const MAX_SUPPORT = 3;
 
 type Draft = Omit<LacFact, 'fact_id' | 'contradicts' | 'trust' | 'review'> & {
@@ -69,13 +80,16 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
     return c.subject.id;
   };
 
-  // ── Claim → bản nháp; gộp chủ thể khoản vay / kinh doanh theo (field, value_norm) (LAC-R03) ──
+  // ── Claim → bản nháp; gộp theo (chủ thể, field, value_norm) ──
+  // Khoản vay / kinh doanh: hai bản đơn vay là hai chủ thể trong sổ Claim, gộp lại thành một (LAC-R03). Người / tài sản: sổ Claim
+  // đã gộp trường so sánh được; gộp thêm trường văn bản / enum TRÙNG giá trị (VD giới tính trên 3 chứng từ) để không lặp dòng.
+  // Gộp trùng giá trị không tạo mâu thuẫn mới: mâu thuẫn chỉ đến từ sổ Claim (và LAC-R03 cho khoản vay).
   const drafts: Draft[] = [];
   const mergeIndex = new Map<string, Draft>();
   for (const c of ledger.claims) {
     const subject_id = subjectOf(c);
-    const internal = INTERNAL_FIELD.test(c.field);
-    const mergeable = (subject_id === LOAN_SUBJECT || subject_id === BUSINESS_SUBJECT) && !internal && c.value_norm !== null;
+    const hidden = HIDDEN_FIELD.test(c.field);
+    const mergeable = !hidden && c.value_norm !== null && c.contradicts.length === 0 && c.status !== 'SPELLING_VARIANT';
     const key = mergeable ? `${subject_id}\u0000${c.field}\u0000${String(c.value_norm)}` : null;
     const sources = c.sources.map((s) => ({ record_id: s.record_id, doc_type_key: s.doc_type_key, page: s.page, read_confidence: s.read_confidence }));
     const existing = key ? mergeIndex.get(key) : undefined;
@@ -86,7 +100,7 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
       continue;
     }
     const d: Draft = {
-      subject_id, field: c.field, label: fieldLabel(c.field), value: c.value, value_kind: c.value_kind, sources, internal,
+      subject_id, field: c.field, label: fieldLabel(c.field), value: c.value, value_kind: c.value_kind, sources, hidden,
       status: c.status, claimIds: [c.claim_id], contradictsClaims: [...c.contradicts], norm: c.value_norm,
     };
     drafts.push(d);
@@ -119,7 +133,7 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
     const contradicts = [...new Set(d.contradictsClaims.map((cid) => factIdOfClaim.get(cid)).filter((x): x is string => !!x && x !== `fact-${i + 1}`))];
     return {
       fact_id: `fact-${i + 1}`, subject_id: d.subject_id, field: d.field, label: d.label, value: d.value, value_kind: d.value_kind,
-      trust, review, sources: d.sources, contradicts, internal: d.internal,
+      trust, review, sources: d.sources, contradicts, hidden: d.hidden,
     };
   });
 
@@ -162,6 +176,7 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
       fact_count: facts.length,
       unresolved_count: ledger.unresolved_count,
       s3_status: input.s3_status ?? null,
+      superseded_evidence_ids: [...superseded].sort(),
       source_hash: sha256(sourceLines.join('\n')),
     },
   };
@@ -223,7 +238,7 @@ function buildSubjects(
 
 /** Fact của `subjectId` có nguồn thuộc một trong các evidence `evidenceIds`, ưu tiên trường định danh (LAC-R08). */
 function supportFacts(factsBySubject: ReadonlyMap<string, LacFact[]>, subjectId: string, evidenceIds: ReadonlySet<string>): string[] {
-  const candidates = (factsBySubject.get(subjectId) ?? []).filter((f) => !f.internal && f.sources.some((s) => evidenceIds.has(evidenceIdOf(s.record_id))));
+  const candidates = (factsBySubject.get(subjectId) ?? []).filter((f) => !f.hidden && f.sources.some((s) => evidenceIds.has(evidenceIdOf(s.record_id))));
   const score = (f: LacFact) => (/(full_name|id_number|tax_id|certificate_number|license_plate)$/.test(f.field) ? 0 : 1);
   return candidates.sort((a, b) => score(a) - score(b)).slice(0, MAX_SUPPORT).map((f) => f.fact_id);
 }
@@ -276,7 +291,7 @@ function buildRelations(s3: MapDossierData | null, factsBySubject: ReadonlyMap<s
 function buildConflicts(facts: ReadonlyArray<LacFact>): LacConflict[] {
   const groups = new Map<string, LacFact[]>();
   for (const f of facts) {
-    if (f.internal || (f.trust !== 'DISPUTED' && f.trust !== 'PROBABLE_OCR_ERROR')) continue;
+    if (f.hidden || (f.trust !== 'DISPUTED' && f.trust !== 'PROBABLE_OCR_ERROR')) continue;
     const key = `${f.subject_id}\u0000${f.field}`;
     groups.set(key, [...(groups.get(key) ?? []), f]);
   }

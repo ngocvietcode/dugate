@@ -61,8 +61,11 @@ export const LacFactSchema = z.object({
   review: z.enum(['ACCEPTED', 'REVIEW']),
   sources: z.array(LacSourceSchema).min(1),
   contradicts: z.array(z.string()),
-  /** Lá liên kết nội bộ (party_index, asset_index…): giữ cho lossless, không render (LAC-R04). */
-  internal: z.boolean(),
+  /**
+   * Giữ cho lossless nhưng không render (LAC-R04, mở rộng ở D-103): liên kết nội bộ (party_index…), mã vai trò / loại party
+   * theo chứng từ, `ownership.*` (đã thành quan hệ), thành phần địa chỉ (đã có full_text).
+   */
+  hidden: z.boolean(),
 }).strict();
 
 export const LacRelationSchema = z.object({
@@ -108,6 +111,8 @@ export const LoanApplicationContextSchema = z.object({
     fact_count: z.number().int().min(0),
     unresolved_count: z.number().int().min(0),
     s3_status: z.string().nullable(),
+    /** Evidence bị thay thế bởi bản mới hơn (S3-R27): nguồn của chúng không render và không vào bảng mã. */
+    superseded_evidence_ids: z.array(z.string()),
     /** sha256 của (evidence_id, field_path, raw) đã sắp xếp — để tái lập. */
     source_hash: z.string().regex(/^[0-9a-f]{64}$/),
   }).strict(),
