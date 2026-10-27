@@ -1,5 +1,3 @@
-import type { EvidenceRecord, EvidenceRegistry } from './types';
-
 function primitive(value: unknown): value is string | number | boolean {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
@@ -130,36 +128,4 @@ export function parseMoney(value: unknown): number | null {
   }
   if (!Number.isFinite(total)) return null;
   return negative ? -total : total;
-}
-/**
- * Tìm evidence ĐÃ CHẤP NHẬN đầu tiên khớp field path + loại chứng từ và parse
- * được bằng `parse`. Dùng chung cho tiền, kỳ hạn, lãi suất, cờ boolean.
- */
-export function findParsedEvidence<T>(
-  registry: EvidenceRegistry,
-  pathPatterns: RegExp[],
-  docTypes: string[] | undefined,
-  parse: (value: unknown) => T | null,
-): { value: T; evidenceIds: string[] } | null {
-  const matches = registry.records.filter((record) => {
-    if (record.review_status !== 'ACCEPTED' || record.evidence_kind === 'CHECKLIST_STATUS') return false;
-    if (docTypes && !docTypes.includes(record.doc_type_key)) return false;
-    return pathPatterns.some((pattern) => pattern.test(record.field_path));
-  });
-  for (const match of matches) {
-    const value = parse(match.normalized_value);
-    if (value !== null) return { value, evidenceIds: [match.evidence_id] };
-  }
-  return null;
-}
-
-export function findMoneyEvidence(
-  registry: EvidenceRegistry,
-  pathPatterns: RegExp[],
-  docTypes?: string[],
-): { value: number; evidenceIds: string[] } | null {
-  return findParsedEvidence(registry, pathPatterns, docTypes, (raw) => {
-    const value = parseMoney(raw);
-    return value !== null && value >= 0 ? value : null;
-  });
 }

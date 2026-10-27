@@ -41,6 +41,12 @@ export const MAX_MODEL_LENGTH = 200;
 export const LOAN_STEP_KEYS: readonly string[] = LOAN_APPRAISAL_STEPS.map((step) => step.key);
 /** Step key ghi đè được prompt: bỏ các bước schema cố định (classify, extract, evaluate). */
 export const LOAN_PROMPT_STEP_KEYS: readonly string[] = LOAN_APPRAISAL_STEPS.filter((step) => step.promptEditable !== false).map((step) => step.key);
+/**
+ * Bước AI đã gỡ khỏi danh mục vì workflow không còn gọi (D-99): tổng kết hồ sơ, hiệu chỉnh master, hai bước phân loại
+ * điều kiện checklist S4. Cấu hình đã lưu còn các khoá này bị bỏ êm ở cả đường đọc và đường ghi (như RETIRED_CHECK_IDS),
+ * để Profile cũ vẫn lưu được và lần chạy không sinh cảnh báo thừa.
+ */
+export const RETIRED_STEP_KEYS: readonly string[] = ['dossier_summary', 'master_correction', 'income_source_classify', 'loan_purpose_classify'];
 
 export interface LoanFlowConfig {
   /** Rule bật/tắt theo luồng: id → bật (true) / tắt (false). Vắng mặt = theo `enabled` của rule. */
@@ -106,6 +112,7 @@ function cleanStringMap(value: unknown, max: number, keys: readonly string[], la
   const out: Record<string, string> = {};
   if (!source) return out;
   for (const [key, raw] of Object.entries(source)) {
+    if (RETIRED_STEP_KEYS.includes(key)) continue;
     if (!keys.includes(key)) { warnings.push(`${label}: bỏ step lạ "${key}".`); continue; }
     if (typeof raw !== 'string' || !raw.trim()) continue;
     const v = raw.trim();
@@ -201,6 +208,7 @@ export function validateLoanProductConfig(value: unknown): ConfigValidation {
       if (!rec) return invalid(`${code}.${field} phải là object step → giá trị.`);
       const allowed = field === 'prompts' ? LOAN_PROMPT_STEP_KEYS : LOAN_STEP_KEYS;
       for (const [step, v] of Object.entries(rec)) {
+        if (RETIRED_STEP_KEYS.includes(step)) continue;
         if (!allowed.includes(step)) return invalid(`${code}.${field}: step "${step}" không tồn tại hoặc không ghi đè được.`);
         if (typeof v !== 'string' || !v.trim()) return invalid(`${code}.${field}.${step} phải là chuỗi không rỗng (xoá khoá nếu muốn dùng mặc định).`);
         if (v.length > max) return invalid(`${code}.${field}.${step} vượt ${max} ký tự.`);

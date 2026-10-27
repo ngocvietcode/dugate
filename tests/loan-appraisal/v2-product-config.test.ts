@@ -4,6 +4,7 @@ import {
   LOAN_STEP_KEYS,
   migrateLegacyForProduct,
   resolveLoanConfig,
+  RETIRED_STEP_KEYS,
   summarizeLoanProductConfigChange,
   validateLoanProductConfig,
 } from '@/lib/pipelines/workflows/loan-appraisal/product-config';
@@ -16,11 +17,36 @@ describe('step key', () => {
       expect(LOAN_STEP_KEYS).toContain(key);
       expect(LOAN_PROMPT_STEP_KEYS).not.toContain(key);
     }
-    for (const key of ['dossier_precheck', 'dossier_summary', 'master_correction', 'policy_checks', 'income_source_classify', 'loan_purpose_classify']) {
+    for (const key of ['dossier_precheck', 'policy_checks']) {
       expect(LOAN_PROMPT_STEP_KEYS).toContain(key);
     }
     // intake_review (chấm lại tiêu chí bằng LLM) đã bỏ: tiêu chí dựng từ dossier_precheck, không còn là bước cấu hình.
     expect(LOAN_STEP_KEYS).not.toContain('intake_review');
+  });
+
+  it('D-99: danh mục chỉ còn bước workflow thực sự gọi; bước đã gỡ không còn cấu hình được', () => {
+    expect([...LOAN_STEP_KEYS].sort()).toEqual(['classify', 'dossier_precheck', 'evaluate', 'extract', 'policy_checks']);
+    for (const key of RETIRED_STEP_KEYS) expect(LOAN_STEP_KEYS).not.toContain(key);
+  });
+
+  it('D-99: cấu hình đã lưu còn khoá của bước đã gỡ → đọc bỏ êm (không warning), ghi vẫn hợp lệ', () => {
+    const product = {
+      prompts: { dossier_summary: 'tổng kết cũ', policy_checks: 'rule {{checks}} {{evidence}} {{output_schema}}' },
+      models: { master_correction: 'm-old', income_source_classify: 'm-old', evaluate: 'm-eval' },
+      reasoning: { loan_purpose_classify: 'low' },
+    };
+    const r = resolveLoanConfig(cfg(product), 'hkd-loan', 'FULL');
+    expect(r.warnings).toEqual([]);
+    expect(Object.keys(r.promptOverrides)).toEqual(['policy_checks']);
+    expect(r.modelOverrides).toEqual({ evaluate: 'm-eval' });
+    expect(r.reasoningEffortOverrides).toEqual({});
+    expect(validateLoanProductConfig(cfg(product)).ok).toBe(true);
+  });
+
+  it('step lạ (không phải bước đã gỡ) vẫn bị từ chối khi ghi và cảnh báo khi đọc', () => {
+    const product = { models: { no_such_step: 'm' } };
+    expect(validateLoanProductConfig(cfg(product)).ok).toBe(false);
+    expect(resolveLoanConfig(cfg(product), 'hkd-loan', 'FULL').warnings.some((w) => w.includes('no_such_step'))).toBe(true);
   });
 });
 
@@ -114,7 +140,7 @@ describe('validateLoanProductConfig (ghi, fail-closed)', () => {
 
 describe('migrateLegacyForProduct', () => {
   const legacy = {
-    _workflowPrompts: { value: { dossier_summary: 'p', intake_review: 'đã bỏ', extract: 'bỏ' } },
+    _workflowPrompts: { value: { policy_checks: 'p', dossier_summary: 'bước đã gỡ (D-99)', intake_review: 'đã bỏ', extract: 'bỏ' } },
     _workflowModels: { value: { evaluate: 'm' } },
     _workflowReasoningEfforts: { value: { evaluate: 'low' } },
     loan_policy: { value: { minimum_dscr: 1.3 } },
@@ -127,7 +153,7 @@ describe('migrateLegacyForProduct', () => {
 
   it('gom prompt/model/reasoning/policy, chuyển tag luồng/sản phẩm thành công tắc theo luồng', () => {
     const out = migrateLegacyForProduct(legacy, 'hkd-loan');
-    expect(out.prompts).toEqual({ dossier_summary: 'p' });
+    expect(out.prompts).toEqual({ policy_checks: 'p' });
     expect(out.models).toEqual({ evaluate: 'm' });
     expect(out.reasoning).toEqual({ evaluate: 'low' });
     expect(out.policy).toEqual({ minimum_dscr: 1.3 });

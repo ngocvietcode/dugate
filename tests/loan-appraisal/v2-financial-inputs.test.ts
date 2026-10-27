@@ -26,7 +26,7 @@ const valuation = (value: number, issue: string) => {
 function metrics(evs: EvidenceEnvelope[]) {
   const s3 = runMapDossier({ evidences: evs, dossier_submitted_at: D0 });
   const inputs = financialInputsV3(evs, s3.data);
-  return { inputs, m: new HkdSecuredFinancialStrategy().execute({ evidence: { records: [], by_file: [], by_document_type: [] }, inputs }), s3 };
+  return { inputs, m: new HkdSecuredFinancialStrategy().execute({ inputs }), s3 };
 }
 
 describe('financialInputsV3', () => {
@@ -69,11 +69,10 @@ describe('financialInputsV3', () => {
   it('có S3 và không skipCollateral: giá trị TSBĐ và LTV tính được từ tài sản collateral; không có S3 thì không biết TSBĐ nào', () => {
     const evs = [app({}), valuation(1_000_000_000, '2026-06-01')];
     const s3 = runMapDossier({ evidences: evs, dossier_submitted_at: D0 });
-    const empty = { records: [], by_file: [], by_document_type: [] };
-    const withS3 = new HkdSecuredFinancialStrategy().execute({ evidence: empty, inputs: financialInputsV3(evs, s3.data), skipCollateral: false });
+    const withS3 = new HkdSecuredFinancialStrategy().execute({ inputs: financialInputsV3(evs, s3.data), skipCollateral: false });
     expect(withS3.collateral_value).toMatchObject({ status: 'CALCULATED', value: 1_000_000_000 });
     expect(withS3.ltv.value).toBeCloseTo(0.5);
-    const noS3 = new HkdSecuredFinancialStrategy().execute({ evidence: empty, inputs: financialInputsV3(evs, null), skipCollateral: true });
+    const noS3 = new HkdSecuredFinancialStrategy().execute({ inputs: financialInputsV3(evs, null), skipCollateral: true });
     expect([noS3.collateral_value.status, noS3.ltv.status]).toEqual(['NOT_APPLICABLE', 'NOT_APPLICABLE']);
   });
 });

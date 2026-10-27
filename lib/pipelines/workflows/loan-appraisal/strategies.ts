@@ -5,7 +5,6 @@ import {
   type ClassifiedDoc,
   type ExtractedDoc,
 } from '../prompts/loan-appraisal-prompts';
-import { findMoneyEvidence, findParsedEvidence } from './evidence';
 import type { FinancialInputs } from './financial-inputs';
 import { aggregateRuleResults, buildRuleSet, type LoanRuleFacts } from './rules';
 import { evaluateAppraisalReadiness } from './state-machine';
@@ -154,43 +153,6 @@ export class DossierReadinessStrategy implements StageStrategy<{
   }
 }
 
-function asciiLower(value: unknown): string {
-  return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
-}
-
-function firstNumber(text: string): number | null {
-  const match = text.match(/\d+(?:[.,]\d+)?/);
-  if (!match) return null;
-  const parsed = Number(match[0].replace(',', '.'));
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-/** "60", "60 tháng", "5 năm" → số tháng. Ngoài khoảng 1..600 tháng coi là không hợp lệ. */
-export function parseTenorMonths(raw: unknown): number | null {
-  const text = asciiLower(raw);
-  const value = typeof raw === 'number' ? raw : firstNumber(text);
-  if (value === null) return null;
-  const months = /(nam|year)/.test(text) ? value * 12 : value;
-  return months >= 1 && months <= 600 ? Math.round(months) : null;
-}
-
-/** "9,5%/năm", 9.5, 0.095 → lãi suất %/năm. Lãi suất theo tháng được quy đổi ×12. */
-export function parseRatePercent(raw: unknown): number | null {
-  const text = asciiLower(raw);
-  let value = typeof raw === 'number' ? raw : firstNumber(text);
-  if (value === null) return null;
-  if (value > 0 && value < 1 && !text.includes('%')) value *= 100;
-  if (/(\/\s*thang|month)/.test(text)) value *= 12;
-  return value >= 0 && value <= 100 ? value : null;
-}
-
-/** Cờ "không có nghĩa vụ nợ hiện hữu": chỉ nhận giá trị false/"không" rõ ràng. */
-function parseNoExistingDebt(raw: unknown): true | null {
-  if (raw === false) return true;
-  const text = asciiLower(raw).trim();
-  return ['false', 'khong', 'khong co', 'no', 'none'].includes(text) ? true : null;
-}
-
 /** Số tiền trả hàng năm của khoản vay mới theo phương pháp niên kim (trả đều). */
 function annualAnnuityPayment(principal: number, annualRatePercent: number, months: number): number {
   const monthlyRate = annualRatePercent / 100 / 12;
@@ -200,48 +162,17 @@ function annualAnnuityPayment(principal: number, annualRatePercent: number, mont
   return monthly * 12;
 }
 
-export class HkdSecuredFinancialStrategy implements StageStrategy<{ evidence: EvidenceRegistry; inputs?: FinancialInputs; skipCollateral?: boolean }, FinancialMetrics> {
+export class HkdSecuredFinancialStrategy implements StageStrategy<{ inputs: FinancialInputs; skipCollateral?: boolean }, FinancialMetrics> {
   readonly strategyId = 'hkd-secured-v2:financial';
 
   /**
-   * skipCollateral: không đánh giá giá trị TSBĐ / LTV (NOT_APPLICABLE). Dùng khi bước gom tài sản (Customer 360) tạm tắt vì
-   * TSBĐ được chọn theo sset_registry của S3; không có S3 thì không biết tài sản nào là TSBĐ.
+   * `inputs` từ `financialInputsV3` (V2-R06). Đường đọc registry bằng regex của v2 cũ đã gỡ (D-99).
+   * skipCollateral: không đánh giá giá trị TSBĐ / LTV (NOT_APPLICABLE). Dùng khi S3 lỗi: TSBĐ được chọn theo
+   * asset_registry của S3; không có S3 thì không biết tài sản nào là TSBĐ.
    */
-  execute({ evidence, inputs, skipCollateral = false }: { evidence: EvidenceRegistry; inputs?: FinancialInputs; skipCollateral?: boolean }): FinancialMetrics {
-    const { requested, revenue, profit, debtService, collateral, tenor, rate, existingMonthly, conflicts } = inputs ?? legacyFinancialInputs(evidence);
-    return computeFinancials({ requested, revenue, profit, debtService, collateral, tenor, rate, existingMonthly, conflicts }, skipCollateral);
+  execute({ inputs, skipCollateral = false }: { inputs: FinancialInputs; skipCollateral?: boolean }): FinancialMetrics {
+    return computeFinancials(inputs, skipCollateral);
   }
-}
-
-/** Đầu vào kiểu v2 cũ (tìm field theo regex trên registry). Đường mới dùng `financialInputsV3` (V2-R06). */
-function legacyFinancialInputs(evidence: EvidenceRegistry): FinancialInputs {
-    const requested = findMoneyEvidence(evidence, [/loan_(limit|amount)/i, /requested_amount/i, /loan_amount\.number/i], ['loan_request']);
-    // Bảng kê thu nhập (danh mục): hkd_net_revenue, hkd_net_profit của mục II.3.1 HKD.
-    const revenue = findMoneyEvidence(evidence, [/(^|\.)hkd_net_revenue$/i, /net_revenue/i, /annual_revenue/i], ['income_statement']);
-    const profit = findMoneyEvidence(evidence, [/(^|\.)hkd_net_profit$/i, /annual_operating_profit/i, /operating_profit/i], ['income_statement']);
-    const debtService = findMoneyEvidence(evidence, [/annual_debt_service/i, /total_debt_service/i, /debt_obligation/i], ['cic', 'income_statement', 'loan_request']);
-    // Báo cáo/chứng thư định giá, báo giá là nguồn giá trị TSBĐ (field `asset_value`).
-    const collateral = findMoneyEvidence(
-      evidence,
-      [/(^|\.)asset_value(\.number)?$/i, /valuation\.total_value/i, /latest_consulting_value/i, /collateral_value(?!_info)/i],
-      ['valuation'],
-    ) ?? findMoneyEvidence(evidence, [/valuation\.total_value/i, /latest_consulting_value/i, /collateral_value(?!_info)/i], ['collateral_cert']);
-
-    // Nghĩa vụ nợ năm khi hồ sơ không ghi sẵn: khoản vay mới (niên kim từ số tiền,
-    // kỳ hạn, lãi suất trên giấy đề nghị vay) + nghĩa vụ hiện hữu × 12. Chỉ tính
-    // khi nghĩa vụ hiện hữu được khai rõ (kể cả khai "không có"), không giả định 0.
-    // "Lãi suất" trên giấy đề nghị vay (danh mục: interest_rate) là MÃ BIỂU lãi
-    // suất (LC10, LC9...), KHÔNG phải %/năm — chỉ nhận field lãi suất phần trăm
-    // (danh mục: interest_rate_percent). Nghĩa vụ nợ hiện hữu cũng lấy từ giấy đề
-    // nghị vay (existing_monthly_debt_payment / has_existing_debt).
-    const tenor = findParsedEvidence(evidence, [/(^|\.)loan_term$/i, /loan_tenor_months/i, /requested_tenor/i], ['loan_request'], parseTenorMonths);
-    const rate = findParsedEvidence(evidence, [/interest_rate_percent/i], ['loan_request'], parseRatePercent);
-    const existingMonthly = findMoneyEvidence(evidence, [/(^|\.)existing_monthly_debt_payment$/i, /existing_obligations\.monthly_debt_payment/i], ['loan_request'])
-      ?? (() => {
-        const none = findParsedEvidence(evidence, [/(^|\.)has_existing_debt$/i], ['loan_request'], parseNoExistingDebt);
-        return none ? { value: 0, evidenceIds: none.evidenceIds } : null;
-      })();
-    return { requested, revenue, profit, debtService, collateral, tenor, rate, existingMonthly };
 }
 
 function computeFinancials({ requested, revenue, profit, debtService, collateral, tenor, rate, existingMonthly, conflicts = {} }: FinancialInputs, skipCollateral = false): FinancialMetrics {

@@ -51,9 +51,9 @@ prompt rule LLM (dạng gọn dựng từ `DossierGraph`, xem `lib/loan-dossier/
 | Master dossier + hiệu chỉnh LLM, kiểm tra nháp + tổng kết LLM, readiness | Không có `master_dossier`, `intake_assessment`, `dossier_readiness`. Rule LLM đọc trực tiếp OCR |
 | Khuyến nghị / `processing_status` | Chỉ dựa trên chỉ số tài chính + kết quả rule (không còn `REQUEST_DOCUMENTS`, `REQUIRED_DOCUMENTS_INCOMPLETE`) |
 
-Giai đoạn 1 (phân loại + kiểm tra sơ bộ) giữ nguyên. **Operation cũ** đã có checkpoint `consolidate_dossier` (chỉ số 2 theo đánh số cũ) vẫn resume
-được: workflow bỏ qua checkpoint đó và chạy lại từ stage tài chính theo đánh số mới. Kết quả cũ trong DB không đổi; UI và payload tích hợp đọc
-được cả hai dạng.
+Giai đoạn 1 (phân loại + kiểm tra sơ bộ) giữ nguyên. Đường **resume** operation cũ (checkpoint `consolidate_dossier` theo đánh số 8 stage,
+artifact không có `stage_key`, operation dừng sau S2–S5 ở giai đoạn 1) đã gỡ ở D-99 vì không còn operation nào đang dừng. Kết quả cũ đã
+hoàn tất trong DB không đổi; UI và payload tích hợp vẫn đọc được cả hai dạng.
 
 ## DAG 5 stage
 
@@ -116,7 +116,7 @@ suy ra `COMPLETE` khi còn stage bắt buộc chưa chạy.
 | `evidence.ts` | Kiểu và tiện ích của `EvidenceRegistry` (registry spec-v3 dựng ở `evidence-v3.ts`) |
 | `strategies.ts` | Strategy pattern cho các stage deterministic (financial, policy, recommendation) |
 | `prompt-render.ts`, `dossier-facts.ts`, `run-params.ts` | Hàm dùng chung tách khỏi các module đang tắt (D-98): `renderPrompt`, `buildDossierFacts`, `consolidateParams` / `vnToday` |
-| `intake-review.ts`, `intake-assessment.ts`, `master-dossier.ts`, `master-correction.ts`, `dossier-consolidate.ts` | Logic của các bước **đang tắt** (xem "Các bước kiểm tra hồ sơ tạm tắt"). Đường chạy chính không import S4, S5, `dossier-consolidate`, `master-dossier` lúc chạy (khóa bằng `tests/loan-appraisal/phase2-isolation.test.ts`); `step-catalog.ts` vẫn đọc template prompt của `dossier_summary`, `master_correction` cho trang cấu hình |
+| `intake-review.ts`, `intake-assessment.ts`, `master-dossier.ts`, `master-correction.ts`, `dossier-consolidate.ts` | Logic của các bước **đang tắt** (xem "Các bước kiểm tra hồ sơ tạm tắt"). Đường chạy chính không import S4, S5, `dossier-consolidate`, `master-dossier` lúc chạy (khóa bằng `tests/loan-appraisal/phase2-isolation.test.ts`). Bật lại một bước thì phải khai lại bước AI của nó trong `step-catalog.ts` và bỏ khỏi `RETIRED_STEP_KEYS` |
 
 ## Sản phẩm & ngưỡng policy
 
@@ -310,9 +310,11 @@ loan_product_config = { version, products: { <product_code>: {
 
 - **Phạm vi rule** không còn là tag `flows`/`products` trên từng rule: rule thuộc về
   sản phẩm đang chọn, còn bật/tắt theo luồng là công tắc `flows[<FLOW>].checks`.
-- **Step AI** khai báo ở `step-catalog.ts` (nguồn duy nhất cho trang cấu hình và validate).
-  `classify`, `extract`, `evaluate` chỉ chọn model/reasoning; `evaluate` là mặc định của
-  mọi bước chưa chọn riêng.
+- **Step AI** khai báo ở `step-catalog.ts` (nguồn duy nhất cho trang cấu hình và validate): chỉ các bước workflow
+  thực sự gọi — `classify`, `extract`, `evaluate` (chỉ chọn model/reasoning; `evaluate` là mặc định của `policy_checks`
+  và `dossier_precheck` khi chưa chọn riêng), `policy_checks`, `dossier_precheck`. Bước đã gỡ (D-99: `dossier_summary`,
+  `master_correction`, `income_source_classify`, `loan_purpose_classify`) nằm ở `RETIRED_STEP_KEYS`: cấu hình đã lưu
+  còn khoá này bị bỏ êm ở cả đường đọc và đường ghi.
 - **Đọc**: `resolveLoanConfig` khoan dung (bỏ mục sai + warning, không throw).
   **Ghi**: `validateLoanProductConfig` fail-closed, gọi từ `app/api/internal/profile-endpoints/route.ts`.
 - **Chuyển cấu hình cũ**: `migrateLegacyForProduct` (nút "Chuyển sang sản phẩm" ở trang cấu hình).

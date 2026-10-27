@@ -158,28 +158,3 @@ describe('giai đoạn 2 (sau resume): chỉ OCR → tài chính → rule → kh
     expect(final).not.toHaveProperty('intake_assessment');
   });
 });
-
-describe('tương thích operation cũ có checkpoint consolidate_dossier', () => {
-  /** Operation cũ dừng ở bước 3 với checkpoint consolidate_dossier ở chỉ số 2 (đánh số cũ). */
-  function legacy() {
-    const ctx = context({ stop_after_intake: 'true' });
-    const classify = ctx.stepsResult[0] as { extracted_data: Record<string, unknown> };
-    classify.extracted_data = { ...classify.extracted_data, intake_phase1: { version: '1.0' } };
-    ctx.stepsResult.push({ step: 2, stage_key: 'consolidate_dossier', artifact_version: '1.0', status: 'SUCCESS', stepName: 'cũ', processor: 'x', extracted_data: { cũ: true } });
-    ctx.currentStep = 3;
-    return ctx;
-  }
-
-  it('resume không dùng lại checkpoint consolidate cũ, không dừng lại lần nữa, chạy tài chính từ OCR rồi hoàn tất', async () => {
-    const ctx = legacy();
-    await runLoanAppraisal(ctx as never);
-    expect((failWorkflow as jest.Mock).mock.calls).toEqual([]);
-    expect(pauseMock).not.toHaveBeenCalled();
-    expect(completeWorkflow).toHaveBeenCalledTimes(1);
-    const keys = ctx.stepsResult.map((s) => (s as { stage_key: string }).stage_key);
-    expect(keys).toEqual(expect.arrayContaining(['calculate_financials', 'evaluate_policy_compliance', 'synthesize_recommendation']));
-    // Artifact tài chính mới nằm ở chỉ số 2 theo đánh số mới, không bị nhầm với consolidate cũ cùng chỉ số.
-    const financial = ctx.stepsResult.find((s) => (s as { stage_key: string }).stage_key === 'calculate_financials') as { step: number };
-    expect(financial.step).toBe(2);
-  });
-});

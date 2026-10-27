@@ -80,13 +80,6 @@ describe('run-reducer: PAUSED / RESUMED', () => {
     expect(s.stages.calculate_financials).toBe('pending');
   });
 
-  it('operation cũ (S2–S5 đã chạy ở giai đoạn 1) → classify, kiểm tra sơ bộ, OCR xong; resume chạy tài chính', () => {
-    const s = apply(running(), { type: 'PAUSED', result: legacyPausedResult() });
-    expect(s.stages).toMatchObject({ classify: 'done', dossier_precheck: 'done', extract_evidence: 'done', calculate_financials: 'pending' });
-    expect(s.progressPercent).toBe(Math.round((3 / STAGES.length) * 100));
-    expect(apply(s, { type: 'RESUME_START' }, { type: 'RESUMED' }).stages.calculate_financials).toBe('running');
-  });
-
   it('PAUSED không kèm result (result null) → coi như giai đoạn 1 mới', () => {
     expect(apply(running(), { type: 'PAUSED', result: null }).stages.extract_evidence).toBe('pending');
   });
