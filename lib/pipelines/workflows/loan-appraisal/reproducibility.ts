@@ -1,7 +1,11 @@
+// Ghi dấu vân tay schema bóc tách và phiên bản build; chỉ lưu hash, không lưu nội dung schema.
 // Bản ghi tái lập (ARCHITECTURE E1): một kết quả phải trả lời được "sinh ra từ danh mục nào, prompt nào, model nào".
 // Hàm thuần, tất định; chỉ băm TEMPLATE prompt (không chứa dữ liệu hồ sơ), không ghi nội dung prompt. Model THỰC DÙNG
 // không ghi ở đây: connector trả về và đã nằm trong `result.usage.breakdown[].model`.
 import { createHash } from 'crypto';
+
+import packageJson from '@/package.json';
+import { COMMON_JSON_SCHEMA, DOC_JSON_SCHEMAS, ENUMS_JSON_SCHEMA } from '@/lib/loan-dossier/catalog/doc-schema-json';
 
 import checklistCatalog from '@/lib/loan-dossier/catalog/data/checklist_catalog.json';
 import checklistPrograms from '@/lib/loan-dossier/catalog/data/checklist_programs.json';
@@ -32,7 +36,12 @@ export interface AiStepSnapshot {
   reasoning_override: string | null;
 }
 
+/** Bản ghi tái lập: phiên bản workflow, danh mục, build và hash schema / template; không lưu nội dung. */
 export interface ReproducibilitySnapshot {
+  /** sha256 danh sách tên file và nội dung JSON schema đã tuần tự hóa, sắp theo tên file. */
+  schema_fingerprint: string;
+  /** APP_VERSION ưu tiên hơn phiên bản package.json; null nếu cả hai không có. */
+  app_version: string | null;
   workflow_version: string;
   catalog_versions: Record<string, string>;
   ai_steps: Record<string, AiStepSnapshot>;
@@ -60,6 +69,29 @@ export const CATALOG_VERSIONS: Readonly<Record<string, string>> = Object.freeze(
   light_extraction: versionOf(lightExtraction),
   reason_codes: versionOf(reasonCodes),
 });
+
+/** Băm JSON đã nạp, không phụ thuộc khoảng trắng của file hay vị trí bundle. */
+export function fingerprintSchemaContents(contents: Readonly<Record<string, unknown>>): string {
+  return sha256(Object.keys(contents).sort().map((name) => `${name}\n${JSON.stringify(contents[name])}`).join('\n\u0000\n'));
+}
+
+let schemaFingerprint: string | null = null;
+
+/** Dùng lại loader import tĩnh cho Jest và worker; tính một lần mỗi tiến trình. */
+function builtInSchemaFingerprint(): string {
+  if (schemaFingerprint === null) {
+    const contents: Record<string, unknown> = {
+      '_common.schema.json': COMMON_JSON_SCHEMA,
+      '_enums.schema.json': ENUMS_JSON_SCHEMA,
+      'light_extraction.json': lightExtraction,
+    };
+    for (const [key, schema] of Object.entries(DOC_JSON_SCHEMAS)) {
+      contents[`${key}.schema.json`] = schema;
+    }
+    schemaFingerprint = fingerprintSchemaContents(contents);
+  }
+  return schemaFingerprint;
+}
 
 let builtInFingerprints: { classify: string; extract: string } | null = null;
 
@@ -98,6 +130,8 @@ function templateStep(input: ReproducibilityInput, step: string, defaultTemplate
 export function buildReproducibilitySnapshot(input: ReproducibilityInput): ReproducibilitySnapshot {
   const builtIn = builtInPromptFingerprints();
   return {
+    schema_fingerprint: builtInSchemaFingerprint(),
+    app_version: process.env.APP_VERSION || packageJson.version || null,
     workflow_version: LOAN_APPRAISAL_WORKFLOW_VERSION,
     catalog_versions: { ...CATALOG_VERSIONS },
     ai_steps: {
