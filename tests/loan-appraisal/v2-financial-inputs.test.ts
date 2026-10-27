@@ -76,3 +76,34 @@ describe('financialInputsV3', () => {
     expect([noS3.collateral_value.status, noS3.ltv.status]).toEqual(['NOT_APPLICABLE', 'NOT_APPLICABLE']);
   });
 });
+
+describe('E9 / D-101: đầu vào đọc với độ tin cậy thấp vẫn dùng, nhưng gắn cờ', () => {
+  const withConf = (e: EvidenceEnvelope, conf: Record<string, number>) => ({ ...e, field_confidences: { ...e.field_confidences, ...conf } });
+
+  it('loan_info, financial_info, income_sources đều ≥ 0.80 → không có reviewIds, chỉ số không mang cờ', () => {
+    const evs = [withConf(app({}), { loan_info: 0.95, financial_info: 0.9 }), withConf(income([hkd]), { income_sources: 0.85 })];
+    const { inputs, m } = metrics(evs);
+    for (const k of ['requested', 'tenor', 'rate', 'existingMonthly', 'revenue', 'profit'] as const) expect(inputs[k]?.reviewIds).toBeUndefined();
+    expect(m.dscr.needs_review).toBeUndefined();
+  });
+
+  it('loan_info < 0.80 → số tiền vay, kỳ hạn, lãi suất mang reviewIds đúng evidence_id; giá trị vẫn được đọc', () => {
+    const a = withConf(app({}), { loan_info: 0.5, financial_info: 0.9 });
+    const { inputs, m } = metrics([a, withConf(income([hkd]), { income_sources: 0.9 })]);
+    expect(inputs.requested).toMatchObject({ value: 500_000_000, reviewIds: [`${a.evidence_id}#loan_info.bank_proposed_amount`] });
+    expect(inputs.rate?.reviewIds).toEqual([`${a.evidence_id}#loan_info.interest_rate`]);
+    expect(inputs.existingMonthly?.reviewIds).toBeUndefined();
+    expect(m.dscr).toMatchObject({ status: 'CALCULATED', needs_review: true });
+  });
+
+  it('không có độ tin cậy cho field cấp 1 → coi như REVIEW (cùng quy tắc V2-R04)', () => {
+    const { inputs } = metrics([app({})]); // fixture chỉ khai parties / assets / legal_info
+    expect(inputs.requested?.reviewIds).toHaveLength(1);
+  });
+
+  it('income_sources < 0.80 → doanh thu, lợi nhuận mang reviewIds dạng [i]', () => {
+    const inc = withConf(income([hkd]), { income_sources: 0.6 });
+    const { inputs } = metrics([withConf(app({}), { loan_info: 0.95, financial_info: 0.95 }), inc]);
+    expect(inputs.profit?.reviewIds).toEqual([`${inc.evidence_id}#income_sources[0].household_business.net_profit_annual`]);
+  });
+});

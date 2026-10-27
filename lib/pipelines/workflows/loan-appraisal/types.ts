@@ -154,6 +154,12 @@ export interface MetricResult {
   warnings: string[];
   /** MD-R13: thiếu vì các bản của cùng chứng từ ghi khác nhau (master_dossier CONFLICT) — rule ra REVIEW, không FAIL. */
   input_conflict?: boolean;
+  /**
+   * E9 / D-101: đã tính được nhưng ít nhất một đầu vào đọc với độ tin cậy thấp (field cấp 1 < 0.80 hoặc không có) — cần
+   * rà soát trước khi dùng. `review_evidence_ids` là các nguồn đó. Vắng = mọi đầu vào đã ACCEPTED.
+   */
+  needs_review?: boolean;
+  review_evidence_ids?: string[];
 }
 
 export interface FinancialMetrics {

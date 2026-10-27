@@ -2,7 +2,7 @@
 // Cách đọc đầu vào từ chứng từ spec-v3 (bank_proposed_amount, interest_rate vs mã biểu, has_existing_debt, định giá
 // mới nhất…) nằm ở v2-financial-inputs.test.ts. Đường đọc registry bằng regex của v2 cũ đã gỡ (D-99).
 import type { FinancialInputs, SourcedNumber } from '@/lib/pipelines/workflows/loan-appraisal/financial-inputs';
-import { CONFLICT_PREFIX, HkdSecuredFinancialStrategy } from '@/lib/pipelines/workflows/loan-appraisal/strategies';
+import { CONFLICT_PREFIX, HkdSecuredFinancialStrategy, REVIEW_PREFIX } from '@/lib/pipelines/workflows/loan-appraisal/strategies';
 
 const n = (value: number, id: string): SourcedNumber => ({ value, evidenceIds: [id] });
 const inputs = (over: Partial<FinancialInputs> = {}): FinancialInputs => ({
@@ -84,5 +84,37 @@ describe('HkdSecuredFinancialStrategy — LTV, biên lợi nhuận', () => {
     expect(result.collateral_value.status).toBe('NOT_APPLICABLE');
     expect(result.ltv.status).toBe('NOT_APPLICABLE');
     expect(result.dscr.status).toBe('CALCULATED');
+  });
+});
+
+describe('E9 / D-101: cờ needs_review lan theo đầu vào, giá trị không đổi', () => {
+  const low = (x: SourcedNumber | null): SourcedNumber => ({ ...x!, reviewIds: x!.evidenceIds });
+
+  it('lợi nhuận đọc kém → lợi nhuận, CFADS, DSCR, biên lợi nhuận mang cờ; LTV và số tiền vay không', () => {
+    const clean = run(inputs());
+    const base = inputs();
+    const result = run({ ...base, profit: low(base.profit) });
+    for (const k of ['annual_operating_profit', 'cfads', 'dscr', 'operating_margin'] as const) {
+      expect(result[k]).toMatchObject({ needs_review: true, review_evidence_ids: base.profit!.evidenceIds });
+      expect(result[k].warnings[0].startsWith(REVIEW_PREFIX)).toBe(true);
+      expect(result[k].value).toBe(clean[k].value);
+    }
+    expect(result.ltv.needs_review).toBeUndefined();
+    expect(result.requested_amount.needs_review).toBeUndefined();
+  });
+
+  it('lãi suất đọc kém → nghĩa vụ nợ năm và DSCR mang cờ; cảnh báo niên kim vẫn còn', () => {
+    const base = inputs();
+    const result = run({ ...base, rate: low(base.rate) });
+    expect(result.annual_debt_service.needs_review).toBe(true);
+    expect(result.annual_debt_service.warnings.some((w) => w.includes('niên kim'))).toBe(true);
+    expect(result.dscr.needs_review).toBe(true);
+  });
+
+  it('chỉ số không tính được thì không mang cờ (thiếu dữ liệu đã là trạng thái riêng)', () => {
+    const base = inputs();
+    const result = run({ ...base, profit: low(base.profit), existingMonthly: null });
+    expect(result.dscr.status).toBe('INSUFFICIENT_DATA');
+    expect(result.dscr.needs_review).toBeUndefined();
   });
 });
