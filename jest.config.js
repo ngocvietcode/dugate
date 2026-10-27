@@ -13,6 +13,7 @@ module.exports = {
   testMatch: [
     '**/tests/**/*.test.ts'
   ],
-  testPathIgnorePatterns: ['/node_modules/'],
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/.kilo/worktrees/', '<rootDir>/.claude/worktrees/'],
+  modulePathIgnorePatterns: ['<rootDir>/.kilo/worktrees/', '<rootDir>/.claude/worktrees/'],
   setupFiles: ['<rootDir>/tests/setup.ts']
 };
