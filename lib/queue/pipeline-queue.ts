@@ -15,6 +15,19 @@ import { getQueueRetentionOptions } from '@/lib/config';
 
 export const PIPELINE_QUEUE_NAME = 'pipeline';
 export const WORKFLOW_STEPS_QUEUE_NAME = 'workflow-steps';
+/**
+ * Job workflow (cha) chạy trên queue riêng với concurrency riêng (WORKFLOW_CONCURRENCY), để hồ sơ lớn chờ AI không chiếm
+ * hết slot của job pipeline (docs/WORKFLOW-SUSPEND-DESIGN.md phương án A). Job workflow cũ còn trên `pipeline` vẫn chạy được:
+ * worker `pipeline` xử lý cả hai loại.
+ */
+export const WORKFLOW_QUEUE_NAME = 'workflow';
+
+/**
+ * MỌI tên queue gốc do hệ thống sở hữu; biến thể theo worker group là `<gốc>.<group>`. Nguồn duy nhất cho cleanup
+ * (lib/queue-cleanup.ts: thiếu tên ở đây thì queue bị coi là mồ côi và có thể bị xoá), xoá group, Bull Board, queue monitor.
+ */
+export const OWNED_QUEUE_BASES = [PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME, WORKFLOW_QUEUE_NAME] as const;
+export type QueueBase = typeof OWNED_QUEUE_BASES[number];
 
 /**
  * Default timeout for executeSync mode (ms). Override via SYNC_TIMEOUT_MS env var.

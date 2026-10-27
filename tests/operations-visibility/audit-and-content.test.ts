@@ -27,9 +27,10 @@ jest.mock('@/lib/operations/state-transition', () => ({
   transitionOperationState: (...args: unknown[]) => mockTransition(...args),
   updateOperationMembership: jest.fn(),
 }));
-jest.mock('@/lib/queue/pipeline-queue', () => ({
-  getPipelineQueue: () => ({ add: (...args: unknown[]) => mockQueueAdd(...args) }),
-}));
+jest.mock('@/lib/queue/worker-group-router', () => {
+  const route = { queue: { add: (...args: unknown[]) => mockQueueAdd(...args) }, queueName: 'pipeline' };
+  return { resolveTargetQueue: async () => route, selectWorkflowQueue: async () => route };
+});
 jest.mock('@/lib/ops/config', () => ({
   getExportMaxDays: async () => 31,
 }));

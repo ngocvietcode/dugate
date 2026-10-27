@@ -161,13 +161,13 @@ beforeEach(() => {
 
 describe('queue name recognition', () => {
   it('accepts the queues this system owns', () => {
-    for (const name of ['pipeline', 'workflow-steps', 'pipeline.ocr-group', 'workflow-steps.grp-1']) {
+    for (const name of ['pipeline', 'workflow-steps', 'pipeline.ocr-group', 'workflow-steps.grp-1', 'workflow', 'workflow.grp-1']) {
       expect(isOwnedQueueName(name)).toBe(true);
     }
   });
 
   it('rejects foreign queues — the Redis instance may be shared', () => {
-    for (const name of ['mail', 'pipeline.', 'pipeline.-bad', 'pipeline.BAD', 'pipeline.a--b', 'other.pipeline']) {
+    for (const name of ['mail', 'pipeline.', 'pipeline.-bad', 'pipeline.BAD', 'pipeline.a--b', 'other.pipeline', 'workflow.', 'workflows']) {
       expect(isOwnedQueueName(name)).toBe(false);
     }
   });
@@ -206,9 +206,11 @@ describe('B1 — queue enumeration is the union of DB and SCAN', () => {
 
     expect(dbAvailable).toBe(true);
     // DB-derived queues appear even without Redis keys, SCAN-only ones are added.
+    // `workflow` / `workflow.alive` come from the DB side: an owned queue missing there would be treated as an orphan.
     expect(all).toEqual([
       'pipeline', 'pipeline.alive', 'pipeline.deleted-group',
-      'workflow-steps', 'workflow-steps.alive', 'workflow-steps.deleted-group',
+      'workflow', 'workflow-steps', 'workflow-steps.alive', 'workflow-steps.deleted-group',
+      'workflow.alive',
     ]);
     expect(orphans.sort()).toEqual(['pipeline.deleted-group', 'workflow-steps.deleted-group']);
   });

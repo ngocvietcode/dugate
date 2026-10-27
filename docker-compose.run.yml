@@ -84,6 +84,7 @@ services:
       OUTPUT_DIR: /app/outputs
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
       SUBSTEP_WORKER_CONCURRENCY: 5
+      WORKFLOW_CONCURRENCY: ${WORKFLOW_CONCURRENCY:-10}
       ALLOWED_PRIVATE_HOSTS: ${ALLOWED_PRIVATE_HOSTS}
       SYNC_TIMEOUT_MS: 300000
       # ─── Secrets / HashiCorp Vault (IT SEC) — worker also resolves keys ───

@@ -12,6 +12,11 @@ export const OUTPUT_DIR = process.env.OUTPUT_DIR ?? './outputs';
 
 export const WORKER_CONCURRENCY = parseInt(process.env.WORKER_CONCURRENCY || '5', 10);
 export const SUBSTEP_WORKER_CONCURRENCY = parseInt(process.env.SUBSTEP_WORKER_CONCURRENCY || String(WORKER_CONCURRENCY * 2), 10);
+/**
+ * Slot của worker queue `workflow` (job workflow cha). Job cha chủ yếu chờ sub-step (I/O), nên mặc định gấp đôi
+ * WORKER_CONCURRENCY; trần thật là bộ nhớ — bộ giám sát heap của worker (dừng ở 90 %) phủ cả worker này.
+ */
+export const WORKFLOW_CONCURRENCY = parseInt(process.env.WORKFLOW_CONCURRENCY || String(WORKER_CONCURRENCY * 2), 10);
 export const MAX_QUEUE_DEPTH = parseInt(process.env.MAX_QUEUE_DEPTH || '500', 10);
 export const SYNC_TIMEOUT_MS = parseInt(process.env.SYNC_TIMEOUT_MS || '30000', 10);
 export const WORKER_MEMORY_THRESHOLD = parseFloat(process.env.WORKER_MEMORY_THRESHOLD || '0.90');

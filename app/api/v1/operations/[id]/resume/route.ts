@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { operations, profileEndpoints } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { getPipelineQueue } from '@/lib/queue/pipeline-queue';
+import { resolveTargetQueue, selectWorkflowQueue } from '@/lib/queue/worker-group-router';
 import { transitionOperationState } from '@/lib/operations/state-transition';
 import { Logger } from '@/lib/logger';
 import { resolveCallerIdentity } from '@/lib/auth-resolve-key';
@@ -72,6 +72,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       bullPriority = resolveBullPriority(profileEndpoint?.jobPriority);
     }
 
+    // Cùng queue mà submit đã chọn (worker group của profile; job workflow sang queue workflow). Chọn trước khi chuyển
+    // trạng thái để lỗi Redis/DB không để operation ở RUNNING mà không có job.
+    const isWorkflowJob = operation.endpointSlug?.startsWith('workflows:') ?? false;
+    const route = await resolveTargetQueue(operation.apiKeyId ?? undefined);
+    const { queue, queueName } = isWorkflowJob ? await selectWorkflowQueue(route) : route;
+
     // Resume and refresh the Business Operation snapshot atomically.
     await transitionOperationState({
       operationId,
@@ -83,11 +89,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
 
     // Enqueue back to the worker
-    const queue = getPipelineQueue();
-    const jobName = `pipeline:${operation.endpointSlug ?? 'unknown'}`;
+    const jobName = `${queueName}:${operation.endpointSlug ?? 'unknown'}`;
     const correlationId = crypto.randomUUID();
     
-    await queue.add(jobName, { operationId, correlationId }, { priority: bullPriority });
+    await queue.add(jobName, { operationId, correlationId, type: isWorkflowJob ? 'workflow' : 'pipeline' }, { priority: bullPriority });
     logger.info(`Resumed operation ${operationId} and enqueued to BullMQ.`);
 
     return NextResponse.json({ success: true, message: 'Resumed successfully' });

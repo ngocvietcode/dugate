@@ -7,7 +7,7 @@ import { db } from '@/lib/db';
 import { operations, profileEndpoints } from '@/lib/db/schema';
 import { getAssignedProfileIds, requireCapability } from '@/lib/auth-guard';
 import { eq, and } from 'drizzle-orm';
-import { getPipelineQueue } from '@/lib/queue/pipeline-queue';
+import { resolveTargetQueue, selectWorkflowQueue } from '@/lib/queue/worker-group-router';
 import { transitionOperationState } from '@/lib/operations/state-transition';
 import { auditOperationAction } from '@/lib/audit/operation-audit';
 import { isHiddenFromOperations } from '@/lib/operations/operational-metadata';
@@ -89,6 +89,12 @@ export async function POST(
       bullPriority = resolveBullPriority(pe?.jobPriority);
     }
 
+    // Cùng queue mà submit đã chọn (worker group của profile; job workflow sang queue workflow). Chọn trước khi chuyển
+    // trạng thái để lỗi Redis/DB không để operation ở RUNNING mà không có job.
+    const isWorkflowJob = op.endpointSlug?.startsWith('workflows:') ?? false;
+    const route = await resolveTargetQueue(op.apiKeyId ?? undefined);
+    const { queue, queueName } = isWorkflowJob ? await selectWorkflowQueue(route) : route;
+
     // 8. Resume and refresh the Business Operation snapshot atomically.
     await transitionOperationState({
       operationId: id,
@@ -100,11 +106,10 @@ export async function POST(
     });
 
     // 9. Enqueue back to BullMQ worker
-    const queue = getPipelineQueue();
-    const jobName = `pipeline:${op.endpointSlug ?? 'unknown'}`;
+    const jobName = `${queueName}:${op.endpointSlug ?? 'unknown'}`;
     const correlationId = crypto.randomUUID();
 
-    await queue.add(jobName, { operationId: id, correlationId }, { priority: bullPriority });
+    await queue.add(jobName, { operationId: id, correlationId, type: isWorkflowJob ? 'workflow' : 'pipeline' }, { priority: bullPriority });
 
     // Accountability for a human decision that can change extracted customer data
     // before it continues to the webhook. Records THAT/WHERE it was edited, never

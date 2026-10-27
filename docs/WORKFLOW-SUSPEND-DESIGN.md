@@ -1,6 +1,6 @@
 # Workflow không giữ slot worker khi chờ AI (ARCHITECTURE E4)
 
-> Trạng thái: **đề xuất, chờ duyệt** (2026-10-27). Phạm vi: engine dùng chung `lib/pipelines/workflow-engine.ts` và `worker.ts`,
+> Trạng thái: **A đã làm (D-106, 2026-10-27); B chờ số đo.** Phạm vi: engine dùng chung `lib/pipelines/workflow-engine.ts` và `worker.ts`,
 > áp trước cho `loan-appraisal`. Liên quan: D-102 (dùng lại sub-step đã SUCCEEDED), [loan-appraisal/ARCHITECTURE.md](loan-appraisal/ARCHITECTURE.md) E4.
 
 ## 1. Vấn đề
@@ -25,7 +25,12 @@ Kịch bản lỗi: 5 hồ sơ SME lớn cùng vào → mọi hồ sơ sau (kể
 
 **Đề xuất: làm A ngay, B sau khi đo; không làm C.** A gỡ nghẽn với công sức nhỏ. B là đích dài hạn, và D-102 đã làm phần khó nhất của nó.
 
-## 3. Phương án A (làm ngay)
+## 3. Phương án A (đã làm — D-106)
+
+> Khác với bản thiết kế: `WORKFLOW_CONCURRENCY` mặc định `WORKER_CONCURRENCY × 2` (10), không phải 20 — tăng sau khi đo heap.
+> Submit chỉ gửi job sang queue `workflow` khi queue đó đã có worker nghe (`selectWorkflowQueue`), nếu không thì về `pipeline`
+> như cũ: deploy web trước worker không làm job kẹt. Bước 3 làm ở mức tối thiểu: `cleanup()` sau S2 bỏ luôn cache nội dung file
+> (S3–S5 không đọc file); chưa đo bằng `process.memoryUsage()`.
 
 1. Queue `workflow` riêng (cùng cơ chế routing worker-group hiện có, `lib/queue/worker-group-router.ts`); submit job workflow vào đó thay cho `pipeline`.
 2. `worker.ts` thêm worker cho queue này, `concurrency = WORKFLOW_CONCURRENCY` (mặc định 20), cùng `stalledInterval` / `maxStalledCount`.

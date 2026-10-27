@@ -12,7 +12,7 @@
 | AI SDKs | Google Gemini (`@google/generative-ai`), OpenAI (`openai`) |
 | External tools | Pandoc (CLI), Ghostscript (CLI), sharp, mammoth, pdf-parse, xlsx |
 | Ports | 2023 (dev), 2025 (prod), 3099 (mock service) |
-| Worker | Standalone BullMQ process (`npx tsx worker.ts`), concurrency 5 (pipeline) / 10 (workflow) |
+| Worker | Standalone BullMQ process (`npx tsx worker.ts`), concurrency 5 (pipeline) / 10 (workflow-steps) / 10 (workflow, `WORKFLOW_CONCURRENCY`) |
 
 ## Architecture
 
@@ -206,6 +206,7 @@ for backward compatibility, including the deprecated `ingest` service.
 | `UPLOAD_DIR` | Upload directory (default: ./uploads) |
 | `OUTPUT_DIR` | Output directory (default: ./outputs) |
 | `WORKER_CONCURRENCY` | BullMQ pipeline worker slots (default: 5) |
+| `WORKFLOW_CONCURRENCY` | Workflow (parent) job slots on the `workflow` queue (default: `WORKER_CONCURRENCY × 2`); bounded in practice by worker heap |
 | `SYNC_TIMEOUT_MS` | Sync mode timeout (default: 30000) |
 | `MIGRATION` | Auto-run prisma db push + seed on startup (true/false) |
 | `MOCK_SERVICE_URL` | Mock service URL for testing (default: http://localhost:3099) |

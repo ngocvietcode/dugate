@@ -40,7 +40,7 @@ import {
   QUEUE_LOG_TRIM_MAX_JOBS,
 } from '@/lib/config';
 import { Logger } from '@/lib/logger';
-import { PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME } from '@/lib/queue/pipeline-queue';
+import { OWNED_QUEUE_BASES } from '@/lib/queue/pipeline-queue';
 import { createRedisConnection } from '@/lib/queue/redis';
 import { isValidWorkerGroupName } from '@/lib/queue/worker-group-validation';
 
@@ -105,12 +105,12 @@ function sleep(ms: number): Promise<void> {
 // ─── Queue name enumeration ───────────────────────────────────────────────────
 
 /**
- * True for names this system owns: `pipeline`, `workflow-steps`, and their
+ * True for names this system owns: every base in OWNED_QUEUE_BASES (`pipeline`, `workflow-steps`, `workflow`) and their
  * `.<group>` variants. The Redis instance may be shared, so SCAN results are
  * filtered through this before anything is deleted.
  */
 export function isOwnedQueueName(name: string): boolean {
-  for (const base of [PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME]) {
+  for (const base of OWNED_QUEUE_BASES) {
     if (name === base) return true;
     if (name.startsWith(`${base}.`)) {
       return isValidWorkerGroupName(name.slice(base.length + 1));
@@ -173,13 +173,13 @@ export async function enumerateQueues(
   client: IORedis,
   logger: Logger,
 ): Promise<EnumeratedQueues> {
-  const fromDb = new Set<string>([PIPELINE_QUEUE_NAME, WORKFLOW_STEPS_QUEUE_NAME]);
+  // Phải khớp isOwnedQueueName: tên sở hữu mà thiếu ở đây bị coi là mồ côi.
+  const fromDb = new Set<string>(OWNED_QUEUE_BASES);
   let dbAvailable = true;
   try {
     const groups = await db.select({ name: workerGroups.name }).from(workerGroups);
     for (const group of groups) {
-      fromDb.add(`${PIPELINE_QUEUE_NAME}.${group.name}`);
-      fromDb.add(`${WORKFLOW_STEPS_QUEUE_NAME}.${group.name}`);
+      for (const base of OWNED_QUEUE_BASES) fromDb.add(`${base}.${group.name}`);
     }
   } catch (err) {
     // Redis-only mode: still clean what SCAN found, but do not accuse anything of

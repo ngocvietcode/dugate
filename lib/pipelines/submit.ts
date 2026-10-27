@@ -21,7 +21,7 @@ import {
   SYNC_TIMEOUT_MS,
   type PipelineJobData,
 } from '@/lib/queue/pipeline-queue';
-import { resolveTargetQueue, checkBackpressure, getOrCreateQueueEvents } from '@/lib/queue/worker-group-router';
+import { resolveTargetQueue, selectWorkflowQueue, checkBackpressure, getOrCreateQueueEvents } from '@/lib/queue/worker-group-router';
 import { BASE_TYPE_URI } from '@/lib/errors';
 import {
   insertOperation,
@@ -460,9 +460,10 @@ export async function submitPipelineJob(
   }
 
   lapMark('resolve_queue');
-  const { queue, queueName } = routeResult;
-  const jobName = apiKeyId ? `${queueName}:${endpointSlug ?? 'unknown'} [${profileName}]` : `${queueName}:${endpointSlug ?? 'unknown'}`;
   const isWorkflowJob = endpointSlug?.startsWith('workflows:') ?? false;
+  // Job workflow sang queue workflow riêng (WORKFLOW-SUSPEND-DESIGN phương án A); chưa có worker nghe thì về queue pipeline.
+  const { queue, queueName } = isWorkflowJob ? await selectWorkflowQueue(routeResult) : routeResult;
+  const jobName = apiKeyId ? `${queueName}:${endpointSlug ?? 'unknown'} [${profileName}]` : `${queueName}:${endpointSlug ?? 'unknown'}`;
   const jobData: PipelineJobData = {
     operationId,
     correlationId,

@@ -78,11 +78,11 @@ beforeEach(() => {
 });
 
 describe('B2 — obliterate on worker group deletion', () => {
-  it('obliterates both queues when nothing is pending', async () => {
+  it('obliterates every queue of the group when nothing is pending', async () => {
     await evictGroupFromCache('gone-group');
 
     expect(obliterateCalls.map((c) => c.queue).sort())
-      .toEqual(['pipeline.gone-group', 'workflow-steps.gone-group']);
+      .toEqual(['pipeline.gone-group', 'workflow-steps.gone-group', 'workflow.gone-group']);
   });
 
   it('NEVER uses force: true — that would pull keys out from under an active worker', async () => {
@@ -110,19 +110,20 @@ describe('B2 — obliterate on worker group deletion', () => {
   it('leaves the queue untouched for active or delayed jobs too', async () => {
     behaviours.set('pipeline.a', { counts: { active: 1 } });
     behaviours.set('workflow-steps.a', { counts: { delayed: 3 } });
+    behaviours.set('workflow.a', { counts: { active: 2 } });
 
     await evictGroupFromCache('a');
 
     expect(obliterateCalls).toHaveLength(0);
-    expect(logger.warn).toHaveBeenCalledTimes(2);
+    expect(logger.warn).toHaveBeenCalledTimes(3);
   });
 
-  it('still obliterates the sibling queue when only one has pending work', async () => {
+  it('still obliterates the sibling queues when only one has pending work', async () => {
     behaviours.set('pipeline.mixed', { counts: { waiting: 2 } });
 
     await evictGroupFromCache('mixed');
 
-    expect(obliterateCalls.map((c) => c.queue)).toEqual(['workflow-steps.mixed']);
+    expect(obliterateCalls.map((c) => c.queue).sort()).toEqual(['workflow-steps.mixed', 'workflow.mixed']);
   });
 
   it('does not reject when obliterate fails — a DB row was already deleted', async () => {
@@ -139,6 +140,7 @@ describe('B2 — obliterate on worker group deletion', () => {
   it('does not reject when Redis is unreachable', async () => {
     behaviours.set('pipeline.y', { countsError: 'ECONNREFUSED' });
     behaviours.set('workflow-steps.y', { countsError: 'ECONNREFUSED' });
+    behaviours.set('workflow.y', { countsError: 'ECONNREFUSED' });
 
     await expect(evictGroupFromCache('y')).resolves.toBeUndefined();
     expect(obliterateCalls).toHaveLength(0);
@@ -151,6 +153,7 @@ describe('B2 — obliterate on worker group deletion', () => {
 
     expect(closedQueues).toContain('pipeline.z');
     expect(closedQueues).toContain('workflow-steps.z');
+    expect(closedQueues).toContain('workflow.z');
   });
 
   it('frees the Redis connection — queue.close() alone cannot, the connection is shared', async () => {
