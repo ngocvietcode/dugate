@@ -6,13 +6,10 @@
 // Prompt `dossier_summary` cấu hình theo sản phẩm (`loan_product_config`), có bản mặc định trong code.
 import { z } from 'zod';
 
-import type { MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
-import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
-
-import { JSON_ONLY_OUTPUT_RULE } from '@/lib/loan-dossier/common/llm-json';
-import { ensurePlaceholders, UNTRUSTED_DATA_GUARD, untrustedBlock } from '../prompts/loan-appraisal-prompts';
+import { untrustedBlock } from '../prompts/loan-appraisal-prompts';
+import { buildDossierFacts, type DossierFactsInput } from './dossier-facts';
+import { renderPrompt } from './prompt-render';
 import {
-  assetIdentity,
   type CriterionStatus,
   type DossierSummary,
   type IntakeAssessment,
@@ -116,50 +113,12 @@ export type AskModel = (step: typeof INTAKE_REVIEW_STEP | typeof DOSSIER_SUMMARY
 
 // ─── Dữ kiện đưa vào prompt ──────────────────────────────────────────────────
 
-export interface DossierFactsInput {
-  product_name: string;
-  flow: string | null;
-  file_count: number;
-  s3: MapDossierData | null;
-  evidences: ReadonlyArray<EvidenceEnvelope>;
-}
+// `buildDossierFacts` / `DossierFactsInput` chuyển sang `dossier-facts.ts` (D-97); giữ export ở đây cho nơi gọi cũ.
+export { buildDossierFacts, type DossierFactsInput };
 
 const CRITERIA_CHAR_BUDGET = 14_000;
 const MAX_PASSED_LINES = 30;
 const MAX_FINDINGS_PER_CRITERION = 80;
-
-interface LoanInfoLike { requested_amount?: unknown; bank_proposed_amount?: unknown; loan_purposes?: unknown; interest_rate_code?: unknown }
-interface FinancialInfoLike { income_details?: Array<{ source?: string | null }>; repayment_source?: string | null }
-
-const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
-
-/** Thông tin hồ sơ cho LLM: người, tài sản, khoản vay, nguồn thu. Không gồm số giấy tờ của người. */
-export function buildDossierFacts(input: DossierFactsInput): Record<string, unknown> {
-  const apps = input.evidences.filter((e) => e.status === 'SUCCESS' && e.doc_type_key === 'loan_application');
-  const loan = apps.map((e) => e.data?.loan_info as LoanInfoLike | null | undefined).find((l) => l) ?? null;
-  const fin = apps.map((e) => e.data?.financial_info as FinancialInfoLike | null | undefined).find((f) => f) ?? null;
-  const income = [...new Set([...(fin?.income_details ?? []).map((d) => str(d.source)), str(fin?.repayment_source)].filter((x): x is string => x !== null))];
-  return {
-    product: input.product_name,
-    flow: input.flow,
-    file_count: input.file_count,
-    evidence_count: input.evidences.length,
-    readable_evidence_count: input.evidences.filter((e) => e.status === 'SUCCESS').length,
-    persons: (input.s3?.customer_360 ?? []).map((c) => ({ person_id: c.person_id, name: c.identity.full_name ?? null, roles: c.roles })),
-    assets: (input.s3?.asset_registry ?? []).map((a) => ({
-      asset_id: a.asset_id, type: a.asset_type, identity: assetIdentity(a), usage: a.usage_contexts, context_status: a.context_status,
-    })),
-    loan: loan
-      ? {
-        requested_amount: loan.requested_amount ?? null,
-        bank_proposed_amount: loan.bank_proposed_amount ?? null,
-        purposes: Array.isArray(loan.loan_purposes) ? loan.loan_purposes.filter((p): p is string => typeof p === 'string').slice(0, 5) : [],
-        interest_rate_code: loan.interest_rate_code ?? null,
-      }
-      : null,
-    income_sources: income.slice(0, 6),
-  };
-}
 
 /** Dữ kiện theo tiêu chí: mỗi điểm có `ref` ổn định; điểm đã đạt chỉ nêu số lượng và vài dòng đầu. */
 export function buildCriteriaFacts(rule: IntakeAssessment): unknown[] {
@@ -182,10 +141,8 @@ function jsonBudget(value: unknown, budget: number): string {
   return text.length <= budget ? text : `${text.slice(0, budget)}…(đã cắt bớt)`;
 }
 
-export function renderPrompt(template: string, required: string[], vars: Record<string, string>): string {
-  const body = ensurePlaceholders(template, required).replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) => (key in vars ? vars[key] : match));
-  return `${UNTRUSTED_DATA_GUARD}\n\n${body}\n\n${JSON_ONLY_OUTPUT_RULE}`;
-}
+// Chuyển sang `prompt-render.ts` (D-97); giữ export ở đây cho nơi gọi cũ.
+export { renderPrompt };
 
 // ─── Gộp kết quả LLM với kết quả quy tắc ──────────────────────────────────────
 

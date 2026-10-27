@@ -4,7 +4,7 @@
 //   - `loan_purpose_classify`: trả lời YES/NO cho 2 câu hỏi về mục đích vay (mua xe ô tô, mua đất / nhà xưởng).
 // Chuỗi nguồn thu / mục đích vay lấy từ OCR giấy đề nghị vay nên được bọc trong thẻ <untrusted_*>.
 import { untrustedBlock } from '../prompts/loan-appraisal-prompts';
-import { renderPrompt } from './intake-review';
+import { renderPrompt } from './prompt-render';
 
 export const INCOME_SOURCE_STEP = 'income_source_classify';
 export const LOAN_PURPOSE_STEP = 'loan_purpose_classify';

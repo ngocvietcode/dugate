@@ -14,7 +14,7 @@ import {
 } from '@/lib/loan-dossier/s4/programs';
 
 import { untrustedBlock } from '../prompts/loan-appraisal-prompts';
-import { renderPrompt } from './intake-review';
+import { renderPrompt } from './prompt-render';
 import { DOSSIER_PRECHECK_OUTPUT_SCHEMA, DOSSIER_PRECHECK_PROMPT_TEMPLATE, DOSSIER_PRECHECK_STEP } from './dossier-precheck-prompt';
 
 export { DOSSIER_PRECHECK_OUTPUT_SCHEMA, DOSSIER_PRECHECK_PROMPT_TEMPLATE, DOSSIER_PRECHECK_STEP };

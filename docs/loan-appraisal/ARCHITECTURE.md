@@ -244,7 +244,7 @@ mũ; ghi prompt/output vào log job ở Bull Board (D-95); chi phí và token th
 | E2 | Đổi policy tín dụng không qua maker-checker | Ngưỡng và rule sửa trên trang cấu hình, hiệu lực ngay, không có người duyệt hay ngày hiệu lực |
 | E3 | Retry không idempotent ở cấp lời gọi AI | `enqueueSubStep` tạo `subOpId` ngẫu nhiên; checkpoint chỉ ở cấp stage. Một file lỗi ở S2 làm chạy lại cả stage |
 | E4 | Job cha giữ slot worker khi chờ sub-step | Thông lượng bị giới hạn bởi thời gian chờ LLM (pipeline concurrency 5); fan-out `Promise.all` không giới hạn |
-| E5 | Code tắt nằm lẫn trong luồng chính | S4/S5/master_dossier/intake_review/readiness, nhánh legacy; docs spec-v3 vẫn mô tả 8 stage |
+| E5 | ~~Code tắt nằm lẫn trong luồng chính~~ **Phần lớn đã xử lý (D-97, D-98):** S4, S5, `dossier-consolidate`, dựng `master_dossier` không còn trong đồ thị import lúc chạy (test khóa); docs có ghi chú trạng thái | Còn: nhánh legacy `consolidate_dossier` / `legacyFinancialInputs` trong code chính; trang cấu hình vẫn liệt kê bước đang tắt (`dossier_summary`, `master_correction`) |
 | E6 | Rule LLM nhận hai khối dữ liệu tách rời | Graph render không dẫn nguồn được; `customer360: {}`; xem [LAC](spec-v3/cross_cutting/loan_application_context.md) |
 | E7 | Một điểm phụ thuộc: anchor `loan_application` | Không có đơn vay thì không gom được người nào và không có đầu vào khoản vay |
 | E8 | Thiếu quan sát chất lượng nghiệp vụ | Không có chỉ số drift: tỉ lệ `REVIEW`, dẫn chiếu bị loại, độ chính xác trên bộ UAT |
@@ -390,6 +390,7 @@ Quyết định chi tiết ở `spec-v3/IMPLEMENT.md` (D-*). Bảng dưới ch�
 | D-73 / D-81 / D-90 | Giai đoạn 1 = S1 + precheck LLM, dừng ngay sau precheck | Phản hồi sớm, rẻ | Đang áp dụng |
 | D-96 | Danh mục sản phẩm cấu hình được, rule id `LOAN.*`, khung `sme` | Bước đầu đa sản phẩm | Đang áp dụng (SME chưa có giá trị nghiệp vụ) |
 | D-97 | Ghi nhận: tạm tắt S4/S5, master_dossier, intake_review, readiness ở giai đoạn 2; DAG 5 stage. Thêm `config_snapshot.reproducibility` | Trạng thái chưa từng được ghi; tái lập kết quả (E1) | Đang áp dụng |
+| D-98 | Tách hàm dùng chung (`prompt-render`, `dossier-facts`, `run-params`) để S4/S5/consolidate/master rời đồ thị import lúc chạy; không xóa code | Đường chạy chính không mang code đang tắt; giữ D-82 | Đang áp dụng (test khóa) |
 | ADR-01 | Lõi chung + Segment Pack (§9) | Mở rộng SME mà không rẽ nhánh lõi | **Đề xuất** |
 | ADR-02 | Loan Application Context làm nguồn duy nhất cho LLM giai đoạn 2 | Dẫn nguồn được, có trạng thái tin cậy | **Đề xuất** |
 | ADR-03 | Kho policy bất biến có maker-checker; Profile chỉ chọn version | Kiểm soát nội bộ, kiểm toán | **Đề xuất** |

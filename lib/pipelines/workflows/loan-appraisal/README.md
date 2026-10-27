@@ -115,7 +115,8 @@ suy ra `COMPLETE` khi còn stage bắt buộc chưa chạy.
 | `prompt-checks.ts` | Rule LLM: build prompt gộp, parse kết quả có rào an toàn |
 | `evidence.ts` | Kiểu và tiện ích của `EvidenceRegistry` (registry spec-v3 dựng ở `evidence-v3.ts`) |
 | `strategies.ts` | Strategy pattern cho các stage deterministic (financial, policy, recommendation) |
-| `intake-review.ts`, `intake-assessment.ts`, `master-dossier.ts`, `master-correction.ts`, `dossier-consolidate.ts` | Logic của các bước **đang tắt** (xem "Các bước kiểm tra hồ sơ tạm tắt"). Lưu ý: đường chạy chính vẫn dùng vài hàm chung trong đó — `renderPrompt`, `buildDossierFacts` (`intake-review.ts`), `consolidateParams` (`dossier-consolidate.ts`) — và vài kiểu (`IntakeAssessment`) |
+| `prompt-render.ts`, `dossier-facts.ts`, `run-params.ts` | Hàm dùng chung tách khỏi các module đang tắt (D-98): `renderPrompt`, `buildDossierFacts`, `consolidateParams` / `vnToday` |
+| `intake-review.ts`, `intake-assessment.ts`, `master-dossier.ts`, `master-correction.ts`, `dossier-consolidate.ts` | Logic của các bước **đang tắt** (xem "Các bước kiểm tra hồ sơ tạm tắt"). Đường chạy chính không import S4, S5, `dossier-consolidate`, `master-dossier` lúc chạy (khóa bằng `tests/loan-appraisal/phase2-isolation.test.ts`); `step-catalog.ts` vẫn đọc template prompt của `dossier_summary`, `master_correction` cho trang cấu hình |
 
 ## Sản phẩm & ngưỡng policy
 
