@@ -1,6 +1,6 @@
 // Client-side mirror of the Loan Appraisal public contract (output 3.0, spec-v3).
 // Phần hồ sơ (documents/customer_360/checklist/cross_check) dùng thẳng kiểu của backend (type-only import).
-import type { DossierOutputV3 } from '@/lib/pipelines/workflows/loan-appraisal/types';
+import type { DossierOutputV3, LoanApplicationContextSummary } from '@/lib/pipelines/workflows/loan-appraisal/types';
 import type { MasterDossier } from '@/lib/loan-dossier/contracts/master-dossier';
 import type { IntakeAssessment } from '@/lib/pipelines/workflows/loan-appraisal/intake-assessment';
 import type { DossierPrecheck } from '@/lib/pipelines/workflows/loan-appraisal/dossier-precheck';
@@ -126,6 +126,9 @@ export interface EvidenceRegistry {
 }
 
 export interface MetricResult {
+  needs_review?: true;
+  review_evidence_ids?: string[];
+  input_conflict?: true;
   status: 'CALCULATED' | 'INSUFFICIENT_DATA' | 'NOT_APPLICABLE';
   value: number | null;
   unit: 'VND' | 'RATIO' | 'PERCENT' | 'MONTHS';
@@ -337,6 +340,7 @@ export interface DossierGrouping {
 }
 
 export interface AppraisalResult {
+  loan_application_context_summary?: LoanApplicationContextSummary;
   product_code: string;
   product_name: string;
   /** V2-R09 (output 3.0): S1 + S2. */

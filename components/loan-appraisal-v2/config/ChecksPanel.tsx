@@ -5,9 +5,9 @@
 // Rule thuộc về sản phẩm đang chọn nên không còn lọc theo sản phẩm.
 
 import { useMemo } from 'react';
+import { asRecord, readChecks, serialize, type Editable } from '@/app/loan-appraisal-v2/lib/checks-config';
 import { FlaskConical, ShieldCheck, Sparkles, X } from 'lucide-react';
 import {
-  DETERMINISTIC_CHECK_IDS,
   LOAN_CHECK_CATALOG,
   LOAN_CHECK_PROGRAM,
   LOAN_CHECK_SET_VERSION,
@@ -15,7 +15,6 @@ import {
   MAX_NAME_LENGTH,
   MAX_PROMPT_LENGTH,
   PARAM_RANGES,
-  type LoanCheckDefinition,
 } from '@/lib/pipelines/workflows/loan-appraisal/check-set';
 import { loanPolicyDefaults } from '@/lib/pipelines/workflows/loan-appraisal/product-policy';
 import { RULE_GROUPS, compareRuleGroups, isRuleGroupKey, resolveRuleGroup, type RuleGroupKey } from '@/lib/pipelines/workflows/loan-appraisal/rule-groups';
@@ -23,8 +22,6 @@ import { Badge } from '../ui/Badge';
 import { Card, CardBody, CardHeader } from '../ui/Card';
 import { FOCUS_RING } from '../ui/toneClasses';
 import type { ConfigPanelProps } from './AiStepsPanel';
-
-type Editable = LoanCheckDefinition & { isCustom: boolean };
 const SEVERITIES = ['BLOCKER', 'EXCEPTION', 'REVIEW', 'INFO'] as const;
 const INPUT = `w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground disabled:opacity-60 ${FOCUS_RING}`;
 
@@ -36,50 +33,6 @@ const PARAM_SPECS: Record<string, Array<{ key: keyof typeof PARAM_RANGES; label:
 
 const POLICY_PARAM = { minimumDscr: 'minimum_dscr', maximumLtv: 'maximum_ltv', maximumAmountVnd: 'maximum_amount_vnd' } as const;
 
-const asRecord = (v: unknown): Record<string, unknown> | null => (v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : null);
-
-/** Hợp nhất cấu hình đã lưu với catalog: luôn liệt kê đủ rule của catalog để admin thấy cả rule bị tắt. */
-function readChecks(saved: Record<string, unknown> | undefined): Editable[] {
-  const catalog = new Map(LOAN_CHECK_CATALOG.map((c) => [c.id, c]));
-  const list = Array.isArray(saved?.checks) ? saved!.checks : [];
-  const seen = new Set<string>();
-  const out: Editable[] = [];
-  for (const raw of list) {
-    const item = asRecord(raw);
-    const id = typeof item?.id === 'string' ? item.id.trim() : '';
-    if (!item || !id || seen.has(id)) continue;
-    seen.add(id);
-    const base = catalog.get(id);
-    const engine = (DETERMINISTIC_CHECK_IDS as readonly string[]).includes(id);
-    out.push({
-      ...(base ?? { id, name: id, kind: 'PROMPT', enabled: true, flows: [], products: [], input: [], action: 'warn', severity: 'REVIEW', exception_allowed: false, version: '1.0.0', prompt: '', threshold: 0.85 }),
-      ...(typeof item.name === 'string' && item.name.trim() ? { name: item.name.trim() } : {}),
-      kind: engine ? 'DETERMINISTIC' : 'PROMPT',
-      group: isRuleGroupKey(item.group) ? item.group : resolveRuleGroup({ id, group: base?.group }),
-      enabled: item.enabled !== false,
-      action: item.action === 'block' ? 'block' : 'warn',
-      severity: SEVERITIES.includes(String(item.severity).toUpperCase() as typeof SEVERITIES[number]) ? String(item.severity).toUpperCase() as Editable['severity'] : base?.severity ?? 'REVIEW',
-      exception_allowed: item.exception_allowed === true,
-      ...(engine ? { params: Object.fromEntries(Object.entries(asRecord(item.params) ?? {}).filter((e): e is [string, number] => typeof e[1] === 'number')) } : {
-        prompt: typeof item.prompt === 'string' ? item.prompt : base?.prompt ?? '',
-        threshold: typeof item.threshold === 'number' ? item.threshold : base?.threshold ?? 0.85,
-      }),
-      isCustom: !base,
-    });
-  }
-  for (const base of LOAN_CHECK_CATALOG) if (!seen.has(base.id)) out.push({ ...base, group: resolveRuleGroup(base), isCustom: false });
-  return out;
-}
-
-/** Bản lưu: bỏ `flows` / `products` (phạm vi do công tắc theo luồng quyết định). */
-function serialize(checks: Editable[]) {
-  return checks.map((c) => ({
-    id: c.id, name: c.name, kind: c.kind, group: resolveRuleGroup(c), enabled: c.enabled, input: c.input, action: c.action, severity: c.severity,
-    exception_allowed: c.exception_allowed, version: c.version,
-    ...(c.kind === 'DETERMINISTIC' && c.params && Object.keys(c.params).length ? { params: c.params } : {}),
-    ...(c.kind === 'PROMPT' ? { prompt: c.prompt ?? '', threshold: c.threshold ?? 0.85 } : {}),
-  }));
-}
 const DEFAULT_SERIALIZED = JSON.stringify(serialize(LOAN_CHECK_CATALOG.map((c) => ({ ...c, isCustom: false }))));
 
 export function ChecksPanel({ config, update, canEdit, productCode, flow, flows, kind }: ConfigPanelProps & {
@@ -224,6 +177,11 @@ export function ChecksPanel({ config, update, canEdit, productCode, flow, flows,
                   ) : <p className="text-xs text-muted-foreground">Rule này đối chiếu trực tiếp checklist chứng từ bắt buộc của sản phẩm; không có tham số ngưỡng.</p>
                 ) : (
                   <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-xs">
+                      <input type="checkbox" checked={c.allow_declared_pass === true} disabled={!canEdit} onChange={(e) => patch(c.id, { allow_declared_pass: e.target.checked })} className="h-4 w-4" />
+                      Cho phép PASS khi chỉ dựa trên lời khai trong đơn vay
+                    </label>
+                    <p className="text-[11px] text-muted-foreground">Chỉ có tác dụng khi tham số lac_mode = on</p>
                     <label className="block"><span className="text-[11px] font-semibold text-muted-foreground">Ngưỡng tin cậy (0..1)</span>
                       <input type="number" step={0.05} min={0} max={1} disabled={!canEdit} value={c.threshold ?? 0.85} onChange={(e) => patch(c.id, { threshold: Number(e.target.value) })} className={`${INPUT} mt-1 w-32 font-mono`} /></label>
                     <label className="block"><span className="text-[11px] font-semibold text-muted-foreground">Prompt kiểm tra</span>

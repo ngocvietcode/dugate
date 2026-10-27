@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2, Circle, ListChecks } from 'lucide-react';
 import type { AppraisalResult, PolicyRuleResult } from '@/app/loan-appraisal/types';
+import { lacSummaryView } from '@/app/loan-appraisal-v2/lib/lac-summary';
 import { formatCurrencyVnd } from '@/app/loan-appraisal-v2/lib/format';
 import { humanizeKey, safeArray } from '@/app/loan-appraisal-v2/lib/selectors';
 import { factorTone, ruleTone } from '@/app/loan-appraisal-v2/lib/tone';
@@ -101,9 +102,22 @@ function CheckSetSummary({ result, engineCount, promptCount }: { result: Apprais
   );
 }
 
+function LacSummary({ result }: { result: AppraisalResult }) {
+  const view = lacSummaryView(result.loan_application_context_summary);
+  if (!view) return null;
+  return (
+    <Disclosure summary="Ngữ cảnh đơn vay">
+      <dl className="grid gap-2 sm:grid-cols-2">
+        {view.rows.map((row) => <KeyValue key={row.label} label={row.label} value={row.value} />)}
+      </dl>
+      {view.gaps.length > 0 && <ul className="mt-3 space-y-1 text-xs text-muted-foreground">{view.gaps.map((line, index) => <li key={index}>{line}</li>)}</ul>}
+    </Disclosure>
+  );
+}
+
 export function PolicyPanel({ result }: { result: AppraisalResult }) {
   const policy = result.policy_compliance;
-  if (!policy) return <EmptyState icon={ListChecks} title="Artifact policy chưa sẵn sàng" />;
+  if (!policy) return <div className="space-y-5"><EmptyState icon={ListChecks} title="Artifact policy chưa sẵn sàng" /><LacSummary result={result} /></div>;
   const rules = safeArray(policy.rule_results);
   const exceptions = safeArray(policy.exceptions);
   const engineCount = rules.filter((r) => r.check_kind !== 'PROMPT').length;
@@ -141,6 +155,7 @@ export function PolicyPanel({ result }: { result: AppraisalResult }) {
       )}
 
       <CheckSetSummary result={result} engineCount={engineCount} promptCount={promptCount} />
+      <LacSummary result={result} />
     </div>
   );
 }
