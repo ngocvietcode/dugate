@@ -120,9 +120,12 @@ export function createDossierPorts(ctx: WorkflowContext): DossierPortsHandle {
     return run(async () => {
       await assertNotCancelled(ctx);
       const { filesJson } = await uploadSlice(input, extraRefs);
-      const response = await enqueueSubStep(
-        ctx, processor, { _prompt: input.prompt }, filesJson, ctx.modelOverrides[step], ctx.reasoningEffortOverrides[step],
-      );
+      const model = ctx.modelOverrides[step];
+      const reasoning = ctx.reasoningEffortOverrides[step];
+      // D-102: khoá tất định của lời gọi — file theo hash nội dung (file_ref), dải trang, prompt, model, reasoning. Retry /
+      // resume của cùng operation dùng lại kết quả đã SUCCEEDED thay vì gọi lại model cho file đã đọc xong.
+      const reuseKey = JSON.stringify([step, input.file_ref, input.mime, input.page_range, input.prompt, model ?? null, reasoning ?? null]);
+      const response = await enqueueSubStep(ctx, processor, { _prompt: input.prompt }, filesJson, model, reasoning, undefined, { reuseKey });
       return response.content;
     });
   }
