@@ -180,3 +180,7 @@ Xem [open_questions.md](open_questions.md).
   chưa có worker nghe `workflow` → về queue pipeline (worker pipeline vẫn chạy được workflow), nên thứ tự deploy không quan trọng.
   Hai route resume trước đây luôn đẩy vào `pipeline` mặc định, bỏ qua worker group của profile; nay dùng `resolveTargetQueue`.
   `DossierPortsHandle.cleanup()` (gọi ngay sau S2) bỏ luôn cache nội dung file. Phương án B chờ số đo tải thật.
+- **D-107 (2026-10-27)** `lac_mode` (D-103) chưa được khai báo trong `lib/endpoints/registry.ts`, mà `mergeParameters` chỉ nhận key
+  khai báo hoặc có trong tham số Profile: client gửi `lac_mode=on` bị bỏ qua không báo lỗi, hồ sơ luôn chạy `off`. Nay khai báo
+  (`off | shadow | on`, mặc định `off`, admin khoá được qua Profile); trang `/loan-appraisal-v2` có ô chọn, chỉ gửi khi khác `off` (Profile
+  khoá thì gửi bị 400). Test: `tests/loan-appraisal/lac-mode-param.test.ts`. Hướng dẫn chạy T-LAC-07 ở đầu `scripts/lac-shadow-report.ts`.

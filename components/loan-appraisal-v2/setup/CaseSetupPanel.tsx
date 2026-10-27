@@ -5,6 +5,7 @@ import type { LoanFlow } from '@/app/loan-appraisal/types';
 import { COPY } from '@/app/loan-appraisal-v2/copy';
 import { PRODUCT_OPTIONS, flowOptionsFor } from '@/app/loan-appraisal-v2/lib/product-options';
 import type { RunPhase } from '@/app/loan-appraisal-v2/lib/run-reducer';
+import type { LacMode } from '@/app/loan-appraisal-v2/lib/api';
 import { Card, CardBody, CardHeader } from '../ui/Card';
 import { FOCUS_RING } from '../ui/toneClasses';
 import { FileList, type FileEntry } from './FileList';
@@ -30,6 +31,9 @@ export interface CaseSetupProps {
   /** Tham số stop_after_intake: chọn = dừng sau giai đoạn 1, bỏ chọn (mặc định) = chạy hết một lần. */
   stopAfterIntake?: boolean;
   onStopAfterIntake?: (value: boolean) => void;
+  /** Tham số lac_mode (D-103): off (mặc định) | shadow | on. */
+  lacMode?: LacMode;
+  onLacMode?: (value: LacMode) => void;
   entries: FileEntry[];
   onFiles: (files: File[]) => void;
   onRemove: (id: string) => void;
@@ -79,6 +83,14 @@ export function CaseSetupPanel(props: CaseSetupProps) {
             <input id="la2-stop-after-intake" type="checkbox" checked={Boolean(props.stopAfterIntake)} onChange={(event) => props.onStopAfterIntake?.(event.target.checked)} disabled={busy} className="mt-0.5 h-4 w-4 shrink-0" />
             <span><span className="font-semibold text-foreground">Dừng sau giai đoạn 1 (<code>stop_after_intake</code>)</span><span className="mt-0.5 block text-muted-foreground">Chỉ phân loại và kiểm tra sơ bộ, xem kết quả rồi mới chuyển sang giai đoạn 2. Bỏ chọn: chạy hết cả 2 giai đoạn một lần.</span></span>
           </label>
+          <div className="rounded-lg border border-border bg-muted/40 p-2.5 text-xs">
+            <label htmlFor="la2-lac-mode" className="font-semibold text-foreground">Ngữ cảnh đơn vay cho rule LLM (<code>lac_mode</code>)</label>
+            <select id="la2-lac-mode" value={props.lacMode ?? 'off'} onChange={(event) => props.onLacMode?.(event.target.value as LacMode)} disabled={busy} className={`${INPUT} mt-1.5`}>
+              <option value="off">Tắt (mặc định)</option>
+              <option value="shadow">Chạy thử: chỉ đo, không đổi kết quả</option>
+              <option value="on">Bật: rule LLM dùng ngữ cảnh đơn vay</option>
+            </select>
+          </div>
           <p className="flex items-start gap-1.5 text-xs text-muted-foreground"><Info className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />Tên khách hàng và nhu cầu vay chỉ để trình bày; hệ thống dùng dữ liệu trích xuất từ chứng từ.</p>
         </div>
         <div className="space-y-3">
