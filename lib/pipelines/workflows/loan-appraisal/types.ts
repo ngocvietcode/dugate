@@ -344,6 +344,11 @@ export interface DossierOutputV3 {
    * leaf_count = lá đã lưu + omitted_leaves (bất biến lossless). Không có ở kết quả cũ hoặc khi S3 lỗi.
    */
   claims?: StoredClaims | null;
+  /**
+   * D-103 (LAC-R18): tóm tắt Loan Application Context của lần chạy — chỉ số đếm và mã, KHÔNG có giá trị dữ kiện. LAC đầy đủ
+   * không lưu: dựng lại được từ documents.evidences + S3 (`source_hash` để đối chiếu). Vắng khi lac_mode = off hoặc kết quả cũ.
+   */
+  loan_application_context_summary?: LoanApplicationContextSummary | null;
   /** S4. `items` rỗng khi S4 FAILED (VD flow sai). */
   checklist: {
     status: string;
@@ -364,6 +369,19 @@ export interface DossierOutputV3 {
     skipped_evidences: CrossCheckData['skipped_evidences'];
   };
   completeness_percent: number;
+}
+
+export interface LoanApplicationContextSummary {
+  lac_version: string;
+  mode: 'shadow' | 'on';
+  /** LAC đã vào prompt rule LLM của lần chạy này. */
+  used_in_prompt: boolean;
+  source_hash: string;
+  fact_count: number;
+  /** null khi stage rule không chạy lại ở lần này (resume sau stage 3) hoặc không có rule LLM. */
+  rendered_fact_count: number | null;
+  conflicts: number;
+  gaps: Array<{ code: string; count: number }>;
 }
 
 export interface AppraisalResultV2 extends DossierOutputV3 {

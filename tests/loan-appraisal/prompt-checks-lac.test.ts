@@ -17,8 +17,9 @@ import { buildLoanApplicationContext } from '@/lib/loan-dossier/context/build';
 import type { LoanApplicationContext } from '@/lib/loan-dossier/context/schema';
 import { runMapDossier } from '@/lib/loan-dossier/s3/run';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
-import { completeWorkflow } from '@/lib/pipelines/workflow-engine';
+// Nạp workflow TRƯỚC engine để loan-appraisal gắn với bản mock của engine (xem lac-pii.test.ts).
 import { runLoanAppraisal } from '@/lib/pipelines/workflows/loan-appraisal';
+import { completeWorkflow } from '@/lib/pipelines/workflow-engine';
 import { parseCheckSet, validateCheckSetValue } from '@/lib/pipelines/workflows/loan-appraisal/check-set';
 import { buildEvidenceRegistryV3 } from '@/lib/pipelines/workflows/loan-appraisal/evidence-v3';
 import {

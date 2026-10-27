@@ -64,6 +64,7 @@ export const LOAN_APPRAISAL_STEPS: LoanStepMeta[] = [
       { name: '{{evidence}}', desc: 'Bảng evidence (ưu tiên loại chứng từ rule khai báo, tối đa 400 dòng), bọc trong <untrusted_evidence> — bắt buộc' },
       { name: '{{financial}}', desc: 'Chỉ số tài chính đã tính deterministic' },
       { name: '{{master_data}}', desc: 'Người & tài sản do hệ thống gom từ OCR (S3, chưa xác minh), bọc trong <untrusted_master_data>' },
+      { name: '{{context}}', desc: 'Chỉ khi tham số lac_mode = on: Loan Application Context (dữ kiện F<n> có trạng thái tin cậy, quan hệ, mâu thuẫn, khoảng trống), thay cho {{master_data}} + {{evidence}}; template ghi đè không có {{context}} thì chạy đường cũ' },
       { name: '{{output_schema}}', desc: 'Schema JSON bắt buộc của kết quả — bắt buộc' },
     ],
     codePromptPreview: POLICY_CHECKS_PROMPT_TEMPLATE,

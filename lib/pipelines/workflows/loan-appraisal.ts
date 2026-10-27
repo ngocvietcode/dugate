@@ -352,6 +352,8 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
 
     // ── Stage 3: versioned policy rules (rule engine + rule LLM) ────────────────────────────────────
     let policy = getStep(ctx, 3)?.extracted_data as PolicyComplianceResult | undefined;
+    /** D-103: LAC trong prompt của lần chạy này (cho loan_application_context_summary). */
+    let lacPromptUse: { used: boolean; facts_rendered: number } | null = null;
     if (resumeFromStep <= 3) {
       await beginStage(ctx, 3, 'Đang chạy bộ rule sản phẩm và kiểm tra tuân thủ...');
 
@@ -408,6 +410,10 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
         }
       }
 
+      const lacUsedRender = (lacOutcome as LacPromptOutcome | null)?.render ?? null;
+      const lacRenderedStats = lacStats ?? lacUsedRender?.stats ?? null;
+      if (lacRenderedStats) lacPromptUse = { used: Boolean((lacOutcome as LacPromptOutcome | null)?.used), facts_rendered: lacRenderedStats.facts_rendered };
+
       policy = pack.evaluatePolicy({ policy: productPolicy, checkSet, financial, promptResults });
       const passed = policy.rule_results.filter((rule) => rule.result === 'PASS').length;
       saveStep(ctx, stageResult(3, {
@@ -455,6 +461,18 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       customer_360: mapOutcome.data,
       dossier_graph: dossierGraph ? toDossierGraphView(dossierGraph) : null,
       claims: storedClaims,
+      ...(lac && lacMode !== 'off' ? {
+        loan_application_context_summary: {
+          lac_version: lac.lac_version,
+          mode: lacMode,
+          used_in_prompt: lacPromptUse?.used ?? false,
+          source_hash: lac.meta.source_hash,
+          fact_count: lac.meta.fact_count,
+          rendered_fact_count: lacPromptUse?.facts_rendered ?? null,
+          conflicts: lac.conflicts.length,
+          gaps: lac.gaps.map((g) => ({ code: g.code, count: g.count })),
+        },
+      } : {}),
       risk_notes: [],
       system_notes: [
         'Các bước kiểm tra hồ sơ (checklist, đối chiếu chéo, master data, kiểm tra nháp) đang tạm tắt ở giai đoạn 2; kết quả gồm OCR, gom người & tài sản, chỉ số tài chính, bộ rule và khuyến nghị.',
