@@ -257,7 +257,7 @@ export function buildPrecheckReadiness(precheck: DossierPrecheck | null, classif
   };
 }
 
-/** Phần kết quả hồ sơ ở giai đoạn 1 tinh gọn: chỉ S1 có dữ liệu (vidences rỗng vì S2 chưa chạy), S3–S5 chưa chạy (V2-R21, D-90). */
+/** Phần kết quả hồ sơ ở giai đoạn 1 tinh gọn: chỉ S1 có dữ liệu (evidences rỗng vì S2 chưa chạy), S3–S5 chưa chạy (V2-R21, D-90). */
 export function buildDeferredDossierOutput(
   product: LoanProduct,
   classify: { files: ClassifyData['files']; repeated_doc_types: ClassifyData['repeated_doc_types'] },

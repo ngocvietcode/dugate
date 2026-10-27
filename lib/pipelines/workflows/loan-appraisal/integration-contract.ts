@@ -165,7 +165,7 @@ export const DocumentsSchema = z.object({
     needs_review: z.number().int(),
     percent: z.number().optional(),
   }).strict()),
-  /** CHỈ mục có ý nghĩa: không phải NOT_APPLICABLE, và hoặc bắt buộc hoặc đang có vấn đề. Tổng quan đầy đủ xem y_group. */
+  /** CHỈ mục có ý nghĩa: không phải NOT_APPLICABLE, và hoặc bắt buộc hoặc đang có vấn đề. Tổng quan đầy đủ xem by_group. */
   items: z.array(DocumentItemSchema),
   /** Dữ liệu đã hợp nhất theo từng chứng từ (giá trị cuối, không nguồn). Trường MISSING (không có giá trị) không xuất hiện. */
   records: z.array(z.object({
