@@ -50,6 +50,10 @@ Ràng buộc nhất quán (engine tự kiểm, có test T-S3-14): mọi `person_
 
 ### 3.2 Ghép party của chứng từ khác
 
+> D-109: chấm điểm Fellegi-Sunter thay S3-R06…R09 cho cá nhân — đề xuất, chưa cài đặt; xem
+> [s3_fellegi_sunter.md](../cross_cutting/s3_fellegi_sunter.md). **Đã cài** vá FS-R01 cho S3-R07: party có số và ngày sinh cùng khác lời
+> khai trên anchor (không phải cặp 9 ↔ 12 số) thì không ghép theo tên.
+
 | ID | Rule |
 |---|---|
 | **S3-R06** | Ưu tiên số định danh (khớp tuyệt đối). Chuẩn hóa: chỉ giữ chữ số, giữ số 0 đầu. So với `K(p)` = số khai báo + mọi `id_number`, `previous_id_numbers` của party đã ghép vào `p`. Chỉ dùng số khi `field_confidences.parties ≥ 0.50`. Khớp đúng 1 người → ghép (`matched_by = ID_NUMBER`); khớp ≥ 2 → `AMBIGUOUS_IDENTITY_MATCH`. Lặp tới điểm bất động (tối đa 5 vòng) vì ghép mới có thể mở rộng `K(p)`. Khớp số thì dừng, không xét tên (tên khác chính tả → thêm cảnh báo, không đổi kết quả) |

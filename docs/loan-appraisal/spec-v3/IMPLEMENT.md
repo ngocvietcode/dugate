@@ -184,3 +184,15 @@ Xem [open_questions.md](open_questions.md).
   khai báo hoặc có trong tham số Profile: client gửi `lac_mode=on` bị bỏ qua không báo lỗi, hồ sơ luôn chạy `off`. Nay khai báo
   (`off | shadow | on`, mặc định `off`, admin khoá được qua Profile); trang `/loan-appraisal-v2` có ô chọn, chỉ gửi khi khác `off` (Profile
   khoá thì gửi bị 400). Test: `tests/loan-appraisal/lac-mode-param.test.ts`. Hướng dẫn chạy T-LAC-07 ở đầu `scripts/lac-shadow-report.ts`.
+- **D-108 (2026-10-27)** Đề xuất hồ sơ 360 có kiểu và duyệt mâu thuẫn bởi CO: [cross_cutting/loan_360.md](cross_cutting/loan_360.md). Chưa cài đặt. Quyết định
+  của người dùng: chỉ thẩm định từng hồ sơ (không lưu xuyên hồ sơ), không tích hợp nguồn ngoài, CO chọn giá trị khi mâu thuẫn,
+  luồng "CO duyệt rồi tính lại". Phát hiện khi đọc code: `financial-inputs.ts` đọc evidence trực tiếp nên là nguồn sự thật thứ hai
+  ngoài LAC; endpoint `resume` chỉ nhận `WAITING_USER_INPUT` nên tính lại sau khi hoàn tất cần endpoint riêng; `FieldEdit` của D-04
+  chưa có trong code. Sửa kèm theo ở 68b9a877: hai bản đơn vay giống nhau là `DECLARED` chứ không phải `CORROBORATED` (spec LAC AC-3 / R03 cần sửa theo, chưa sửa).
+  Bổ sung §3.1 (đơn vị kinh doanh và quan hệ HKD / SME, L360-B01…B11, T-360-07…09). BA đã quyết: khách vay SME là pháp nhân
+  (OQ-360-06), bóc tách đầy đủ tờ khai GTGT / BCTC (OQ-360-07), checklist HKD / DN chấm theo cả hồ sơ (OQ-360-08).
+- **D-109 (2026-10-27)** Đề xuất bộ chấm Fellegi-Sunter cho bước ghép party của S3: [cross_cutting/s3_fellegi_sunter.md](cross_cutting/s3_fellegi_sunter.md).
+  Chưa cài đặt. Bộ chấm viết bằng TypeScript trong repo (npm không có thư viện FS đủ chín; gói gần nhất là AGPL); tham số m/u ở
+  `catalog/data/fs_params.json`, ước lượng ngoài hệ thống bằng Splink; chế độ `s3_matcher` = `rules` | `shadow` | `fs`. Phát hiện khi
+  chạy thử S3 thật: party cùng tên nhưng khác số CCCD và khác ngày sinh vẫn bị gộp vào khách vay theo tên (S3-R07), chỉ gắn
+  `DECLARED_ID_DIFFERS` giống hệt ca số đọc lệch 1 ký tự; vá bằng luật ở T-FS-01, không chờ FS.
