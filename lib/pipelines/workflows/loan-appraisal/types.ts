@@ -340,7 +340,7 @@ export interface DossierOutputV3 {
   dossier_graph?: DossierGraphView | null;
   /**
    * Claim ĐÁNG CHÚ Ý (đồng thuận, tranh chấp, nghi lỗi đọc, cách viết khác, chưa gắn chủ thể) kèm nguồn từng claim. CÓ GIÁ TRỊ (có thể là PII).
-   * Claim thường (đơn vay khai, một nguồn) không lưu: còn nguyên ở documents.evidences[].data, dựng lại bằng uildClaimLedger.
+   * Claim thường (đơn vay khai, một nguồn) không lưu: còn nguyên ở documents.evidences[].data, dựng lại bằng buildClaimLedger.
    * leaf_count = lá đã lưu + omitted_leaves (bất biến lossless). Không có ở kết quả cũ hoặc khi S3 lỗi.
    */
   claims?: StoredClaims | null;
