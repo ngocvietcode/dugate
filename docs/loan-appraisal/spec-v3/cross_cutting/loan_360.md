@@ -360,7 +360,7 @@ khi chúng ghi khác nhau (chính sách, Risk duyệt).
 
 ## 7. Cập nhật spec LAC khi cài đặt
 
-AC-3 / LAC-R03 hiện ghi hai bản đơn vay giống nhau là `CORROBORATED`; code đã đổi thành `DECLARED` (fix 68b9a877) nên spec phải sửa theo. OQ-LAC-02 (nhiều hộ kinh doanh, §3.1) và OQ-LAC-03 (stage tài chính đọc LAC) được trả lời bởi tài liệu này. LAC-R03 bỏ `business-1`
+AC-3 / LAC-R03 đã sửa theo D-112 (hai bản đơn vay giống nhau là `DECLARED`; xác nhận độc lập cần ≥ 2 loại chứng từ). OQ-LAC-02 (nhiều hộ kinh doanh, §3.1) và OQ-LAC-03 (stage tài chính đọc LAC) được trả lời bởi tài liệu này. LAC-R03 bỏ `business-1`
 khi T-360-07 cài xong; `LacSubjectKind` thêm chủ thể `business` theo `biz-n`, quan hệ thêm các cạnh ở §3.1.
 
 ## 8. Điều chưa kiểm chứng
