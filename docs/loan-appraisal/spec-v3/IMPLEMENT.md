@@ -241,3 +241,5 @@ Xem [open_questions.md](open_questions.md).
   nên vượt rào `DECLARED_ONLY` (S3), bản bị thay thế xử lý không đồng nhất (S4). Không giữ tương thích ngược (yêu cầu người dùng). LAC luôn
   dựng (hàm thuần) vì hồ sơ 360 đứng trên nó; `lac_mode` chỉ còn quyết định prompt. Kiểm tra: `tsc` 0 lỗi; full jest 334 suite / 3511 test
   qua. Việc giao song song: ChatGPT sửa 25 lỗi `check_spec` (`.agents/tasks/spec-hygiene/plan.md`, nhánh `codex/spec-hygiene`).
+  Bổ sung cùng ngày: LAC render nhận `profile_360` (LAC-R20) — mục `NGUỒN TRẢ NỢ` / `HỘ KINH DOANH` theo `inc-n` / `biz-n`, dẫn `F<n>` của
+  fact gom vào đơn vị, đặt sau `NGƯỜI`; fact phẳng `income_sources[].*` và `business-1` không còn trong prompt. Full jest 3513 test qua.

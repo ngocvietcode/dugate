@@ -369,7 +369,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       let lacOutcome: LacPromptOutcome | null = null;
       // LAC-R17: shadow chỉ đo (độ dài, số dữ kiện, cắt bớt…) để so với đường cũ; không gửi model, không đổi kết quả.
       const lacStats = lac && lacMode === 'shadow' && promptChecks.length > 0
-        ? renderLoanApplicationContext(lac, lacScopeFromInputs(promptChecks.map((c) => c.input))).stats
+        ? renderLoanApplicationContext(lac, lacScopeFromInputs(promptChecks.map((c) => c.input)), undefined, profile360).stats
         : null;
       if (promptChecks.length > 0) {
         try {
@@ -386,6 +386,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
               financial,
               lac,
               lacMode,
+              profile: profile360,
             }, ctx.promptOverrides.policy_checks, (stats) => {
               promptEvidenceStats = { ...stats };
               logger.info(`[LOAN-APPRAISAL] Rule LLM evidence: ${JSON.stringify(stats)}`);

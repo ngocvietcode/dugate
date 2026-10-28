@@ -10,6 +10,7 @@ import { JSON_ONLY_OUTPUT_RULE } from '@/lib/loan-dossier/common/llm-json';
 import { renderLoanApplicationContext, type LacRender } from '@/lib/loan-dossier/context/render';
 import type { LacFact, LoanApplicationContext } from '@/lib/loan-dossier/context/schema';
 import { lacScopeFromInputs } from '@/lib/loan-dossier/context/scope';
+import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
 import { renderDossierGraph, type DossierGraph } from '@/lib/loan-dossier/graph';
 import type { LoanCheckDefinition, LoanCheckSet } from './check-set';
 import { resolveRuleGroup } from './rule-groups';
@@ -71,6 +72,8 @@ export interface PromptCheckInput {
   /** LAC đã dựng (D-103). Chỉ dùng khi `lacMode = 'on'` và template có `{{context}}`. */
   lac?: LoanApplicationContext | null;
   lacMode?: LacMode;
+  /** Hồ sơ 360 của cùng lần chạy (D-114): LAC render nguồn thu / hộ kinh doanh theo đơn vị của nó. */
+  profile?: Profile360 | null;
 }
 
 /** Kết quả quyết định dùng LAC cho một lần dựng prompt (để workflow ghi warning / thống kê). */
@@ -514,7 +517,7 @@ export function buildPromptCheckVars(
   const lacWanted = input.lacMode === 'on' && !!input.lac;
   const lacTemplate = lacWanted ? (promptOverride || POLICY_CHECKS_LAC_PROMPT_TEMPLATE) : null;
   if (lacTemplate && /\{\{\s*context\s*\}\}/.test(lacTemplate)) {
-    const render = renderLoanApplicationContext(input.lac!, lacScopeFromInputs(checks.map((c) => c.input)));
+    const render = renderLoanApplicationContext(input.lac!, lacScopeFromInputs(checks.map((c) => c.input)), undefined, input.profile ?? null);
     onLac?.({ used: true, legacyTemplate: false, render });
     const body = ensurePlaceholders(lacTemplate, ['checks', 'context', 'output_schema']).replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) => {
       switch (key) {

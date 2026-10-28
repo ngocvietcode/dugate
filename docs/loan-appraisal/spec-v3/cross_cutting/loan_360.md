@@ -45,9 +45,9 @@ người thẩm định: `application` (đơn vay gốc = anchor S3) → `loan` 
 
 Đã gỡ: `result.claims` và `graph/claims-store.ts`; UI `customer360-view`, `customer360-detail`, `claims-view`, `decision-360`, `ClaimsPanel`,
 `Decision360Card`; `MasterDataPanel` khỏi tab Hồ sơ khách hàng. Kết quả tạo trước D-114 không có `profile_360`: Customer 360 báo chạy lại
-(không giữ tương thích ngược, theo yêu cầu người dùng). Segment pack HKD lên `2.0.0` vì đầu vào stage 2 đổi. Còn lệch (việc tiếp):
-(1) LAC render cho prompt vẫn làm phẳng mảng và dùng `business-1`, chưa đọc đơn vị / luồng thu nhập của hồ sơ 360; (2) `master_dossier`
-(`lib/loan-dossier/master/`, `applyMasterToFinancialInputs`) vẫn còn trong code dù không chạy ở giai đoạn 2.
+(không giữ tương thích ngược, theo yêu cầu người dùng). Segment pack HKD lên `2.0.0` vì đầu vào stage 2 đổi. Prompt rule LLM: LAC render
+đọc luồng thu nhập / hộ kinh doanh của hồ sơ 360 (LAC-R20), không còn làm phẳng `income_sources` hay chủ thể `business-1`. Còn lệch (việc
+tiếp): `master_dossier` (`lib/loan-dossier/master/`, `applyMasterToFinancialInputs`) vẫn còn trong code dù không chạy ở giai đoạn 2.
 
 ## 3. Lớp 2: thực thể có kiểu
 
