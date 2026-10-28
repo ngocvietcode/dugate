@@ -88,6 +88,8 @@ import { buildLoanApplicationContext } from '@/lib/loan-dossier/context/build';
 import { renderLoanApplicationContext } from '@/lib/loan-dossier/context/render';
 import type { LoanApplicationContext } from '@/lib/loan-dossier/context/schema';
 import { lacScopeFromInputs } from '@/lib/loan-dossier/context/scope';
+import { buildProfile360 } from '@/lib/loan-dossier/profile360/build';
+import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
 import { packForProduct } from './loan-appraisal/segment-packs/registry';
 import { deriveProcessingStatus, LOAN_STAGE_DEFINITIONS } from './loan-appraisal/state-machine';
 import {
@@ -329,6 +331,26 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       }
     }
 
+    // ── Hồ sơ 360 (D-110, D-113): view có kiểu cho giao diện Customer 360. Cần S3 + LAC; LAC dựng riêng khi lac_mode = off (hàm thuần, rẻ).
+    // Chưa nối vào tài chính / rule (T-360-03). Lỗi không đổ workflow.
+    let profile360: Profile360 | null = null;
+    if (mapOutcome.data) {
+      try {
+        const context = lac ?? buildLoanApplicationContext({
+          product_code: product.code,
+          flow: typeof loanFlow === 'string' ? loanFlow : null,
+          evidences: extractCheckpoint.evidences,
+          s3: mapOutcome.data,
+          s3_status: mapOutcome.status,
+        });
+        profile360 = buildProfile360({ evidences: extractCheckpoint.evidences, s3: mapOutcome.data, lac: context });
+      } catch (error) {
+        const name = error instanceof Error ? error.name : 'Error';
+        configWarnings.push(`PROFILE_360_UNAVAILABLE:${name}`);
+        logger.warn(`[LOAN-APPRAISAL] PROFILE_360_UNAVAILABLE: ${name}`);
+      }
+    }
+
     // ── Stage 2: deterministic financial calculations (đọc OCR + asset_registry của S3 để tính giá trị TSBĐ / LTV) ──
     let financial = getStep(ctx, 2)?.extracted_data as FinancialMetrics | undefined;
     if (resumeFromStep <= 2) {
@@ -461,6 +483,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       customer_360: mapOutcome.data,
       dossier_graph: dossierGraph ? toDossierGraphView(dossierGraph) : null,
       claims: storedClaims,
+      profile_360: profile360,
       ...(lac && lacMode !== 'off' ? {
         loan_application_context_summary: {
           lac_version: lac.lac_version,

@@ -12,6 +12,7 @@ import type { MasterDossier } from '@/lib/loan-dossier/contracts/master-dossier'
 import type { StoredClaims } from '@/lib/loan-dossier/graph/claims-store';
 import type { DossierGraphView } from '@/lib/loan-dossier/graph/view-contract';
 import type { FsShadowSummary } from '@/lib/loan-dossier/s3/fs/shadow';
+import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
 import type { IntakeAssessment } from './intake-assessment';
 import type { DossierPrecheck } from './dossier-precheck';
 import type { ReproducibilitySnapshot } from './reproducibility';
@@ -345,6 +346,11 @@ export interface DossierOutputV3 {
    * leaf_count = lá đã lưu + omitted_leaves (bất biến lossless). Không có ở kết quả cũ hoặc khi S3 lỗi.
    */
   claims?: StoredClaims | null;
+  /**
+   * D-113: hồ sơ 360 có kiểu (đơn vị HKD, luồng thu nhập, quan hệ OPERATES / EARNS_FROM; loan_360.md §3). CÓ GIÁ TRỊ (PII), cùng mức với
+   * `customer_360`. Mỗi trường dẫn về fact LAC (`fact_ids`). Vắng ở kết quả cũ hoặc khi S3 lỗi.
+   */
+  profile_360?: Profile360 | null;
   /**
    * D-103 (LAC-R18): tóm tắt Loan Application Context của lần chạy — chỉ số đếm và mã, KHÔNG có giá trị dữ kiện. LAC đầy đủ
    * không lưu: dựng lại được từ documents.evidences + S3 (`source_hash` để đối chiếu). Vắng khi lac_mode = off hoặc kết quả cũ.

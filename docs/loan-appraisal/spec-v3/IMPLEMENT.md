@@ -216,3 +216,22 @@ Xem [open_questions.md](open_questions.md).
   Tham số sẽ **đếm trực tiếp** từ bộ hồ sơ chuẩn có nhãn bằng script TS dùng chính `comparePair` (s3_fellegi_sunter.md §4; FS-R11, FS-AC09
   viết lại), nên không còn phải giữ mức so sánh giống nhau giữa hai công cụ và không cần Python. T-FS-05 bị gỡ, script đếm gộp vào
   T-FS-06; plan `.agents/tasks/fs-splink/` xóa.
+- **D-112 (2026-10-28)** Người dùng ủy quyền Claude chốt mọi câu hỏi còn mở ("tự chọn quyết định tốt nhất"). BA / Risk có thể lật lại
+  bất kỳ dòng nào; lật thì ghi D mới. Nguyên tắc chung: **gộp nhầm và PASS sai tốn hơn thiếu ghép / cần soát**, nên chọn phương án thận trọng.
+  - loan_360: OQ-360-01, -02, -03, -04, -05, -10, -11, -14, -15, -16, -17, -18 → **theo mặc định đề xuất trong bảng** (§9).
+    OQ-360-09: đơn vay SME dùng chung schema `loan_application`, party `BORROWER` có `party_type = ORGANIZATION`, thêm vai trò
+    `LEGAL_REPRESENTATIVE`, `GUARANTOR`, `CAPITAL_MEMBER`. OQ-360-12: theo bảng trường §3.1; nhận BCTC chưa kiểm toán, gắn cờ
+    `UNAUDITED`. OQ-360-13: DSCR SME = (lợi nhuận trước thuế + chi phí lãi vay) / nghĩa vụ trả nợ năm, kỳ = năm tài chính gần nhất có
+    BCKQKD; thiếu thì `INSUFFICIENT_DATA`, không suy từ tờ khai GTGT.
+  - s3_fellegi_sunter: OQ-FS-01 `POSSIBLE_MATCH` để unmapped chờ người xác nhận; OQ-FS-02 mục tiêu 0 ca gộp nhầm trên bộ hồ sơ chuẩn;
+    OQ-FS-03 Dev lead + Risk duyệt `params_version`; OQ-FS-04 chưa có bảng ánh xạ địa danh thì `permanent_address` chỉ `AGREE` / `MISSING`;
+    OQ-FS-05 không dùng bảng tần suất tên ở v1.
+  - LAC: OQ-LAC-01 giữ rào và **siết**: PASS mà có BẤT KỲ fact `DECLARED` nào trong dẫn chiếu → REVIEW, trừ rule `allow_declared_pass`
+    (thay "mọi fact DECLARED", vì model chỉ cần dẫn kèm một fact không liên quan để vượt rào). AC-3 / LAC-R03: nhiều bản chụp của **cùng
+    một loại chứng từ** không phải xác nhận độc lập → đơn vay ×2 là `DECLARED`, CCCD ×2 là `SINGLE_SOURCE`; `CORROBORATED` cần ≥ 2 loại
+    chứng từ khác nhau. OQ-LAC-07: không thêm phụ lục OCR thô.
+  - Bộ hồ sơ chuẩn có nhãn (cho T-FS-06, T-LAC-07): 20 hồ sơ UAT, ưu tiên các ca shadow ghi `rules_only` / `fs_only`; BA lead lập, Risk duyệt.
+- **D-113 (2026-10-28)** Customer 360 "ra quyết định trước": kết quả cuối có `profile_360` (D-110 nối vào workflow; LAC dựng riêng khi
+  `lac_mode = off`, lỗi → warning `PROFILE_360_UNAVAILABLE`), view-model thuần `app/loan-appraisal-v2/lib/decision-360.ts` (dải tóm tắt:
+  khoản vay, thu nhập/tháng, hộ kinh doanh, người & TSBĐ; danh sách "cần chú ý" gom từ đối chiếu chứng từ, cảnh báo S3, hồ sơ 360, xếp
+  danger → warning → info). Giao diện giao ChatGPT theo `.agents/tasks/c360-ui/plan.md` (nhánh `codex/c360-ui`). Payload tích hợp không đổi.
