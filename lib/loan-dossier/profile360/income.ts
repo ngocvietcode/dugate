@@ -6,8 +6,8 @@ import type { MapDossierData } from '../contracts/check-stages';
 import type { DocumentParty } from '../s2/common-schema';
 import type { BusinessResult } from './business';
 import { chooseMonthlyAmount, type MergePolicies } from './policies';
-import { IncomeKindSchema, type IncomeKind, type IncomeStream, type ProfileGapCode, type ProfileRelation } from './schema';
-import { normText, pickField, text, type Candidate, type Lookup } from './sources';
+import { IncomeKindSchema, type BasisValue, type IncomeKind, type IncomeStream, type ProfileGapCode, type ProfileRelation } from './schema';
+import { basisAt, normText, pickField, text, type Candidate, type Lookup } from './sources';
 
 interface Entry {
   kind: IncomeKind;
@@ -16,6 +16,8 @@ interface Entry {
   asset_id: string | null;
   employer?: Candidate & { tax: string | null };
   amount?: { value: number; doc_type_key: string; fact_id?: string };
+  /** Chỉ HKD (bảng kê): doanh thu / lợi nhuận năm. */
+  annual?: { revenue: BasisValue | null; profit: BasisValue | null };
 }
 
 /** Chứng từ bóc tách nhẹ chứng minh có nguồn thu của người chủ thể (`HOLDER`). */
@@ -51,6 +53,10 @@ function collectEntries(lookup: Lookup, s3: MapDossierData | null, business: Bus
           asset_id: kind === 'rental' ? assetOf(e.evidence_id, (r.rental as { asset_index?: unknown } | null)?.asset_index) : null,
           employer: employerName ? { value: employerName, tax: null, fact: lookup.factOf(e.evidence_id, `income_sources[${i}].salary.employer_name`) } : undefined,
           amount: amountAt(`income_sources[${i}].monthly_amount`, r.monthly_amount),
+          ...(kind === 'household_business' ? { annual: {
+            revenue: basisAt(e, `income_sources[${i}].household_business.net_revenue_annual`),
+            profit: basisAt(e, `income_sources[${i}].household_business.net_profit_annual`),
+          } } : {}),
         });
       });
     }
@@ -93,7 +99,10 @@ export function buildIncomeStreams(lookup: Lookup, s3: MapDossierData | null, bu
   const keyed = (e: Entry) => (e.kind === 'salary' ? !!e.employer : e.kind === 'rental' ? e.asset_id !== null : e.kind === 'household_business' ? e.business_id !== null : false);
   for (const pass of [true, false]) {
     for (const e of entries.filter((x) => keyed(x) === pass)) {
-      const candidates = mine(e);
+      // HKD: đơn vị kinh doanh đã là khóa (L360-B01); bảng kê không ghi chủ vẫn gộp vào luồng của đúng đơn vị đó để không cộng hai lần.
+      const candidates = e.kind === 'household_business' && e.business_id !== null
+        ? streams.filter((s) => s[0].kind === e.kind && s[0].business_id === e.business_id && (s[0].person_id === e.person_id || s[0].person_id === null || e.person_id === null))
+        : mine(e);
       const hit = pass
         ? candidates.find((s) => (e.kind === 'salary' ? s.some((o) => sameEmployer(o.employer, e.employer))
           : e.kind === 'rental' ? s[0].asset_id === e.asset_id : e.kind === 'household_business' ? s[0].business_id === e.business_id : false))
@@ -111,6 +120,8 @@ export function buildIncomeStreams(lookup: Lookup, s3: MapDossierData | null, bu
     const income_id = `inc-${i + 1}`;
     const amounts = s.flatMap((e) => (e.amount ? [{ value: e.amount.value, doc_type_key: e.amount.doc_type_key, fact_ids: e.amount.fact_id ? [e.amount.fact_id] : [] }] : []));
     const employers = s.flatMap((e) => (e.employer ? [e.employer] : []));
+    // Một HKD có thể nằm trên nhiều bảng kê: lấy số năm của lần nhắc đầu có số, không cộng trùng.
+    const annual = s.find((e) => e.annual?.profit || e.annual?.revenue)?.annual ?? null;
     const onlyOfKind = head.person_id !== null && streams.filter((o) => o[0].kind === head.kind && o[0].person_id === head.person_id).length === 1;
     if (head.business_id) {
       relations.push({ type: 'EARNS_FROM', from: income_id, to: head.business_id, verification: (head.person_id && operates.get(`${head.person_id}#${head.business_id}`)) || 'UNVERIFIED' });
@@ -120,6 +131,8 @@ export function buildIncomeStreams(lookup: Lookup, s3: MapDossierData | null, bu
       employer: head.kind === 'salary' ? pickField(employers, 'text', normText) : null,
       amounts,
       monthly_amount: chooseMonthlyAmount(amounts.map((a) => a.value), policies),
+      annual_revenue: annual?.revenue ?? null,
+      annual_profit: annual?.profit ?? null,
       evidenced: head.kind === 'household_business'
         ? head.business_id !== null && businessEvidence.has(head.business_id)
         : onlyOfKind && !!head.person_id && (evidencedBy.get(head.person_id)?.has(head.kind) ?? false),

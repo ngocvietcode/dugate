@@ -29,6 +29,26 @@ CO resolutions (đầu vào, lưu kèm Operation) ──────────
 
 Mọi nơi phía dưới đọc **lớp 2**; không nơi nào đọc evidence trực tiếp để tự chọn giá trị.
 
+### 2.1 Đã cài (D-114, 2026-10-28)
+
+`profile_360` (`lib/loan-dossier/profile360/`, `PROFILE360_VERSION = 1.0`) là **nguồn sự thật duy nhất** của hồ sơ, xếp theo trục đọc của
+người thẩm định: `application` (đơn vay gốc = anchor S3) → `loan` → `customers` → `income_streams` + `business_units` → `obligations` →
+`collateral` → `financial_basis` → `conflicts` → `issues`.
+
+| Nơi dùng | Trước D-114 | Từ D-114 |
+|---|---|---|
+| Stage 2 (DSCR, LTV) | `financial-inputs.ts` đọc OCR: đơn vay anchor, **dòng HKD đầu tiên** của bảng kê đầu, chứng thư **mới nhất** | `financialInputsFromProfile(profile_360)`: đơn vay anchor, cộng các HKD khác nhau (một HKD trên nhiều bảng kê chỉ một lần), giá trị TSBĐ **thấp nhất** (D-112). Đơn vay lệch số (LAC-R03) → đầu vào để trống, `input_conflict` |
+| Giao diện Customer 360 | 4 nguồn: `customer_360`, sổ Claim lưu riêng (`claims`), OCR thẳng (`customer360-detail`), `profile_360` | Chỉ `profile_360` (`app/loan-appraisal-v2/lib/customer360.ts`); chi tiết người / tài sản là fact LAC còn hiệu lực |
+| Mâu thuẫn | Sổ Claim (không bỏ bản bị thay thế) cho UI, LAC cho prompt | `profile_360.conflicts` = `lac.conflicts` (bỏ bản bị thay thế, có LAC-R03) cho mọi nơi |
+| Điểm cần xử lý | Ghép ở UI, trùng (cờ S3 + mâu thuẫn cùng số CCCD = 2 dòng) | `profile_360.issues` dựng ở backend, gộp trùng theo (chủ thể, trường), xếp danger → warning → info |
+| Lời khai | Chỉ `loan_application` | `catalog/declared.ts`: `loan_application`, `income_statement`, `purchase_list` — dùng chung cho sổ Claim, LAC, hồ sơ 360 |
+
+Đã gỡ: `result.claims` và `graph/claims-store.ts`; UI `customer360-view`, `customer360-detail`, `claims-view`, `decision-360`, `ClaimsPanel`,
+`Decision360Card`; `MasterDataPanel` khỏi tab Hồ sơ khách hàng. Kết quả tạo trước D-114 không có `profile_360`: Customer 360 báo chạy lại
+(không giữ tương thích ngược, theo yêu cầu người dùng). Segment pack HKD lên `2.0.0` vì đầu vào stage 2 đổi. Còn lệch (việc tiếp):
+(1) LAC render cho prompt vẫn làm phẳng mảng và dùng `business-1`, chưa đọc đơn vị / luồng thu nhập của hồ sơ 360; (2) `master_dossier`
+(`lib/loan-dossier/master/`, `applyMasterToFinancialInputs`) vẫn còn trong code dù không chạy ở giai đoạn 2.
+
 ## 3. Lớp 2: thực thể có kiểu
 
 | Thực thể | Trường chuẩn | Ghi chú |

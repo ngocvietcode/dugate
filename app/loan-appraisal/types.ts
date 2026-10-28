@@ -349,9 +349,7 @@ export interface AppraisalResult {
   customer_360: DossierOutputV3['customer_360'];
   /** Quan hệ người – tài sản – chứng từ dạng nodes + edges (id và nhãn, không PII). Không có ở kết quả cũ. */
   dossier_graph?: DossierOutputV3['dossier_graph'];
-  /** Claim đáng chú ý kèm nguồn (có giá trị). Không có ở kết quả cũ. */
-  claims?: DossierOutputV3['claims'];
-  /** Hồ sơ 360 có kiểu: đơn vị HKD, luồng thu nhập (D-113). Không có ở kết quả cũ. */
+  /** Hồ sơ 360 — nguồn sự thật duy nhất của giao diện Customer 360 (D-114). null khi S3 / LAC lỗi; vắng ở kết quả trước D-114. */
   profile_360?: DossierOutputV3['profile_360'];
   /** S4: checklist 46 mục theo nhóm. */
   checklist: DossierOutputV3['checklist'];

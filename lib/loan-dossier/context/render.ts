@@ -27,7 +27,7 @@ export interface LacRender {
 }
 
 const NOTE = 'Ký hiệu: F<n> là mã dữ kiện, dẫn nguồn bằng mã này (VD "F3"; "F3.2" = chứng từ thứ 2 của F3). '
-  + 'Trạng thái: CORROBORATED = ≥2 loại chứng từ khớp · SINGLE_SOURCE = 1 loại chứng từ · DECLARED = chỉ khai trên đơn vay · '
+  + 'Trạng thái: CORROBORATED = ≥2 loại chứng từ khớp · SINGLE_SOURCE = 1 loại chứng từ · DECLARED = chỉ có lời khai của khách hàng (đơn vay, bảng kê) · '
   + 'DISPUTED = các chứng từ ghi khác nhau · PROBABLE_OCR_ERROR = nghi đọc sai 1 ký tự · SPELLING_VARIANT = khác cách viết · '
   + '"cần soát" = độ tin cậy đọc thấp. person-n / asset-n là người / tài sản đã được hệ thống gom: cùng một chủ thể trên mọi chứng từ.';
 

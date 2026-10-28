@@ -3,6 +3,7 @@
 import { createHash } from 'crypto';
 
 import { docTypeByKey } from '../catalog';
+import { isDeclaredDocType } from '../catalog/declared';
 import { fieldLabel } from '../catalog/field-labels';
 import type { MapDossierData } from '../contracts/check-stages';
 import { buildClaimLedger, type Claim } from '../graph/claims';
@@ -135,8 +136,8 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
     if (live.length === 0) trust = 'SUPERSEDED';
     else if (contested && !opponentsGone) trust = d.status as LacTrust;
     else if (d.status === 'SPELLING_VARIANT') trust = d.status;
-    // Chỉ có lời khai trên đơn vay thì vẫn là DECLARED dù có nhiều bản: nhiều bản của cùng một lời khai không phải xác nhận độc lập.
-    else if (live.every((s) => s.doc_type_key === 'loan_application')) trust = 'DECLARED';
+    // Chỉ có lời khai của khách hàng (đơn vay, bảng kê…) thì vẫn là DECLARED dù có nhiều bản / nhiều loại lời khai (D-114).
+    else if (live.every((s) => isDeclaredDocType(s.doc_type_key))) trust = 'DECLARED';
     else trust = docTypes.size >= 2 ? 'CORROBORATED' : 'SINGLE_SOURCE';
     const judged = live.length > 0 ? live : d.sources;
     const review = judged.every((s) => typeof s.read_confidence === 'number' && s.read_confidence >= LAC_ACCEPT_CONFIDENCE) ? 'ACCEPTED' : 'REVIEW';

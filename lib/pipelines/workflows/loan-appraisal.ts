@@ -69,8 +69,6 @@ import {
 import { createDossierPorts } from './loan-appraisal/stage-adapters';
 import { runMapStage } from './loan-appraisal/dossier-map';
 import { buildDossierGraph, toDossierGraphView, type DossierGraph } from '@/lib/loan-dossier/graph';
-import { buildClaimLedger } from '@/lib/loan-dossier/graph/claims';
-import { selectNotableClaims } from '@/lib/loan-dossier/graph/claims-store';
 import { resolveLoanProductPolicy, snapshotPolicy } from './loan-appraisal/product-policy';
 import { buildReproducibilitySnapshot } from './loan-appraisal/reproducibility';
 import { resolveLoanConfig, LOAN_PRODUCT_CONFIG_PARAM } from './loan-appraisal/product-config';
@@ -303,47 +301,30 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
         logger.warn(`[LOAN-APPRAISAL] DOSSIER_GRAPH_UNAVAILABLE: ${error instanceof Error ? error.name : 'Error'}`);
       }
     }
-    // Sổ Claim lossless dựng từ OCR + S3, chỉ LƯU phần đáng chú ý (phần còn lại dựng lại được từ evidences[].data). Lỗi không đổ workflow.
-    let storedClaims: ReturnType<typeof selectNotableClaims> | null = null;
-    if (mapOutcome.data) {
-      try { storedClaims = selectNotableClaims(buildClaimLedger(extractCheckpoint.evidences, mapOutcome.data)); } catch (error) {
-        logger.warn(`[LOAN-APPRAISAL] CLAIMS_UNAVAILABLE: ${error instanceof Error ? error.name : 'Error'}`);
-      }
-    }
 
-    // ── Loan Application Context (D-103): view tất định, dẫn nguồn được cho rule LLM. Dựng lại mỗi lần, không checkpoint. ──
-    // lac_mode: off (mặc định) | shadow (chỉ thống kê, không đổi prompt) | on (prompt dùng {{context}}). Lỗi dựng → đường cũ + warning.
+    // ── Loan Application Context (D-103) và hồ sơ 360 (D-114). Dựng lại mỗi lần (hàm thuần), không checkpoint. LAC luôn dựng vì hồ sơ 360 —
+    // nguồn sự thật duy nhất cho tài chính, giao diện và danh sách vấn đề — đứng trên nó; `lac_mode` chỉ quyết định prompt rule LLM dùng LAC
+    // (off | shadow | on). Lỗi dựng → warning, stage không đổ.
     const lacMode = resolveLacMode(pipelineVars.lac_mode);
-    let lac: LoanApplicationContext | null = null;
-    if (lacMode !== 'off') {
-      try {
-        lac = buildLoanApplicationContext({
-          product_code: product.code,
-          flow: typeof loanFlow === 'string' ? loanFlow : null,
-          evidences: extractCheckpoint.evidences,
-          s3: mapOutcome.data,
-          s3_status: mapOutcome.data ? mapOutcome.status : null,
-        });
-      } catch (error) {
-        const name = error instanceof Error ? error.name : 'Error';
-        configWarnings.push(`LAC_UNAVAILABLE:${name}`);
-        logger.warn(`[LOAN-APPRAISAL] LAC_UNAVAILABLE: ${name}`);
-      }
+    let context: LoanApplicationContext | null = null;
+    try {
+      context = buildLoanApplicationContext({
+        product_code: product.code,
+        flow: typeof loanFlow === 'string' ? loanFlow : null,
+        evidences: extractCheckpoint.evidences,
+        s3: mapOutcome.data,
+        s3_status: mapOutcome.data ? mapOutcome.status : null,
+      });
+    } catch (error) {
+      const name = error instanceof Error ? error.name : 'Error';
+      configWarnings.push(`LAC_UNAVAILABLE:${name}`);
+      logger.warn(`[LOAN-APPRAISAL] LAC_UNAVAILABLE: ${name}`);
     }
-
-    // ── Hồ sơ 360 (D-110, D-113): view có kiểu cho giao diện Customer 360. Cần S3 + LAC; LAC dựng riêng khi lac_mode = off (hàm thuần, rẻ).
-    // Chưa nối vào tài chính / rule (T-360-03). Lỗi không đổ workflow.
+    const lac: LoanApplicationContext | null = lacMode !== 'off' ? context : null;
     let profile360: Profile360 | null = null;
-    if (mapOutcome.data) {
+    if (context) {
       try {
-        const context = lac ?? buildLoanApplicationContext({
-          product_code: product.code,
-          flow: typeof loanFlow === 'string' ? loanFlow : null,
-          evidences: extractCheckpoint.evidences,
-          s3: mapOutcome.data,
-          s3_status: mapOutcome.status,
-        });
-        profile360 = buildProfile360({ evidences: extractCheckpoint.evidences, s3: mapOutcome.data, lac: context });
+        profile360 = buildProfile360({ evidences: extractCheckpoint.evidences, s3: mapOutcome.data, lac: context, segment: packSnapshot.segment });
       } catch (error) {
         const name = error instanceof Error ? error.name : 'Error';
         configWarnings.push(`PROFILE_360_UNAVAILABLE:${name}`);
@@ -351,11 +332,11 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       }
     }
 
-    // ── Stage 2: deterministic financial calculations (đọc OCR + asset_registry của S3 để tính giá trị TSBĐ / LTV) ──
+    // ── Stage 2: deterministic financial calculations — đọc hồ sơ 360 (D-114) ──
     let financial = getStep(ctx, 2)?.extracted_data as FinancialMetrics | undefined;
     if (resumeFromStep <= 2) {
       await beginStage(ctx, 2, 'Đang tính toán CFADS, DSCR và các chỉ số tài chính...');
-      financial = pack.calculateFinancials({ evidences: extractCheckpoint.evidences, s3: mapOutcome.data });
+      financial = pack.calculateFinancials({ profile: profile360, s3Available: mapOutcome.data !== null });
       const calculated = Object.values(financial).filter((metric) => metric.status === 'CALCULATED').length;
       saveStep(ctx, stageResult(2, {
         stepName: 'Tính toán tài chính deterministic',
@@ -482,7 +463,6 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       ...buildDeferredDossierOutput(product, classifyCheckpoint, extractCheckpoint.evidences, typeof loanFlow === 'string' ? loanFlow : null, DOSSIER_CHECKS_DISABLED),
       customer_360: mapOutcome.data,
       dossier_graph: dossierGraph ? toDossierGraphView(dossierGraph) : null,
-      claims: storedClaims,
       profile_360: profile360,
       ...(lac && lacMode !== 'off' ? {
         loan_application_context_summary: {

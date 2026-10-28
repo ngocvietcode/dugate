@@ -235,3 +235,9 @@ Xem [open_questions.md](open_questions.md).
   `lac_mode = off`, lỗi → warning `PROFILE_360_UNAVAILABLE`), view-model thuần `app/loan-appraisal-v2/lib/decision-360.ts` (dải tóm tắt:
   khoản vay, thu nhập/tháng, hộ kinh doanh, người & TSBĐ; danh sách "cần chú ý" gom từ đối chiếu chứng từ, cảnh báo S3, hồ sơ 360, xếp
   danger → warning → info). Giao diện giao ChatGPT theo `.agents/tasks/c360-ui/plan.md` (nhánh `codex/c360-ui`). Payload tích hợp không đổi.
+- **D-114 (2026-10-28)** Một nguồn sự thật: hồ sơ 360 (`profile_360` v1.0) theo trục đề nghị vay → khách hàng → nguồn trả nợ → nghĩa vụ nợ
+  → tài sản bảo đảm; stage 2, giao diện, mâu thuẫn và danh sách vấn đề đều đọc từ đó (chi tiết: loan_360.md §2.1). Lý do: review cho thấy
+  DSCR tính trên số khác số người duyệt nhìn thấy (S1), ba nơi chọn ba đơn vay khác nhau (S2), bảng kê thu nhập bị coi là chứng từ độc lập
+  nên vượt rào `DECLARED_ONLY` (S3), bản bị thay thế xử lý không đồng nhất (S4). Không giữ tương thích ngược (yêu cầu người dùng). LAC luôn
+  dựng (hàm thuần) vì hồ sơ 360 đứng trên nó; `lac_mode` chỉ còn quyết định prompt. Kiểm tra: `tsc` 0 lỗi; full jest 334 suite / 3511 test
+  qua. Việc giao song song: ChatGPT sửa 25 lỗi `check_spec` (`.agents/tasks/spec-hygiene/plan.md`, nhánh `codex/spec-hygiene`).

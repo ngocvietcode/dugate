@@ -1,5 +1,6 @@
 // Đơn vị kinh doanh HKD và cạnh OPERATES (T-360-07; L360-B01…B03, B06). Hàm thuần, tất định, không log.
-// v1 chỉ HKD: doanh nghiệp (`ENTERPRISE`) thêm ở T-360-09, nên `business_info` của đơn vay luôn được coi là của một HKD.
+// v1 chỉ HKD: doanh nghiệp (`ENTERPRISE`) thêm ở T-360-09. `business_info` của đơn vay chỉ là HKD khi sản phẩm thuộc phân khúc HKD
+// (D-112: khách vay SME là pháp nhân, không phải hộ kinh doanh).
 import { orgNameLevel } from '../common/org-name';
 import { normIdNumber, normKey } from '../common/normalize';
 import type { MapDossierData } from '../contracts/check-stages';
@@ -31,7 +32,7 @@ const LIGHT_HKD: Record<string, { role: string; name?: string; registration_numb
   household_business_photo: { role: 'HOLDER' },
 };
 
-function collectMentions(lookup: Lookup, s3: MapDossierData | null): Mention[] {
+function collectMentions(lookup: Lookup, s3: MapDossierData | null, segment: string | null): Mention[] {
   const borrower = s3?.role_registry.find((p) => p.roles.includes('borrower'))?.person_id ?? null;
   const out: Mention[] = [];
   for (const e of lookup.evidences) {
@@ -42,7 +43,7 @@ function collectMentions(lookup: Lookup, s3: MapDossierData | null): Mention[] {
     };
     const base = { evidence_id: e.evidence_id, doc_type_key: e.doc_type_key };
 
-    if (e.doc_type_key === 'loan_application' && data.business_info) {
+    if (e.doc_type_key === 'loan_application' && data.business_info && segment !== 'SME') {
       const b = data.business_info as Record<string, unknown>;
       const addr = (b.business_address as { full_text?: unknown } | null)?.full_text;
       out.push({
@@ -106,8 +107,8 @@ export interface BusinessResult {
   unitOf: Map<string, string>;
 }
 
-export function buildBusinessUnits(lookup: Lookup, s3: MapDossierData | null): BusinessResult {
-  const mentions = collectMentions(lookup, s3);
+export function buildBusinessUnits(lookup: Lookup, s3: MapDossierData | null, segment: string | null): BusinessResult {
+  const mentions = collectMentions(lookup, s3, segment);
   let groups: Array<{ ms: Mention[]; flags: Set<BusinessFlag> }> = [];
 
   // L360-B01 (1): cùng số GCN hoặc cùng mã số thuế → một đơn vị.
@@ -118,8 +119,13 @@ export function buildBusinessUnits(lookup: Lookup, s3: MapDossierData | null): B
     else groups.push({ ms: [m], flags: new Set() });
   }
 
-  // L360-B01 (2): cùng chủ + tên đơn vị EXACT → một đơn vị, trừ khi số khác nhau (AC-12: không gộp, gắn cờ cả hai).
-  const sameOwnerName = (a: Mention[], b: Mention[]) => [...ownersOf(a)].some((o) => ownersOf(b).has(o))
+  // L360-B01 (2): cùng chủ + tên đơn vị EXACT → một đơn vị, trừ khi số khác nhau (AC-12: không gộp, gắn cờ cả hai). Một bên chưa biết chủ
+  // (bảng kê không ghi party_index) thì coi là cùng chủ: tách đôi một HKD làm thu nhập bị cộng hai lần, nguy hiểm hơn gộp nhầm (D-114).
+  const ownersCompatible = (a: Mention[], b: Mention[]) => {
+    const oa = ownersOf(a); const ob = ownersOf(b);
+    return oa.size === 0 || ob.size === 0 || [...oa].some((o) => ob.has(o));
+  };
+  const sameOwnerName = (a: Mention[], b: Mention[]) => ownersCompatible(a, b)
     && namesOf(a).some((x) => namesOf(b).some((y) => orgNameLevel(x, y) === 'EXACT'));
   for (let i = 0; i < groups.length; i += 1) {
     for (let j = i + 1; j < groups.length; j += 1) {

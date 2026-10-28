@@ -470,7 +470,7 @@ QUY TẮC BẮT BUỘC:
 2. evidence_ids là mã dữ kiện F<n> (hoặc F<n>.<k> để chỉ chứng từ thứ k của dữ kiện đó) có trong HỒ SƠ VAY bên dưới. Tuyệt đối không tự tạo mã.
 3. Nếu không tìm được dữ kiện để chứng minh, trả status="INSUFFICIENT_DATA" và evidence_ids=[]. Không suy đoán. Kiểm tra cần dữ liệu nằm ở mục KHOẢNG TRỐNG thì trả INSUFFICIENT_DATA.
 4. status chỉ nhận: PASS | REVIEW | FAIL | INSUFFICIENT_DATA.
-5. PASS chỉ khi mọi dữ kiện dẫn chiếu không "cần soát" và không DISPUTED / PROBABLE_OCR_ERROR. Dữ kiện DECLARED là lời khai trên đơn vay: PASS không được dẫn dữ kiện DECLARED; dẫn dữ kiện CORROBORATED / SINGLE_SOURCE của chính thông tin đó, không có thì trả REVIEW.
+5. PASS chỉ khi mọi dữ kiện dẫn chiếu không "cần soát" và không DISPUTED / PROBABLE_OCR_ERROR. Dữ kiện DECLARED là lời khai của khách hàng (đơn vay, bảng kê): PASS không được dẫn dữ kiện DECLARED; dẫn dữ kiện CORROBORATED / SINGLE_SOURCE của chính thông tin đó, không có thì trả REVIEW.
 6. Người và tài sản đã được hệ thống gom: person-n / asset-n là CÙNG một chủ thể trên mọi chứng từ. Không tự gom lại; nếu thấy gom sai, trả REVIEW và nêu lý do.
 7. Mâu thuẫn đã được liệt kê ở mục MÂU THUẪN; chỉ báo mâu thuẫn khác khi khác biệt mang tính thực chất (OCR có thể sai dấu, nhầm O↔0, l↔1).
 8. confidence là số thực 0..1 thể hiện mức chắc chắn của bạn; BẮT BUỘC có cho mọi kết quả.
@@ -726,7 +726,7 @@ export function parsePromptCheckResults(
           actual: status,
           confidence,
           reason_code: 'PROMPT_CHECK_DECLARED_ONLY',
-          message: `${reason} (Dẫn chiếu có dữ kiện chỉ khai trên giấy đề nghị vay, chưa có chứng từ khác xác nhận nên hạ xuống cần rà soát.)`,
+          message: `${reason} (Dẫn chiếu có dữ kiện chỉ là lời khai của khách hàng (đơn vay, bảng kê), chưa có chứng từ khác xác nhận nên hạ xuống cần rà soát.)`,
           evidence_ids: evidenceIds,
         } satisfies RuleResult;
       }

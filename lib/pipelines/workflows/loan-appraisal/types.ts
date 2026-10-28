@@ -9,7 +9,6 @@ import type {
 import type { CheckChecklistData, CrossCheckData, MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
 import type { ClassifyData } from '@/lib/loan-dossier/contracts/stage-result';
 import type { MasterDossier } from '@/lib/loan-dossier/contracts/master-dossier';
-import type { StoredClaims } from '@/lib/loan-dossier/graph/claims-store';
 import type { DossierGraphView } from '@/lib/loan-dossier/graph/view-contract';
 import type { FsShadowSummary } from '@/lib/loan-dossier/s3/fs/shadow';
 import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
@@ -341,14 +340,9 @@ export interface DossierOutputV3 {
    */
   dossier_graph?: DossierGraphView | null;
   /**
-   * Claim ĐÁNG CHÚ Ý (đồng thuận, tranh chấp, nghi lỗi đọc, cách viết khác, chưa gắn chủ thể) kèm nguồn từng claim. CÓ GIÁ TRỊ (có thể là PII).
-   * Claim thường (đơn vay khai, một nguồn) không lưu: còn nguyên ở documents.evidences[].data, dựng lại bằng buildClaimLedger.
-   * leaf_count = lá đã lưu + omitted_leaves (bất biến lossless). Không có ở kết quả cũ hoặc khi S3 lỗi.
-   */
-  claims?: StoredClaims | null;
-  /**
-   * D-113: hồ sơ 360 có kiểu (đơn vị HKD, luồng thu nhập, quan hệ OPERATES / EARNS_FROM; loan_360.md §3). CÓ GIÁ TRỊ (PII), cùng mức với
-   * `customer_360`. Mỗi trường dẫn về fact LAC (`fact_ids`). Vắng ở kết quả cũ hoặc khi S3 lỗi.
+   * D-114: hồ sơ 360 — NGUỒN SỰ THẬT DUY NHẤT của hồ sơ (đề nghị vay → khách hàng → nguồn trả nợ → nghĩa vụ → TSBĐ, mâu thuẫn, vấn đề,
+   * số cho stage 2). CÓ GIÁ TRỊ (PII), cùng mức với `customer_360`. Mỗi trường dẫn về fact LAC (`fact_ids`). null khi S3 hoặc LAC lỗi; vắng ở kết quả giai đoạn 1.
+   * Thay `claims` (sổ Claim đáng chú ý) đã gỡ: mâu thuẫn nằm ở `profile_360.conflicts`, tính trên LAC (bỏ bản bị thay thế).
    */
   profile_360?: Profile360 | null;
   /**
