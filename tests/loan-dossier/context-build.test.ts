@@ -105,6 +105,14 @@ describe('chủ thể', () => {
     const idFacts = c.facts.filter((f) => f.field.endsWith('id_number') && f.value === ID_A12);
     expect(idFacts.some((f) => f.trust === 'CORROBORATED')).toBe(true);
   });
+
+  it('D-112: hai bản chụp cùng loại chứng từ (CCCD ×2) → SINGLE_SOURCE, không CORROBORATED', () => {
+    // Đơn vay không ghi số: số định danh chỉ đến từ hai bản chụp CCCD.
+    const { lac: c } = lac([loanApp([{ ...borrower, id_number: null }]), idCard(borrower), idCard(borrower)]);
+    const fromCards = c.facts.filter((f) => f.field.endsWith('id_number') && f.sources.length >= 2 && f.sources.every((s) => s.doc_type_key === 'id_card'));
+    expect(fromCards.length).toBeGreaterThan(0);
+    for (const f of fromCards) expect(f.trust).toBe('SINGLE_SOURCE');
+  });
 });
 
 describe('review theo độ tin cậy đọc (LAC-R06)', () => {

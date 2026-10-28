@@ -360,7 +360,7 @@ khi chúng ghi khác nhau (chính sách, Risk duyệt).
 
 ## 7. Cập nhật spec LAC khi cài đặt
 
-AC-3 / LAC-R03 hiện ghi hai bản đơn vay giống nhau là `CORROBORATED`; code đã đổi thành `DECLARED` (fix 68b9a877) nên spec phải sửa theo. OQ-LAC-02 (nhiều hộ kinh doanh, §3.1) và OQ-LAC-03 (stage tài chính đọc LAC) được trả lời bởi tài liệu này. LAC-R03 bỏ `business-1`
+AC-3 / LAC-R03 đã sửa theo D-112 (hai bản đơn vay giống nhau là `DECLARED`; xác nhận độc lập cần ≥ 2 loại chứng từ). OQ-LAC-02 (nhiều hộ kinh doanh, §3.1) và OQ-LAC-03 (stage tài chính đọc LAC) được trả lời bởi tài liệu này. LAC-R03 bỏ `business-1`
 khi T-360-07 cài xong; `LacSubjectKind` thêm chủ thể `business` theo `biz-n`, quan hệ thêm các cạnh ở §3.1.
 
 ## 8. Điều chưa kiểm chứng
@@ -382,21 +382,21 @@ khi T-360-07 cài xong; `LacSubjectKind` thêm chủ thể `business` theo `biz-
 
 | ID | Câu hỏi | Mặc định đề xuất | Ai quyết |
 |---|---|---|---|
-| **OQ-360-01** | Nhóm chứng từ nào vào `IncomeStream` / `Obligation` ở v1 | Theo bảng §3.2 (nhóm 1, 2): thêm `credit_contract`, `labor_contract`, `salary_confirmation`; chứng từ bóc tách nhẹ chỉ chứng minh có nguồn thu | BA |
-| **OQ-360-02** | CO có được nhập giá trị tay ngoài các lựa chọn đã đọc không | Không ở v1 | BA + Risk |
-| **OQ-360-03** | Tính lại chạy lại toàn bộ rule LLM hay chỉ rule chạm conflict | Toàn bộ ở v1 (đơn giản, tốn chi phí model); tối ưu sau khi đo | Dev lead |
-| **OQ-360-04** | Một conflict nhiều CO cùng quyết: bản cuối thắng hay cần hai người (maker-checker) | Bản cuối thắng, có lịch sử | Risk |
-| **OQ-360-05** | Quyết định của CO có xuất trong payload tích hợp 5.x cho hệ thống ngoài không | Không ở v1 | PO |
+| **OQ-360-01** | Nhóm chứng từ nào vào `IncomeStream` / `Obligation` ở v1 | **Đã quyết (D-112):** Theo bảng §3.2 (nhóm 1, 2): thêm `credit_contract`, `labor_contract`, `salary_confirmation`; chứng từ bóc tách nhẹ chỉ chứng minh có nguồn thu | BA |
+| **OQ-360-02** | CO có được nhập giá trị tay ngoài các lựa chọn đã đọc không | **Đã quyết (D-112):** Không ở v1 | BA + Risk |
+| **OQ-360-03** | Tính lại chạy lại toàn bộ rule LLM hay chỉ rule chạm conflict | **Đã quyết (D-112):** Toàn bộ ở v1 (đơn giản, tốn chi phí model); tối ưu sau khi đo | Dev lead |
+| **OQ-360-04** | Một conflict nhiều CO cùng quyết: bản cuối thắng hay cần hai người (maker-checker) | **Đã quyết (D-112):** Bản cuối thắng, có lịch sử | Risk |
+| **OQ-360-05** | Quyết định của CO có xuất trong payload tích hợp 5.x cho hệ thống ngoài không | **Đã quyết (D-112):** Không ở v1 | PO |
 | **OQ-360-06** | Khách vay SME là pháp nhân (DN đứng tên vay, chủ DN bảo lãnh) hay cá nhân chủ DN vay cho DN | **Đã quyết (2026-10-27): pháp nhân** — khách vay là doanh nghiệp, không phải cá nhân chủ DN → L360-B08…B10 | BA |
 | **OQ-360-07** | Có bóc tách đầy đủ số liệu `vat_tax_return`, `balance_sheet`, `financial_performance_report` (doanh thu, lợi nhuận, nợ) thay bóc tách nhẹ không | **Đã quyết (2026-10-27): có** → L360-B11; danh sách trường: OQ-360-12 | BA |
 | **OQ-360-08** | Mục checklist HKD / DN chấm theo từng đơn vị kinh doanh (mỗi HKD đủ bộ) hay giữ `DOSSIER` (có một bộ là đủ) | **Đã quyết (2026-10-27): theo cả hồ sơ** (`DOSSIER`) → L360-B06 | BA |
-| **OQ-360-09** | Đơn vay SME thêm vai trò nào: người đại diện theo pháp luật, người bảo lãnh, thành viên góp vốn; mẫu đơn vay SME có khác mẫu HKD không | Chưa có mặc định; chặn T-360-09 | BA |
-| **OQ-360-10** | Bên bán là người liên quan (`RELATED_COUNTERPARTY`) thì chỉ cảnh báo hay hạ kết quả rule | Chỉ cảnh báo ở v1 (L360-B05) | Risk |
-| **OQ-360-11** | Một khách vay có nhiều HKD: thu nhập tính gộp mọi HKD hay chỉ HKD được tài trợ (`FUNDS`) | Gộp mọi HKD có chứng từ | BA + Risk |
-| **OQ-360-12** | Danh sách trường bóc tách đầy đủ của tờ khai GTGT, bảng cân đối kế toán, BCKQKD (bảng đề xuất ở §3.1) có đủ và đúng không; nhận BCTC chưa kiểm toán không | Theo bảng §3.1; nhận cả chưa kiểm toán, ghi cờ | BA |
-| **OQ-360-13** | DSCR / khả năng trả nợ của SME tính từ chỉ tiêu nào (lợi nhuận sau thuế + khấu hao, EBITDA…), lấy kỳ nào (năm gần nhất, bình quân) | Chưa có mặc định; chặn phần stage 2 của T-360-09 | BA + Risk |
-| **OQ-360-14** | Bóc tách CIC theo từng khoản (tổ chức, dư nợ, nhóm nợ, ngày đến hạn, TSBĐ) thay vì `records_raw` | Có; trước khi có, CIC chỉ cho cờ nhóm nợ (T-360-11) | BA |
-| **OQ-360-15** | Một luồng thu nhập có nhiều số tiền (HĐ lao động, xác nhận lương, bảng kê): chọn số nào cho DSCR | Số thấp nhất trong các chứng từ còn hiệu lực | Risk |
-| **OQ-360-16** | Một tài sản có nhiều định giá còn hạn: giá trị nào tính LTV | Thấp nhất giữa định giá nội bộ và bên ngoài | Risk |
-| **OQ-360-17** | CT07 (cùng hộ, ghi quan hệ với chủ hộ) có được tính là căn cứ xác minh `RELATIVE_OF` thay giấy khai sinh không | Không ở v1; chỉ căn cứ bổ sung (L360-G07) | BA + Pháp chế |
-| **OQ-360-18** | Dung sai khớp số tiền gốc giữa CIC và HĐ tín dụng | Bằng nhau sau làm tròn đến triệu đồng | BA |
+| **OQ-360-09** | Đơn vay SME thêm vai trò nào: người đại diện theo pháp luật, người bảo lãnh, thành viên góp vốn; mẫu đơn vay SME có khác mẫu HKD không | **Đã quyết (D-112):** dùng chung `loan_application`, `BORROWER` là `ORGANIZATION`; thêm vai trò `LEGAL_REPRESENTATIVE`, `GUARANTOR`, `CAPITAL_MEMBER` | BA |
+| **OQ-360-10** | Bên bán là người liên quan (`RELATED_COUNTERPARTY`) thì chỉ cảnh báo hay hạ kết quả rule | **Đã quyết (D-112):** Chỉ cảnh báo ở v1 (L360-B05) | Risk |
+| **OQ-360-11** | Một khách vay có nhiều HKD: thu nhập tính gộp mọi HKD hay chỉ HKD được tài trợ (`FUNDS`) | **Đã quyết (D-112):** Gộp mọi HKD có chứng từ | BA + Risk |
+| **OQ-360-12** | Danh sách trường bóc tách đầy đủ của tờ khai GTGT, bảng cân đối kế toán, BCKQKD (bảng đề xuất ở §3.1) có đủ và đúng không; nhận BCTC chưa kiểm toán không | **Đã quyết (D-112):** Theo bảng §3.1; nhận cả chưa kiểm toán, ghi cờ | BA |
+| **OQ-360-13** | DSCR / khả năng trả nợ của SME tính từ chỉ tiêu nào (lợi nhuận sau thuế + khấu hao, EBITDA…), lấy kỳ nào (năm gần nhất, bình quân) | **Đã quyết (D-112):** (lợi nhuận trước thuế + chi phí lãi vay) / nghĩa vụ trả nợ năm; năm tài chính gần nhất có BCKQKD; thiếu → `INSUFFICIENT_DATA` | BA + Risk |
+| **OQ-360-14** | Bóc tách CIC theo từng khoản (tổ chức, dư nợ, nhóm nợ, ngày đến hạn, TSBĐ) thay vì `records_raw` | **Đã quyết (D-112):** Có; trước khi có, CIC chỉ cho cờ nhóm nợ (T-360-11) | BA |
+| **OQ-360-15** | Một luồng thu nhập có nhiều số tiền (HĐ lao động, xác nhận lương, bảng kê): chọn số nào cho DSCR | **Đã quyết (D-112):** Số thấp nhất trong các chứng từ còn hiệu lực | Risk |
+| **OQ-360-16** | Một tài sản có nhiều định giá còn hạn: giá trị nào tính LTV | **Đã quyết (D-112):** Thấp nhất giữa định giá nội bộ và bên ngoài | Risk |
+| **OQ-360-17** | CT07 (cùng hộ, ghi quan hệ với chủ hộ) có được tính là căn cứ xác minh `RELATIVE_OF` thay giấy khai sinh không | **Đã quyết (D-112):** Không ở v1; chỉ căn cứ bổ sung (L360-G07) | BA + Pháp chế |
+| **OQ-360-18** | Dung sai khớp số tiền gốc giữa CIC và HĐ tín dụng | **Đã quyết (D-112):** Bằng nhau sau làm tròn đến triệu đồng | BA |

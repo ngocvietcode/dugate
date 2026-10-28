@@ -218,8 +218,8 @@ có nhãn. Script TypeScript `scripts/fs-estimate-params.ts`, chạy trong môi 
 
 | ID | Câu hỏi | Mặc định đề xuất | Ai quyết |
 |---|---|---|---|
-| **OQ-FS-01** | `POSSIBLE_MATCH` để `unmapped` chờ người xác nhận, hay ghép kèm cờ `LOW_MATCH_CONFIDENCE` | Để `unmapped` (gộp nhầm khó sửa hơn thiếu ghép) | BA + Risk |
-| **OQ-FS-02** | Mục tiêu tỷ lệ gộp nhầm khi chọn ngưỡng | 0 trên bộ hồ sơ chuẩn | Risk |
-| **OQ-FS-03** | Ai duyệt một `params_version` mới; có áp quy trình quản lý rủi ro mô hình của ngân hàng không | Dev lead + Risk, có báo cáo đánh giá đi kèm | Risk |
-| **OQ-FS-04** | Bảng ánh xạ địa danh trước / sau sáp nhập đơn vị hành chính 2025 (trùng câu hỏi Q5 của uat-analysis) | Chưa có thì `permanent_address` chỉ có `AGREE` / `MISSING` | Đơn vị |
-| **OQ-FS-05** | Dùng bảng tần suất tên riêng tiếng Việt để chỉnh `u` theo độ phổ biến của tên không; nguồn bảng | Không ở v1 | BA |
+| **OQ-FS-01** | `POSSIBLE_MATCH` để `unmapped` chờ người xác nhận, hay ghép kèm cờ `LOW_MATCH_CONFIDENCE` | **Đã quyết (D-112):** Để `unmapped` (gộp nhầm khó sửa hơn thiếu ghép) | BA + Risk |
+| **OQ-FS-02** | Mục tiêu tỷ lệ gộp nhầm khi chọn ngưỡng | **Đã quyết (D-112):** 0 trên bộ hồ sơ chuẩn | Risk |
+| **OQ-FS-03** | Ai duyệt một `params_version` mới; có áp quy trình quản lý rủi ro mô hình của ngân hàng không | **Đã quyết (D-112):** Dev lead + Risk, có báo cáo đánh giá đi kèm | Risk |
+| **OQ-FS-04** | Bảng ánh xạ địa danh trước / sau sáp nhập đơn vị hành chính 2025 (trùng câu hỏi Q5 của uat-analysis) | **Đã quyết (D-112):** Chưa có thì `permanent_address` chỉ có `AGREE` / `MISSING` | Đơn vị |
+| **OQ-FS-05** | Dùng bảng tần suất tên riêng tiếng Việt để chỉnh `u` theo độ phổ biến của tên không; nguồn bảng | **Đã quyết (D-112):** Không ở v1 | BA |

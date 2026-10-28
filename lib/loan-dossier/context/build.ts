@@ -125,7 +125,8 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
   for (const d of drafts) for (const cid of d.claimIds) draftOfClaim.set(cid, d);
   const facts: LacFact[] = ordered.map((d, i) => {
     const live = liveSourcesOf(d);
-    const docs = new Set(live.map((s) => evidenceIdOf(s.record_id)));
+    // D-112: xác nhận độc lập đếm theo LOẠI chứng từ; hai bản chụp của cùng một CCCD không phải hai nguồn.
+    const docTypes = new Set(live.map((s) => s.doc_type_key));
     // Sổ Claim không loại bản bị thay thế: mâu thuẫn mà mọi bên đối lập đều chỉ còn nguồn đã bị thay thế thì không còn (LAC-R05),
     // fact tính lại trust trên nguồn còn hiệu lực thay vì kẹt ở DISPUTED mà không có MÂU THUẪN nào giải thích.
     const contested = d.status === 'DISPUTED' || d.status === 'PROBABLE_OCR_ERROR';
@@ -136,7 +137,7 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
     else if (d.status === 'SPELLING_VARIANT') trust = d.status;
     // Chỉ có lời khai trên đơn vay thì vẫn là DECLARED dù có nhiều bản: nhiều bản của cùng một lời khai không phải xác nhận độc lập.
     else if (live.every((s) => s.doc_type_key === 'loan_application')) trust = 'DECLARED';
-    else trust = docs.size >= 2 ? 'CORROBORATED' : 'SINGLE_SOURCE';
+    else trust = docTypes.size >= 2 ? 'CORROBORATED' : 'SINGLE_SOURCE';
     const judged = live.length > 0 ? live : d.sources;
     const review = judged.every((s) => typeof s.read_confidence === 'number' && s.read_confidence >= LAC_ACCEPT_CONFIDENCE) ? 'ACCEPTED' : 'REVIEW';
     const contradicts = opponentsGone ? [] : [...new Set(d.contradictsClaims.map((cid) => factIdOfClaim.get(cid)).filter((x): x is string => !!x && x !== `fact-${i + 1}`))];
