@@ -2,6 +2,7 @@
 // Thuần, không phụ thuộc React để test được. Quan hệ lấy từ cạnh graph nên không còn phải đối chiếu tay các mảng id chéo của S3.
 import type { MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
 import type { DossierGraphView, GraphEdge } from '@/lib/loan-dossier/graph/view-contract';
+import type { SubjectNotes } from './claims-view';
 import { assetDetail, loanSummary, personDetail, type AssetDetail, type EvidenceLike, type LoanSummary, type PersonDetail } from './customer360-detail';
 import { ASSET_LABELS, FLAG_LABELS, REL_LABELS, ROLE_LABELS, ROLE_ORDER } from './graph-view';
 
@@ -51,6 +52,11 @@ export interface Customer360Summary {
   unmapped: number;
   superseded: number;
   counts: { people: number; orgs: number; assets: number; relations: number; alerts: number };
+}
+
+/** Chỉ mở sẵn chi tiết khi người thẩm định cần xử lý cảnh báo. */
+export function shouldOpenDetail(p: PersonCard, notes?: SubjectNotes): boolean {
+  return p.alerts.length > 0 || (notes?.warnings.length ?? 0) > 0;
 }
 
 const present = (v: unknown): v is string | number => v !== null && v !== undefined && String(v).trim() !== '';
