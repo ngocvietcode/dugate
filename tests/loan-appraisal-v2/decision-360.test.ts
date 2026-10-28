@@ -2,7 +2,7 @@
 import type { AppraisalResult } from '@/app/loan-appraisal/types';
 import { buildDecision360 } from '@/app/loan-appraisal-v2/lib/decision-360';
 import type { ClaimsSummary } from '@/app/loan-appraisal-v2/lib/claims-view';
-import type { Customer360Summary } from '@/app/loan-appraisal-v2/lib/customer360-view';
+import { shouldOpenDetail, type Customer360Summary } from '@/app/loan-appraisal-v2/lib/customer360-view';
 
 const field = (value: unknown, trust: string | null = 'SINGLE_SOURCE') => ({ value, fact_ids: [], trust, review: 'ACCEPTED' });
 const profile = {
@@ -42,4 +42,13 @@ test('kết quả cũ không có profile_360: không lỗi, vẫn có cảnh bá
   expect(d.loan).toBeNull();
   expect(d.income.monthlyTotal).toBeNull();
   expect(d.attention.length).toBeGreaterThan(0);
+});
+
+test('chỉ mở sẵn chi tiết người khi có cảnh báo trên thẻ hoặc từ đối chiếu', () => {
+  const person = summary.people[0];
+  expect(shouldOpenDetail(person)).toBe(true);
+  const noAlerts = { ...person, alerts: [] };
+  expect(shouldOpenDetail(noAlerts, { warnings: ['Ngày sinh mâu thuẫn'], confirmed: [], variants: [] })).toBe(true);
+  expect(shouldOpenDetail(noAlerts)).toBe(false);
+  expect(shouldOpenDetail(noAlerts, { warnings: [], confirmed: ['Số định danh'], variants: ['Tên viết khác'] })).toBe(false);
 });

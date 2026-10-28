@@ -176,7 +176,9 @@ describe('Customer360Panel (render)', () => {
     expect(a).toBeGreaterThan(-1);
     expect(a).toBeLessThan(b);
     expect(b).toBeLessThan(c);
-    for (const s of ['600.000.000', '18 tháng', 'Doanh thu cửa hàng', 'Mục đích vay', 'Nhập hàng tết', 'Đất ở nông thôn', '120 m²', 'Công ty ĐG Việt Á', 'Giá trị định giá', 'Nhóm 1', 'HKD KIỀU ANH']) expect(t).toContain(s);
+    for (const s of ['600.000.000', '18 tháng', 'Doanh thu cửa hàng', 'Mục đích vay', 'Nhập hàng tết', 'Đất ở nông thôn', '120 m²', 'Công ty ĐG Việt Á', 'Giá trị định giá']) expect(t).toContain(s);
+    // D-113: chi tiết người (CIC, hộ kinh doanh) thu gọn mặc định khi người đó không có cảnh báo; tiêu đề vẫn báo số mục.
+    expect(t).toMatch(/Chi tiết từ chứng từ \(\d+ mục\)/);
   });
 
   it('nguồn là chip theo loại chứng từ (không chứa tên file trong dòng); tên file ở tooltip', () => {

@@ -6,12 +6,14 @@ import type { AppraisalResult, DossierEvidence } from '@/app/loan-appraisal/type
 import { docTypeLabelOf } from '@/app/loan-appraisal-v2/lib/classification-view';
 import { buildClaimsSummary, type SubjectNotes } from '@/app/loan-appraisal-v2/lib/claims-view';
 import type { DetailRow } from '@/app/loan-appraisal-v2/lib/customer360-detail';
-import { buildCustomer360, type AssetCard, type PersonCard } from '@/app/loan-appraisal-v2/lib/customer360-view';
+import { buildCustomer360, shouldOpenDetail, type AssetCard, type PersonCard } from '@/app/loan-appraisal-v2/lib/customer360-view';
+import { buildDecision360 } from '@/app/loan-appraisal-v2/lib/decision-360';
 import { assetContextView } from '@/app/loan-appraisal-v2/lib/dossier-view';
 import { Badge } from '../ui/Badge';
 import { Card, CardBody, CardHeader } from '../ui/Card';
 import { Disclosure } from '../ui/Disclosure';
 import { ClaimsPanel } from './ClaimsPanel';
+import { Decision360Card } from './Decision360Card';
 
 /** Kết quả đối chiếu giữa các chứng từ cho đúng người / tài sản này: cảnh báo hiện ngay trên thẻ, không phải tìm ở khối riêng. */
 function ClaimNotes({ notes }: { notes?: SubjectNotes }) {
@@ -116,7 +118,7 @@ function PersonItem({ p, notes }: { p: PersonCard; notes?: SubjectNotes }) {
 
       {extra > 0 && (
         <div className="mt-2">
-          <Disclosure defaultOpen summary={<span>Chi tiết từ chứng từ <span className="font-normal text-muted-foreground">({extra} mục)</span></span>}>
+          <Disclosure defaultOpen={shouldOpenDetail(p, notes)} summary={<span>Chi tiết từ chứng từ <span className="font-normal text-muted-foreground">({extra} mục)</span></span>}>
             <div className="space-y-3">
               <Section title={p.isOrg ? 'Thông tin' : 'Thông tin cá nhân'} rows={d.personal} />
               <Section title="Hộ kinh doanh / doanh nghiệp" rows={d.business} />
@@ -182,7 +184,7 @@ function AssetItem({ a, result, evidences, notes }: { a: AssetCard; result: Appr
 }
 
 /**
- * Customer 360 nhìn từ hồ sơ vay (D-91): Khoản vay → Tài sản bảo đảm → Người. Dựng từ `customer_360` + `dossier_graph` cho định danh và quan hệ,
+ * Customer 360 cho quyết định (D-113): Tóm tắt → Cần chú ý → Chi tiết. Dựng từ `customer_360` + `dossier_graph` cho định danh và quan hệ,
  * và từ `documents.evidences[].data` cho chi tiết (khoản vay, thu nhập, CIC, định giá, diện tích…): `customer_360` của S3 chỉ giữ phần định danh.
  * Chỉ cần S3 (không cần checklist / đối chiếu chéo).
  */
@@ -194,6 +196,7 @@ export function Customer360Panel({ result, evidences = [] }: { result: Appraisal
   );
   // Claim đáng chú ý (kết quả cũ không có ⇒ null ⇒ không hiện khối đối chiếu).
   const claims = useMemo(() => buildClaimsSummary(result.claims ?? null, map ?? null, docTypeLabelOf), [result.claims, map]);
+  const decision = useMemo(() => buildDecision360(result, summary, claims, docTypeLabelOf), [result, summary, claims]);
   if (!map || !summary || summary.people.length === 0) {
     return (
       <Card labelledBy="la2-people-title">
@@ -202,7 +205,7 @@ export function Customer360Panel({ result, evidences = [] }: { result: Appraisal
     );
   }
   const { counts, loan } = summary;
-  const claimWarnings = claims ? claims.counts.disputed + claims.counts.ocrError : 0;
+  const attentionCount = decision.attention.filter((item) => item.severity !== 'info').length;
   return (
     <Card labelledBy="la2-people-title">
       <CardHeader
@@ -210,10 +213,11 @@ export function Customer360Panel({ result, evidences = [] }: { result: Appraisal
         icon={Users}
         title="Người & tài sản trong hồ sơ"
         subtitle={[counts.orgs > 0 ? `${counts.orgs} doanh nghiệp` : null, `${counts.people} người`, `${counts.assets} tài sản`, `${counts.relations} quan hệ`].filter(Boolean).join(' · ')}
-        actions={counts.alerts + claimWarnings > 0 ? <Badge tone="warning" icon={AlertTriangle}>{counts.alerts + claimWarnings} điểm cần chú ý</Badge> : undefined}
+        actions={attentionCount > 0 ? <Badge tone="warning" icon={AlertTriangle}>{attentionCount} điểm cần chú ý</Badge> : undefined}
       />
       <CardBody className="space-y-5">
-        {loan && (
+        <Decision360Card decision={decision} />
+        {loan && !decision.loan && (
           <section aria-label="Khoản vay">
             <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground"><Banknote className="h-3.5 w-3.5" aria-hidden />Khoản vay (theo giấy đề nghị vay)</h4>
             <div className="rounded-lg border border-border bg-card px-3 py-3 text-xs">
@@ -231,6 +235,21 @@ export function Customer360Panel({ result, evidences = [] }: { result: Appraisal
               </div>
             </div>
           </section>
+        )}
+
+        {decision.loan && loan && (loan.rows.length > 0 || loan.purposes.length > 0 || loan.incomeDetails.length > 0) && (
+          <Disclosure summary="Chi tiết đơn vay">
+            <div className="space-y-3 text-xs">
+              <Rows rows={loan.rows} />
+              {loan.purposes.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Mục đích vay</p>
+                  <ul className="list-disc space-y-0.5 pl-4 text-foreground">{loan.purposes.map((x) => <li key={x}>{x}</li>)}</ul>
+                </div>
+              )}
+              <Section title="Thu nhập khai" rows={loan.incomeDetails} />
+            </div>
+          </Disclosure>
         )}
 
         {claims && <ClaimsPanel summary={claims} />}
