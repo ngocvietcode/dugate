@@ -22,6 +22,8 @@ export const ProfileFieldSchema = z.object({
 /** Một dữ kiện chi tiết của chủ thể (từ LAC): phần còn lại sau các trường có cấu trúc, để hiển thị đủ mà không đọc OCR. */
 export const DetailFactSchema = z.object({
   fact_id: z.string(),
+  /** Trường chung của LAC (`parties[].phone_number`…), để payload tích hợp có đường dẫn ổn định. */
+  field: z.string(),
   label: z.string(),
   value: Scalar,
   trust: LacTrustSchema,

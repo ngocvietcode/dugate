@@ -6,13 +6,11 @@ import path from 'path';
 const ROOT = path.resolve(__dirname, '../..');
 const ENTRY = 'lib/pipelines/workflows/loan-appraisal.ts';
 
-/** Module thuộc các bước đang tắt (S4, S5, consolidate, dựng master dossier). Bật lại bước nào thì bỏ khỏi danh sách. */
+/** Module thuộc các bước đang tắt (S4, S5, consolidate). Bật lại bước nào thì bỏ khỏi danh sách. master_dossier đã gỡ hẳn (D-115). */
 const DISABLED = [
   'lib/pipelines/workflows/loan-appraisal/dossier-consolidate.ts',
-  'lib/pipelines/workflows/loan-appraisal/master-dossier.ts',
   'lib/loan-dossier/s4/run.ts',
   'lib/loan-dossier/s5/run.ts',
-  'lib/loan-dossier/master/build.ts',
 ];
 
 const IMPORT_RE = /^\s*(?:import|export)\s+(?!type\b)(?:[^'"]*?\sfrom\s+)?['"]([^'"]+)['"]/gm;

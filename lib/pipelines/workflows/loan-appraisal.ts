@@ -261,7 +261,6 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
         risk_notes: [],
         system_notes: ['Đã dừng sau bước phân loại và kiểm tra sơ bộ; bóc tách (OCR), kiểm tra nháp & tổng kết hồ sơ, gom người & tài sản, checklist 46 mục và đối chiếu chéo chạy ở giai đoạn 2.'],
         config_snapshot: configWarnings.length && !configSnapshot.warnings ? { ...configSnapshot, warnings: configWarnings } : configSnapshot,
-        master_dossier: null,
         dossier_precheck: precheckOnly,
         flow: loanFlow,
         dossier_readiness: buildPrecheckReadiness(precheckOnly, classifyCheckpoint, []),

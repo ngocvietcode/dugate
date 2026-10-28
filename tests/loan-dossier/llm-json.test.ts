@@ -1,6 +1,5 @@
 import { cleanLlmJson, extractJsonText, JSON_ONLY_OUTPUT_RULE, parseLlmJson } from '@/lib/loan-dossier/common/llm-json';
 import { buildIncomeSourcePrompt, buildLoanPurposePrompt } from '@/lib/pipelines/workflows/loan-appraisal/condition-prompts';
-import { buildCorrectionFacts, MASTER_CORRECTION_PROMPT_TEMPLATE } from '@/lib/pipelines/workflows/loan-appraisal/master-correction';
 import { renderPrompt } from '@/lib/pipelines/workflows/loan-appraisal/intake-review';
 
 const OBJ = { a: 1, b: 'x', nested: { c: [1, 2, 3] } };
@@ -78,7 +77,5 @@ describe('quy tắc "chỉ JSON thuần" ở cuối prompt', () => {
   it('các prompt dựng bằng renderPrompt đều kết thúc bằng quy tắc', () => {
     expect(buildIncomeSourcePrompt(['Lương']).endsWith(JSON_ONLY_OUTPUT_RULE)).toBe(true);
     expect(buildLoanPurposePrompt(['Mua xe']).endsWith(JSON_ONLY_OUTPUT_RULE)).toBe(true);
-    expect(renderPrompt(MASTER_CORRECTION_PROMPT_TEMPLATE, ['proposals', 'output_schema'], { proposals: '[]', output_schema: '{}' }).endsWith(JSON_ONLY_OUTPUT_RULE)).toBe(true);
-    expect(buildCorrectionFacts([])).toEqual([]);
   });
 });

@@ -4,14 +4,14 @@
 // File này là PROJECTION thuần từ kết quả cuối (`AppraisalResultV2`) sang contract; không log giá trị (PII).
 //
 // Mỗi sự thật chỉ xuất hiện MỘT lần:
-//   người / tổ chức → `parties` (họ tên, định danh, trường đã hợp nhất)   tài sản → `assets`
+//   người / tổ chức → `parties` (họ tên, định danh, trường từ hồ sơ 360)   tài sản → `assets`
 //   chứng từ        → `documents`  (trạng thái + dữ liệu đã hợp nhất theo chứng từ)
 //   kiểm tra        → `checks`     (rule engine / LLM / Agent cùng MỘT hình dạng)
 //   còn lại chỉ tham chiếu bằng khóa (`party-1`, `asset-1`, item_key, check id).
 //
 // Không có: tiến trình xử lý, kết quả giai đoạn 1, tóm tắt bóc tách, evidence (evidence_id, found_in, sources...).
 
-import type { MasterDossier, MasterField } from '@/lib/loan-dossier/contracts/master-dossier';
+import type { DetailFact } from '@/lib/loan-dossier/profile360/schema';
 import type { MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
 import { loanProductConfig } from '@/lib/loan-dossier/catalog/products';
 import { loadChecklistCatalog } from '@/lib/loan-dossier/s4/catalog';
@@ -78,17 +78,19 @@ const arrayOf = <T>(value: T[] | null | undefined): T[] => (Array.isArray(value)
 const partyRef = (personId: string | null | undefined): string | undefined => (personId ? personId.replace(/^person-/, 'party-') : undefined);
 const assetRef = (assetId: string | null | undefined): string | undefined => (assetId ? assetId : undefined);
 
-// ─── Trường master → Field ───────────────────────────────────────────────────
+// ─── Trường của hồ sơ 360 → Field (D-115: thay master_dossier đã gỡ) ─────────
 
-function field(f: MasterField): Field {
-  return {
-    path: f.path,
-    value: f.value,
-    status: f.status,
-    ...(f.review_status === 'REVIEW' ? { review: true as const } : {}),
-    ...(f.status === 'CONFLICT' ? { candidates: f.candidates.map((c) => c.value) } : {}),
-  };
+const FIELD_STATUS: Record<DetailFact['trust'], Field['status']> = {
+  CORROBORATED: 'AGREED', SINGLE_SOURCE: 'SINGLE_SOURCE', DECLARED: 'SINGLE_SOURCE', SPELLING_VARIANT: 'OCR_NORMALIZED',
+  PROBABLE_OCR_ERROR: 'CONFLICT', DISPUTED: 'CONFLICT', SUPERSEDED: 'SINGLE_SOURCE',
+};
+
+function field(f: DetailFact, path: string): Field {
+  return { path, value: f.value, status: FIELD_STATUS[f.trust], ...(f.review === 'REVIEW' ? { review: true as const } : {}) };
 }
+
+/** Đường dẫn ổn định theo catalog: bỏ tiền tố mảng party / tài sản của chứng từ (`parties[].phone_number` → `phone_number`). */
+const pathOf = (field: string) => field.replace(/^(parties|assets|asset_details)\[\]\./, '');
 
 /** `person-1` → `Hộ khách hàng...`: nhãn master có kèm tên; chỉ lấy ở `parties[].name`, không lặp lại ở chỗ khác. */
 const IDENTITY_PATHS = new Set(['full_name', 'id_number']);
@@ -102,15 +104,15 @@ function identifiersOf(p: MapDossierData['customer_360'][number]): Party['identi
 }
 
 function buildParties(result: FinalResult): Party[] {
-  const master = new Map((result.master_dossier?.persons ?? []).map((e) => [e.entity_id, e]));
+  const profile = new Map((result.profile_360?.customers ?? []).map((c) => [c.person_id, c]));
   const registry = new Map(arrayOf(result.customer_360?.role_registry).map((r) => [r.person_id, r]));
   return arrayOf(result.customer_360?.customer_360).map((c): Party => {
-    const entity = master.get(c.person_id);
+    const entity = profile.get(c.person_id);
     const reg = registry.get(c.person_id);
     const relations: NonNullable<Party['relations']> = [];
     if (c.spouse_person_id) relations.push({ type: 'SPOUSE', party: partyRef(c.spouse_person_id)! });
     // Tên và số định danh nằm ở `name`/`identifiers`; không lặp lại ở `fields`.
-    const fields = (entity?.fields ?? []).filter((f) => !isIdentityPath(f.path)).map(field);
+    const fields = (entity?.details ?? []).map((f) => field(f, pathOf(f.field))).filter((f) => !isIdentityPath(f.path));
     return {
       id: partyRef(c.person_id)!,
       type: 'PERSON',
@@ -130,11 +132,11 @@ const ASSET_ID_LABELS: Array<[keyof MapDossierData['asset_registry'][number]['id
 ];
 
 function buildAssets(result: FinalResult): Asset[] {
-  const master = new Map((result.master_dossier?.assets ?? []).map((e) => [e.entity_id, e]));
+  const profile = new Map((result.profile_360?.collateral ?? []).map((a) => [a.asset_id, a]));
   return arrayOf(result.customer_360?.asset_registry).map((a): Asset => {
     const ids = ASSET_ID_LABELS.flatMap(([key, type]) => (a.identifiers[key] ? [{ type, value: String(a.identifiers[key]) }] : []));
     const owners = a.owner_person_ids.map((id) => partyRef(id)!);
-    const fields = (master.get(a.asset_id)?.fields ?? []).map(field);
+    const fields = (profile.get(a.asset_id)?.details ?? []).map((f) => field(f, pathOf(f.field)));
     return {
       id: a.asset_id,
       type: a.asset_type,
@@ -166,7 +168,6 @@ function buildDocuments(result: FinalResult): DocumentsBlock {
       ...(i.substituted_by_item_key ? { substituted_by: i.substituted_by_item_key } : {}),
     }));
 
-  const brief = briefMasterDossier(result.master_dossier);
   return {
     readiness: readiness?.status ?? 'NOT_PROCESSABLE',
     completeness_percent: readiness?.completeness_percent ?? checklist?.completeness_percent ?? 0,
@@ -181,77 +182,12 @@ function buildDocuments(result: FinalResult): DocumentsBlock {
       ...(g.completeness_percent !== null ? { percent: g.completeness_percent } : {}),
     })),
     items,
-    records: (brief?.documents ?? []).flatMap((d) => {
-      // Giá trị định danh (họ tên, số định danh) đã ở `parties`; bản theo chứng từ chỉ giữ khi có xung đột / cần rà soát.
-      // Trường MISSING không có giá trị: vắng mặt trong `records` nghĩa là "chứng từ không có thông tin này".
-      const fields = d.fields
-        .filter((f) => f.status !== 'MISSING')
-        .filter((f) => !isIdentityPath(f.path) || f.status === 'CONFLICT' || f.needs_review)
-        .map((f) => ({
-          path: f.path,
-          value: f.value,
-          status: f.status,
-          ...(f.needs_review ? { review: true as const } : {}),
-          ...(f.candidates ? { candidates: f.candidates } : {}),
-        }));
-      if (fields.length === 0) return [];
-      return [{
-        doc: d.doc_type_key ?? d.item_key ?? 'unknown',
-        ...(d.item_key ? { item: d.item_key } : {}),
-        ...(partyRef(d.person_id) ? { party: partyRef(d.person_id)! } : {}),
-        ...(assetRef(d.asset_id) ? { asset: assetRef(d.asset_id)! } : {}),
-        fields,
-      }];
-    }),
+    // D-115: bản theo từng chứng từ thuộc master_dossier đã gỡ; giá trị hợp nhất nằm ở `parties` / `assets` (từ hồ sơ 360).
+    records: [],
     issues: [
       ...arrayOf(readiness?.unclassified_files).map((f) => ({ kind: 'UNCLASSIFIED_FILE' as const, file: f.file_name, message: f.reason })),
       ...arrayOf(readiness?.extraction_errors).map((e) => ({ kind: 'EXTRACTION_ERROR' as const, file: e.file_name, doc: e.doc_type_key, message: e.error })),
     ],
-  };
-}
-
-// ─── Bản chiếu master tối thiểu (giữ cho test cũ và đường nội bộ) ─────────────
-
-export interface IntegrationMasterField {
-  path: string;
-  label: string;
-  value: unknown;
-  status: MasterField['status'];
-  needs_review: boolean;
-  candidates?: unknown[];
-  note?: string;
-}
-
-export interface IntegrationMasterDossier {
-  summary: MasterDossier['summary'];
-  documents: Array<{ item_key: string | null; doc_type_key: string | null; person_id: string | null; asset_id: string | null; fields: IntegrationMasterField[] }>;
-  persons: Array<{ entity_id: string; label: string; fields: IntegrationMasterField[] }>;
-  assets: Array<{ entity_id: string; label: string; fields: IntegrationMasterField[] }>;
-}
-
-function briefField(f: MasterField): IntegrationMasterField {
-  return {
-    path: f.path,
-    label: f.label,
-    value: f.value,
-    status: f.status,
-    needs_review: f.review_status === 'REVIEW',
-    ...(f.status === 'CONFLICT' ? { candidates: f.candidates.map((c) => c.value) } : {}),
-    ...(f.note ? { note: f.note } : {}),
-  };
-}
-
-/** Bản chiếu tối thiểu của `master_dossier` (D-66): giá trị hợp nhất + trạng thái; không nguồn, độ tin cậy, bản sao. */
-export function briefMasterDossier(m: MasterDossier | null | undefined): IntegrationMasterDossier | null {
-  if (!m) return null;
-  const entity = (e: MasterDossier['persons'][number]) => ({ entity_id: e.entity_id, label: e.label, fields: e.fields.map(briefField) });
-  return {
-    summary: m.summary,
-    documents: m.documents
-      .filter((d) => d.fields.length > 0)
-      .map((d) => ({ item_key: d.item_key, doc_type_key: d.doc_type_key, person_id: d.person_id, asset_id: d.asset_id, fields: d.fields.map(briefField) })),
-    persons: m.persons.map(entity),
-    assets: m.assets.map(entity),
   };
 }
 

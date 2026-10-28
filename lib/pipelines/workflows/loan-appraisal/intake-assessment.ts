@@ -1,11 +1,10 @@
-// Đánh giá tiếp nhận hồ sơ theo 4 tiêu chí của Sale (D-47) — hàm thuần, chỉ đọc S1/S2/S4/S5 + master_dossier.
+// Đánh giá tiếp nhận hồ sơ theo 4 tiêu chí của Sale (D-47) — hàm thuần, chỉ đọc S1/S2/S4/S5. Lớp master_dossier đã gỡ (D-115).
 //   1. Hồ sơ đầy đủ theo quy định (S4)
-//   2. Thông tin trọng yếu giữa các chứng từ nhất quán (S5 + bản trùng xung đột trong master)
+//   2. Thông tin trọng yếu giữa các chứng từ nhất quán (S5)
 //   3. Dữ liệu nhập trên hệ thống (LOS/Secure App) — CHƯA ÁP DỤNG, sẽ nhận kèm request
 //   4. Hồ sơ đủ chất lượng để chuyển CBQL/CO (1, 2 đạt; file lỗi/chưa nhận diện đã xử lý hoặc có giải trình)
 // Không lưu trạng thái: giải trình do hệ thống gọi gửi lại qua `acknowledgements` khi chạy lại (D-25).
 import type { CheckChecklistData, CrossCheckData, MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
-import type { MasterDossier } from '@/lib/loan-dossier/contracts/master-dossier';
 import type { ClassifyData } from '@/lib/loan-dossier/contracts/stage-result';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 
@@ -154,7 +153,6 @@ export interface IntakeAssessmentInput {
   checklist: CheckChecklistData | null;
   checklistStatusCode?: string | null;
   crossCheck: CrossCheckData | null;
-  master: MasterDossier | null;
   acknowledgements: ReadonlyArray<Acknowledgement>;
 }
 
@@ -228,27 +226,13 @@ export function buildIntakeAssessment(input: IntakeAssessmentInput): IntakeAsses
     passed: c1Passed,
   };
   // ── 2. Nhất quán giữa các chứng từ (chỉ trường trọng yếu) ────────────────
-  // MD-R19 (d): dòng S5 ứng với trường master đã được hiệu chỉnh (CORRECTED) không còn là điểm cần kiểm tra — vào danh sách đã khớp.
-  const correctedRows = new Set([...(input.master?.persons ?? []), ...(input.master?.assets ?? [])]
-    .flatMap((e) => e.fields.filter((f) => f.status === 'CORRECTED' && f.cross_check_result_id).map((f) => f.cross_check_result_id as string)));
   const rows = (input.crossCheck?.results ?? []).filter((r) => (r.match_status === 'MISMATCH' || r.match_status === 'UNDETERMINED')
-    && !correctedRows.has(r.result_id)
     && (MATERIAL_GROUPS.has(r.field_group) || (r.sub_field !== null && MATERIAL_ASSET_SUBFIELDS.has(r.sub_field))));
   const c2Findings = rows.map((r) => finding(
     `XCHECK:${r.field_group}${r.sub_field ? `.${r.sub_field}` : ''}:${r.person_id ?? r.asset_id ?? 'dossier'}`,
     `${r.field_label}${scopeText(r.person_id, r.asset_id)}: ${r.reason}`,
     true,
   ));
-  for (const d of input.master?.documents ?? []) {
-    for (const f of d.fields) {
-      if (f.status !== 'CONFLICT' || !isMaterialLeaf(f.path)) continue;
-      c2Findings.push(finding(
-        `COPY_CONFLICT:${d.item_key ?? d.doc_type_key}:${d.person_id ?? d.asset_id ?? 'dossier'}:${f.path}`,
-        `${d.item_label ?? d.doc_type_label}${scopeText(d.person_id, d.asset_id)}: các bản của cùng chứng từ ghi khác nhau ở ${f.path}.`,
-        true,
-      ));
-    }
-  }
   // D-56: tài sản / vai trò / quan hệ chưa xác định chắc (S4 `NEEDS_REVIEW` dù đã có chứng từ) thuộc tiêu chí 2, không báo ở tiêu chí 1.
   // Tài sản đã có sai lệch trọng yếu ở trên (VD số GCN ghi khác nhau) thì không nêu lại.
   const xcheckAssets = new Set(rows.map((r) => r.asset_id).filter((a): a is string => a !== null));
@@ -275,16 +259,6 @@ export function buildIntakeAssessment(input: IntakeAssessmentInput): IntakeAsses
       message: `${r.field_label}${scopeText(r.person_id, r.asset_id)}: khớp giữa ${new Set(r.values.map((v) => v.source.evidence_id)).size} chứng từ${r.match_status === 'NEAR_MATCH' ? ' (có 1 bản nghi đọc sai)' : ''}`,
       group: null,
     }));
-  // MD-R19 (d): trường trọng yếu đã hiệu chỉnh (chứng từ, người, tài sản) → đã khớp, kèm ghi chú cần xác nhận (cùng cách với NEAR_MATCH).
-  const master = input.master;
-  const correctedPassed = (code: string, scope: string, f: { path: string; label: string; status: string }): IntakePassed[] =>
-    f.status === 'CORRECTED' && isMaterialLeaf(f.path)
-      ? [{ code: `CORRECTED_OK:${code}:${f.path}`, message: `${scope}: ${f.label || f.path} đã hiệu chỉnh theo đa số, cần xác nhận`, group: null }]
-      : [];
-  c2Passed.push(
-    ...(master?.documents ?? []).flatMap((d) => d.fields.flatMap((f) => correctedPassed(`${d.item_key ?? d.doc_type_key}:${d.person_id ?? d.asset_id ?? 'dossier'}`, `${d.item_label ?? d.doc_type_label}${scopeText(d.person_id, d.asset_id)}`, f))),
-    ...[...(master?.persons ?? []), ...(master?.assets ?? [])].flatMap((e) => e.fields.flatMap((f) => correctedPassed(e.entity_id, e.label, f))),
-  );
   const c2Open = c2Findings.filter((f) => f.status === 'OPEN').length;
   const c2: IntakeCriterion = {
     key: 'CONSISTENT_ACROSS_DOCUMENTS', no: 2, label: 'Thông tin giữa các chứng từ nhất quán',
