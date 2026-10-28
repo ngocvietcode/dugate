@@ -254,10 +254,12 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 ## 8. Task cards
 
 ### T-LAC-01 — Hợp đồng LAC
+- Depends: —
 - Files: `lib/loan-dossier/context/types.ts`, `lib/loan-dossier/context/schema.ts` (zod), `lib/loan-dossier/catalog/field-labels.ts`, `app/loan-appraisal-v2/lib/dossier-view.ts`, `tests/loan-dossier/context-contract.test.ts`
 - Refs: §4, LAC-R01, LAC-R07
 - Làm: kiểu và zod schema của §4; `LAC_VERSION`; chuyển `FIELD_LABELS` / `labelOf` xuống `lib/` (re-export từ `dossier-view.ts`).
 - DoD: schema parse được LAC dựng tay tối thiểu; từ chối `trust` / `gap` lạ; test hiện có của `tests/loan-appraisal-v2` về nhãn chạy không đổi.
+- Verify: `npx jest tests/loan-dossier/context-build.test.ts tests/loan-appraisal-v2`
 
 ### T-LAC-02 — Gộp chủ thể khoản vay và hộ kinh doanh
 - Depends: T-LAC-01
@@ -265,6 +267,7 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 - Refs: LAC-R02, LAC-R03, AC-3
 - Làm: dựng `subjects` từ S3 + ledger; gộp `loan:*`, `business:*`, nhập Claim trùng (`field`, `value_norm`), tính lại `trust` cho chủ thể đã gộp. Không sửa `buildClaimLedger`: gộp ở lớp LAC để sổ Claim và `claims-store` giữ nguyên.
 - DoD: AC-3; người / tài sản giữ nguyên mã S3.
+- Verify: `npx jest tests/loan-dossier/context-build.test.ts`
 
 ### T-LAC-03 — Dữ kiện, trạng thái, mâu thuẫn, khoảng trống
 - Depends: T-LAC-02
@@ -272,6 +275,7 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 - Refs: LAC-R04…R10, LAC-R12, AC-1, AC-2, AC-4
 - Làm: `buildLoanApplicationContext`; nhãn từ `doc_schemas`; quan hệ + `support_fact_ids`; `conflicts`; `gaps`; `meta.source_hash`.
 - DoD: AC-1, AC-2, AC-4.
+- Verify: `npx jest tests/loan-dossier/context-build.test.ts`
 
 ### T-LAC-04 — Render và bảng mã
 - Depends: T-LAC-03
@@ -279,6 +283,7 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 - Refs: LAC-R11, LAC-R12, LAC-R14, LAC-R15, §6.1, AC-5, AC-8, AC-9
 - Làm: `promptContextScope(checks)` (khóa `lac.*` + ánh xạ khóa cũ); `renderLoanApplicationContext` → `{ text, refIndex, stats }`; ngân sách theo thứ tự ưu tiên.
 - DoD: AC-5, AC-8, AC-9; snapshot text của 2 fixture (HKD, SME) được review tay.
+- Verify: `npx jest tests/loan-dossier/context-render.test.ts`
 
 ### T-LAC-05 — Nối vào Rule LLM
 - Depends: T-LAC-04
@@ -286,6 +291,7 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 - Refs: LAC-R13, LAC-R16, LAC-R17, §6.2, AC-6, AC-7, AC-10, AC-12
 - Làm: placeholder `{{context}}`, template mặc định mới, tham số `lac_mode`; `resolveContextRefs` cạnh `resolveEvidenceRefs`; rào trạng thái; `reason_code` mới `PROMPT_CHECK_EVIDENCE_DISPUTED`, `PROMPT_CHECK_DECLARED_ONLY` (khai cạnh các mã `PROMPT_CHECK_*` hiện có, kèm ánh xạ trong `check-contract.ts` cho payload tích hợp); thống kê shadow.
 - DoD: AC-6, AC-7, AC-10, AC-12; test hiện có của `prompt-checks` chạy không đổi ở `lac_mode = off`.
+- Verify: `npx jest tests/loan-appraisal/prompt-checks-lac.test.ts tests/loan-appraisal/lac-mode-param.test.ts`
 
 ### T-LAC-06 — Lưu trữ, an toàn, tài liệu
 - Depends: T-LAC-05
@@ -293,12 +299,18 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 - Refs: LAC-R18, LAC-R19, AC-11
 - Làm: `loan_application_context_summary` trong kết quả; test quét PII; cập nhật README (mục Rule LLM) và trang cấu hình (khóa `lac.*` trong gợi ý `input`).
 - DoD: AC-11.
+- Verify: `npx jest tests/loan-appraisal/lac-pii.test.ts`
 
 ### T-LAC-07 — Đo trên UAT và quyết định bật
 - Depends: T-LAC-05
 - Files: `scripts/lac-shadow-report.ts` (không commit dữ liệu hồ sơ), báo cáo trong `docs/loan-appraisal/uat-analysis/`
+- Refs: LAC-R17, LAC-R20
 - Làm: chạy bộ hồ sơ UAT hai lần (`off`, `on`) với cùng model. So sánh theo rule: phân bố `PASS`/`REVIEW`/`FAIL`/`INSUFFICIENT_DATA`, số dẫn chiếu bị rào loại (`EVIDENCE_MISSING`, `NOT_ACCEPTED`), số kết quả khác nhau giữa hai chế độ (CO chấm tay xem bên nào đúng), độ dài prompt, token.
 - **Tiêu chí bật `on` làm mặc định:** (1) tỉ lệ dẫn chiếu bị loại giảm; (2) trên các kết quả khác nhau, CO đánh giá LAC đúng ≥ đường cũ; (3) không có `PASS` sai mới nào ở rule định danh (`BORROWER_IDENTITY`, `OWNER_MATCH`); (4) prompt không dài hơn đường cũ quá 10%.
+- DoD:
+  - báo cáo off / on (chỉ id, mã, số đếm) cho bộ hồ sơ chuẩn trong `docs/loan-appraisal/uat-analysis/`
+  - quyết định bật hay chưa ghi vào IMPLEMENT kèm số liệu của bốn tiêu chí
+- Verify: `npx jest tests/scripts/lac-compare.test.ts`
 
 ## 9. Điểm cần quyết
 

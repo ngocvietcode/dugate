@@ -226,38 +226,54 @@ khi chúng ghi khác nhau (chính sách, Risk duyệt).
 ## 6. Task cards
 
 ### T-360-01 — Nền: bất biến và hàm trust thuần
+- Depends: —
 - Files: `lib/loan-dossier/context/trust.ts` (tách khỏi `build.ts`), `tests/loan-dossier/context-properties.test.ts` (fast-check, đã có trong devDependencies)
 - Làm: tách tính trust thành hàm thuần nhận (nguồn còn hiệu lực, trạng thái sổ Claim, nguồn của bên đối lập); property test cho các bất biến: không fact `DISPUTED` mồ côi, `DECLARED` không bị nâng, không thẻ `untrusted_*` thoát khối, mọi `F<n>` có trong `refIndex`, lossless, ngân sách.
+- Refs: §2, AC-3, L360-R01
 - DoD: AC-3. Bất biến ngân sách (text ≤ 18.000 ký tự) nhiều khả năng fail ở lần chạy đầu; sửa `render.ts` theo kết quả.
+- Verify: `npx jest tests/loan-dossier/context-properties.test.ts`
 
 ### T-360-02 — Lớp 2
 - Depends: T-360-01
-- Files: `lib/loan-dossier/profile360/{schema,build}.ts`, `tests/loan-dossier/profile360-build.test.ts`
+- Files: `lib/loan-dossier/profile360/{schema,build,sources,customers,business,income,obligations,collateral,issues}.ts`, `tests/loan-dossier/profile360.test.ts` (đã cài ở D-114)
+- Refs: §2.1, §3, L360-B01, L360-G01
 - Làm: schema zod cho sáu thực thể (cộng `Counterparty` của §3.1 khi làm T-360-08); `buildProfile360(lac)` thuần, tất định. Liệt kê loại chứng từ nào cấp `IncomeStream` / `Obligation` (đã thấy `income_statement`, `loan_application.financial_info`, CIC; chưa liệt kê hết).
 - DoD: schema parse; mỗi trường có `fact_ids`.
+- Verify: `npx jest tests/loan-dossier/profile360.test.ts`
 
 ### T-360-03 — Tài chính đọc lớp 2
 - Depends: T-360-02
 - Files: `lib/pipelines/workflows/loan-appraisal/financial-inputs.ts`, `loan-appraisal.ts`
-- Làm: `financial-inputs` đọc lớp 2 thay vì evidence; bỏ logic tự chọn (`pickAnchor`, lấy phần tử đầu).
+- Refs: §2.1, AC-1
+- Làm: `financial-inputs` đọc lớp 2 thay vì evidence; bỏ logic tự chọn (`pickAnchor`, lấy phần tử đầu). Đã cài ở D-114 (`financialInputsFromProfile`).
 - DoD: AC-1.
+- Verify: `npx jest tests/loan-appraisal/v2-financial-inputs.test.ts tests/loan-appraisal/segment-packs.test.ts`
 
 ### T-360-04 — Lưu và áp quyết định
 - Depends: T-360-03
 - Files: `drizzle/*.sql` + `lib/db/schema.ts` (bảng `co_resolutions`), `lib/loan-dossier/context/resolutions.ts`, route ghi/đọc quyết định, `lib/rbac/capabilities.ts`, `tests/...`
 - Làm: L360-R01…R09; `LAC_VERSION` lên 1.1 vì thêm `trust` `CO_RESOLVED` / `CO_REJECTED` và `meta.co_resolved`; đọc `docs/SECURITY-RULES.md` trước khi viết route.
+- Refs: §4.1, L360-R01, L360-R09, AC-4, AC-5, AC-6, AC-7
 - DoD: AC-4, AC-5, AC-6, AC-7.
+- Verify: `npx jest tests/loan-dossier/context-resolutions.test.ts`
 
 ### T-360-05 — Tính lại
 - Depends: T-360-04
 - Files: route tính lại cạnh `app/api/v1/operations/[id]/`, `lib/pipelines/workflows/loan-appraisal.ts` (điểm vào từ stage 2)
 - Làm: L360-R10…R13; Operation mới liên kết `derived_from_operation_id`.
+- Refs: §4.2, L360-R10, L360-R13, AC-2
 - DoD: AC-2.
+- Verify: `npx jest tests/loan-appraisal/recompute.test.ts`
 
 ### T-360-06 — Giao diện CO
 - Depends: T-360-04
 - Files: `app/loan-appraisal-v2/...`, `components/loan-appraisal-v2/...`
+- Refs: §4.1, L360-R02, L360-R08
 - Làm: màn liệt kê conflict (lựa chọn kèm loại chứng từ và trang), chọn, nhập lý do, nút "Tính lại". Logic ra hàm thuần vì repo không có `@testing-library`/`jsdom` (D-15).
+- DoD:
+  - test: hàm thuần dựng danh sách lựa chọn từ `profile_360.conflicts` (giá trị, loại chứng từ)
+  - test: người không có capability `loan_appraisal:resolve_conflict` không thấy nút chọn
+- Verify: `npx jest tests/loan-appraisal-v2/co-resolution-view.test.ts`
 
 ### T-360-07 — P0: Hộ kinh doanh
 - Depends: T-360-02
