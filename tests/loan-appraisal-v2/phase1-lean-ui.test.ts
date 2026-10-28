@@ -10,6 +10,9 @@ import { isDeferredToPhase2 } from '@/app/loan-appraisal-v2/lib/selectors';
 import { PHASES, STAGES, phaseStatusOf } from '@/app/loan-appraisal-v2/lib/stages';
 import { CustomerProfile } from '@/components/loan-appraisal-v2/appraisal/CustomerProfile';
 import { IntakeWorkspace } from '@/components/loan-appraisal-v2/intake/IntakeWorkspace';
+import { buildLoanApplicationContext } from '@/lib/loan-dossier/context/build';
+import { buildProfile360 } from '@/lib/loan-dossier/profile360/build';
+import type { MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
 
 const classifiedFile = {
   file_id: 'F1', file_name: 'giay_de_nghi.pdf', status: 'CLASSIFIED', reason_code: null, next_action: null, message: null, page_count: 3,
@@ -161,18 +164,26 @@ describe('CustomerProfile (giai đoạn 2)', () => {
     checklist: { status: 'NOT_RUN', status_code: 'DOSSIER_CHECKS_DISABLED', flow: 'FULL', items: [], summary_by_group: [], completeness_percent: null },
     cross_check: { status: 'NOT_RUN', status_code: 'DOSSIER_CHECKS_DISABLED', results: [], logic_findings: [], skipped_evidences: [] },
   } as unknown as AppraisalResult);
+  /** D-114: giao diện Customer 360 chỉ đọc hồ sơ 360 — dựng như workflow, từ chính customer_360 của fixture. */
+  const withProfile = (r: AppraisalResult): AppraisalResult => {
+    const s3 = r.customer_360 as unknown as MapDossierData;
+    const lac = buildLoanApplicationContext({ product_code: 'hkd-loan', flow: 'FULL', evidences: [], s3, s3_status: 'SUCCESS' });
+    return { ...r, profile_360: buildProfile360({ evidences: [], s3, lac, segment: 'HKD' }) } as AppraisalResult;
+  };
 
-  it('S3 chạy, checklist / đối chiếu chéo tạm tắt: VẪN hiện bảng người & tài sản (Customer 360), không hiện checklist / đối chiếu chéo', () => {
-    const out = html(phase2Result());
-    expect(out).toContain('la2-people-title');
+  it('S3 chạy, checklist / đối chiếu chéo tạm tắt: VẪN hiện Customer 360 (từ hồ sơ 360), không hiện checklist / đối chiếu chéo', () => {
+    const out = html(withProfile(phase2Result()));
+    expect(out).toContain('la2-c360-title');
+    expect(out).toContain('Đề nghị vay vốn');
     expect(out).toContain('NGUYEN VAN AN');
     expect(out).toContain('001090000001');
     expect(out).not.toContain('la2-checklist-title');
   });
 
-  it('S3 lỗi (customer_360 = null) ở giai đoạn 2: không hiện bảng người & tài sản', () => {
-    const out = html({ ...phase2Result(), customer_360: null } as unknown as AppraisalResult);
-    expect(out).not.toContain('la2-people-title');
+  it('S3 lỗi (customer_360 = null, không có hồ sơ 360) ở giai đoạn 2: Customer 360 báo chưa có, không hiện khách hàng', () => {
+    const out = html({ ...phase2Result(), customer_360: null, profile_360: null } as unknown as AppraisalResult);
+    expect(out).toContain('Chưa có hồ sơ 360');
+    expect(out).not.toContain('NGUYEN VAN AN');
   });
 
   it('có dossier_graph: sơ đồ quan hệ được tải động (không render ở server); không dossier_graph: không có khối', () => {

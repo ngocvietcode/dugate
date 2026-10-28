@@ -16,7 +16,7 @@ jest.mock('@/lib/pipelines/workflow-engine', () => {
 import { runLoanAppraisal } from '@/lib/pipelines/workflows/loan-appraisal';
 import { briefMasterDossier, buildLoanAppraisalIntegrationPayload } from '@/lib/pipelines/workflows/loan-appraisal/integration-payload';
 import { DEFAULT_CHECK_SET, isKnownInput } from '@/lib/pipelines/workflows/loan-appraisal/check-set';
-import { financialInputsV3 } from '@/lib/pipelines/workflows/loan-appraisal/financial-inputs';
+import { financialInputsFromProfile } from '@/lib/pipelines/workflows/loan-appraisal/financial-inputs';
 import { applyMasterToFinancialInputs, masterEvidenceRegistry } from '@/lib/pipelines/workflows/loan-appraisal/master-dossier';
 import { declaredEvidenceDocTypes, parsePromptCheckResults, selectPromptEvidence } from '@/lib/pipelines/workflows/loan-appraisal/prompt-checks';
 import { buildEvidenceRegistryV3 } from '@/lib/pipelines/workflows/loan-appraisal/evidence-v3';
@@ -28,6 +28,7 @@ import { groupDuplicates } from '@/lib/loan-dossier/s2/duplicates';
 import { assetKeys } from '@/lib/loan-dossier/s3/asset-key';
 
 import { classifyOf, ev, ID_A12, loanApp } from '../loan-dossier/fixtures/dossier';
+import { profileOf } from '../loan-dossier/fixtures/profile';
 import { runDossier } from '../loan-dossier/fixtures/master';
 
 const borrower = { party_role: 'BORROWER', full_name: 'NGUYỄN VĂN AN', id_number: ID_A12 };
@@ -76,20 +77,20 @@ describe('T-MD-04: workflow và payload (master data tạm tắt ở giai đoạ
     expect(JSON.stringify(brief)).not.toMatch(/"(kind|sources|outliers|confidence|review_status|copies|evidence_ids|other_documents|document_ids)"/);
   });
 
-  it('MD-AC08 + MD-R13 (khi không có master): 2 bản đề nghị vay ghi số tiền khác nhau → vẫn chạy hết, chỉ số tiền vay lấy theo bản OCR đầu tiên', async () => {
-    // Đây là hệ quả của việc tạm tắt master: xung đột giữa các bản không còn được phát hiện/ghi cờ (sẽ có lại khi bật master).
+  it('D-114 (thay MD-R13): 2 bản đề nghị vay ghi số tiền khác nhau → hồ sơ 360 báo DISPUTED, stage 2 không tính trên số tranh chấp', async () => {
+    // Hồ sơ 360 là nguồn sự thật: LAC-R03 phát hiện hai đơn vay lệch số tiền, số tiền vay để trống kèm cờ xung đột thay vì lấy một bản.
     const evs = groupDuplicates([withLoan(1_000_000_000), withLoan(1_500_000_000)], (a) => assetKeys(a as unknown as AssetDescriptor));
     const r = await finalResult(evs);
-    expect(r.financial_metrics.requested_amount.status).toBe('CALCULATED');
-    expect(r.financial_metrics.requested_amount.input_conflict).toBeUndefined();
-    expect(r.policy_compliance.rule_results.some((x) => x.reason_code === 'INPUT_VALUE_CONFLICT')).toBe(false);
+    expect(r.profile_360!.loan.bank_proposed_amount.trust).toBe('DISPUTED');
+    expect(r.financial_metrics.requested_amount).toMatchObject({ status: 'INSUFFICIENT_DATA', input_conflict: true });
+    expect(r.profile_360!.issues.some((i) => i.code === 'FIELD_CONFLICT' && i.subject_id === 'loan')).toBe(true);
   });
 });
 
 describe('T-MD-08: đầu vào tài chính từ master', () => {
   it('MD-AC11: hồ sơ không có bản lệch → đầu vào tài chính giống hệt trước khi đổi nguồn', async () => {
     const { input, master } = await runDossier([withLoan(1_000_000_000)]);
-    const before = financialInputsV3(input.evidences, input.s3);
+    const before = financialInputsFromProfile(profileOf(input.evidences as EvidenceEnvelope[], { s3: input.s3 }));
     const after = applyMasterToFinancialInputs(before, master);
     const values = (x: typeof before) => Object.fromEntries(Object.entries(x).map(([k, v]) => [k, (v as { value?: number } | null)?.value ?? null]));
     expect(values(after)).toEqual(values(before));

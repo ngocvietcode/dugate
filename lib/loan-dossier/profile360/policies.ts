@@ -7,6 +7,10 @@ export const MergePoliciesSchema = z.object({
   policy_version: z.string().min(1),
   description: z.string().optional(),
   income_monthly_amount: z.enum(['MIN']),
+  /** D-112: giá trị TSBĐ dùng tính LTV = thấp nhất các chứng thư định giá của tài sản. */
+  collateral_value: z.enum(['MIN']),
+  /** Chênh lệch giữa định giá cao nhất và thấp nhất của một tài sản (tỷ lệ trên giá thấp nhất) vượt ngưỡng → `VALUATION_GAP`. */
+  valuation_gap_ratio: z.number().gt(0),
 });
 
 export type MergePolicies = z.infer<typeof MergePoliciesSchema>;

@@ -5,8 +5,7 @@
 //
 // Phạm vi v1 (D-100) chỉ gồm 3 điểm workflow từng gắn cứng HKD. Danh mục chứng từ, anchor, vai trò của S3 chưa vào pack:
 // chưa có pack thứ hai cần chúng (thêm khi xây SME pack).
-import type { MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
-import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
+import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
 import type { LoanProductConfig } from '@/lib/loan-dossier/catalog/products';
 
 import type { LoanCheckSet } from '../check-set';
@@ -16,10 +15,10 @@ import type { FinancialMetrics, LoanRecommendation, PolicyComplianceResult, Revi
 export type Segment = LoanProductConfig['segment'];
 
 export interface FinancialStageInput {
-  /** Output S2 (`extract_evidence`), nguyên trạng. */
-  evidences: ReadonlyArray<EvidenceEnvelope>;
-  /** Output S3; null khi S3 lỗi (pack phải tự quyết chỉ số nào không đánh giá được). */
-  s3: MapDossierData | null;
+  /** Hồ sơ 360 — nguồn sự thật duy nhất (D-114); null khi S3 hoặc LAC lỗi. */
+  profile: Profile360 | null;
+  /** Đã gom được người & tài sản (S3). Không có thì không biết tài sản nào là TSBĐ: LTV / giá trị TSBĐ không đánh giá. */
+  s3Available: boolean;
 }
 
 export interface PolicyStageInput {

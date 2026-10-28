@@ -10,6 +10,7 @@ import { JSON_ONLY_OUTPUT_RULE } from '@/lib/loan-dossier/common/llm-json';
 import { renderLoanApplicationContext, type LacRender } from '@/lib/loan-dossier/context/render';
 import type { LacFact, LoanApplicationContext } from '@/lib/loan-dossier/context/schema';
 import { lacScopeFromInputs } from '@/lib/loan-dossier/context/scope';
+import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
 import { renderDossierGraph, type DossierGraph } from '@/lib/loan-dossier/graph';
 import type { LoanCheckDefinition, LoanCheckSet } from './check-set';
 import { resolveRuleGroup } from './rule-groups';
@@ -71,6 +72,8 @@ export interface PromptCheckInput {
   /** LAC đã dựng (D-103). Chỉ dùng khi `lacMode = 'on'` và template có `{{context}}`. */
   lac?: LoanApplicationContext | null;
   lacMode?: LacMode;
+  /** Hồ sơ 360 của cùng lần chạy (D-114): LAC render nguồn thu / hộ kinh doanh theo đơn vị của nó. */
+  profile?: Profile360 | null;
 }
 
 /** Kết quả quyết định dùng LAC cho một lần dựng prompt (để workflow ghi warning / thống kê). */
@@ -470,7 +473,7 @@ QUY TẮC BẮT BUỘC:
 2. evidence_ids là mã dữ kiện F<n> (hoặc F<n>.<k> để chỉ chứng từ thứ k của dữ kiện đó) có trong HỒ SƠ VAY bên dưới. Tuyệt đối không tự tạo mã.
 3. Nếu không tìm được dữ kiện để chứng minh, trả status="INSUFFICIENT_DATA" và evidence_ids=[]. Không suy đoán. Kiểm tra cần dữ liệu nằm ở mục KHOẢNG TRỐNG thì trả INSUFFICIENT_DATA.
 4. status chỉ nhận: PASS | REVIEW | FAIL | INSUFFICIENT_DATA.
-5. PASS chỉ khi mọi dữ kiện dẫn chiếu không "cần soát" và không DISPUTED / PROBABLE_OCR_ERROR. Dữ kiện DECLARED là lời khai trên đơn vay: PASS không được dẫn dữ kiện DECLARED; dẫn dữ kiện CORROBORATED / SINGLE_SOURCE của chính thông tin đó, không có thì trả REVIEW.
+5. PASS chỉ khi mọi dữ kiện dẫn chiếu không "cần soát" và không DISPUTED / PROBABLE_OCR_ERROR. Dữ kiện DECLARED là lời khai của khách hàng (đơn vay, bảng kê): PASS không được dẫn dữ kiện DECLARED; dẫn dữ kiện CORROBORATED / SINGLE_SOURCE của chính thông tin đó, không có thì trả REVIEW.
 6. Người và tài sản đã được hệ thống gom: person-n / asset-n là CÙNG một chủ thể trên mọi chứng từ. Không tự gom lại; nếu thấy gom sai, trả REVIEW và nêu lý do.
 7. Mâu thuẫn đã được liệt kê ở mục MÂU THUẪN; chỉ báo mâu thuẫn khác khi khác biệt mang tính thực chất (OCR có thể sai dấu, nhầm O↔0, l↔1).
 8. confidence là số thực 0..1 thể hiện mức chắc chắn của bạn; BẮT BUỘC có cho mọi kết quả.
@@ -514,7 +517,7 @@ export function buildPromptCheckVars(
   const lacWanted = input.lacMode === 'on' && !!input.lac;
   const lacTemplate = lacWanted ? (promptOverride || POLICY_CHECKS_LAC_PROMPT_TEMPLATE) : null;
   if (lacTemplate && /\{\{\s*context\s*\}\}/.test(lacTemplate)) {
-    const render = renderLoanApplicationContext(input.lac!, lacScopeFromInputs(checks.map((c) => c.input)));
+    const render = renderLoanApplicationContext(input.lac!, lacScopeFromInputs(checks.map((c) => c.input)), undefined, input.profile ?? null);
     onLac?.({ used: true, legacyTemplate: false, render });
     const body = ensurePlaceholders(lacTemplate, ['checks', 'context', 'output_schema']).replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) => {
       switch (key) {
@@ -726,7 +729,7 @@ export function parsePromptCheckResults(
           actual: status,
           confidence,
           reason_code: 'PROMPT_CHECK_DECLARED_ONLY',
-          message: `${reason} (Dẫn chiếu có dữ kiện chỉ khai trên giấy đề nghị vay, chưa có chứng từ khác xác nhận nên hạ xuống cần rà soát.)`,
+          message: `${reason} (Dẫn chiếu có dữ kiện chỉ là lời khai của khách hàng (đơn vay, bảng kê), chưa có chứng từ khác xác nhận nên hạ xuống cần rà soát.)`,
           evidence_ids: evidenceIds,
         } satisfies RuleResult;
       }

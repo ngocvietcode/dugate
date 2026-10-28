@@ -2,13 +2,14 @@
 import { parseLoanProducts, loadLoanProducts } from '@/lib/loan-dossier/catalog/products';
 import { runMapDossier } from '@/lib/loan-dossier/s3/run';
 import { defaultCheckSet } from '@/lib/pipelines/workflows/loan-appraisal/check-set';
-import { financialInputsV3 } from '@/lib/pipelines/workflows/loan-appraisal/financial-inputs';
+import { financialInputsFromProfile } from '@/lib/pipelines/workflows/loan-appraisal/financial-inputs';
 import { resolveLoanProductPolicy } from '@/lib/pipelines/workflows/loan-appraisal/product-policy';
 import { HKD_SECURED_PACK } from '@/lib/pipelines/workflows/loan-appraisal/segment-packs/hkd-secured';
 import { packForProduct, validateSegmentPackRegistry } from '@/lib/pipelines/workflows/loan-appraisal/segment-packs/registry';
 import { HkdSecuredFinancialStrategy, PolicyStrategy, RecommendationStrategy } from '@/lib/pipelines/workflows/loan-appraisal/strategies';
 
 import { ev, ID_A12, loanApp } from '../loan-dossier/fixtures/dossier';
+import { profileOf } from '../loan-dossier/fixtures/profile';
 
 const catalogWith = (segment: string) => {
   const base = loadLoanProducts();
@@ -49,8 +50,9 @@ describe('pack HKD giữ nguyên hành vi của strategy cũ', () => {
   const checkSet = defaultCheckSet('FULL', 'hkd-loan');
 
   it.each([['có S3', s3], ['S3 lỗi', null]] as const)('stage 2–4 cho kết quả giống hệt gọi strategy trực tiếp (%s)', (_label, map) => {
-    const financial = HKD_SECURED_PACK.calculateFinancials({ evidences: evs, s3: map });
-    expect(financial).toEqual(new HkdSecuredFinancialStrategy().execute({ inputs: financialInputsV3(evs, map), skipCollateral: map === null }));
+    const profile = profileOf(evs, { s3: map });
+    const financial = HKD_SECURED_PACK.calculateFinancials({ profile, s3Available: map !== null });
+    expect(financial).toEqual(new HkdSecuredFinancialStrategy().execute({ inputs: financialInputsFromProfile(profile), skipCollateral: map === null }));
 
     const compliance = HKD_SECURED_PACK.evaluatePolicy({ policy, checkSet, financial, promptResults: [] });
     expect(compliance).toEqual(new PolicyStrategy(policy, checkSet).execute({ facts: { financial }, promptResults: [] }));

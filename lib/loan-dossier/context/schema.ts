@@ -9,7 +9,7 @@ export const LacSubjectKindSchema = z.enum(['loan', 'business', 'person', 'asset
 export const LacTrustSchema = z.enum([
   'CORROBORATED', // ≥ 2 LOẠI chứng từ khác nhau cùng giá trị (D-112)
   'SINGLE_SOURCE', // 1 chứng từ không phải đơn vay
-  'DECLARED', // chỉ đơn vay (lời khai)
+  'DECLARED', // chỉ có lời khai của khách hàng (đơn vay, bảng kê — catalog/declared.ts)
   'SPELLING_VARIANT', // cùng nghĩa, khác dấu
   'PROBABLE_OCR_ERROR', // lệch 1 ký tự so với đa số
   'DISPUTED', // khác giá trị thực chất
