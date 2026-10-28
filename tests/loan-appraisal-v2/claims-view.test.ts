@@ -152,7 +152,8 @@ describe('Customer360Panel + ClaimsPanel (render)', () => {
 
   it('header gộp số cảnh báo của claim vào "điểm cần chú ý"', () => {
     expect(text(panelHtml({ dob: '1990-09-09' }))).toMatch(/[1-9]\d* điểm cần chú ý/);
-    expect(text(panelHtml())).not.toMatch(/điểm cần chú ý/);
+    // Không cảnh báo: không có badge đếm ở header; thân thẻ báo "Không có điểm cần chú ý" (D-113).
+    expect(text(panelHtml())).not.toMatch(/\d+ điểm cần chú ý/);
   });
 
   it('hồ sơ bình thường: không có mục cảnh báo, có mục "được nhiều chứng từ xác nhận"', () => {
