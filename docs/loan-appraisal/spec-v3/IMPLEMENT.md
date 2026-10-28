@@ -193,11 +193,11 @@ Xem [open_questions.md](open_questions.md).
   (OQ-360-06), bóc tách đầy đủ tờ khai GTGT / BCTC (OQ-360-07), checklist HKD / DN chấm theo cả hồ sơ (OQ-360-08).
 - **D-109 (2026-10-27)** Đề xuất bộ chấm Fellegi-Sunter cho bước ghép party của S3: [cross_cutting/s3_fellegi_sunter.md](cross_cutting/s3_fellegi_sunter.md).
   Chưa cài đặt. Bộ chấm viết bằng TypeScript trong repo (npm không có thư viện FS đủ chín; gói gần nhất là AGPL); tham số m/u ở
-  `catalog/data/fs_params.json`, ước lượng ngoài hệ thống bằng Splink; chế độ `s3_matcher` = `rules` | `shadow` | `fs`. Phát hiện khi
+  `catalog/data/fs_params.json`, ước lượng ngoài hệ thống (ban đầu bằng Splink, bỏ ở D-111); chế độ `s3_matcher` = `rules` | `shadow` | `fs`. Phát hiện khi
   chạy thử S3 thật: party cùng tên nhưng khác số CCCD và khác ngày sinh vẫn bị gộp vào khách vay theo tên (S3-R07), chỉ gắn
   `DECLARED_ID_DIFFERS` giống hệt ca số đọc lệch 1 ký tự; vá bằng luật ở T-FS-01, không chờ FS.
   **Đã cài T-FS-01** (`match-parties.ts`): chỉ so với lời khai trên anchor, không so với thẻ đã ghép theo tên, nên S3-AC06 / S4-AC29
-  (hai thẻ cùng tên → `role_conflict`) giữ nguyên. T-FS-02…05 giao Codex: `.agents/tasks/fs-scorer/plan.md`, `.agents/tasks/fs-splink/plan.md`
+  (hai thẻ cùng tên → `role_conflict`) giữ nguyên. T-FS-02…04 theo `.agents/tasks/fs-scorer/plan.md`
   (đợt này chỉ `rules` / `shadow`, chế độ `fs` để sau T-FS-06).
   **Đã cài T-FS-02…04** (Claude làm thay Codex, nhánh `codex/fs-scorer`): `lib/loan-dossier/s3/fs/{params,compare,score,shadow}.ts`,
   `catalog/data/fs_params.json` (tham số chuyên gia §3.4), tham số chạy `s3_matcher` (`rules` | `shadow`), `s3_matcher_summary` trong kết
@@ -212,3 +212,7 @@ Xem [open_questions.md](open_questions.md).
   loại được nên chỉ ghi gap `DECLARED_INCOME_NOT_LINKED`; (4) L360-B02 sửa theo AC-12: khác số GCN thì không gộp, cùng chủ + cùng tên
   thì gắn `BUSINESS_NUMBER_MISMATCH`; (5) test gộp một file `tests/loan-dossier/profile360.test.ts` (6 ca: AC-8, AC-9, AC-10, AC-12,
   AC-18, catalog hỏng). Kiểm tra: `tsc` 0 lỗi; `tests/loan-dossier` 80 suite / 1010 test qua.
+- **D-111 (2026-10-28)** Bỏ Splink (quyết định của người dùng). Chạy trên UAT không cần Splink: bộ chấm TS chỉ đọc `fs_params.json`.
+  Tham số sẽ **đếm trực tiếp** từ bộ hồ sơ chuẩn có nhãn bằng script TS dùng chính `comparePair` (s3_fellegi_sunter.md §4; FS-R11, FS-AC09
+  viết lại), nên không còn phải giữ mức so sánh giống nhau giữa hai công cụ và không cần Python. T-FS-05 bị gỡ, script đếm gộp vào
+  T-FS-06; plan `.agents/tasks/fs-splink/` xóa.

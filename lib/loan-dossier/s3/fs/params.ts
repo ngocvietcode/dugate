@@ -26,7 +26,8 @@ const comparison = <T extends readonly [string, ...string[]]>(levels: T) => z.ob
 
 export const FsParamsSchema = z.object({
   params_version: z.string().min(1),
-  source: z.enum(['EXPERT', 'SPLINK']),
+  /** `EXPERT` = giá trị đặt tay; `ESTIMATED` = đếm từ bộ hồ sơ chuẩn có nhãn (spec §4, D-111). */
+  source: z.enum(['EXPERT', 'ESTIMATED']),
   estimated_at: z.string().nullable(),
   dataset_ref: z.string().nullable(),
   prior_match_probability: z.number().gt(0).lt(1),
