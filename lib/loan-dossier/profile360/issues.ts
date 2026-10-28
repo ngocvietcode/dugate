@@ -3,7 +3,8 @@
 import type { LoanApplicationContext } from '../context/schema';
 import type { BusinessResult } from './business';
 import type { MergePolicies } from './policies';
-import type { Collateral, Conflict, Customer, IncomeStream, Issue, IssueCode, Obligation } from './schema';
+import type { Collateral, Conflict, Customer, IncomeStream, Issue, IssueCode, Obligation, Profile360 } from './schema';
+import type { TradeResult } from './trade';
 
 export const ASSET_TYPE_LABELS: Record<string, string> = {
   real_estate: 'Bất động sản', apartment: 'Căn hộ', vehicle: 'Xe', deposit: 'Tiền gửi', other: 'Tài sản',
@@ -22,6 +23,8 @@ export interface IssueInput {
   collateral: readonly Collateral[];
   policies: MergePolicies | null;
   declaredIncomeRows: number;
+  trade: TradeResult;
+  loan: Profile360['loan'];
 }
 
 export function subjectLabeler(customers: readonly Customer[], collateral: readonly Collateral[], business: BusinessResult) {
@@ -124,6 +127,31 @@ export function buildIssues(input: IssueInput, conflicts: readonly Conflict[], l
       if (lo > 0 && (hi - lo) / lo > policies.valuation_gap_ratio) push('warning', 'VALUATION_GAP', a.asset_id, `Các chứng thư định giá chênh nhau ${Math.round(((hi - lo) / lo) * 100)}%`, 'LTV tính trên giá thấp nhất (D-112).');
     }
   }
+  // 7. Giấy tờ định danh hết hạn tại ngày nộp hồ sơ.
+  for (const c of customers) {
+    for (const d of c.id_documents) if (d.expired) push('warning', 'ID_DOCUMENT_EXPIRED', c.person_id, `Giấy tờ định danh hết hạn ngày ${d.valid_until}`);
+  }
+
+  // 8. Đối tác và giao dịch mua (L360-B05: bên liên quan chỉ cảnh báo).
+  const { trade } = input;
+  const cpName = new Map(trade.counterparties.map((c) => [c.counterparty_id, c.name ?? c.counterparty_id]));
+  for (const cp of trade.counterparties) {
+    if (cp.person_id) push('warning', 'RELATED_COUNTERPARTY', cp.person_id, `Là ${cp.roles.includes('SELLER') ? 'bên bán' : cp.roles.includes('LENDER') ? 'bên cho vay' : 'chủ lao động'} trên chứng từ giao dịch`, 'Bên liên quan trong giao dịch: cần xác minh mục đích vay và dòng tiền.');
+  }
+  for (const d of trade.deals) {
+    const contract = d.prices.find((p) => p.source === 'CONTRACT');
+    const quote = d.prices.find((p) => p.source === 'QUOTE');
+    if (contract && quote && contract.value !== quote.value) {
+      push('warning', 'DEAL_PRICE_MISMATCH', null, `Giá HĐ mua khác báo giá${d.object ? ` (${d.object})` : ''}`, `HĐ ${contract.value} ≠ báo giá ${quote.value}${d.seller_counterparty_id ? ` · bên bán ${cpName.get(d.seller_counterparty_id)}` : ''}`);
+    }
+  }
+  const dealTotal = trade.deals.reduce((n, d) => n + (d.price ?? 0), 0);
+  const loanAmount = typeof input.loan.bank_proposed_amount.value === 'number' ? input.loan.bank_proposed_amount.value
+    : typeof input.loan.requested_amount.value === 'number' ? input.loan.requested_amount.value : null;
+  if (loanAmount !== null && dealTotal > 0 && loanAmount > dealTotal) {
+    push('warning', 'LOAN_EXCEEDS_DEAL', 'loan', 'Số tiền vay lớn hơn tổng giá trị giao dịch mua trên chứng từ', `Vay ${loanAmount} > giao dịch ${dealTotal}`);
+  }
+
   if (!policies) push('warning', 'MERGE_POLICY_INVALID', null, 'Cấu hình chọn giá trị (merge_policies.json) lỗi: chưa chọn số thu nhập và giá trị TSBĐ');
 
   // Gộp trùng tuyệt đối, xếp nặng trước, giữ thứ tự xuất hiện trong cùng mức.

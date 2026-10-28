@@ -16,11 +16,16 @@ export interface CustomerCard {
   roleLabels: string[];
   identity: Row[];
   relations: Array<{ text: string; name: string; tone: Tone }>;
+  /** Giấy tờ định danh: "CCCD 0123… · hết hạn 2025-01-01". */
+  idDocuments: Row[];
   documents: string[];
   details: Row[];
   /** Số điểm cần xử lý (danger + warning) gắn với người này. */
   issueCount: number;
 }
+
+/** Giao dịch mua tài trợ bằng khoản vay (L360-G04) — hiển thị ngay dưới đề nghị vay để đối chiếu số tiền. */
+export interface DealRow { object: string; seller: string; related: boolean; prices: string; price: string; mismatch: boolean }
 
 export interface IncomeRow { kind: string; owner: string; business: string | null; monthly: string; evidenced: boolean }
 export interface BusinessRow { name: string; registration: string; line: string; owners: string; verified: boolean; documents: string[] }
@@ -39,7 +44,7 @@ export interface CollateralCard {
 
 export interface Customer360View {
   issues: { items: Issue[]; danger: number; warning: number; info: number };
-  loan: { rows: Row[]; purposes: string[]; disputed: boolean };
+  loan: { rows: Row[]; purposes: string[]; disputed: boolean; deals: DealRow[] };
   customers: CustomerCard[];
   repayment: { monthlyTotal: string | null; dscrProfit: string | null; dscrRevenue: string | null; income: IncomeRow[]; businesses: BusinessRow[] };
   obligations: ObligationRow[];
@@ -61,6 +66,7 @@ const INCOME_KIND: Record<string, string> = {
   salary: 'Lương', rental: 'Cho thuê tài sản', household_business: 'Hộ kinh doanh', trip_trading: 'Kinh doanh vận tải', enterprise: 'Doanh nghiệp', other: 'Khác',
 };
 const OBLIGATION_KIND: Record<string, string> = { DECLARED: 'Khai trên đơn vay', CREDIT_CONTRACT: 'HĐ tín dụng TCTD khác', CIC: 'CIC' };
+const PRICE_SOURCE: Record<string, string> = { QUOTE: 'Báo giá', CONTRACT: 'HĐ mua', PURCHASE_LIST: 'Bảng kê' };
 const USAGE: Record<string, string> = { collateral: 'Tài sản bảo đảm', rental_income: 'Tài sản cho thuê' };
 const VERIFY_TONE: Record<string, Tone> = { VERIFIED: 'success', PARTIAL: 'warning', UNVERIFIED: 'warning', NOT_REQUIRED: 'neutral' };
 const VERIFY_TEXT: Record<string, string> = { VERIFIED: 'đã xác minh', PARTIAL: 'xác minh một phần', UNVERIFIED: 'chưa xác minh', NOT_REQUIRED: '' };
@@ -104,6 +110,7 @@ function customerCard(c: Customer, nameOf: (id: string) => string, docLabel: (k:
   const relations = c.relations.map((r) => {
     const base = r.type === 'SPOUSE_OF' ? 'Vợ/chồng'
       : r.type === 'RELATIVE_OF' ? `Nhân thân (${REL_LABELS[r.detail?.split(' · ')[0] ?? 'UNKNOWN'] ?? r.detail?.split(' · ')[0] ?? 'chưa phân loại'})`
+      : r.type === 'HOUSEHOLD_MEMBER_OF' ? `Cùng hộ, chủ hộ${r.detail ? ` (${r.detail})` : ''}`
       : r.type === 'REPRESENTED_BY' ? `Người đại diện theo pháp luật${org?.representative_position ? ` (${org.representative_position})` : ''}`
       : 'Đại diện theo pháp luật của';
     const v = VERIFY_TEXT[r.verification];
@@ -116,6 +123,12 @@ function customerCard(c: Customer, nameOf: (id: string) => string, docLabel: (k:
     roleLabels: c.roles.map((r) => { const [role, detail] = r.split(':'); return detail ? `${ROLE_LABELS[role] ?? role} (${detail})` : ROLE_LABELS[role] ?? role; }),
     identity,
     relations,
+    idDocuments: c.id_documents.map((d) => ({
+      label: docLabel(d.doc_type_key),
+      value: [d.number, d.issue_date ? `cấp ${d.issue_date}` : null].filter(Boolean).join(' · ') || '—',
+      note: d.valid_until ? `${d.expired ? 'hết hạn' : 'hiệu lực đến'} ${d.valid_until}` : null,
+      tone: d.expired ? 'danger' : null,
+    })),
     documents: c.documents.map((d) => `${docLabel(d.doc_type_key)}${d.count > 1 ? ` ×${d.count}` : ''}`),
     details: c.details.map((f) => factRow(f, docLabel)),
     issueCount: issues.filter((i) => i.subject_id === c.person_id && i.severity !== 'info').length,
@@ -143,6 +156,7 @@ export function buildCustomer360View(p: Profile360, docLabel: (key: string) => s
   const basis = p.financial_basis;
   const monthly = p.income_streams.map((s) => s.monthly_amount).filter((x): x is number => x !== null);
   const loanFields = p.loan;
+  const cps = new Map(p.counterparties.map((c) => [c.counterparty_id, c]));
   return {
     issues: {
       items: p.issues,
@@ -158,6 +172,18 @@ export function buildCustomer360View(p: Profile360, docLabel: (key: string) => s
         trustRow('Lãi suất', loanFields.interest_rate, (v) => `${v}%/năm`),
       ].filter(plain),
       purposes: loanFields.purposes,
+      deals: p.purchase_deals.map((d) => {
+        const cp = d.seller_counterparty_id ? cps.get(d.seller_counterparty_id) : undefined;
+        const values = new Set(d.prices.filter((x) => x.source !== 'PURCHASE_LIST').map((x) => x.value));
+        return {
+          object: d.object ?? (d.kind === 'VEHICLE' ? 'Phương tiện' : 'Hàng hóa'),
+          seller: cp?.name ?? 'Chưa rõ bên bán',
+          related: !!cp?.person_id,
+          prices: d.prices.map((x) => `${PRICE_SOURCE[x.source]} ${formatCurrencyVnd(x.value)}`).join(' · '),
+          price: d.price === null ? '—' : formatCurrencyVnd(d.price),
+          mismatch: values.size > 1,
+        };
+      }),
       disputed: [loanFields.requested_amount, loanFields.bank_proposed_amount, loanFields.loan_term_months, loanFields.interest_rate].some((f) => f.trust === 'DISPUTED'),
     },
     customers: p.customers.map((c) => customerCard(c, nameOf, docLabel, p.issues)),

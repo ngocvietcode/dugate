@@ -86,6 +86,7 @@ function CustomerItem({ c }: { c: CustomerCard }) {
         </div>
       </div>
       <div className="mt-2"><Rows rows={c.identity} /></div>
+      {c.idDocuments.length > 0 && <div className="mt-2 border-t border-border pt-2"><Rows rows={c.idDocuments} /></div>}
       {c.relations.length > 0 && (
         <ul className="mt-2 space-y-0.5 border-t border-border pt-2">
           {c.relations.map((r) => (
@@ -187,6 +188,22 @@ export function Customer360Panel({ result }: { result: AppraisalResult }) {
               <div className="text-xs">
                 <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Mục đích vay</p>
                 <ul className="list-disc space-y-0.5 pl-4 text-foreground">{loan.purposes.map((x) => <li key={x}>{x}</li>)}</ul>
+              </div>
+            )}
+            {loan.deals.length > 0 && (
+              <div className="text-xs md:col-span-2">
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Giao dịch mua</p>
+                <ul className="space-y-1">
+                  {loan.deals.map((d, i) => (
+                    <li key={i} className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="font-medium text-foreground">{d.object}</span>
+                      <span className="text-muted-foreground">bên bán {d.seller}</span>
+                      {d.related && <Badge tone="warning">Bên liên quan</Badge>}
+                      <span className="tabular-nums text-foreground">{d.price}</span>
+                      {d.prices && <span className={d.mismatch ? 'text-[rgb(var(--la2-warning))]' : 'text-muted-foreground'}>({d.prices})</span>}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>

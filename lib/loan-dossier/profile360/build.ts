@@ -9,9 +9,10 @@ import { buildCustomers } from './customers';
 import { buildIncomeStreams } from './income';
 import { buildConflicts, buildIssues, subjectLabeler } from './issues';
 import { buildObligations } from './obligations';
+import { buildTrade } from './trade';
 import { loadMergePolicies, type MergePolicies } from './policies';
 import { PROFILE360_VERSION, type BasisValue, type FinancialBasis, type Profile360 } from './schema';
-import { basisAt, buildLookup, fieldAt, sumBasis, text, valueAt, type Lookup } from './sources';
+import { basisAt, buildLookup, fieldAt, normText, sumBasis, text, valueAt, type Lookup } from './sources';
 
 export interface BuildProfile360Input {
   evidences: ReadonlyArray<EvidenceEnvelope>;
@@ -22,6 +23,8 @@ export interface BuildProfile360Input {
   segment: string | null;
   /** Mặc định nạp `catalog/data/merge_policies.json`; null = catalog hỏng. */
   policies?: MergePolicies | null;
+  /** Ngày nộp hồ sơ `YYYY-MM-DD` (d0, V2-R01) để xét giấy tờ hết hạn; vắng → không xét. */
+  as_of?: string | null;
 }
 
 const LOAN_FIELDS = ['requested_amount', 'bank_proposed_amount', 'loan_term_months', 'interest_rate'] as const;
@@ -69,17 +72,26 @@ export function buildProfile360(input: BuildProfile360Input): Profile360 {
     ].filter((x): x is string => !!x))],
   };
 
-  const customers = buildCustomers(lookup, s3);
+  const asOf = input.as_of ?? null;
+  const customers = buildCustomers(lookup, s3, asOf);
   const borrowerId = customers.find((c) => c.roles.includes('borrower'))?.person_id ?? null;
   const business = buildBusinessUnits(lookup, s3, input.segment);
   const income = buildIncomeStreams(lookup, s3, business, policies);
   const obligations = buildObligations(lookup, borrowerId);
   const collateral = buildCollateral(lookup, s3, policies);
+  const trade = buildTrade(lookup, s3);
+  // L360-G06: địa điểm kinh doanh trùng địa chỉ tài sản (full_text chuẩn hóa; chưa có bảng ánh xạ địa danh 2025 → chỉ so trùng tuyệt đối).
+  const located = business.units.flatMap((u) => {
+    const addr = typeof u.business_address.value === 'string' ? normText(u.business_address.value) : null;
+    if (!addr) return [];
+    return collateral.filter((a) => a.details.some((f) => /address|dia_chi/i.test(f.field) && typeof f.value === 'string' && normText(f.value) === addr))
+      .map((a) => ({ type: 'LOCATED_AT' as const, from: u.business_id, to: a.asset_id, verification: 'PARTIAL' as const }));
+  });
 
   const label = subjectLabeler(customers, collateral, business);
   const conflicts = buildConflicts(lac, label);
   const declaredIncomeRows = income.gaps.find((g) => g.code === 'DECLARED_INCOME_NOT_LINKED')?.count ?? 0;
-  const issues = buildIssues({ lac, customers, business, income: income.income_streams, obligations, collateral, policies, declaredIncomeRows }, conflicts, label);
+  const issues = buildIssues({ lac, customers, business, income: income.income_streams, obligations, collateral, policies, declaredIncomeRows, trade, loan }, conflicts, label);
 
   return {
     profile_version: PROFILE360_VERSION,
@@ -90,11 +102,13 @@ export function buildProfile360(input: BuildProfile360Input): Profile360 {
     business_units: business.units,
     obligations,
     collateral,
-    relations: [...business.relations, ...income.relations],
+    counterparties: trade.counterparties,
+    purchase_deals: trade.deals,
+    relations: [...business.relations, ...income.relations, ...located],
     financial_basis: financialBasis(lookup, loan, { income_streams: income.income_streams, collateral }),
     conflicts,
     issues,
     gaps: [...(policies ? [] : [{ code: 'MERGE_POLICY_INVALID' as const, count: 1 }]), ...income.gaps],
-    meta: { lac_source_hash: lac.meta.source_hash, merge_policy_version: policies?.policy_version ?? null },
+    meta: { lac_source_hash: lac.meta.source_hash, merge_policy_version: policies?.policy_version ?? null, as_of: asOf },
   };
 }

@@ -89,6 +89,7 @@ import { lacScopeFromInputs } from '@/lib/loan-dossier/context/scope';
 import { buildProfile360 } from '@/lib/loan-dossier/profile360/build';
 import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
 import { packForProduct } from './loan-appraisal/segment-packs/registry';
+import { consolidateParams } from './loan-appraisal/run-params';
 import { deriveProcessingStatus, LOAN_STAGE_DEFINITIONS } from './loan-appraisal/state-machine';
 import {
   LOAN_APPRAISAL_OUTPUT_VERSION,
@@ -323,7 +324,8 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
     let profile360: Profile360 | null = null;
     if (context) {
       try {
-        profile360 = buildProfile360({ evidences: extractCheckpoint.evidences, s3: mapOutcome.data, lac: context, segment: packSnapshot.segment });
+        const { dossier_submitted_at } = consolidateParams(pipelineVars);
+        profile360 = buildProfile360({ evidences: extractCheckpoint.evidences, s3: mapOutcome.data, lac: context, segment: packSnapshot.segment, as_of: dossier_submitted_at });
       } catch (error) {
         const name = error instanceof Error ? error.name : 'Error';
         configWarnings.push(`PROFILE_360_UNAVAILABLE:${name}`);

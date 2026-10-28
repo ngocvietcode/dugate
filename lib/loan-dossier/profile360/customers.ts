@@ -2,10 +2,10 @@
 // do S3 chọn dẫn về fact LAC, quan hệ nhân thân, cờ của S3 và chi tiết còn lại từ LAC. Hàm thuần, tất định.
 import { normIdNumber } from '../common/normalize';
 import type { MapDossierData } from '../contracts/check-stages';
-import type { Address } from '../s2/common-schema';
+import type { Address, DocumentParty } from '../s2/common-schema';
 import type { LacFact } from '../context/schema';
-import type { Customer, ProfileField } from './schema';
-import { detailsOf, normText, type Lookup } from './sources';
+import type { Customer, IdentityDocument, ProfileField } from './schema';
+import { detailsOf, normText, text, valueAt, type Lookup } from './sources';
 
 const IDENTITY_FIELDS = new Set([
   'parties[].full_name', 'parties[].id_number', 'parties[].date_of_birth', 'parties[].previous_id_numbers[]', 'parties[].tax_id',
@@ -29,6 +29,52 @@ function fromS3(chosen: string | null, facts: readonly LacFact[], norm: (v: stri
   };
 }
 
+const ID_DOC_TYPES = new Set(['id_card', 'vneid', 'qr_code_info']);
+
+/** Giấy tờ định danh của mỗi người (L360-G08): party HOLDER của CCCD / VNeID / QR, hết hạn so với ngày nộp hồ sơ. */
+function identityDocuments(lookup: Lookup, asOf: string | null): Map<string, IdentityDocument[]> {
+  const out = new Map<string, IdentityDocument[]>();
+  for (const e of lookup.evidences) {
+    if (!ID_DOC_TYPES.has(e.doc_type_key)) continue;
+    const holder = ((e.data?.parties as DocumentParty[] | undefined) ?? []).find((p) => p.party_role === 'HOLDER');
+    const person = holder ? lookup.personOf(e.evidence_id, holder.party_index)?.person_id : undefined;
+    if (!holder || !person) continue;
+    const doc: IdentityDocument = {
+      doc_type_key: e.doc_type_key,
+      number: normIdNumber(holder.id_number),
+      issue_date: text(holder.id_issue_date) ?? text(valueAt(e.data, 'legal_info.issue_date')),
+      valid_until: text(valueAt(e.data, 'legal_info.valid_until')),
+      expired: null,
+    };
+    doc.expired = asOf && doc.valid_until ? doc.valid_until < asOf : null;
+    const list = out.get(person) ?? [];
+    // Hai bản chụp cùng loại, cùng số, cùng ngày cấp là một giấy.
+    if (!list.some((d) => d.doc_type_key === doc.doc_type_key && d.number === doc.number && d.issue_date === doc.issue_date)) list.push(doc);
+    out.set(person, list);
+  }
+  return out;
+}
+
+/** Quan hệ cùng hộ trên xác nhận cư trú (L360-G07): mỗi thành viên đã gom → chủ hộ; chỉ là căn cứ bổ sung, không đổi xác minh nhân thân. */
+function householdRelations(lookup: Lookup): Map<string, Customer['relations']> {
+  const out = new Map<string, Customer['relations']>();
+  for (const e of lookup.evidences) {
+    if (e.doc_type_key !== 'residence_confirmation') continue;
+    const headIdx = valueAt(e.data, 'residence_info.household_head_party_index');
+    const head = typeof headIdx === 'number' ? lookup.personOf(e.evidence_id, headIdx)?.person_id : undefined;
+    if (!head) continue;
+    for (const p of (e.data?.parties as DocumentParty[] | undefined) ?? []) {
+      const person = lookup.personOf(e.evidence_id, p.party_index)?.person_id;
+      if (!person || person === head) continue;
+      const detail = p.party_role === 'HOLDER' ? text(valueAt(e.data, 'residence_info.holder_relationship_to_household_head_raw')) : text(p.party_role_raw);
+      const list = out.get(person) ?? [];
+      if (!list.some((r) => r.person_id === head)) list.push({ type: 'HOUSEHOLD_MEMBER_OF', person_id: head, verification: 'NOT_REQUIRED', detail });
+      out.set(person, list);
+    }
+  }
+  return out;
+}
+
 function relationsOf(s3: MapDossierData, personId: string): Customer['relations'] {
   const out: Customer['relations'] = [];
   const c360 = s3.customer_360.find((c) => c.person_id === personId);
@@ -48,9 +94,11 @@ function relationsOf(s3: MapDossierData, personId: string): Customer['relations'
   return out;
 }
 
-export function buildCustomers(lookup: Lookup, s3: MapDossierData | null): Customer[] {
+export function buildCustomers(lookup: Lookup, s3: MapDossierData | null, asOf: string | null): Customer[] {
   if (!s3) return [];
   const { lac } = lookup;
+  const idDocs = identityDocuments(lookup, asOf);
+  const household = householdRelations(lookup);
   const subjects = new Map(lac.subjects.map((s) => [s.subject_id, s]));
   const c360 = new Map(s3.customer_360.map((c) => [c.person_id, c]));
   const factsOf = (personId: string, field: string) => lac.facts.filter((f) => f.subject_id === personId && f.field === field && !f.hidden && f.trust !== 'SUPERSEDED');
@@ -77,9 +125,10 @@ export function buildCustomers(lookup: Lookup, s3: MapDossierData | null): Custo
           headquarters_address: addressText(entry.organization.headquarters_address) ?? addressText(entry.identity.permanent_address),
           representative_position: entry.organization.representative_position,
         } : null,
-        relations: relationsOf(s3, p.person_id),
+        relations: [...relationsOf(s3, p.person_id), ...(household.get(p.person_id) ?? [])],
         flags: [...(subject?.flags ?? [])],
         documents: [...(subject?.mentioned_in ?? [])],
+        id_documents: idDocs.get(p.person_id) ?? [],
         details: detailsOf(lac, p.person_id, IDENTITY_FIELDS),
       } satisfies Customer;
     });

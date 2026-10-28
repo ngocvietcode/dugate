@@ -50,11 +50,22 @@ export const LoanSchema = z.object({
 }).strict();
 
 export const CustomerRelationSchema = z.object({
-  type: z.enum(['SPOUSE_OF', 'RELATIVE_OF', 'LEGAL_REP_OF', 'REPRESENTED_BY']),
+  /** `HOUSEHOLD_MEMBER_OF`: cùng hộ trên xác nhận cư trú (CT07), `person_id` = chủ hộ; chỉ là căn cứ bổ sung (L360-G07, OQ-360-17). */
+  type: z.enum(['SPOUSE_OF', 'RELATIVE_OF', 'LEGAL_REP_OF', 'REPRESENTED_BY', 'HOUSEHOLD_MEMBER_OF']),
   person_id: z.string(),
   verification: VerificationSchema,
   /** Loại quan hệ nhân thân, số giấy khai sinh đã xác minh… (không giá trị định danh). */
   detail: z.string().nullable(),
+}).strict();
+
+/** Một giấy tờ định danh của khách hàng (L360-G08). Hai bản chụp cùng loại, cùng số, cùng ngày cấp là một giấy. */
+export const IdentityDocumentSchema = z.object({
+  doc_type_key: z.string(),
+  number: z.string().nullable(),
+  issue_date: z.string().nullable(),
+  valid_until: z.string().nullable(),
+  /** Hết hiệu lực tại ngày nộp hồ sơ (`meta.as_of`); null khi không biết ngày hết hạn hoặc ngày nộp. */
+  expired: z.boolean().nullable(),
 }).strict();
 
 export const CustomerSchema = z.object({
@@ -82,7 +93,37 @@ export const CustomerSchema = z.object({
   /** Cờ của S3 (`ROLE_CONFLICT`, `ID_NUMBER_REVIEW`, `LOW_MATCH_CONFIDENCE`, `NAME_SPELLING_DIFFERENCE`). */
   flags: z.array(z.string()),
   documents: z.array(DocCount),
+  id_documents: z.array(IdentityDocumentSchema),
   details: z.array(DetailFactSchema),
+}).strict();
+
+/** Bên ngoài hồ sơ vay xuất hiện trên chứng từ (bên bán, chủ lao động, bên cho vay…) (L360-G09). */
+export const CounterpartySchema = z.object({
+  counterparty_id: z.string().regex(/^cp-\d+$/),
+  party_type: z.enum(['INDIVIDUAL', 'ORGANIZATION']),
+  name: z.string().nullable(),
+  tax_id: z.string().nullable(),
+  id_number: z.string().nullable(),
+  /** Vai trò cộng dồn trên các chứng từ: `SELLER`, `EMPLOYER`, `LENDER`, `QUOTER`. */
+  roles: z.array(z.string()),
+  /** Đối tác chính là một người trong hồ sơ (S3 ghép được) → bên liên quan (L360-B05). */
+  person_id: z.string().nullable(),
+  documents: z.array(DocCount),
+}).strict();
+
+/** Giao dịch mua tài trợ bằng khoản vay (L360-G04): báo giá, HĐ mua, bảng kê cùng bên bán + cùng đối tượng là một giao dịch. */
+export const PurchaseDealSchema = z.object({
+  deal_id: z.string().regex(/^deal-\d+$/),
+  kind: z.enum(['VEHICLE', 'GOODS']),
+  /** Mô tả đối tượng (hãng / model / năm / màu của xe; mô tả hàng hóa). */
+  object: z.string().nullable(),
+  seller_counterparty_id: z.string().nullable(),
+  asset_id: z.string().nullable(),
+  /** `EXACT` = nối bằng số khung / số máy / số HĐ; `PARTIAL` = nối bằng hãng + model + năm hoặc chỉ bằng bên bán. */
+  link: z.enum(['EXACT', 'PARTIAL', 'SINGLE']),
+  prices: z.array(z.object({ value: z.number(), source: z.enum(['QUOTE', 'CONTRACT', 'PURCHASE_LIST']), doc_type_key: z.string(), fact_ids: z.array(z.string()) }).strict()),
+  /** Giá dùng đối chiếu số tiền vay: giá HĐ nếu có, không thì báo giá thấp nhất, không thì bảng kê. */
+  price: z.number().nullable(),
 }).strict();
 
 export const BusinessFlagSchema = z.enum(['BUSINESS_MATCH_REVIEW', 'BUSINESS_NUMBER_MISMATCH']);
@@ -197,6 +238,7 @@ export const IssueCodeSchema = z.enum([
   'INCOME_NOT_EVIDENCED', 'INCOME_AMOUNT_MISSING', 'INCOME_OWNER_NOT_MAPPED', 'DECLARED_INCOME_NOT_LINKED',
   'ADVERSE_DEBT_GROUP', 'UNDECLARED_DEBT', 'VALUATION_GAP', 'COLLATERAL_NOT_VALUED', 'COLLATERAL_CONTEXT_AMBIGUOUS',
   'EVIDENCE_READ_ERROR', 'SUPERSEDED_EVIDENCE', 'MERGE_POLICY_INVALID',
+  'ID_DOCUMENT_EXPIRED', 'RELATED_COUNTERPARTY', 'DEAL_PRICE_MISMATCH', 'LOAN_EXCEEDS_DEAL',
 ]);
 
 /** Danh sách DUY NHẤT các điểm cần xử lý trước khi quyết định; đã gộp trùng theo (chủ thể, trường). */
@@ -210,7 +252,8 @@ export const IssueSchema = z.object({
 }).strict();
 
 export const ProfileRelationSchema = z.object({
-  type: z.enum(['OPERATES', 'EARNS_FROM']),
+  /** `LOCATED_AT`: địa điểm kinh doanh `biz-n` trùng địa chỉ của tài sản `asset-n` (L360-G06, chỉ khi `full_text` chuẩn hóa trùng). */
+  type: z.enum(['OPERATES', 'EARNS_FROM', 'LOCATED_AT']),
   from: z.string(),
   to: z.string(),
   verification: VerificationSchema,
@@ -227,12 +270,15 @@ export const Profile360Schema = z.object({
   business_units: z.array(BusinessUnitSchema),
   obligations: z.array(ObligationSchema),
   collateral: z.array(CollateralSchema),
+  counterparties: z.array(CounterpartySchema),
+  purchase_deals: z.array(PurchaseDealSchema),
   relations: z.array(ProfileRelationSchema),
   financial_basis: FinancialBasisSchema,
   conflicts: z.array(ConflictSchema),
   issues: z.array(IssueSchema),
   gaps: z.array(z.object({ code: ProfileGapCodeSchema, count: z.number().int().min(1) }).strict()),
-  meta: z.object({ lac_source_hash: z.string(), merge_policy_version: z.string().nullable() }).strict(),
+  /** `as_of` = ngày nộp hồ sơ dùng xét hiệu lực giấy tờ (null khi không truyền). */
+  meta: z.object({ lac_source_hash: z.string(), merge_policy_version: z.string().nullable(), as_of: z.string().nullable() }).strict(),
 }).strict();
 
 export type ProfileField = z.infer<typeof ProfileFieldSchema>;
@@ -245,6 +291,9 @@ export type IncomeKind = z.infer<typeof IncomeKindSchema>;
 export type IncomeStream = z.infer<typeof IncomeStreamSchema>;
 export type BasisValue = z.infer<typeof BasisValueSchema>;
 export type Obligation = z.infer<typeof ObligationSchema>;
+export type IdentityDocument = z.infer<typeof IdentityDocumentSchema>;
+export type Counterparty = z.infer<typeof CounterpartySchema>;
+export type PurchaseDeal = z.infer<typeof PurchaseDealSchema>;
 export type Collateral = z.infer<typeof CollateralSchema>;
 export type FinancialBasis = z.infer<typeof FinancialBasisSchema>;
 export type Conflict = z.infer<typeof ConflictSchema>;
