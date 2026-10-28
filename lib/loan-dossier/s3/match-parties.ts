@@ -1,4 +1,5 @@
 // Ghép party của chứng từ khác theo số, rồi theo tên (T-S3-04; S3-R06, R07, R08, R09).
+import { isOldNewPair } from '../common/id-number';
 import { isNameMatch, nameLevel, type NameLevel } from '../common/name';
 import { orgNameLevel } from '../common/org-name';
 import { normIdNumber } from '../common/normalize';
@@ -45,6 +46,20 @@ const isOrg = (p: DocumentParty) => p.party_type === 'ORGANIZATION';
 const kindOf = (p: DocumentParty): Person['party_type'] => (isOrg(p) ? 'ORGANIZATION' : 'INDIVIDUAL');
 const namesOf = (person: Person) => [...new Set([person.full_name, ...person.parties.map((r) => r.party.full_name)].filter((n): n is string => Boolean(n?.trim())))];
 const dobsOf = (person: Person) => new Set(person.parties.map((r) => r.party.date_of_birth).filter((d): d is string => d !== null));
+
+/**
+ * FS-R01 (D-109): số định danh VÀ ngày sinh cùng khác **lời khai trên anchor** (cả hai bên có, không phải cặp 9 ↔ 12 số) → người khác dù
+ * trùng tên, VD cha / con cùng tên. Trước đây ca này được ghép theo tên, chỉ gắn `DECLARED_ID_DIFFERS` như một lỗi đọc số.
+ * Chỉ so với anchor, không so với thẻ đã ghép: hai thẻ cùng tên mà anchor không phân xử được vẫn gộp để S3-R11 báo `role_conflict`.
+ */
+function differentPerson(party: DocumentParty, person: Person, anchorId: string | null): boolean {
+  const declaredId = person.declared_id_number;
+  const declaredDob = person.parties.find((r) => r.evidence_id === anchorId && r.party.date_of_birth)?.party.date_of_birth ?? null;
+  const ids = idsOf(party);
+  const dob = party.date_of_birth;
+  if (!declaredId || !declaredDob || ids.length === 0 || !dob || dob === declaredDob) return false;
+  return !ids.some((n) => n === declaredId || isOldNewPair(n, declaredId));
+}
 
 /** Mức tên tốt nhất của party so với mọi tên đã biết của người. Pháp nhân dùng luật tên pháp nhân (bỏ loại hình, không đảo từ). */
 function bestLevel(name: string | null, person: Person): NameLevel {
@@ -122,6 +137,7 @@ export function matchParties(persons: Person[], evidences: ReadonlyArray<Evidenc
       if (hits.length === 1) {
         // Pháp nhân có MST khác MST đã biết của chủ thể thì là công ty khác dù trùng tên riêng.
         if (kind === 'ORGANIZATION' && tax && hits[0].known_tax_ids.size > 0 && !hits[0].known_tax_ids.has(tax)) continue;
+        if (kind === 'INDIVIDUAL' && differentPerson(ref.party, hits[0], anchorId)) continue;
         attach(hits[0], ref, 'FULL_NAME', bestLevel(ref.party.full_name, hits[0]), personOf);
         changed = true;
       }

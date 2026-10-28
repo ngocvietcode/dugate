@@ -6,7 +6,9 @@ import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 import { runMapDossier } from '@/lib/loan-dossier/s3/run';
 import { checkInvariants } from '@/lib/loan-dossier/s3/status';
 
-import { buildCustomer360 } from '@/app/loan-appraisal-v2/lib/customer360-view';
+import { buildCustomer360View } from '@/app/loan-appraisal-v2/lib/customer360';
+import { buildLoanApplicationContext } from '@/lib/loan-dossier/context/build';
+import { buildProfile360 } from '@/lib/loan-dossier/profile360/build';
 import { buildNodeFacts, edgeLabel, labelFor, showsLabelOnCanvas } from '@/app/loan-appraisal-v2/lib/graph-view';
 
 import { ev, ID_A12, ID_B12, loanApp } from './fixtures/dossier';
@@ -162,27 +164,27 @@ describe('UI: Customer 360 và sơ đồ cho doanh nghiệp', () => {
   const view = () => toDossierGraphView(buildDossierGraph(d()));
   const label = (k: string) => `L(${k})`;
 
+  const c360 = () => {
+    const evidences = smeDossier();
+    const s3 = run(evidences).data!;
+    const lac = buildLoanApplicationContext({ product_code: 'sme', flow: 'FLOW_A', evidences, s3, s3_status: 'SUCCESS' });
+    return buildCustomer360View(buildProfile360({ evidences, s3, lac, segment: 'SME' }), label);
+  };
+
   it('thẻ doanh nghiệp: MST, số ĐKDN, trụ sở; không có số định danh cá nhân, ngày sinh, hôn nhân', () => {
-    const s = buildCustomer360(d(), view(), label);
-    const org = s.people.find((p) => p.isOrg)!;
-    expect(org.facts.map((f) => f.label)).toEqual(['Mã số thuế', 'Số ĐKDN', 'Trụ sở']);
-    expect(org.facts[0].value).toBe(MST);
-    expect(org.marital).toBeNull();
-    expect(org.facts.some((f) => /định danh|sinh|Thường trú/.test(f.label))).toBe(false);
+    const org = c360().customers.find((p) => p.isOrg)!;
+    expect(org.identity.map((f) => f.label)).toEqual(['Mã số thuế', 'Số ĐKDN', 'Trụ sở']);
+    expect(org.identity[0].value).toBe(MST);
+    expect(org.identity.some((f) => /định danh|sinh|Thường trú|Hôn nhân/.test(f.label))).toBe(false);
   });
 
-  it('quan hệ đại diện hiện ở cả hai phía; đếm doanh nghiệp tách khỏi cá nhân', () => {
-    const s = buildCustomer360(d(), view(), label);
-    const org = s.people.find((p) => p.isOrg)!;
-    const person = s.people.find((p) => !p.isOrg)!;
-    expect(org.relations).toEqual([expect.objectContaining({ kind: 'legal_rep', otherId: 'person-2', text: 'Người đại diện theo pháp luật (Giám đốc)' })]);
-    expect(person.relations).toEqual([expect.objectContaining({ kind: 'legal_rep', otherId: 'person-1', text: 'Đại diện theo pháp luật của' })]);
-    expect(s.counts).toMatchObject({ orgs: 1, people: 1 });
-  });
-
-  it('không có graph (kết quả cũ) vẫn nối được người đại diện từ customer_360', () => {
-    const org = buildCustomer360(d(), null, label).people.find((p) => p.isOrg)!;
-    expect(org.relations.some((r) => r.kind === 'legal_rep' && r.otherId === 'person-2')).toBe(true);
+  it('quan hệ đại diện hiện ở cả hai phía; SME không dựng hộ kinh doanh từ đơn vay (D-112)', () => {
+    const v = c360();
+    const org = v.customers.find((p) => p.isOrg)!;
+    const person = v.customers.find((p) => !p.isOrg)!;
+    expect(org.relations).toEqual([expect.objectContaining({ text: 'Người đại diện theo pháp luật (Giám đốc) · xác minh một phần', name: person.name })]);
+    expect(person.relations).toEqual(expect.arrayContaining([expect.objectContaining({ text: 'Đại diện theo pháp luật của · xác minh một phần', name: org.name })]));
+    expect(v.repayment.businesses).toEqual([]);
   });
 
   it('thẻ sơ đồ: doanh nghiệp hiện MST che bớt (không lộ đủ), phụ đề có "Doanh nghiệp"; cạnh đại diện có nhãn trên sơ đồ', () => {

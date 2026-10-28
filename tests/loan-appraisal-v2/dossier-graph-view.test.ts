@@ -1,5 +1,4 @@
 // Khối `dossier_graph` (nodes + edges, không PII) và bố cục UI.
-import { buildCustomer360 } from '@/app/loan-appraisal-v2/lib/customer360-view';
 import { DossierGraphViewSchema, buildDossierGraph, toDossierGraphView } from '@/lib/loan-dossier/graph';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 import { runMapDossier } from '@/lib/loan-dossier/s3/run';
@@ -208,66 +207,5 @@ describe('nhãn / lọc / che số định danh (UI)', () => {
     for (const e of mentions) expect(showsLabelOnCanvas(e)).toBe(false);
     expect(showsLabelOnCanvas(v.edges.find((e) => e.type === 'OWNS')!)).toBe(true);
     expect(showsLabelOnCanvas(v.edges.find((e) => e.type === 'UNMAPPED_IN')!)).toBe(true);
-  });
-});
-describe('Customer 360 tổng hợp theo người', () => {
-  const data = () => runMapDossier({ evidences: dossier(), dossier_submitted_at: '2026-10-14', now }).data!;
-  const label = (k: string) => `L(${k})`;
-  const summary = (withGraph = true) => buildCustomer360(data(), withGraph ? viewOf() : null, label);
-
-  it('một thẻ cho mỗi người, xếp theo nhóm vai trò rồi thứ tự S3', () => {
-    const s = summary();
-    expect(s.people.map((p) => p.personId)).toEqual(['person-1', 'person-2', 'person-3', 'person-4']);
-    expect(s.people[0]).toMatchObject({ name: 'NGUYỄN VĂN AN', roleLabels: ['Khách hàng vay'], marital: 'Đã kết hôn' });
-    expect(s.counts).toMatchObject({ people: 4, assets: 2 });
-  });
-
-  it('định danh đầy đủ ở bảng này (khác thẻ sơ đồ): số hiện hành và số cũ', () => {
-    const p1 = summary().people[0];
-    expect(p1.facts).toEqual(expect.arrayContaining([{ label: 'Số định danh', value: ID_A12 }, { label: 'Số cũ', value: ID_A9 }]));
-  });
-
-  it('quan hệ lấy từ cạnh graph: vợ/chồng hai chiều (mỗi người thấy người kia), nhân thân kèm loại', () => {
-    const s = summary();
-    expect(s.people[0].relations.map((r) => [r.otherId, r.text])).toEqual(expect.arrayContaining([['person-2', 'Vợ/chồng'], ['person-3', 'Nhân thân (cha/mẹ - con)'], ['person-4', 'Nhân thân (khác)']]));
-    expect(s.people[1].relations.some((r) => r.kind === 'spouse' && r.otherId === 'person-1')).toBe(true);
-    expect(s.people[2].relations.some((r) => r.kind === 'relative' && r.otherId === 'person-1')).toBe(true);
-  });
-
-  it('tài sản đứng tên của từng người và chủ sở hữu của từng tài sản khớp nhau', () => {
-    const s = summary();
-    expect(s.people[2].assets).toMatchObject([{ assetId: 'asset-1', current: true, typeLabel: 'Bất động sản' }]);
-    expect(s.people[3].assets).toMatchObject([{ assetId: 'asset-2', current: true, typeLabel: 'Xe' }]);
-    expect(s.assets.find((a) => a.assetId === 'asset-1')!.owners).toEqual([{ personId: 'person-3', name: 'LÊ THỊ CÚC', current: true }]);
-    expect(s.people[0].assets).toEqual([]);
-  });
-
-  it('nguồn chứng từ gộp theo loại kèm số lượng; đếm người chưa gắn và bản bị thay thế', () => {
-    const s = summary();
-    expect(s.people[0].sources.some((x) => x.startsWith('L(id_card)'))).toBe(true);
-    expect(s.unmapped).toBeGreaterThan(0);
-    expect(s.superseded).toBe(1);
-  });
-
-  it('không có graph vẫn dựng được từ customer_360 (vợ/chồng, tài sản); kết quả cũ không vỡ', () => {
-    const s = summary(false);
-    expect(s.people).toHaveLength(4);
-    expect(s.people[2].assets.map((a) => a.assetId)).toEqual(['asset-1']);
-    expect(s.people[0].relations.some((r) => r.kind === 'spouse')).toBe(true);
-  });
-
-  it('hồ sơ không có người: danh sách rỗng, không ném lỗi', () => {
-    const empty = runMapDossier({ evidences: [], dossier_submitted_at: '2026-10-14', now }).data!;
-    expect(buildCustomer360(empty, null, label).people).toEqual([]);
-  });
-
-  it('kết quả đã lưu thiếu khối (bản cũ / rút gọn): coi là rỗng, không ném lỗi', () => {
-    const partial = { role_registry: [], asset_registry: [], customer_360: [] } as never;
-    expect(buildCustomer360(partial, null, label)).toMatchObject({ people: [], assets: [], unmapped: 0, superseded: 0 });
-    expect(buildCustomer360({} as never, null, label).people).toEqual([]);
-  });
-
-  it('thuần và tất định', () => {
-    expect(JSON.stringify(summary())).toBe(JSON.stringify(summary()));
   });
 });

@@ -1,0 +1,7 @@
+{
+  "policy_version": "0.2.0",
+  "description": "Chính sách chọn giá trị của hồ sơ 360 (loan_360.md L360-G01). Đổi chính sách = tăng policy_version, Risk duyệt. Chỉ khai các mục đang dùng; mục mới thêm cùng task dùng nó.",
+  "income_monthly_amount": "MIN",
+  "collateral_value": "MIN",
+  "valuation_gap_ratio": 0.2
+}

@@ -1,46 +1,43 @@
 'use client';
 
-import { useMemo } from 'react';
-import { AlertTriangle, Banknote, Building2, CheckCircle2, FileText, Home, Link2, Users } from 'lucide-react';
-import type { AppraisalResult, DossierEvidence } from '@/app/loan-appraisal/types';
+import { useMemo, type ReactNode } from 'react';
+import { AlertTriangle, Banknote, Building2, CheckCircle2, FileText, Home, Landmark, Link2, Users, Wallet, type LucideIcon } from 'lucide-react';
+import type { AppraisalResult } from '@/app/loan-appraisal/types';
 import { docTypeLabelOf } from '@/app/loan-appraisal-v2/lib/classification-view';
-import { buildClaimsSummary, type SubjectNotes } from '@/app/loan-appraisal-v2/lib/claims-view';
-import type { DetailRow } from '@/app/loan-appraisal-v2/lib/customer360-detail';
-import { buildCustomer360, type AssetCard, type PersonCard } from '@/app/loan-appraisal-v2/lib/customer360-view';
-import { assetContextView } from '@/app/loan-appraisal-v2/lib/dossier-view';
+import { buildCustomer360View, type CollateralCard, type CustomerCard, type Row } from '@/app/loan-appraisal-v2/lib/customer360';
+import type { Issue } from '@/lib/loan-dossier/profile360/schema';
 import { Badge } from '../ui/Badge';
 import { Card, CardBody, CardHeader } from '../ui/Card';
+import { DataTable } from '../ui/DataTable';
 import { Disclosure } from '../ui/Disclosure';
-import { ClaimsPanel } from './ClaimsPanel';
+import { TONE_BOX } from '../ui/toneClasses';
 
-/** Kết quả đối chiếu giữa các chứng từ cho đúng người / tài sản này: cảnh báo hiện ngay trên thẻ, không phải tìm ở khối riêng. */
-function ClaimNotes({ notes }: { notes?: SubjectNotes }) {
-  if (!notes || (notes.warnings.length === 0 && notes.variants.length === 0 && notes.confirmed.length === 0)) return null;
+const ISSUE_LABEL: Record<Issue['severity'], string> = { danger: 'Phải xử lý', warning: 'Cần soát', info: 'Lưu ý' };
+const SHOWN_ISSUES = 6;
+
+function Section({ n, title, icon: Icon, aside, children }: { n: number; title: string; icon: LucideIcon; aside?: ReactNode; children: ReactNode }) {
   return (
-    <div className="mt-2 space-y-1 border-t border-border pt-2">
-      {notes.warnings.length > 0 && <ul className="flex flex-wrap gap-1.5">{notes.warnings.map((w) => <li key={w}><Badge tone="danger" icon={AlertTriangle}>{w}</Badge></li>)}</ul>}
-      {notes.variants.length > 0 && <p className="text-[11px] text-muted-foreground">{notes.variants.join('; ')}.</p>}
-      {notes.confirmed.length > 0 && (
-        <p className="flex items-start gap-1 text-[11px] text-muted-foreground">
-          <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0" style={{ color: 'rgb(var(--la2-success))' }} aria-hidden />
-          Đã khớp giữa các chứng từ: {notes.confirmed.join(', ')}
-        </p>
-      )}
-    </div>
+    <section aria-label={title}>
+      <h4 className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" aria-hidden />{n}. {title}</span>
+        {aside}
+      </h4>
+      {children}
+    </section>
   );
 }
 
-/** Danh sách "nhãn : giá trị" hai cột; nguồn chứng từ nhỏ ở cuối giá trị. */
-function Rows({ rows }: { rows: DetailRow[] }) {
+/** "nhãn : giá trị · ghi chú trust" hai cột. */
+function Rows({ rows }: { rows: Row[] }) {
   if (rows.length === 0) return null;
   return (
-    <dl className="grid grid-cols-[minmax(7rem,auto)_1fr] gap-x-3 gap-y-1">
+    <dl className="grid grid-cols-[minmax(7rem,auto)_1fr] gap-x-3 gap-y-1 text-xs">
       {rows.map((r, i) => (
         <div key={`${r.label}-${i}`} className="contents">
           <dt className="text-muted-foreground">{r.label}</dt>
           <dd className="min-w-0 break-words text-foreground">
             {r.value}
-            {r.source && <span className="ml-1.5 text-[10px] text-muted-foreground">· {r.source}</span>}
+            {r.note && <span className={`ml-1.5 text-[10px] ${r.tone === 'danger' ? 'text-[rgb(var(--la2-danger))]' : r.tone === 'warning' ? 'text-[rgb(var(--la2-warning))]' : 'text-muted-foreground'}`}>· {r.note}</span>}
           </dd>
         </div>
       ))}
@@ -48,211 +45,217 @@ function Rows({ rows }: { rows: DetailRow[] }) {
   );
 }
 
-function Section({ title, rows }: { title: string; rows: DetailRow[] }) {
-  if (rows.length === 0) return null;
-  return (
-    <div>
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <Rows rows={rows} />
-    </div>
-  );
-}
-
-/** Nguồn chứng từ dạng chip (thay cho một dòng dài khó đọc). */
-function SourceChips({ sources, titles = {} }: { sources: string[]; titles?: Record<string, string> }) {
-  if (sources.length === 0) return null;
+function Chips({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center gap-1">
-      <FileText className="h-3 w-3 shrink-0 text-muted-foreground" aria-label="Nguồn chứng từ" />
-      {sources.map((s) => <span key={s} title={titles[s]} className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{s}</span>)}
+      <FileText className="h-3 w-3 shrink-0 text-muted-foreground" aria-label="Chứng từ" />
+      {items.map((s) => <span key={s} className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{s}</span>)}
     </div>
   );
 }
 
-function PersonItem({ p, notes }: { p: PersonCard; notes?: SubjectNotes }) {
-  const d = p.detail;
-  const extra = d.personal.length + d.business.length + d.income.length + d.credit.length;
+function IssueList({ items }: { items: Issue[] }) {
+  return (
+    <ul className="space-y-1.5">
+      {items.map((i, n) => (
+        <li key={`${i.code}-${i.subject_id}-${n}`} className="rounded-lg border border-border px-3 py-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={i.severity}>{ISSUE_LABEL[i.severity]}</Badge>
+            <strong className="text-foreground">{i.subject_label}</strong>
+            <span className="text-foreground">{i.title}</span>
+          </div>
+          {i.detail && <p className="mt-1 break-words text-muted-foreground">{i.detail}</p>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function CustomerItem({ c }: { c: CustomerCard }) {
   return (
     <li className="rounded-lg border border-border bg-card px-3 py-3 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-          {p.isOrg && <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-label="Doanh nghiệp" />}
-          {p.name}<span className="ml-1 font-mono text-[11px] font-normal text-muted-foreground">{p.personId}</span>
+          {c.isOrg && <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-label="Doanh nghiệp" />}
+          {c.name}<span className="ml-1 font-mono text-[11px] font-normal text-muted-foreground">{c.personId}</span>
         </p>
         <div className="flex flex-wrap gap-1">
-          {p.isOrg && <Badge tone="neutral">Doanh nghiệp</Badge>}
-          {p.roleLabels.map((r) => <Badge key={r} tone="info">{r}</Badge>)}
+          {c.roleLabels.map((r) => <Badge key={r} tone="info">{r}</Badge>)}
+          {c.issueCount > 0 && <Badge tone="warning" icon={AlertTriangle}>{c.issueCount}</Badge>}
         </div>
       </div>
-
-      <div className="mt-2">
-        <Rows rows={[...p.facts.map((f) => ({ label: f.label, value: f.value })), ...(p.marital ? [{ label: 'Hôn nhân', value: p.marital }] : [])]} />
-      </div>
-
-      {p.relations.length > 0 && (
+      <div className="mt-2"><Rows rows={c.identity} /></div>
+      {c.relations.length > 0 && (
         <ul className="mt-2 space-y-0.5 border-t border-border pt-2">
-          {p.relations.map((r) => (
-            <li key={`${r.kind}-${r.otherId}`} className="flex items-start gap-1.5">
+          {c.relations.map((r) => (
+            <li key={`${r.text}-${r.name}`} className="flex items-start gap-1.5">
               <Link2 className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
-              <span><span className="text-muted-foreground">{r.text}: </span><span className="font-medium text-foreground">{r.otherName}</span> <span className="font-mono text-[10px] text-muted-foreground">{r.otherId}</span></span>
+              <span><span className={r.tone === 'warning' ? 'text-[rgb(var(--la2-warning))]' : 'text-muted-foreground'}>{r.text}: </span><span className="font-medium text-foreground">{r.name}</span></span>
             </li>
           ))}
         </ul>
       )}
-
-      {p.assets.length > 0 && (
-        <ul className="mt-2 space-y-0.5 border-t border-border pt-2">
-          {p.assets.map((a) => (
-            <li key={a.assetId} className="flex items-start gap-1.5">
-              <Home className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
-              <span><span className="text-muted-foreground">{a.current ? 'Đứng tên' : 'Từng đứng tên'}: </span><span className="font-medium text-foreground">{a.typeLabel}</span> · {a.key} <span className="font-mono text-[10px] text-muted-foreground">{a.assetId}</span>{a.warn && <span className="ml-1 text-[rgb(var(--la2-warning))]">· cần xác nhận</span>}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {p.alerts.length > 0 && <ul className="mt-2 flex flex-wrap gap-1.5">{p.alerts.map((a) => <li key={a}><Badge tone="warning" icon={AlertTriangle}>{a}</Badge></li>)}</ul>}
-      <ClaimNotes notes={notes} />
-
-      {extra > 0 && (
+      {c.details.length > 0 && (
         <div className="mt-2">
-          <Disclosure defaultOpen summary={<span>Chi tiết từ chứng từ <span className="font-normal text-muted-foreground">({extra} mục)</span></span>}>
-            <div className="space-y-3">
-              <Section title={p.isOrg ? 'Thông tin' : 'Thông tin cá nhân'} rows={d.personal} />
-              <Section title="Hộ kinh doanh / doanh nghiệp" rows={d.business} />
-              <Section title="Thu nhập" rows={d.income} />
-              <Section title="Tín dụng (CIC)" rows={d.credit} />
-            </div>
+          <Disclosure defaultOpen={c.issueCount > 0} summary={<span>Chi tiết từ chứng từ <span className="font-normal text-muted-foreground">({c.details.length} mục)</span></span>}>
+            <Rows rows={c.details} />
           </Disclosure>
         </div>
       )}
-
-      {p.sources.length > 0 && <div className="mt-2 border-t border-border pt-2"><SourceChips sources={p.sources} /></div>}
+      {c.documents.length > 0 && <div className="mt-2 border-t border-border pt-2"><Chips items={c.documents} /></div>}
     </li>
   );
 }
 
-/** Nguồn của tài sản: gộp theo loại chứng từ (kèm số lượng); tên file nằm ở tooltip thay vì chen vào dòng. */
-function sourceChips(entry: { sources: unknown[] } | undefined, evidences: DossierEvidence[]): Array<{ text: string; files: string }> {
-  const byId = new Map(evidences.map((e) => [e.evidence_id, e]));
-  const groups = new Map<string, { n: number; files: Set<string> }>();
-  for (const s of (entry?.sources ?? []) as Array<{ evidence_id: string; doc_type_key: string }>) {
-    const e = byId.get(s.evidence_id);
-    const label = e?.doc_type_label ?? s.doc_type_key;
-    const g = groups.get(label) ?? { n: 0, files: new Set<string>() };
-    g.n += 1;
-    g.files.add(e?.file_name ?? s.evidence_id);
-    groups.set(label, g);
-  }
-  return [...groups].map(([label, g]) => ({ text: g.n > 1 ? `${label} ×${g.n}` : label, files: [...g.files].join(', ') }));
-}
-
-function AssetItem({ a, result, evidences, notes }: { a: AssetCard; result: AppraisalResult; evidences: DossierEvidence[]; notes?: SubjectNotes }) {
-  const entry = result.customer_360?.asset_registry?.find((x) => x.asset_id === a.assetId);
-  const view = entry ? assetContextView(entry, evidences) : null;
-  const d = a.detail;
-  const chips = sourceChips(entry, evidences);
+function CollateralItem({ a }: { a: CollateralCard }) {
   return (
     <li className="rounded-lg border border-border bg-card px-3 py-3 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-          <Home className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />{a.typeLabel} · {a.key}
+          <Home className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />{a.title}
           <span className="ml-1 font-mono text-[11px] font-normal text-muted-foreground">{a.assetId}</span>
         </p>
-        {view && <Badge tone={view.tone}>{view.label}</Badge>}
+        <div className="flex flex-wrap gap-1">
+          <Badge tone={a.confirmed ? 'success' : 'warning'}>{a.usage}{a.confirmed ? '' : ' · cần xác nhận'}</Badge>
+          {a.issueCount > 0 && <Badge tone="warning" icon={AlertTriangle}>{a.issueCount}</Badge>}
+        </div>
       </div>
-      <p className="mt-1.5 text-muted-foreground">
-        Chủ sở hữu: <span className="font-medium text-foreground">{a.owners.length === 0 ? 'chưa xác định' : a.owners.map((o) => `${o.name}${o.current ? '' : ' (trước đây)'}`).join(', ')}</span>
-      </p>
-      {d.valuation.length > 0 && <div className="mt-2 border-t border-border pt-2"><Section title="Giá trị" rows={d.valuation} /></div>}
-      {d.physical.length > 0 && <div className="mt-2 border-t border-border pt-2"><Section title="Đặc điểm" rows={d.physical} /></div>}
-      {view?.reason && <p className="mt-2 text-muted-foreground">{view.reason}</p>}
-      {view && view.conflicts.length > 0 && <ul className="mt-1 list-disc pl-4 text-muted-foreground">{view.conflicts.map((c) => <li key={c}>{c}</li>)}</ul>}
-      <ClaimNotes notes={notes} />
-      {d.changes.length > 0 && (
+      <p className="mt-1.5 text-muted-foreground">Chủ sở hữu: <span className="font-medium text-foreground">{a.owners}</span></p>
+      {a.valuations.length > 0 ? (
+        <div className="mt-2 border-t border-border pt-2">
+          <ul className="space-y-0.5">
+            {a.valuations.map((v, i) => (
+              <li key={`${v.source}-${i}`} className="flex flex-wrap justify-between gap-2">
+                <span className="text-muted-foreground">{v.source} · {v.date}</span>
+                <span className="tabular-nums text-foreground">{v.value}{v.review && <span className="ml-1 text-[10px] text-[rgb(var(--la2-warning))]">· cần soát</span>}</span>
+              </li>
+            ))}
+          </ul>
+          {a.chosenValue && <p className="mt-1 font-semibold text-foreground">Giá trị dùng tính LTV: <span className="tabular-nums">{a.chosenValue}</span> <span className="font-normal text-muted-foreground">(thấp nhất các chứng thư)</span></p>}
+        </div>
+      ) : <p className="mt-2 border-t border-border pt-2 text-muted-foreground">Chưa có chứng thư định giá.</p>}
+      {a.details.length > 0 && (
         <div className="mt-2">
-          <Disclosure summary={<span>Biến động đăng ký <span className="font-normal text-muted-foreground">({d.changes.length})</span></span>}>
-            <Rows rows={d.changes} />
-          </Disclosure>
+          <Disclosure summary={<span>Đặc điểm từ chứng từ <span className="font-normal text-muted-foreground">({a.details.length} mục)</span></span>}><Rows rows={a.details} /></Disclosure>
         </div>
       )}
-      {chips.length > 0 && <div className="mt-2 border-t border-border pt-2"><SourceChips sources={chips.map((x) => x.text)} titles={Object.fromEntries(chips.map((x) => [x.text, x.files]))} /></div>}
     </li>
   );
 }
 
 /**
- * Customer 360 nhìn từ hồ sơ vay (D-91): Khoản vay → Tài sản bảo đảm → Người. Dựng từ `customer_360` + `dossier_graph` cho định danh và quan hệ,
- * và từ `documents.evidences[].data` cho chi tiết (khoản vay, thu nhập, CIC, định giá, diện tích…): `customer_360` của S3 chỉ giữ phần định danh.
- * Chỉ cần S3 (không cần checklist / đối chiếu chéo).
+ * Customer 360 (D-114): một nguồn sự thật (`result.profile_360`), đọc theo hồ sơ vay — vấn đề cần xử lý → đề nghị vay vốn → khách hàng → nguồn
+ * trả nợ → nghĩa vụ nợ → tài sản bảo đảm. Mọi số trùng với số stage 2 dùng tính DSCR / LTV.
  */
-export function Customer360Panel({ result, evidences = [] }: { result: AppraisalResult; evidences?: DossierEvidence[] }) {
-  const map = result.customer_360;
-  const summary = useMemo(
-    () => (map ? buildCustomer360(map, result.dossier_graph ?? null, docTypeLabelOf, evidences) : null),
-    [map, result.dossier_graph, evidences],
-  );
-  // Claim đáng chú ý (kết quả cũ không có ⇒ null ⇒ không hiện khối đối chiếu).
-  const claims = useMemo(() => buildClaimsSummary(result.claims ?? null, map ?? null, docTypeLabelOf), [result.claims, map]);
-  if (!map || !summary || summary.people.length === 0) {
+export function Customer360Panel({ result }: { result: AppraisalResult }) {
+  const profile = result.profile_360 ?? null;
+  const view = useMemo(() => (profile ? buildCustomer360View(profile, docTypeLabelOf) : null), [profile]);
+  if (!view) {
     return (
-      <Card labelledBy="la2-people-title">
-        <CardHeader id="la2-people-title" icon={Users} title="Người & tài sản trong hồ sơ" subtitle="Chưa xác định được người vay (thiếu giấy đề nghị vay vốn đọc được)." />
+      <Card labelledBy="la2-c360-title">
+        <CardHeader id="la2-c360-title" icon={Users} title="Customer 360" subtitle="Chưa có hồ sơ 360: chưa gom được người & tài sản (thiếu giấy đề nghị vay đọc được) hoặc kết quả được tạo trước D-114 — chạy lại để xem." />
       </Card>
     );
   }
-  const { counts, loan } = summary;
-  const claimWarnings = claims ? claims.counts.disputed + claims.counts.ocrError : 0;
+  const { issues, loan, customers, repayment, obligations, collateral, counts } = view;
+  const urgent = issues.danger + issues.warning;
   return (
-    <Card labelledBy="la2-people-title">
+    <Card labelledBy="la2-c360-title">
       <CardHeader
-        id="la2-people-title"
+        id="la2-c360-title"
         icon={Users}
-        title="Người & tài sản trong hồ sơ"
-        subtitle={[counts.orgs > 0 ? `${counts.orgs} doanh nghiệp` : null, `${counts.people} người`, `${counts.assets} tài sản`, `${counts.relations} quan hệ`].filter(Boolean).join(' · ')}
-        actions={counts.alerts + claimWarnings > 0 ? <Badge tone="warning" icon={AlertTriangle}>{counts.alerts + claimWarnings} điểm cần chú ý</Badge> : undefined}
+        title="Customer 360"
+        subtitle={`${counts.customers} khách hàng & người liên quan · ${counts.collateral} tài sản bảo đảm`}
+        actions={urgent > 0 ? <Badge tone={issues.danger > 0 ? 'danger' : 'warning'} icon={AlertTriangle}>{urgent} điểm cần xử lý</Badge> : <Badge tone="success" icon={CheckCircle2}>Không có điểm cần xử lý</Badge>}
       />
-      <CardBody className="space-y-5">
-        {loan && (
-          <section aria-label="Khoản vay">
-            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground"><Banknote className="h-3.5 w-3.5" aria-hidden />Khoản vay (theo giấy đề nghị vay)</h4>
-            <div className="rounded-lg border border-border bg-card px-3 py-3 text-xs">
-              <div className="grid gap-x-8 gap-y-3 md:grid-cols-2">
-                <Rows rows={loan.rows} />
-                <div className="space-y-3">
-                  {loan.purposes.length > 0 && (
-                    <div>
-                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Mục đích vay</p>
-                      <ul className="list-disc space-y-0.5 pl-4 text-foreground">{loan.purposes.map((x) => <li key={x}>{x}</li>)}</ul>
-                    </div>
-                  )}
-                  <Section title="Thu nhập khai" rows={loan.incomeDetails} />
-                </div>
+      <CardBody className="space-y-6">
+        {issues.items.length > 0 && (
+          <section aria-label="Vấn đề cần xử lý">
+            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground"><AlertTriangle className="h-3.5 w-3.5" aria-hidden />Vấn đề cần xử lý trước khi quyết định</h4>
+            <IssueList items={issues.items.slice(0, SHOWN_ISSUES)} />
+            {issues.items.length > SHOWN_ISSUES && (
+              <div className="mt-1.5"><Disclosure summary={`Xem thêm ${issues.items.length - SHOWN_ISSUES} điểm`}><IssueList items={issues.items.slice(SHOWN_ISSUES)} /></Disclosure></div>
+            )}
+          </section>
+        )}
+
+        <Section n={1} title="Đề nghị vay vốn" icon={Banknote} aside={loan.disputed ? <Badge tone="danger">Các đơn vay ghi khác nhau</Badge> : undefined}>
+          <div className="grid gap-x-8 gap-y-3 rounded-lg border border-border bg-card px-3 py-3 md:grid-cols-2">
+            <Rows rows={loan.rows} />
+            {loan.purposes.length > 0 && (
+              <div className="text-xs">
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Mục đích vay</p>
+                <ul className="list-disc space-y-0.5 pl-4 text-foreground">{loan.purposes.map((x) => <li key={x}>{x}</li>)}</ul>
               </div>
-            </div>
-          </section>
-        )}
+            )}
+          </div>
+        </Section>
 
-        {claims && <ClaimsPanel summary={claims} />}
+        <Section n={2} title={`Khách hàng (${customers.length})`} icon={Users}>
+          <ul className="grid gap-2 lg:grid-cols-2">{customers.map((c) => <CustomerItem key={c.personId} c={c} />)}</ul>
+        </Section>
 
-        {summary.assets.length > 0 && (
-          <section aria-label="Tài sản bảo đảm">
-            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground"><Home className="h-3.5 w-3.5" aria-hidden />Tài sản ({summary.assets.length})</h4>
-            <ul className="grid gap-2 lg:grid-cols-2">{summary.assets.map((a) => <AssetItem key={a.assetId} a={a} result={result} evidences={evidences} notes={claims?.bySubject.get(a.assetId)} />)}</ul>
-          </section>
-        )}
+        <Section n={3} title="Nguồn trả nợ" icon={Wallet} aside={repayment.monthlyTotal ? <span className="normal-case tracking-normal">Tổng thu nhập: <strong className="tabular-nums text-foreground">{repayment.monthlyTotal}/tháng</strong></span> : undefined}>
+          <div className="space-y-3">
+            {(repayment.dscrProfit || repayment.dscrRevenue) && (
+              <p className={`rounded-lg border px-3 py-2 text-xs ${TONE_BOX.info}`}>
+                Dùng tính DSCR: lợi nhuận hộ kinh doanh <strong className="tabular-nums">{repayment.dscrProfit ?? '—'}</strong>/năm · doanh thu <strong className="tabular-nums">{repayment.dscrRevenue ?? '—'}</strong>/năm
+              </p>
+            )}
+            <DataTable
+              caption="Nguồn thu"
+              rows={repayment.income}
+              rowKey={(r) => `${r.kind}-${r.owner}-${r.business}-${r.monthly}`}
+              empty="Chưa có nguồn thu trên chứng từ"
+              columns={[
+                { key: 'kind', header: 'Loại', cell: (r) => r.kind },
+                { key: 'owner', header: 'Của ai', cell: (r) => r.owner },
+                { key: 'business', header: 'Hộ kinh doanh', cell: (r) => r.business ?? '—' },
+                { key: 'monthly', header: 'Số tiền/tháng', cell: (r) => <span className="tabular-nums">{r.monthly}</span> },
+                { key: 'evidenced', header: 'Chứng từ', cell: (r) => (r.evidenced ? <Badge tone="success">Có chứng từ</Badge> : <span className="text-muted-foreground">chỉ lời khai</span>) },
+              ]}
+            />
+            {repayment.businesses.length > 0 && (
+              <DataTable
+                caption="Hộ kinh doanh"
+                rows={repayment.businesses}
+                rowKey={(r) => `${r.name}-${r.registration}`}
+                empty="Chưa có hộ kinh doanh"
+                columns={[
+                  { key: 'name', header: 'Hộ kinh doanh', cell: (r) => r.name },
+                  { key: 'registration', header: 'Số GCN', cell: (r) => r.registration },
+                  { key: 'line', header: 'Ngành', cell: (r) => r.line },
+                  { key: 'owners', header: 'Chủ hộ', cell: (r) => r.owners },
+                  { key: 'verified', header: 'Xác minh', cell: (r) => <Badge tone={r.verified ? 'success' : 'warning'}>{r.verified ? 'Chủ hộ đã xác minh' : 'Chưa xác minh chủ hộ'}</Badge> },
+                  { key: 'documents', header: 'Chứng từ', cell: (r) => <Chips items={r.documents} /> },
+                ]}
+              />
+            )}
+          </div>
+        </Section>
 
-        <section aria-label="Người trong hồ sơ">
-          <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground"><Users className="h-3.5 w-3.5" aria-hidden />Người ({summary.people.length})</h4>
-          <ul className="grid gap-2 lg:grid-cols-2">{summary.people.map((p) => <PersonItem key={p.personId} p={p} notes={claims?.bySubject.get(p.personId)} />)}</ul>
-        </section>
+        <Section n={4} title="Nghĩa vụ nợ" icon={Landmark}>
+          <DataTable
+            caption="Nghĩa vụ nợ"
+            rows={obligations}
+            rowKey={(r) => `${r.kind}-${r.owner}-${r.lender}-${r.amount}`}
+            empty="Không khai nợ hiện hữu và không có HĐ tín dụng / CIC trong hồ sơ"
+            columns={[
+              { key: 'kind', header: 'Nguồn', cell: (r) => r.kind },
+              { key: 'owner', header: 'Của ai', cell: (r) => r.owner },
+              { key: 'lender', header: 'Tổ chức', cell: (r) => r.lender },
+              { key: 'amount', header: 'Số tiền', cell: (r) => <span className="tabular-nums">{r.amount}</span> },
+              { key: 'note', header: 'Ghi chú', cell: (r) => r.note || '—' },
+            ]}
+          />
+        </Section>
 
-        {(summary.unmapped > 0 || summary.superseded > 0) && (
-          <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
-            {summary.unmapped > 0 && <>Có {summary.unmapped} người trên chứng từ chưa gắn được vào hồ sơ. </>}
-            {summary.superseded > 0 && <>Có {summary.superseded} chứng từ đã bị bản mới hơn thay thế.</>}
-          </p>
-        )}
+        <Section n={5} title={`Tài sản (${collateral.length})`} icon={Home}>
+          {collateral.length > 0
+            ? <ul className="grid gap-2 lg:grid-cols-2">{collateral.map((a) => <CollateralItem key={a.assetId} a={a} />)}</ul>
+            : <p className="text-xs text-muted-foreground">Chưa có tài sản trong hồ sơ.</p>}
+        </Section>
       </CardBody>
     </Card>
   );

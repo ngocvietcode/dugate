@@ -88,8 +88,8 @@ export interface LoanCheckDefinition {
   /** Chỉ dùng cho PROMPT: ngưỡng confidence tối thiểu để được coi là kết luận. */
   threshold?: number;
   /**
-   * Chỉ PROMPT, chỉ có tác dụng khi `lac_mode = on` (LAC-R13, D-103): cho phép PASS khi MỌI dữ kiện dẫn chiếu chỉ là lời khai
-   * trên đơn vay (DECLARED) — dành cho rule chỉ đọc lời khai (VD số tiền đề nghị ≤ hạn mức). Vắng = PASS chỉ dựa lời khai bị hạ REVIEW.
+   * Chỉ PROMPT, chỉ có tác dụng khi `lac_mode = on` (LAC-R13, D-103): cho phép PASS khi dẫn chiếu có dữ kiện chỉ là lời khai
+   * trên đơn vay (DECLARED) — dành cho rule chỉ đọc lời khai (VD số tiền đề nghị ≤ hạn mức). Vắng = PASS dẫn bất kỳ lời khai nào bị hạ REVIEW (D-112).
    */
   allow_declared_pass?: boolean;
 }

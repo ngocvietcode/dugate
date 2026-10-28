@@ -184,3 +184,62 @@ Xem [open_questions.md](open_questions.md).
   khai báo hoặc có trong tham số Profile: client gửi `lac_mode=on` bị bỏ qua không báo lỗi, hồ sơ luôn chạy `off`. Nay khai báo
   (`off | shadow | on`, mặc định `off`, admin khoá được qua Profile); trang `/loan-appraisal-v2` có ô chọn, chỉ gửi khi khác `off` (Profile
   khoá thì gửi bị 400). Test: `tests/loan-appraisal/lac-mode-param.test.ts`. Hướng dẫn chạy T-LAC-07 ở đầu `scripts/lac-shadow-report.ts`.
+- **D-108 (2026-10-27)** Đề xuất hồ sơ 360 có kiểu và duyệt mâu thuẫn bởi CO: [cross_cutting/loan_360.md](cross_cutting/loan_360.md). Chưa cài đặt. Quyết định
+  của người dùng: chỉ thẩm định từng hồ sơ (không lưu xuyên hồ sơ), không tích hợp nguồn ngoài, CO chọn giá trị khi mâu thuẫn,
+  luồng "CO duyệt rồi tính lại". Phát hiện khi đọc code: `financial-inputs.ts` đọc evidence trực tiếp nên là nguồn sự thật thứ hai
+  ngoài LAC; endpoint `resume` chỉ nhận `WAITING_USER_INPUT` nên tính lại sau khi hoàn tất cần endpoint riêng; `FieldEdit` của D-04
+  chưa có trong code. Sửa kèm theo ở 68b9a877: hai bản đơn vay giống nhau là `DECLARED` chứ không phải `CORROBORATED` (spec LAC AC-3 / R03 cần sửa theo, chưa sửa).
+  Bổ sung §3.1 (đơn vị kinh doanh và quan hệ HKD / SME, L360-B01…B11, T-360-07…09). BA đã quyết: khách vay SME là pháp nhân
+  (OQ-360-06), bóc tách đầy đủ tờ khai GTGT / BCTC (OQ-360-07), checklist HKD / DN chấm theo cả hồ sơ (OQ-360-08).
+- **D-109 (2026-10-27)** Đề xuất bộ chấm Fellegi-Sunter cho bước ghép party của S3: [cross_cutting/s3_fellegi_sunter.md](cross_cutting/s3_fellegi_sunter.md).
+  Chưa cài đặt. Bộ chấm viết bằng TypeScript trong repo (npm không có thư viện FS đủ chín; gói gần nhất là AGPL); tham số m/u ở
+  `catalog/data/fs_params.json`, ước lượng ngoài hệ thống (ban đầu bằng Splink, bỏ ở D-111); chế độ `s3_matcher` = `rules` | `shadow` | `fs`. Phát hiện khi
+  chạy thử S3 thật: party cùng tên nhưng khác số CCCD và khác ngày sinh vẫn bị gộp vào khách vay theo tên (S3-R07), chỉ gắn
+  `DECLARED_ID_DIFFERS` giống hệt ca số đọc lệch 1 ký tự; vá bằng luật ở T-FS-01, không chờ FS.
+  **Đã cài T-FS-01** (`match-parties.ts`): chỉ so với lời khai trên anchor, không so với thẻ đã ghép theo tên, nên S3-AC06 / S4-AC29
+  (hai thẻ cùng tên → `role_conflict`) giữ nguyên. T-FS-02…04 theo `.agents/tasks/fs-scorer/plan.md`
+  (đợt này chỉ `rules` / `shadow`, chế độ `fs` để sau T-FS-06).
+  **Đã cài T-FS-02…04** (Claude làm thay Codex, nhánh `codex/fs-scorer`): `lib/loan-dossier/s3/fs/{params,compare,score,shadow}.ts`,
+  `catalog/data/fs_params.json` (tham số chuyên gia §3.4), tham số chạy `s3_matcher` (`rules` | `shadow`), `s3_matcher_summary` trong kết
+  quả cuối, `scripts/fs-shadow-report.ts`. LỆCH SPEC: thống kê shadow nằm ở `s3_matcher_summary` thay `content_preview.fs` (S3 không có step
+  riêng ở giai đoạn 2); `fs` chưa mở. Kiểm tra: `tsc` 0 lỗi; full jest 337 suite / 3556 test qua (5 suite skip có từ trước).
+- **D-110 (2026-10-27)** Cài một phần loan_360 (D-108): `lib/loan-dossier/profile360/` — T-360-07 (đơn vị HKD, `OPERATES`), T-360-10
+  (`catalog/data/merge_policies.json`, chỉ khóa `income_monthly_amount` đang dùng), T-360-12 (luồng thu nhập giữ danh tính dòng,
+  gộp lương theo bên trả lương trên bảng kê / HĐ lao động / xác nhận lương, cho thuê theo `asset_id`, `evidenced` từ chứng từ bóc tách
+  nhẹ, `EARNS_FROM`). LỆCH SPEC: (1) T-360-01 (tách `trust.ts`, property test) chưa làm, T-360-02 chỉ có `loan`, `parties`, `assets`,
+  `business_units`, `income_streams` (chưa có `Obligation`, chờ T-360-11); (2) **chưa nối** vào stage tài chính, rule hay LAC render
+  (T-360-03): DSCR vẫn đọc `financial-inputs.ts`, LAC vẫn có `business-1`; (3) `financial_info.income_details` của đơn vay chưa phân
+  loại được nên chỉ ghi gap `DECLARED_INCOME_NOT_LINKED`; (4) L360-B02 sửa theo AC-12: khác số GCN thì không gộp, cùng chủ + cùng tên
+  thì gắn `BUSINESS_NUMBER_MISMATCH`; (5) test gộp một file `tests/loan-dossier/profile360.test.ts` (6 ca: AC-8, AC-9, AC-10, AC-12,
+  AC-18, catalog hỏng). Kiểm tra: `tsc` 0 lỗi; `tests/loan-dossier` 80 suite / 1010 test qua.
+- **D-111 (2026-10-28)** Bỏ Splink (quyết định của người dùng). Chạy trên UAT không cần Splink: bộ chấm TS chỉ đọc `fs_params.json`.
+  Tham số sẽ **đếm trực tiếp** từ bộ hồ sơ chuẩn có nhãn bằng script TS dùng chính `comparePair` (s3_fellegi_sunter.md §4; FS-R11, FS-AC09
+  viết lại), nên không còn phải giữ mức so sánh giống nhau giữa hai công cụ và không cần Python. T-FS-05 bị gỡ, script đếm gộp vào
+  T-FS-06; plan `.agents/tasks/fs-splink/` xóa.
+- **D-112 (2026-10-28)** Người dùng ủy quyền Claude chốt mọi câu hỏi còn mở ("tự chọn quyết định tốt nhất"). BA / Risk có thể lật lại
+  bất kỳ dòng nào; lật thì ghi D mới. Nguyên tắc chung: **gộp nhầm và PASS sai tốn hơn thiếu ghép / cần soát**, nên chọn phương án thận trọng.
+  - loan_360: OQ-360-01, -02, -03, -04, -05, -10, -11, -14, -15, -16, -17, -18 → **theo mặc định đề xuất trong bảng** (§9).
+    OQ-360-09: đơn vay SME dùng chung schema `loan_application`, party `BORROWER` có `party_type = ORGANIZATION`, thêm vai trò
+    `LEGAL_REPRESENTATIVE`, `GUARANTOR`, `CAPITAL_MEMBER`. OQ-360-12: theo bảng trường §3.1; nhận BCTC chưa kiểm toán, gắn cờ
+    `UNAUDITED`. OQ-360-13: DSCR SME = (lợi nhuận trước thuế + chi phí lãi vay) / nghĩa vụ trả nợ năm, kỳ = năm tài chính gần nhất có
+    BCKQKD; thiếu thì `INSUFFICIENT_DATA`, không suy từ tờ khai GTGT.
+  - s3_fellegi_sunter: OQ-FS-01 `POSSIBLE_MATCH` để unmapped chờ người xác nhận; OQ-FS-02 mục tiêu 0 ca gộp nhầm trên bộ hồ sơ chuẩn;
+    OQ-FS-03 Dev lead + Risk duyệt `params_version`; OQ-FS-04 chưa có bảng ánh xạ địa danh thì `permanent_address` chỉ `AGREE` / `MISSING`;
+    OQ-FS-05 không dùng bảng tần suất tên ở v1.
+  - LAC: OQ-LAC-01 giữ rào và **siết**: PASS mà có BẤT KỲ fact `DECLARED` nào trong dẫn chiếu → REVIEW, trừ rule `allow_declared_pass`
+    (thay "mọi fact DECLARED", vì model chỉ cần dẫn kèm một fact không liên quan để vượt rào). AC-3 / LAC-R03: nhiều bản chụp của **cùng
+    một loại chứng từ** không phải xác nhận độc lập → đơn vay ×2 là `DECLARED`, CCCD ×2 là `SINGLE_SOURCE`; `CORROBORATED` cần ≥ 2 loại
+    chứng từ khác nhau. OQ-LAC-07: không thêm phụ lục OCR thô.
+  - Bộ hồ sơ chuẩn có nhãn (cho T-FS-06, T-LAC-07): 20 hồ sơ UAT, ưu tiên các ca shadow ghi `rules_only` / `fs_only`; BA lead lập, Risk duyệt.
+- **D-113 (2026-10-28)** Customer 360 "ra quyết định trước": kết quả cuối có `profile_360` (D-110 nối vào workflow; LAC dựng riêng khi
+  `lac_mode = off`, lỗi → warning `PROFILE_360_UNAVAILABLE`), view-model thuần `app/loan-appraisal-v2/lib/decision-360.ts` (dải tóm tắt:
+  khoản vay, thu nhập/tháng, hộ kinh doanh, người & TSBĐ; danh sách "cần chú ý" gom từ đối chiếu chứng từ, cảnh báo S3, hồ sơ 360, xếp
+  danger → warning → info). Giao diện giao ChatGPT theo `.agents/tasks/c360-ui/plan.md` (nhánh `codex/c360-ui`). Payload tích hợp không đổi.
+- **D-114 (2026-10-28)** Một nguồn sự thật: hồ sơ 360 (`profile_360` v1.0) theo trục đề nghị vay → khách hàng → nguồn trả nợ → nghĩa vụ nợ
+  → tài sản bảo đảm; stage 2, giao diện, mâu thuẫn và danh sách vấn đề đều đọc từ đó (chi tiết: loan_360.md §2.1). Lý do: review cho thấy
+  DSCR tính trên số khác số người duyệt nhìn thấy (S1), ba nơi chọn ba đơn vay khác nhau (S2), bảng kê thu nhập bị coi là chứng từ độc lập
+  nên vượt rào `DECLARED_ONLY` (S3), bản bị thay thế xử lý không đồng nhất (S4). Không giữ tương thích ngược (yêu cầu người dùng). LAC luôn
+  dựng (hàm thuần) vì hồ sơ 360 đứng trên nó; `lac_mode` chỉ còn quyết định prompt. Kiểm tra: `tsc` 0 lỗi; full jest 334 suite / 3511 test
+  qua. Việc giao song song: ChatGPT sửa 25 lỗi `check_spec` (`.agents/tasks/spec-hygiene/plan.md`, nhánh `codex/spec-hygiene`).
+  Bổ sung cùng ngày: LAC render nhận `profile_360` (LAC-R20) — mục `NGUỒN TRẢ NỢ` / `HỘ KINH DOANH` theo `inc-n` / `biz-n`, dẫn `F<n>` của
+  fact gom vào đơn vị, đặt sau `NGƯỜI`; fact phẳng `income_sources[].*` và `business-1` không còn trong prompt. Full jest 3513 test qua.

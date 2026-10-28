@@ -95,7 +95,7 @@ export interface LacSubject {
 }
 
 export type LacTrust =
-  | 'CORROBORATED'        // ≥ 2 chứng từ khác nhau cùng giá trị
+  | 'CORROBORATED'        // ≥ 2 LOẠI chứng từ khác nhau cùng giá trị (D-112)
   | 'SINGLE_SOURCE'       // 1 chứng từ không phải đơn vay
   | 'DECLARED'            // chỉ đơn vay (lời khai)
   | 'SPELLING_VARIANT'    // cùng nghĩa, khác dấu
@@ -155,7 +155,7 @@ export type LacGapCode =
 |---|---|
 | **LAC-R01** | `buildLoanApplicationContext(evidences, s3, ledger)` và `renderLoanApplicationContext(lac, scope)` là hàm thuần, tất định: cùng đầu vào → cùng output, kể cả thứ tự và mã. Không gọi model, không đọc DB. **Không log giá trị** (PII, S3-R26); log/warning chỉ nêu mã gap, id chủ thể, số đếm |
 | **LAC-R02** | **Chủ thể người / tài sản** lấy nguyên `person_id` / `asset_id` của S3 làm `subject_id`, nên mọi bản chiếu (UI graph, Customer 360, LAC) gọi cùng một người bằng cùng một mã. `roles` của người = `role_registry[].roles`; của tài sản = `usage_contexts`. `flags` lấy từ S3: `role_conflict`, `id_number_check.requires_review`, `mapped_evidences[].match_confidence < 0.80`, cảnh báo `NAME_SPELLING_DIFFERENCE` |
-| **LAC-R03** | **Chủ thể khoản vay và hộ kinh doanh.** Mọi Claim `loan:<evidence_id>` gộp về **một** chủ thể `loan`; mọi Claim `business:<evidence_id>` gộp về `business-1`. Sau khi gộp, các Claim cùng (`field`, `value_norm`) nhập làm một (nguồn cộng dồn), nên hai bản chụp của cùng một đơn vay cho `CORROBORATED` giữa hai bản. Hai bản đơn vay khác giá trị **định danh khoản vay** (`requested_amount`, `bank_proposed_amount`, `loan_term_months`, `interest_rate`) → `DISPUTED` và gap `LOAN_APPLICATION_DUPLICATE`. Trường định danh khoản vay được thêm vào tập tạo mâu thuẫn (mở rộng `isIdentityField` riêng cho chủ thể `loan`, không đổi hành vi của người / tài sản). Hộ kinh doanh v1 chỉ một chủ thể; tách nhiều HKD → §9 OQ-LAC-02 |
+| **LAC-R03** | **Chủ thể khoản vay và hộ kinh doanh.** Mọi Claim `loan:<evidence_id>` gộp về **một** chủ thể `loan`; mọi Claim `business:<evidence_id>` gộp về `business-1`. Sau khi gộp, các Claim cùng (`field`, `value_norm`) nhập làm một (nguồn cộng dồn), nhưng hai bản chụp của cùng một đơn vay vẫn là `DECLARED` (D-112: xác nhận độc lập cần ≥ 2 loại chứng từ; cùng quy tắc cho mọi loại, VD CCCD ×2 là `SINGLE_SOURCE`). Hai bản đơn vay khác giá trị **định danh khoản vay** (`requested_amount`, `bank_proposed_amount`, `loan_term_months`, `interest_rate`) → `DISPUTED` và gap `LOAN_APPLICATION_DUPLICATE`. Trường định danh khoản vay được thêm vào tập tạo mâu thuẫn (mở rộng `isIdentityField` riêng cho chủ thể `loan`, không đổi hành vi của người / tài sản). Hộ kinh doanh v1 chỉ một chủ thể; tách nhiều HKD → §9 OQ-LAC-02 |
 | **LAC-R04** | **Dữ kiện = Claim**, quan hệ 1–1 sau LAC-R03: không lược, không nhân đôi. Bất biến: tổng `sources` của mọi fact = `meta.leaf_count`. Lá liên kết nội bộ (`party_index`, `asset_index`, `*_indexes[]`) vẫn vào `facts` (lossless) nhưng **không render** |
 | **LAC-R05** | **`trust`** ánh xạ từ `Claim.status`; thêm `SUPERSEDED` khi mọi nguồn thuộc `superseded_evidences`. Một fact có cả nguồn bị thay thế lẫn nguồn còn hiệu lực: bỏ nguồn bị thay thế khỏi `sources` khi render, `trust` tính lại trên nguồn còn lại |
 | **LAC-R06** | **`review`** = `ACCEPTED` khi **mọi** nguồn có `read_confidence ≥ 0.80` (cùng ngưỡng và cùng độ phân giải cấp 1 với V2-R04), ngược lại `REVIEW`. Nhờ đó rào `PASS chỉ trên evidence ACCEPTED` hiện có cho kết quả giống hệt khi đi qua LAC |
@@ -165,9 +165,10 @@ export type LacGapCode =
 | **LAC-R10** | **Khoảng trống không bao giờ lặng lẽ.** Mỗi điều kiện ở `LacGapCode` có thì ghi gap kèm `count`. Đặc biệt: S3 lỗi hoặc không có đơn vay → LAC **vẫn dựng** với `loan`, `business-1` và `doc-<n>` (Claim đã có chủ thể `document` khi không có chỉ số người / tài sản), kèm gap tương ứng. Không có trường hợp LAC rỗng mà không có gap giải thích |
 | **LAC-R11** | **Phạm vi theo rule.** Khóa `input` mới: `lac.loan`, `lac.business`, `lac.person` (mọi người), `lac.person.<role>` (VD `lac.person.collateral_owner`), `lac.asset`, `lac.asset.collateral`, `lac.relations`, `lac.document.<doc_type_key>`. `conflicts`, `gaps` và **dòng định danh** của mọi chủ thể luôn được render (để model trỏ được mã chủ thể). Tương thích khóa cũ trên Profile: `evidence.<doc_type_key>` → fact có nguồn thuộc loại đó (mọi chủ thể); `master_data.identity` → `lac.person`; `.collateral` → `lac.asset` + quan hệ OWNS; `.relationship` / `.legal` → `lac.relations`; `.income` → `lac.business` + `income_sources` của người. Rule không khai `input` nào → toàn bộ LAC (vẫn trong ngân sách, LAC-R14) |
 | **LAC-R12** | **Thứ tự và mã ổn định.** Chủ thể: `loan`, `business-*`, người theo thứ tự S3, tài sản theo thứ tự S3, `doc-<n>` theo thứ tự evidence S2. Fact: theo chủ thể, rồi theo thứ tự lá đầu tiên trong `data` của nguồn đầu tiên. `fact_id` (`fact-<n>`) đánh liên tục trên toàn LAC; mã render `F<n>` đánh liên tục **trên phần đã render** của từng prompt. `refIndex: Map<"F<n>", record_id[]>` dựng lại được từ cùng (LAC, scope), nên bước parse (kể cả khi resume) có đúng bảng mã như lúc dựng prompt |
-| **LAC-R13** | **Dẫn nguồn và rào an toàn.** Model chỉ dẫn `F<n>` (một fact) hoặc `F<n>.<k>` (nguồn thứ k của fact, 1-based) khi muốn chỉ một chứng từ cụ thể. Parse: (1) mã không có trong `refIndex` → bỏ (giữ `PROMPT_CHECK_EVIDENCE_MISSING` khi không còn mã nào); (2) resolve về `record_id` rồi chạy **nguyên** chuỗi rào hiện có (tồn tại trong `EvidenceRegistry`, `ACCEPTED`, ngưỡng confidence); (3) **rào mới theo trạng thái**: `PASS` mà có fact dẫn chiếu ở `DISPUTED`, `PROBABLE_OCR_ERROR` hoặc `SUPERSEDED` → hạ `REVIEW`, `reason_code = PROMPT_CHECK_EVIDENCE_DISPUTED`; `PASS` mà **mọi** fact dẫn chiếu là `DECLARED` → hạ `REVIEW`, `reason_code = PROMPT_CHECK_DECLARED_ONLY`. Ngoại lệ: rule khai `allow_declared_pass: true` (rule chỉ đọc lời khai, VD kiểm tra số tiền đề nghị ≤ hạn mức) (§9 OQ-LAC-01). `RuleResult.evidence_ids` vẫn là `record_id`, nên UI và payload không đổi |
+| **LAC-R13** | **Dẫn nguồn và rào an toàn.** Model chỉ dẫn `F<n>` (một fact) hoặc `F<n>.<k>` (nguồn thứ k của fact, 1-based) khi muốn chỉ một chứng từ cụ thể. Parse: (1) mã không có trong `refIndex` → bỏ (giữ `PROMPT_CHECK_EVIDENCE_MISSING` khi không còn mã nào); (2) resolve về `record_id` rồi chạy **nguyên** chuỗi rào hiện có (tồn tại trong `EvidenceRegistry`, `ACCEPTED`, ngưỡng confidence); (3) **rào mới theo trạng thái**: `PASS` mà có fact dẫn chiếu ở `DISPUTED`, `PROBABLE_OCR_ERROR` hoặc `SUPERSEDED` → hạ `REVIEW`, `reason_code = PROMPT_CHECK_EVIDENCE_DISPUTED`; `PASS` mà **có bất kỳ** fact dẫn chiếu nào là `DECLARED` → hạ `REVIEW` (D-112; trước là "mọi fact", bị vượt bằng cách dẫn kèm một fact không liên quan), `reason_code = PROMPT_CHECK_DECLARED_ONLY`. Ngoại lệ: rule khai `allow_declared_pass: true` (rule chỉ đọc lời khai, VD kiểm tra số tiền đề nghị ≤ hạn mức) (§9 OQ-LAC-01). `RuleResult.evidence_ids` vẫn là `record_id`, nên UI và payload không đổi |
 | **LAC-R14** | **Ngân sách** dùng chung `EVIDENCE_CHAR_BUDGET` (18 000 ký tự). Thứ tự ưu tiên khi vượt: (1) chú thích định dạng + gap; (2) mâu thuẫn; (3) dòng định danh chủ thể; (4) quan hệ; (5) fact trong phạm vi theo `trust` (`DISPUTED`/`PROBABLE_OCR_ERROR` → `CORROBORATED` → `SINGLE_SOURCE` → `DECLARED` → `SPELLING_VARIANT`), xoay vòng giữa các chủ thể như `selectPromptEvidence`; (6) fact `doc-<n>`. Phần bị cắt ghi một dòng `(… còn N dữ kiện của <subject_id> không hiển thị)`. Giá trị chuỗi cắt ở 160 ký tự (`MAX_VALUE_LENGTH`) |
 | **LAC-R15** | **Định dạng render** (§6): một khối `untrusted_loan_context` gồm các phần `KHOẢN VAY`, `HỘ KINH DOANH`, `NGƯỜI`, `TÀI SẢN`, `QUAN HỆ`, `MÂU THUẪN`, `KHOẢNG TRỐNG`, `CHỨNG TỪ KHÁC`. Mỗi fact một dòng `F<n> <nhãn> = <giá trị> [<trust>; <nguồn>]`; `REVIEW` ghi thêm `; cần soát`. Nguồn ghi bằng `doc_type_key` (× số bản), **không** ghi tên file hay `evidence_id` |
+| **LAC-R20** | **Render theo hồ sơ 360 (D-114).** Có `profile_360` của cùng lần chạy thì: (1) fact `income_sources[].*`, mọi fact của `business-1` và fact đã gom vào luồng thu nhập / hộ kinh doanh **không** render thành dòng phẳng; (2) thêm mục `NGUỒN TRẢ NỢ` (mỗi `inc-n` một dòng: loại, người, `biz-n`, số tiền / tháng, lợi nhuận / doanh thu năm, có chứng từ hay chỉ lời khai) và `HỘ KINH DOANH` (mỗi `biz-n` một dòng: tên, số GCN, MST, ngành, chủ, đã xác minh chưa), đặt sau `NGƯỜI`, trước `TÀI SẢN` / `CHỨNG TỪ KHÁC`; (3) mọi giá trị trong hai mục này dẫn bằng `F<n>` của chính fact gom vào nó, các fact đó luôn được giữ khi cắt ngân sách. Không có hồ sơ 360 (lỗi dựng) → render như LAC-R15 |
 | **LAC-R16** | **Template.** Placeholder mới `{{context}}` thay cho cặp `{{master_data}}` + `{{evidence}}`. Template mặc định (`POLICY_CHECKS_PROMPT_TEMPLATE`) đổi quy tắc 2 và 5 theo §6.2. Template ghi đè trên Profile **không có** `{{context}}` → chạy đường cũ (`{{master_data}}` + `{{evidence}}`, mã `D<n>`) và ghi `config_snapshot.warnings: LAC_TEMPLATE_LEGACY`. `ensurePlaceholders` không tự chèn `{{context}}` vào template cũ, vì template cũ hướng dẫn model dẫn `D<n>` |
 | **LAC-R17** | **Chế độ** qua tham số `lac_mode`: `off` (mặc định cho tới khi duyệt T-LAC-07), `shadow`, `on`. `shadow`: dựng và render LAC, **không** gửi model; ghi thống kê vào `content_preview.lac` của stage 3 (`chars`, `facts_rendered`, `facts_total`, `conflicts`, `gaps`, `truncated`, số chủ thể theo loại). `on`: prompt dùng `{{context}}`. Lỗi khi dựng LAC ở `on` → rơi về đường cũ trong cùng lần chạy, ghi `config_snapshot.warnings: LAC_UNAVAILABLE:<tên lỗi>`, stage không đổ |
 | **LAC-R18** | **Lưu trữ.** Kết quả (`AppraisalResultV2`) thêm `loan_application_context_summary = { lac_version, source_hash, mode, fact_count, rendered_fact_count, conflicts, gaps }` để audit và tái lập. LAC đầy đủ **không lưu**: dựng lại được từ `documents.evidences` + S3 (cùng lý do `claims-store.ts` chỉ lưu phần đáng chú ý). Payload tích hợp không đổi ở v1 |
@@ -239,10 +240,10 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 |---|---|
 | AC-1 | Cùng fixture → `buildLoanApplicationContext` và `renderLoanApplicationContext` cho output giống hệt từng byte qua 2 lần chạy và sau khi xáo thứ tự khóa JSON đầu vào |
 | AC-2 | Bất biến lossless: Σ `facts[].sources.length` = `meta.leaf_count` = `ClaimLedger.leaf_count` trên mọi fixture `tests/loan-dossier/fixtures` |
-| AC-3 | Hai bản chụp cùng một đơn vay → một chủ thể `loan`, các dữ kiện khoản vay `CORROBORATED`. Hai đơn vay khác số tiền → `DISPUTED` + gap `LOAN_APPLICATION_DUPLICATE` |
+| AC-3 | Hai bản chụp cùng một đơn vay → một chủ thể `loan`, các dữ kiện khoản vay `DECLARED` (D-112). Hai đơn vay khác số tiền → `DISPUTED` + gap `LOAN_APPLICATION_DUPLICATE` |
 | AC-4 | S3 trả `null` → LAC vẫn có `loan`, `business-1`, `doc-<n>` và gap `S3_UNAVAILABLE`; render không rỗng |
 | AC-5 | Mọi `F<n>` / `F<n>.<k>` trong text render có trong `refIndex`; mọi `record_id` trong `refIndex` tồn tại trong `EvidenceRegistry` |
-| AC-6 | Model dẫn `F<n>` của fact `DISPUTED` kèm `PASS` → kết quả `REVIEW`/`PROMPT_CHECK_EVIDENCE_DISPUTED`. Chỉ dẫn fact `DECLARED` kèm `PASS` → `REVIEW`/`PROMPT_CHECK_DECLARED_ONLY`, trừ rule `allow_declared_pass` |
+| AC-6 | Model dẫn `F<n>` của fact `DISPUTED` kèm `PASS` → kết quả `REVIEW`/`PROMPT_CHECK_EVIDENCE_DISPUTED`. Dẫn có fact `DECLARED` (kể cả kèm fact khác) kèm `PASS` → `REVIEW`/`PROMPT_CHECK_DECLARED_ONLY`, trừ rule `allow_declared_pass` |
 | AC-7 | Mã lạ (`F999`, `D1:…` khi `on`) bị bỏ; không còn mã hợp lệ → `PROMPT_CHECK_EVIDENCE_MISSING` như hiện nay |
 | AC-8 | Rule khai `master_data.collateral` (khóa cũ) nhận đúng phần `TÀI SẢN` + quan hệ OWNS; rule khai `evidence.id_card` nhận fact có nguồn `id_card` |
 | AC-9 | Fixture vượt ngân sách: text ≤ 18 000 ký tự, phần `MÂU THUẪN` và `KHOẢNG TRỐNG` còn đủ, có dòng `(… còn N dữ kiện …)` |
@@ -253,10 +254,12 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 ## 8. Task cards
 
 ### T-LAC-01 — Hợp đồng LAC
+- Depends: —
 - Files: `lib/loan-dossier/context/types.ts`, `lib/loan-dossier/context/schema.ts` (zod), `lib/loan-dossier/catalog/field-labels.ts`, `app/loan-appraisal-v2/lib/dossier-view.ts`, `tests/loan-dossier/context-contract.test.ts`
 - Refs: §4, LAC-R01, LAC-R07
 - Làm: kiểu và zod schema của §4; `LAC_VERSION`; chuyển `FIELD_LABELS` / `labelOf` xuống `lib/` (re-export từ `dossier-view.ts`).
 - DoD: schema parse được LAC dựng tay tối thiểu; từ chối `trust` / `gap` lạ; test hiện có của `tests/loan-appraisal-v2` về nhãn chạy không đổi.
+- Verify: `npx jest tests/loan-dossier/context-build.test.ts tests/loan-appraisal-v2`
 
 ### T-LAC-02 — Gộp chủ thể khoản vay và hộ kinh doanh
 - Depends: T-LAC-01
@@ -264,6 +267,7 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 - Refs: LAC-R02, LAC-R03, AC-3
 - Làm: dựng `subjects` từ S3 + ledger; gộp `loan:*`, `business:*`, nhập Claim trùng (`field`, `value_norm`), tính lại `trust` cho chủ thể đã gộp. Không sửa `buildClaimLedger`: gộp ở lớp LAC để sổ Claim và `claims-store` giữ nguyên.
 - DoD: AC-3; người / tài sản giữ nguyên mã S3.
+- Verify: `npx jest tests/loan-dossier/context-build.test.ts`
 
 ### T-LAC-03 — Dữ kiện, trạng thái, mâu thuẫn, khoảng trống
 - Depends: T-LAC-02
@@ -271,6 +275,7 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 - Refs: LAC-R04…R10, LAC-R12, AC-1, AC-2, AC-4
 - Làm: `buildLoanApplicationContext`; nhãn từ `doc_schemas`; quan hệ + `support_fact_ids`; `conflicts`; `gaps`; `meta.source_hash`.
 - DoD: AC-1, AC-2, AC-4.
+- Verify: `npx jest tests/loan-dossier/context-build.test.ts`
 
 ### T-LAC-04 — Render và bảng mã
 - Depends: T-LAC-03
@@ -278,6 +283,7 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 - Refs: LAC-R11, LAC-R12, LAC-R14, LAC-R15, §6.1, AC-5, AC-8, AC-9
 - Làm: `promptContextScope(checks)` (khóa `lac.*` + ánh xạ khóa cũ); `renderLoanApplicationContext` → `{ text, refIndex, stats }`; ngân sách theo thứ tự ưu tiên.
 - DoD: AC-5, AC-8, AC-9; snapshot text của 2 fixture (HKD, SME) được review tay.
+- Verify: `npx jest tests/loan-dossier/context-render.test.ts`
 
 ### T-LAC-05 — Nối vào Rule LLM
 - Depends: T-LAC-04
@@ -285,6 +291,7 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 - Refs: LAC-R13, LAC-R16, LAC-R17, §6.2, AC-6, AC-7, AC-10, AC-12
 - Làm: placeholder `{{context}}`, template mặc định mới, tham số `lac_mode`; `resolveContextRefs` cạnh `resolveEvidenceRefs`; rào trạng thái; `reason_code` mới `PROMPT_CHECK_EVIDENCE_DISPUTED`, `PROMPT_CHECK_DECLARED_ONLY` (khai cạnh các mã `PROMPT_CHECK_*` hiện có, kèm ánh xạ trong `check-contract.ts` cho payload tích hợp); thống kê shadow.
 - DoD: AC-6, AC-7, AC-10, AC-12; test hiện có của `prompt-checks` chạy không đổi ở `lac_mode = off`.
+- Verify: `npx jest tests/loan-appraisal/prompt-checks-lac.test.ts tests/loan-appraisal/lac-mode-param.test.ts`
 
 ### T-LAC-06 — Lưu trữ, an toàn, tài liệu
 - Depends: T-LAC-05
@@ -292,12 +299,18 @@ Quy tắc 2, 5 được kiểm lại bằng code ở LAC-R13. Prompt chỉ nói 
 - Refs: LAC-R18, LAC-R19, AC-11
 - Làm: `loan_application_context_summary` trong kết quả; test quét PII; cập nhật README (mục Rule LLM) và trang cấu hình (khóa `lac.*` trong gợi ý `input`).
 - DoD: AC-11.
+- Verify: `npx jest tests/loan-appraisal/lac-pii.test.ts`
 
 ### T-LAC-07 — Đo trên UAT và quyết định bật
 - Depends: T-LAC-05
 - Files: `scripts/lac-shadow-report.ts` (không commit dữ liệu hồ sơ), báo cáo trong `docs/loan-appraisal/uat-analysis/`
+- Refs: LAC-R17, LAC-R20
 - Làm: chạy bộ hồ sơ UAT hai lần (`off`, `on`) với cùng model. So sánh theo rule: phân bố `PASS`/`REVIEW`/`FAIL`/`INSUFFICIENT_DATA`, số dẫn chiếu bị rào loại (`EVIDENCE_MISSING`, `NOT_ACCEPTED`), số kết quả khác nhau giữa hai chế độ (CO chấm tay xem bên nào đúng), độ dài prompt, token.
 - **Tiêu chí bật `on` làm mặc định:** (1) tỉ lệ dẫn chiếu bị loại giảm; (2) trên các kết quả khác nhau, CO đánh giá LAC đúng ≥ đường cũ; (3) không có `PASS` sai mới nào ở rule định danh (`BORROWER_IDENTITY`, `OWNER_MATCH`); (4) prompt không dài hơn đường cũ quá 10%.
+- DoD:
+  - báo cáo off / on (chỉ id, mã, số đếm) cho bộ hồ sơ chuẩn trong `docs/loan-appraisal/uat-analysis/`
+  - quyết định bật hay chưa ghi vào IMPLEMENT kèm số liệu của bốn tiêu chí
+- Verify: `npx jest tests/scripts/lac-compare.test.ts`
 
 ## 9. Điểm cần quyết
 

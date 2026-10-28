@@ -30,6 +30,14 @@ describe('matchParties', () => {
     expect(unmapped).toEqual([expect.objectContaining({ reason_code: 'NAME_SPELLING_DIFFERENCE', party_index: 0 })]);
   });
 
+  it('FS-R01: cùng tên, khác số và khác ngày sinh → không ghép; cặp 9 ↔ 12 số vẫn ghép', () => {
+    const anchor = loanApp([{ ...A, date_of_birth: '1990-05-01' }]);
+    const father = ev('id_card', { parties: [{ full_name: A.full_name, id_number: ID_C12, date_of_birth: '1960-02-02' }] });
+    expect(run(anchor, [father]).unmapped).toEqual([expect.objectContaining({ reason_code: 'NO_IDENTITY_MATCH' })]);
+    const oldCard = ev('id_card', { parties: [{ full_name: A.full_name, id_number: ID_A9, date_of_birth: '1960-02-02' }] });
+    expect(run(anchor, [oldCard]).persons[0].mapped.at(-1)).toMatchObject({ matched_by: 'FULL_NAME' });
+  });
+
   it('số thuộc K() của 2 người → AMBIGUOUS_IDENTITY_MATCH', () => {
     const anchor = loanApp([A, { ...B, id_number: ID_A9 }]);
     const persons = buildRegistry(anchor);

@@ -59,13 +59,34 @@ describe('chủ thể', () => {
     expect(borrowerSubject.label).toBe('NGUYỄN VĂN AN');
   });
 
-  it('AC-3a: hai bản chụp cùng một đơn vay → một chủ thể loan, số tiền CORROBORATED', () => {
+  it('AC-3a: hai bản chụp cùng một đơn vay → một chủ thể loan, một fact hai nguồn, vẫn DECLARED (không tự xác nhận)', () => {
     const { lac: c } = lac([app(), app(), idCard(borrower)]);
     expect(c.subjects.filter((s) => s.kind === 'loan')).toHaveLength(1);
     const amount = c.facts.filter((f) => f.subject_id === 'loan' && f.field === 'loan_info.bank_proposed_amount');
     expect(amount).toHaveLength(1);
-    expect(amount[0].trust).toBe('CORROBORATED');
     expect(amount[0].sources).toHaveLength(2);
+    expect(amount[0].trust).toBe('DECLARED');
+  });
+
+  it('bản bị thay thế: mâu thuẫn chỉ còn một bên hiệu lực → fact tính lại trust, không kẹt DISPUTED', () => {
+    const oldCard = idCard({ ...borrower, id_number: ID_B12 });
+    const newCard = idCard(borrower);
+    const evs = [app(), oldCard, newCard];
+    // S3 không tự gom hai thẻ khác số vào một người, nên gắn tay thẻ cũ vào người vay để dựng đúng kịch bản "nộp lại giấy tờ".
+    const base = runMapDossier({ evidences: [app(), newCard], dossier_submitted_at: D0 }).data!;
+    const person = base.role_registry.find((p) => p.roles.includes('borrower'))!;
+    const s3 = { ...base, role_registry: base.role_registry.map((p) => p === person ? { ...p, mapped_evidences: [...p.mapped_evidences, { evidence_id: oldCard.evidence_id, party_index: 0 }] } : p) } as unknown as typeof base;
+    const before = buildLoanApplicationContext({ product_code: 'hkd-loan', flow: 'FULL', evidences: evs, s3, s3_status: 'SUCCESS' });
+    const disputedBefore = before.facts.some((f) => f.field.endsWith('id_number') && f.trust === 'DISPUTED');
+    expect(disputedBefore).toBe(true);
+    const withSuperseded = { ...s3, superseded_evidences: [{ evidence_id: oldCard.evidence_id }] } as unknown as typeof s3;
+    const after = buildLoanApplicationContext({ product_code: 'hkd-loan', flow: 'FULL', evidences: evs, s3: withSuperseded, s3_status: 'SUCCESS' });
+    const idFacts = after.facts.filter((f) => f.field.endsWith('id_number') && !f.hidden);
+    expect(idFacts.some((f) => f.trust === 'DISPUTED' || f.trust === 'PROBABLE_OCR_ERROR')).toBe(false);
+    expect(idFacts.some((f) => f.trust === 'SUPERSEDED')).toBe(true);
+    expect(after.conflicts.filter((x) => x.field.endsWith('id_number'))).toHaveLength(0);
+    const live = idFacts.find((f) => f.value === ID_A12)!;
+    expect(live.contradicts).toEqual([]);
   });
 
   it('AC-3b: hai đơn vay ghi khác số tiền → DISPUTED, nối contradicts, có gap + conflict', () => {
@@ -83,6 +104,14 @@ describe('chủ thể', () => {
     expect(c.facts.find((f) => f.field === 'loan_info.loan_term_months')?.trust).toBe('DECLARED');
     const idFacts = c.facts.filter((f) => f.field.endsWith('id_number') && f.value === ID_A12);
     expect(idFacts.some((f) => f.trust === 'CORROBORATED')).toBe(true);
+  });
+
+  it('D-112: hai bản chụp cùng loại chứng từ (CCCD ×2) → SINGLE_SOURCE, không CORROBORATED', () => {
+    // Đơn vay không ghi số: số định danh chỉ đến từ hai bản chụp CCCD.
+    const { lac: c } = lac([loanApp([{ ...borrower, id_number: null }]), idCard(borrower), idCard(borrower)]);
+    const fromCards = c.facts.filter((f) => f.field.endsWith('id_number') && f.sources.length >= 2 && f.sources.every((s) => s.doc_type_key === 'id_card'));
+    expect(fromCards.length).toBeGreaterThan(0);
+    for (const f of fromCards) expect(f.trust).toBe('SINGLE_SOURCE');
   });
 });
 
