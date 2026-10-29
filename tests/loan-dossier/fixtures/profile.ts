@@ -16,5 +16,5 @@ export function profileOf(
 ): Profile360 {
   const s3 = opts.s3 === undefined ? runMapDossier({ evidences, dossier_submitted_at: D0 }).data : opts.s3;
   const lac = buildLoanApplicationContext({ product_code: 'hkd-loan', flow: 'FULL', evidences, s3, s3_status: s3 ? 'SUCCESS' : null });
-  return buildProfile360({ evidences, s3, lac, segment: opts.segment ?? 'HKD', ...(opts.policies === undefined ? {} : { policies: opts.policies }) });
+  return buildProfile360({ evidences, s3, lac, segment: opts.segment ?? 'HKD', as_of: D0, ...(opts.policies === undefined ? {} : { policies: opts.policies }) });
 }

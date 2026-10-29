@@ -12,7 +12,6 @@ import type { ChecklistOverrides } from '@/lib/loan-dossier/s4/programs';
 import { runChecklist, type ChecklistPorts } from '@/lib/loan-dossier/s4/run';
 import { SEMANTIC_DEFERRED_CODE } from '@/lib/loan-dossier/s5/metric';
 import type { IntakeLlmCache } from './intake-review';
-import type { MasterCorrectionCache } from './master-correction';
 import { runCrossCheck, type CrossCheckPorts } from '@/lib/loan-dossier/s5/run';
 import { runMapDossier } from '@/lib/loan-dossier/s3/run';
 
@@ -27,8 +26,6 @@ export interface ConsolidateCheckpoint {
   cross_check_documents: CrossCheckStageResult;
   /** D-59: kết quả LLM chấm nháp + tổng kết, ghi sau bước tiếp nhận để resume không gọi lại. */
   intake_llm?: IntakeLlmCache;
-  /** D-67…D-69: quyết định LLM hiệu chỉnh master_dossier, ghi sau khi dựng master để resume không gọi lại. */
-  master_correction?: MasterCorrectionCache;
 }
 
 export interface ConsolidateOptions {

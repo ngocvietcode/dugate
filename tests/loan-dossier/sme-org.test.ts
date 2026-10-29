@@ -178,13 +178,13 @@ describe('UI: Customer 360 và sơ đồ cho doanh nghiệp', () => {
     expect(org.identity.some((f) => /định danh|sinh|Thường trú|Hôn nhân/.test(f.label))).toBe(false);
   });
 
-  it('quan hệ đại diện hiện ở cả hai phía; SME không dựng hộ kinh doanh từ đơn vay (D-112)', () => {
+  it('quan hệ đại diện hiện ở cả hai phía; SME: đơn vay + GCN ĐKDN là MỘT doanh nghiệp, không dựng hộ kinh doanh (D-112, D-116)', () => {
     const v = c360();
     const org = v.customers.find((p) => p.isOrg)!;
     const person = v.customers.find((p) => !p.isOrg)!;
     expect(org.relations).toEqual([expect.objectContaining({ text: 'Người đại diện theo pháp luật (Giám đốc) · xác minh một phần', name: person.name })]);
     expect(person.relations).toEqual(expect.arrayContaining([expect.objectContaining({ text: 'Đại diện theo pháp luật của · xác minh một phần', name: org.name })]));
-    expect(v.repayment.businesses).toEqual([]);
+    expect(v.repayment.businesses).toEqual([expect.objectContaining({ kind: 'Doanh nghiệp', name: 'CÔNG TY TNHH ABC', owners: org.name })]);
   });
 
   it('thẻ sơ đồ: doanh nghiệp hiện MST che bớt (không lộ đủ), phụ đề có "Doanh nghiệp"; cạnh đại diện có nhãn trên sơ đồ', () => {

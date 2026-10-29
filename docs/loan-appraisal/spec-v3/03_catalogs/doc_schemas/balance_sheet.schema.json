@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/balance_sheet.schema.json",
+  "title": "balance_sheet — data",
+  "description": "Schema của evidence.data cho doc_type_key = balance_sheet (Bảng cân đối kế toán). Số cuối kỳ (cột 'Số cuối năm' / 'Số cuối kỳ'); không lấy cột đầu kỳ. schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "balance_info",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "HOLDER = doanh nghiệp lập báo cáo. Doanh nghiệp lập (party_type = ORGANIZATION, `tax_id` = mã số thuế, `full_name` = tên doanh nghiệp).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 1
+    },
+    "balance_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "period_raw",
+        "report_date",
+        "total_assets",
+        "cash_and_equivalents",
+        "short_term_receivables",
+        "inventory",
+        "fixed_assets",
+        "total_liabilities",
+        "short_term_borrowings",
+        "long_term_borrowings",
+        "owner_equity",
+        "is_audited"
+      ],
+      "properties": {
+        "period_raw": {
+          "description": "Kỳ báo cáo (nguyên văn, VD 'Năm 2025').",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "report_date": {
+          "description": "Ngày chốt số liệu (cuối kỳ).",
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "total_assets": {
+          "description": "Tổng cộng tài sản (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "cash_and_equivalents": {
+          "description": "Tiền và các khoản tương đương tiền (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "short_term_receivables": {
+          "description": "Các khoản phải thu ngắn hạn (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "inventory": {
+          "description": "Hàng tồn kho (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "fixed_assets": {
+          "description": "Tài sản cố định (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "total_liabilities": {
+          "description": "Nợ phải trả (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "short_term_borrowings": {
+          "description": "Vay và nợ thuê tài chính ngắn hạn (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "long_term_borrowings": {
+          "description": "Vay và nợ thuê tài chính dài hạn (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "owner_equity": {
+          "description": "Vốn chủ sở hữu (VND, có thể âm).",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "is_audited": {
+          "description": "Có báo cáo kiểm toán / dấu kiểm toán (OQ-360-12: nhận cả chưa kiểm toán).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày lập báo cáo.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "HOLDER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -3,7 +3,8 @@
 import type { LoanApplicationContext } from '../context/schema';
 import type { BusinessResult } from './business';
 import type { MergePolicies } from './policies';
-import type { Collateral, Conflict, Customer, IncomeStream, Issue, IssueCode, Obligation } from './schema';
+import type { Collateral, Conflict, Customer, IncomeStream, Issue, IssueCode, Obligation, Profile360 } from './schema';
+import type { TradeResult } from './trade';
 
 export const ASSET_TYPE_LABELS: Record<string, string> = {
   real_estate: 'Bất động sản', apartment: 'Căn hộ', vehicle: 'Xe', deposit: 'Tiền gửi', other: 'Tài sản',
@@ -22,12 +23,17 @@ export interface IssueInput {
   collateral: readonly Collateral[];
   policies: MergePolicies | null;
   declaredIncomeRows: number;
+  trade: TradeResult;
+  loan: Profile360['loan'];
+  segment: string | null;
+  /** Đơn vị doanh nghiệp của khách vay pháp nhân (SME), null khi không có. */
+  smeUnit: string | null;
 }
 
 export function subjectLabeler(customers: readonly Customer[], collateral: readonly Collateral[], business: BusinessResult) {
   const names = new Map(customers.map((c) => [c.person_id, typeof c.full_name.value === 'string' ? c.full_name.value : c.person_id]));
   const assets = new Map(collateral.map((a) => [a.asset_id, `${ASSET_TYPE_LABELS[a.asset_type] ?? a.asset_type}${a.key ? ` · ${a.key}` : ''}`]));
-  const units = new Map(business.units.map((u) => [u.business_id, `Hộ kinh doanh ${typeof u.name.value === 'string' ? u.name.value : u.business_id}`]));
+  const units = new Map(business.units.map((u) => [u.business_id, `${u.kind === 'ENTERPRISE' ? 'Doanh nghiệp' : 'Hộ kinh doanh'} ${typeof u.name.value === 'string' ? u.name.value : u.business_id}`]));
   return (id: string | null): string => {
     if (!id) return 'Hồ sơ';
     if (id === 'loan') return 'Khoản vay';
@@ -124,6 +130,45 @@ export function buildIssues(input: IssueInput, conflicts: readonly Conflict[], l
       if (lo > 0 && (hi - lo) / lo > policies.valuation_gap_ratio) push('warning', 'VALUATION_GAP', a.asset_id, `Các chứng thư định giá chênh nhau ${Math.round(((hi - lo) / lo) * 100)}%`, 'LTV tính trên giá thấp nhất (D-112).');
     }
   }
+  // 7. Giấy tờ định danh hết hạn tại ngày nộp hồ sơ.
+  for (const c of customers) {
+    for (const d of c.id_documents) if (d.expired) push('warning', 'ID_DOCUMENT_EXPIRED', c.person_id, `Giấy tờ định danh hết hạn ngày ${d.valid_until}`);
+  }
+
+  // 8. Đối tác và giao dịch mua (L360-B05: bên liên quan chỉ cảnh báo).
+  const { trade } = input;
+  const cpName = new Map(trade.counterparties.map((c) => [c.counterparty_id, c.name ?? c.counterparty_id]));
+  for (const cp of trade.counterparties) {
+    if (cp.person_id) push('warning', 'RELATED_COUNTERPARTY', cp.person_id, `Là ${cp.roles.includes('SELLER') ? 'bên bán' : cp.roles.includes('LENDER') ? 'bên cho vay' : 'chủ lao động'} trên chứng từ giao dịch`, 'Bên liên quan trong giao dịch: cần xác minh mục đích vay và dòng tiền.');
+  }
+  for (const d of trade.deals) {
+    const contract = d.prices.find((p) => p.source === 'CONTRACT');
+    const quote = d.prices.find((p) => p.source === 'QUOTE');
+    if (contract && quote && contract.value !== quote.value) {
+      push('warning', 'DEAL_PRICE_MISMATCH', null, `Giá HĐ mua khác báo giá${d.object ? ` (${d.object})` : ''}`, `HĐ ${contract.value} ≠ báo giá ${quote.value}${d.seller_counterparty_id ? ` · bên bán ${cpName.get(d.seller_counterparty_id)}` : ''}`);
+    }
+  }
+  const dealTotal = trade.deals.reduce((n, d) => n + (d.price ?? 0), 0);
+  const loanAmount = typeof input.loan.bank_proposed_amount.value === 'number' ? input.loan.bank_proposed_amount.value
+    : typeof input.loan.requested_amount.value === 'number' ? input.loan.requested_amount.value : null;
+  if (loanAmount !== null && dealTotal > 0 && loanAmount > dealTotal) {
+    push('warning', 'LOAN_EXCEEDS_DEAL', 'loan', 'Số tiền vay lớn hơn tổng giá trị giao dịch mua trên chứng từ', `Vay ${loanAmount} > giao dịch ${dealTotal}`);
+  }
+
+  // 9. SME (L360-B10, B11): khách vay pháp nhân phải có người đại diện khớp CCCD; chứng từ tài chính phải cùng mã số thuế khách vay.
+  const borrowerOrg = input.segment === 'SME' ? customers.find((c) => c.roles.includes('borrower') && c.party_type === 'ORGANIZATION') : undefined;
+  if (borrowerOrg && !borrowerOrg.relations.some((r) => r.type === 'REPRESENTED_BY' && r.verification === 'VERIFIED')) {
+    push('danger', 'LEGAL_REP_NOT_VERIFIED', borrowerOrg.person_id, 'Chưa xác minh người đại diện theo pháp luật bằng số định danh',
+      'Cần GCN ĐKDN có số định danh người đại diện và CCCD của người đó trong hồ sơ: thẩm quyền ký vay, ký thế chấp.');
+  }
+  if (borrowerOrg) {
+    for (const u of business.units) {
+      if (u.kind !== 'ENTERPRISE' || u.business_id === input.smeUnit) continue;
+      if (!u.mentioned_in.some((m) => ['vat_tax_return', 'balance_sheet', 'financial_performance_report'].includes(m.doc_type_key))) continue;
+      push('warning', 'FILING_NOT_LINKED', u.business_id, 'Báo cáo tài chính / tờ khai thuế không cùng mã số thuế khách vay', 'Không dùng số liệu này cho khả năng trả nợ.');
+    }
+  }
+
   if (!policies) push('warning', 'MERGE_POLICY_INVALID', null, 'Cấu hình chọn giá trị (merge_policies.json) lỗi: chưa chọn số thu nhập và giá trị TSBĐ');
 
   // Gộp trùng tuyệt đối, xếp nặng trước, giữ thứ tự xuất hiện trong cùng mức.

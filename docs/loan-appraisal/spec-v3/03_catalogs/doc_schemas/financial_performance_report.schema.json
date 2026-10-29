@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/financial_performance_report.schema.json",
+  "title": "financial_performance_report — data",
+  "description": "Schema của evidence.data cho doc_type_key = financial_performance_report (Báo cáo kết quả hoạt động kinh doanh). Số kỳ này (cột 'Năm nay' / 'Kỳ này'); không lấy cột kỳ trước. schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "performance_info",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "HOLDER = doanh nghiệp lập báo cáo. Doanh nghiệp lập (party_type = ORGANIZATION, `tax_id` = mã số thuế, `full_name` = tên doanh nghiệp).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 1
+    },
+    "performance_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "period_raw",
+        "period_from",
+        "period_to",
+        "net_revenue",
+        "cogs",
+        "gross_profit",
+        "interest_expense",
+        "profit_before_tax",
+        "profit_after_tax",
+        "is_audited"
+      ],
+      "properties": {
+        "period_raw": {
+          "description": "Kỳ báo cáo (nguyên văn).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "period_from": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "period_to": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "net_revenue": {
+          "description": "Doanh thu thuần về bán hàng và cung cấp dịch vụ (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "cogs": {
+          "description": "Giá vốn hàng bán (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "gross_profit": {
+          "description": "Lợi nhuận gộp (VND, có thể âm).",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "interest_expense": {
+          "description": "Chi phí lãi vay (dòng 'Trong đó: chi phí lãi vay', VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "profit_before_tax": {
+          "description": "Tổng lợi nhuận kế toán trước thuế (VND, có thể âm).",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "profit_after_tax": {
+          "description": "Lợi nhuận sau thuế thu nhập doanh nghiệp (VND, có thể âm).",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "is_audited": {
+          "description": "Có báo cáo kiểm toán / dấu kiểm toán.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày lập báo cáo.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "HOLDER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

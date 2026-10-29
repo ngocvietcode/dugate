@@ -963,7 +963,6 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
           'policy_checks ({{checks}}, {{evidence}}, {{financial}}, {{master_data}}, {{output_schema}}; model/reasoning mặc định lấy của evaluate), ' +
           'dossier_summary ({{dossier}}, {{review}}, {{output_schema}}; tổng kết tóm tắt hồ sơ, model/reasoning mặc định lấy của evaluate), ' +
           'dossier_precheck ({{checklist}}, {{documents}}, {{output_schema}}; kiểm tra sơ bộ checklist và quan hệ giữa các chứng từ ngay sau phân loại, dựa trên summary/key_facts của S1, model/reasoning mặc định lấy của evaluate), ' +
-          'master_correction ({{proposals}}, {{output_schema}}; chọn giá trị đúng trong các giá trị đã đọc cho trường xung đột của master_dossier, model/reasoning mặc định lấy của evaluate), ' +
           'income_source_classify ({{sources}}, {{output_schema}}; S4 phân loại nguồn thu cho điều kiện checklist, model/reasoning mặc định lấy của evaluate), ' +
           'loan_purpose_classify ({{purposes}}, {{output_schema}}; S4 trả lời YES/NO về mục đích vay cho điều kiện checklist, model/reasoning mặc định lấy của evaluate). ' +
           'Mọi prompt luôn được thêm đoạn chống prompt injection; override thiếu placeholder dữ liệu bắt buộc sẽ được tự nối vào cuối. ' +
@@ -1006,14 +1005,6 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
             description: 'true (mặc định): bước kiểm tra nháp cho Sale dùng LLM viết tổng kết tóm tắt hồ sơ (step key dossier_summary, chạy ở giai đoạn 2 ngay sau S2). ' +
               '4 tiêu chí tiếp nhận do quy tắc dựng từ kết quả kiểm tra sơ bộ (dossier_precheck) nên KHÔNG gọi thêm LLM để chấm lại tiêu chí. ' +
               'false: chỉ dùng tổng kết bằng quy tắc, không gọi LLM. LLM lỗi hoặc trả sai định dạng thì tự dùng tổng kết bằng quy tắc.',
-            default: true,
-          },
-          master_correction: {
-            type: 'boolean',
-            description: 'true (mặc định): sau khi dựng master_dossier (cùng lúc với S3–S5: giai đoạn 2, hoặc giai đoạn 1 nếu intake_run_consolidate = true), một lần gọi LLM (step key master_correction) chọn giá trị đúng trong các giá trị đã đọc ' +
-              'cho trường định danh / tên / ngày bị xung đột khi đủ căn cứ (đa số tuyệt đối từ ≥ 2 chứng từ, lệch 1–2 ký tự, các bản lệch chỉ ở một loại tài liệu). ' +
-              'Trường được chọn có status = CORRECTED, review_status = REVIEW, vẫn giữ các giá trị đã đọc ở candidates. LLM chỉ chọn, không tạo giá trị mới. ' +
-              'false: không gọi LLM, trường giữ CONFLICT. LLM lỗi hoặc trả sai định dạng thì không hiệu chỉnh trường nào.',
             default: true,
           },
           acknowledgements: {

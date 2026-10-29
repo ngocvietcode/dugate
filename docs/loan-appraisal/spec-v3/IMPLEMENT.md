@@ -243,3 +243,19 @@ Xem [open_questions.md](open_questions.md).
   qua. Việc giao song song: ChatGPT sửa 25 lỗi `check_spec` (`.agents/tasks/spec-hygiene/plan.md`, nhánh `codex/spec-hygiene`).
   Bổ sung cùng ngày: LAC render nhận `profile_360` (LAC-R20) — mục `NGUỒN TRẢ NỢ` / `HỘ KINH DOANH` theo `inc-n` / `biz-n`, dẫn `F<n>` của
   fact gom vào đơn vị, đặt sau `NGƯỜI`; fact phẳng `income_sources[].*` và `business-1` không còn trong prompt. Full jest 3513 test qua.
+- **D-115 (2026-10-28)** Gỡ hẳn lớp `master_dossier` và hiệu chỉnh LLM của nó: hồ sơ 360 là nguồn sự thật duy nhất (D-114), payload tích hợp
+  lấy `parties` / `assets` từ `customers` / `collateral` của hồ sơ 360. Không giữ tương thích ngược.
+- **D-116 (2026-10-29)** Hồ sơ 360 hoàn thiện các nhóm gộp và SME (T-360-09, -13, -15…-18):
+  - Đối tác (`cp-n`): gộp theo mã số thuế → số định danh → tên pháp nhân EXACT; cá nhân không bao giờ gộp theo tên. Đối tác là người trong
+    hồ sơ → `RELATED_COUNTERPARTY` (chỉ cảnh báo, OQ-360-10). Báo giá không có party bên bán: đối tác là `quote_info.quoting_company`.
+  - Giao dịch mua (`deal-n`): báo giá + HĐ mua + bảng kê cùng bên bán, cùng đối tượng (số khung / máy, không thì hãng + model + năm).
+    Giá đối chiếu = giá HĐ, không thì báo giá thấp nhất, không thì bảng kê. `DEAL_PRICE_MISMATCH`, `LOAN_EXCEEDS_DEAL`.
+  - Giấy tờ định danh theo người, hết hạn so với `dossier_submitted_at` (`meta.as_of`) → `ID_DOCUMENT_EXPIRED`; cùng hộ trên CT07 →
+    `HOUSEHOLD_MEMBER_OF` (căn cứ bổ sung); `LOCATED_AT` đơn vị → tài sản khi địa chỉ chuẩn hóa trùng tuyệt đối.
+  - SME: `vat_tax_return`, `balance_sheet`, `financial_performance_report` chuyển sang bóc tách đầy đủ (30 FULL / 17 LIGHT; chỉ tiêu có
+    thể âm dùng số nguyên có dấu); đơn vay thêm `LEGAL_REPRESENTATIVE`, `GUARANTOR`, `CAPITAL_MEMBER`; GCN ĐKDN thêm
+    `representative_id_number`. Chứng từ doanh nghiệp gộp thành đơn vị `ENTERPRISE` theo mã số thuế, cạnh `FILED_BY` VERIFIED khi cùng mã.
+    Người đại diện xác minh bằng số định danh, thiếu → `LEGAL_REP_NOT_VERIFIED`; BCTC khác mã số thuế khách vay → `FILING_NOT_LINKED`.
+    DSCR SME = (lợi nhuận trước thuế + chi phí lãi vay) của BCKQKD gần nhất / nghĩa vụ trả nợ năm (OQ-360-13).
+  - Chưa làm: S4 chấm pháp lý cá nhân trên người đại diện (S4 đang tắt), segment pack riêng cho SME (vẫn `hkd-secured`, chỉ đầu vào tài
+    chính rẽ nhánh), bảng địa danh 2025.

@@ -1,6 +1,6 @@
-// Đơn vị kinh doanh HKD và cạnh OPERATES (T-360-07; L360-B01…B03, B06). Hàm thuần, tất định, không log.
-// v1 chỉ HKD: doanh nghiệp (`ENTERPRISE`) thêm ở T-360-09. `business_info` của đơn vay chỉ là HKD khi sản phẩm thuộc phân khúc HKD
-// (D-112: khách vay SME là pháp nhân, không phải hộ kinh doanh).
+// Đơn vị kinh doanh HKD / doanh nghiệp và cạnh OPERATES, FILED_BY (T-360-07, T-360-09; L360-B01…B03, B06, B08, B11). Hàm thuần, tất định.
+// `business_info` của đơn vay chỉ là HKD khi sản phẩm thuộc phân khúc HKD (D-112: khách vay SME là pháp nhân, không phải hộ kinh doanh).
+// Doanh nghiệp: GCN ĐKDN, BCTC, tờ khai GTGT và party khách vay pháp nhân trên đơn vay SME gộp theo mã số thuế như mọi đơn vị.
 import { orgNameLevel } from '../common/org-name';
 import { normIdNumber, normKey } from '../common/normalize';
 import type { MapDossierData } from '../contracts/check-stages';
@@ -21,7 +21,12 @@ interface Mention {
   tax_id?: Candidate;
   business_line?: Candidate;
   business_address?: Candidate;
+  /** Lần nhắc từ chứng từ doanh nghiệp → đơn vị `ENTERPRISE`. */
+  enterprise?: boolean;
 }
+
+/** Chứng từ tài chính doanh nghiệp bóc tách đầy đủ (L360-B11): party chủ thể là doanh nghiệp. */
+export const ENTERPRISE_FILINGS: Record<string, string> = { vat_tax_return: 'TAXPAYER', balance_sheet: 'HOLDER', financial_performance_report: 'HOLDER' };
 
 /** Chứng từ HKD bóc tách nhẹ: party chủ thể và các trường `fields` mang thông tin đơn vị. */
 const LIGHT_HKD: Record<string, { role: string; name?: string; registration_number?: string; business_line?: string; business_address?: string }> = {
@@ -30,6 +35,7 @@ const LIGHT_HKD: Record<string, { role: string; name?: string; registration_numb
   tax_payment_receipt: { role: 'TAXPAYER' },
   business_account_ledger: { role: 'HOLDER' },
   household_business_photo: { role: 'HOLDER' },
+  enterprise_registration_license: { role: 'HOLDER', registration_number: 'registration_number', business_address: 'headquarters_address' },
 };
 
 function collectMentions(lookup: Lookup, s3: MapDossierData | null, segment: string | null): Mention[] {
@@ -54,10 +60,36 @@ function collectMentions(lookup: Lookup, s3: MapDossierData | null, segment: str
       });
     }
 
+    // L360-B08: khách vay SME là pháp nhân — chính party BORROWER là doanh nghiệp được tài trợ.
+    if (e.doc_type_key === 'loan_application' && segment === 'SME') {
+      const parties = (data.parties as DocumentParty[] | undefined) ?? [];
+      const i = parties.findIndex((p) => p.party_role === 'BORROWER' && p.party_type === 'ORGANIZATION');
+      const mapped = i >= 0 ? lookup.personOf(e.evidence_id, parties[i].party_index) : undefined;
+      if (i >= 0) {
+        out.push({
+          ...base, key: e.evidence_id, enterprise: true, owner: mapped ? { person_id: mapped.person_id, verification: 'VERIFIED' } : null,
+          name: at(`parties[${i}].full_name`, parties[i].full_name), tax_id: at(`parties[${i}].tax_id`, parties[i].tax_id),
+        });
+      }
+    }
+
+    const filingRole = ENTERPRISE_FILINGS[e.doc_type_key];
+    if (filingRole) {
+      const parties = (data.parties as DocumentParty[] | undefined) ?? [];
+      const i = parties.findIndex((p) => p.party_role === filingRole);
+      const mapped = i >= 0 ? lookup.personOf(e.evidence_id, parties[i].party_index) : undefined;
+      out.push({
+        ...base, key: e.evidence_id, enterprise: true, owner: mapped ? { person_id: mapped.person_id, verification: verificationOf(mapped.matched_by) } : null,
+        ...(i >= 0 ? { name: at(`parties[${i}].full_name`, parties[i].full_name), tax_id: at(`parties[${i}].tax_id`, parties[i].tax_id) } : {}),
+      });
+    }
+
     const light = LIGHT_HKD[e.doc_type_key];
     if (light) {
       const parties = (data.parties as DocumentParty[] | undefined) ?? [];
-      const subject = parties.find((p) => p.party_role === light.role);
+      // GCN ĐKDN: party chủ thể là pháp nhân dù model ghi vai khác (OWNER…) — không có nó thì giấy không gộp được theo mã số thuế.
+      const subject = parties.find((p) => p.party_role === light.role)
+        ?? (e.doc_type_key === 'enterprise_registration_license' ? parties.find((p) => p.party_type === 'ORGANIZATION') : undefined);
       const mapped = subject ? lookup.personOf(e.evidence_id, subject.party_index) : undefined;
       const fields = (data.fields as Record<string, unknown> | undefined) ?? {};
       const field = (k?: string) => {
@@ -66,9 +98,10 @@ function collectMentions(lookup: Lookup, s3: MapDossierData | null, segment: str
         return v && typeof v === 'object' ? at(`fields.${k}.full_text`, (v as { full_text?: unknown }).full_text) : at(`fields.${k}`, v);
       };
       const taxIndex = subject ? parties.indexOf(subject) : -1;
+      const enterprise = e.doc_type_key === 'enterprise_registration_license';
       out.push({
-        ...base, key: e.evidence_id, owner: mapped ? { person_id: mapped.person_id, verification: verificationOf(mapped.matched_by) } : null,
-        name: field(light.name), registration_number: field(light.registration_number), business_line: field(light.business_line),
+        ...base, key: e.evidence_id, enterprise, owner: mapped ? { person_id: mapped.person_id, verification: verificationOf(mapped.matched_by) } : null,
+        name: enterprise && subject && taxIndex >= 0 ? at(`parties[${taxIndex}].full_name`, subject.full_name) : field(light.name), registration_number: field(light.registration_number), business_line: field(light.business_line),
         business_address: field(light.business_address), tax_id: subject && taxIndex >= 0 ? at(`parties[${taxIndex}].tax_id`, subject.tax_id) : undefined,
       });
     }
@@ -171,10 +204,16 @@ export function buildBusinessUnits(lookup: Lookup, s3: MapDossierData | null, se
       if (!cur || VERIFICATION_RANK[m.owner.verification] < VERIFICATION_RANK[cur]) best.set(m.owner.person_id, m.owner.verification);
     }
     for (const [person_id, verification] of best) relations.push({ type: 'OPERATES', from: person_id, to: business_id, verification });
+    const unitTax = new Set(numKeys(ms).tax);
+    for (const m of ms) {
+      if (!ENTERPRISE_FILINGS[m.doc_type_key]) continue;
+      const tax = m.tax_id ? normIdNumber(String(m.tax_id.value)) : null;
+      relations.push({ type: 'FILED_BY', from: m.evidence_id, to: business_id, verification: tax && unitTax.size === 1 && unitTax.has(tax) ? 'VERIFIED' : 'PARTIAL' });
+    }
     const docs = new Map<string, Set<string>>();
     for (const m of ms) docs.set(m.doc_type_key, (docs.get(m.doc_type_key) ?? new Set()).add(m.evidence_id));
     units.push({
-      business_id, kind: 'HKD',
+      business_id, kind: ms.some((m) => m.enterprise) ? 'ENTERPRISE' : 'HKD',
       name: pick('name', 'text'),
       registration_number: pick('registration_number', 'identity', (v) => normKey(String(v)) ?? ''),
       tax_id: pick('tax_id', 'identity', (v) => normIdNumber(String(v)) ?? ''),

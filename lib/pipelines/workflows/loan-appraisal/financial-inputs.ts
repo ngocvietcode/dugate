@@ -1,7 +1,7 @@
 // Đầu vào tài chính của stage 2 (T-360-03; D-114): đọc `financial_basis` của hồ sơ 360 — nguồn sự thật duy nhất. Không đọc OCR thẳng,
 // nên số trên màn hình Customer 360 và số dùng tính DSCR / LTV là một. Cách chọn từng số nằm ở `lib/loan-dossier/profile360/build.ts`:
 // đơn vay gốc (anchor) cho số tiền / kỳ hạn / lãi suất / nợ hiện hữu; mỗi HKD một lần cho doanh thu / lợi nhuận năm; giá trị TSBĐ thấp nhất
-// các chứng thư (D-112).
+// các chứng thư (D-112). SME: doanh thu thuần và lợi nhuận trước thuế + chi phí lãi vay của BCKQKD gần nhất của khách vay (OQ-360-13).
 import type { BasisValue, Profile360 } from '@/lib/loan-dossier/profile360/schema';
 
 /**
@@ -29,6 +29,7 @@ const sourced = (b: BasisValue | null): SourcedNumber | null => (b
 
 export function financialInputsFromProfile(profile: Profile360 | null): FinancialInputs {
   const basis = profile?.financial_basis;
+  const sme = profile?.application.segment === 'SME';
   const disputed = (key: 'bank_proposed_amount' | 'loan_term_months' | 'interest_rate') => profile?.loan[key].trust === 'DISPUTED';
   const conflicts: FinancialInputs['conflicts'] = {
     ...(disputed('bank_proposed_amount') ? { requested: 'bank_proposed_amount' } : {}),
@@ -40,8 +41,8 @@ export function financialInputsFromProfile(profile: Profile360 | null): Financia
     tenor: sourced(basis?.tenor_months ?? null),
     rate: sourced(basis?.interest_rate ?? null),
     existingMonthly: sourced(basis?.existing_monthly_debt ?? null),
-    revenue: sourced(basis?.hkd_annual_revenue ?? null),
-    profit: sourced(basis?.hkd_annual_profit ?? null),
+    revenue: sourced((sme ? basis?.sme_annual_revenue : basis?.hkd_annual_revenue) ?? null),
+    profit: sourced((sme ? basis?.sme_profit_before_interest : basis?.hkd_annual_profit) ?? null),
     debtService: null,
     collateral: sourced(basis?.collateral_value ?? null),
     ...(Object.keys(conflicts).length ? { conflicts } : {}),

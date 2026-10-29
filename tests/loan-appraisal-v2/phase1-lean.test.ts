@@ -91,7 +91,8 @@ describe('giai đoạn 1 tinh gọn (mặc định)', () => {
     expect(calls(REVIEW)).toHaveLength(0);
     expect(calls(SUMMARY)).toHaveLength(0);
     const out = pauseMock.mock.calls[0][3];
-    expect(out).toMatchObject({ result_phase: 'DOSSIER_INTAKE', output_version: '3.0', customer_360: null, master_dossier: null, completeness_percent: 0 });
+    expect(out).toMatchObject({ result_phase: 'DOSSIER_INTAKE', output_version: '3.0', customer_360: null, completeness_percent: 0 });
+    expect(out).not.toHaveProperty('master_dossier');
     expect(out.checklist).toMatchObject({ status: 'NOT_RUN', status_code: 'DEFERRED_TO_PHASE_2', items: [] });
     expect(out.cross_check).toMatchObject({ status: 'NOT_RUN', status_code: 'DEFERRED_TO_PHASE_2', results: [] });
     expect(out.documents.evidences).toHaveLength(0);

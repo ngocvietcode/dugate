@@ -205,8 +205,8 @@ def check_catalogs() -> None:
         if not (sch / f"{n}.schema.json").exists():
             err(f"thiếu doc_schemas/{n}.schema.json")
     schema_files = sorted(p for p in sch.glob("*.schema.json") if not p.name.startswith("_"))
-    if len(schema_files) != 27:
-        err(f"doc_schemas: kỳ vọng 27 schema chứng từ, thực tế {len(schema_files)}")
+    if len(schema_files) != 30:
+        err(f"doc_schemas: kỳ vọng 30 schema chứng từ, thực tế {len(schema_files)}")
     if {p.name.replace(".schema.json", "") for p in schema_files} != ext:
         err("doc_schemas: tập schema không khớp ExtractableDocTypeKey")
     check_field_paths(sch, data["cross_check_matrix"], data["sl_fields"])

@@ -14,7 +14,7 @@ import {
 import { uniqueItems } from './_helpers';
 
 const LoanApplicationParty = DocumentPartySchema.extend({
-  party_role: z.enum(["BORROWER", "CO_BORROWER", "SPOUSE", "COLLATERAL_OWNER", "REFERENCE_PERSON"]),
+  party_role: z.enum(["BORROWER", "CO_BORROWER", "SPOUSE", "COLLATERAL_OWNER", "REFERENCE_PERSON", "LEGAL_REPRESENTATIVE", "GUARANTOR", "CAPITAL_MEMBER"]),
   ownership: z.null(),
 });
 
