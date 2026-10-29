@@ -66,7 +66,8 @@ function financialBasis(lookup: Lookup, loan: Profile360['loan'], profile: Pick<
   const hkd = profile.income_streams.filter((s) => s.kind === 'household_business');
   const collateral = profile.collateral.filter((a) => a.usage_contexts.includes('collateral') && a.chosen_value !== null).map((a) => {
     const v = a.valuations.find((x) => x.value === a.chosen_value)!;
-    return { value: v.value, record_ids: [v.record_id], review_record_ids: v.review === 'REVIEW' ? [v.record_id] : [] };
+    // D-117: tài sản chờ xác nhận gộp → giá trị vẫn vào LTV nhưng là bản ghi cần xem (tham khảo, chưa chính thức).
+    return { value: v.value, record_ids: [v.record_id], review_record_ids: v.review === 'REVIEW' || a.match_review ? [v.record_id] : [] };
   });
   return {
     loan_amount: loanBasis(lookup, loan, 'bank_proposed_amount'),

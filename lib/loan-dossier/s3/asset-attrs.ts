@@ -2,6 +2,7 @@
 import type { AssetIdentifiers, DocumentParty } from '../s2/common-schema';
 import { hasFullKey } from './asset-key';
 import type { AssetGroup, Descriptor, IdentifierConflict, LinkKind } from './asset-group';
+import type { AssetFsVerdict } from './fs/asset-score';
 import type { Evidence } from './types';
 
 export interface AssetSource {
@@ -9,6 +10,8 @@ export interface AssetSource {
   doc_type_key: string;
   asset_index: number;
   link: LinkKind;
+  /** D-117: điểm FS cao nhất của các cạnh FS chạm nguồn này trong nhóm; chỉ mức, không giá trị (FS-R13). */
+  match?: AssetFsVerdict;
 }
 
 export interface AssetRegistryEntry {
@@ -41,6 +44,13 @@ export function ownedAssetIndex(party: DocumentParty, evidence: Evidence): numbe
   return assets.length === 1 ? (assets[0] as { asset_index: number }).asset_index : null;
 }
 
+/** Người đã ghép của một party (khóa `personOf` = partyKey; party con S3-R04 có thể ra nhiều người). */
+export function personsOfParty(personOf: ReadonlyMap<string, string>, evidenceId: string, partyIndex: number): string[] {
+  const ids: string[] = [];
+  for (const [k, v] of personOf) if (k.startsWith(`${evidenceId}#${partyIndex}#`) && !ids.includes(v)) ids.push(v);
+  return ids;
+}
+
 /** Mốc của chứng từ sở hữu: max ngày biến động CHANGE_RECORD trỏ tới tài sản, không có → ngày cấp. */
 function milestone(e: Evidence, assetIndex: number): string | null {
   const parties = (e.data?.parties as DocumentParty[] | undefined) ?? [];
@@ -57,11 +67,7 @@ function milestone(e: Evidence, assetIndex: number): string | null {
  */
 export function finalizeAssets(groups: AssetGroup[], personOf: ReadonlyMap<string, string>, evidences: ReadonlyArray<Evidence>): AssetRegistryEntry[] {
   const evidenceById = new Map(evidences.map((e) => [e.evidence_id, e]));
-  const personsOfParty = (e: Evidence, p: DocumentParty): string[] => {
-    const ids: string[] = [];
-    for (const [k, v] of personOf) if (k.startsWith(`${e.evidence_id}#${p.party_index}#`) && !ids.includes(v)) ids.push(v);
-    return ids;
-  };
+  const personsOf = (e: Evidence, p: DocumentParty) => personsOfParty(personOf, e.evidence_id, p.party_index);
 
   return groups.map((g) => {
     const ordered = byPriority(g.members);
@@ -81,7 +87,7 @@ export function finalizeAssets(groups: AssetGroup[], personOf: ReadonlyMap<strin
       const parties = (e.data?.parties as DocumentParty[] | undefined) ?? [];
       for (const p of parties) {
         if (p.party_role !== 'OWNER' || ownedAssetIndex(p, e) !== m.asset_index) continue;
-        for (const id of personsOfParty(e, p)) if (!owners.includes(id)) owners.push(id);
+        for (const id of personsOf(e, p)) if (!owners.includes(id)) owners.push(id);
       }
       if (parties.some((p) => p.ownership?.asset_index === m.asset_index)) ownershipEvidence.push({ e, assetIndex: m.asset_index, order: m.evidence_order });
     }
@@ -95,7 +101,7 @@ export function finalizeAssets(groups: AssetGroup[], personOf: ReadonlyMap<strin
       const parties = (best.e.data?.parties as DocumentParty[] | undefined) ?? [];
       for (const p of parties) {
         if (p.ownership?.asset_index !== best.assetIndex || !p.ownership.is_current_owner) continue;
-        for (const id of personsOfParty(best.e, p)) if (!current.includes(id)) current.push(id);
+        for (const id of personsOf(best.e, p)) if (!current.includes(id)) current.push(id);
       }
     }
 
@@ -109,7 +115,7 @@ export function finalizeAssets(groups: AssetGroup[], personOf: ReadonlyMap<strin
     let context_status: AssetRegistryEntry['context_status'] = 'CONFIRMED';
     let context_reason_code: AssetRegistryEntry['context_reason_code'] = null;
     if (usage_contexts.length === 0) { context_status = 'UNRESOLVED'; context_reason_code = 'ASSET_CONTEXT_AMBIGUOUS'; }
-    else if (g.identifier_conflicts.some((c) => !c.probable_ocr_error) || g.ambiguous) { context_status = 'AMBIGUOUS'; context_reason_code = 'ASSET_IDENTIFIER_CONFLICT'; }
+    else if (g.identifier_conflicts.some((c) => !c.probable_ocr_error) || g.ambiguous || g.match_review) { context_status = 'AMBIGUOUS'; context_reason_code = 'ASSET_IDENTIFIER_CONFLICT'; }
     else if (g.weak || noFullKey) { context_status = 'AMBIGUOUS'; context_reason_code = 'ASSET_CONTEXT_AMBIGUOUS'; }
 
     return {
@@ -121,7 +127,10 @@ export function finalizeAssets(groups: AssetGroup[], personOf: ReadonlyMap<strin
       usage_contexts,
       context_status,
       context_reason_code,
-      sources: g.members.map((m, i) => ({ evidence_id: m.evidence_id, doc_type_key: m.doc_type_key, asset_index: m.asset_index, link: g.links[i] })),
+      sources: g.members.map((m, i) => ({
+        evidence_id: m.evidence_id, doc_type_key: m.doc_type_key, asset_index: m.asset_index, link: g.links[i],
+        ...(g.matches[i] ? { match: g.matches[i]! } : {}),
+      })),
       identifier_conflicts: g.identifier_conflicts,
     };
   });

@@ -5,9 +5,11 @@ import { normKey } from '../common/normalize';
 import type { AssetDescriptor, DocumentParty } from '../s2/common-schema';
 import { NEAR_MATCH_MIN_LENGTH } from '../s5/compare-exact';
 import { assetKeys, hasFullKey, plateKey } from './asset-key';
+import type { AssetFsVerdict, AssetScorer } from './fs/asset-score';
 import { confidenceOf, type Evidence } from './types';
 
-export type LinkKind = 'SEED' | 'EXACT' | 'APPROXIMATE' | 'WEAK';
+/** `POSSIBLE` (D-117): chỉ vào nhóm qua cạnh FS vùng nghi trùng — gộp nhưng chờ xác nhận. */
+export type LinkKind = 'SEED' | 'EXACT' | 'APPROXIMATE' | 'POSSIBLE' | 'WEAK';
 
 export interface Descriptor {
   evidence_id: string;
@@ -43,6 +45,10 @@ export interface AssetGroup {
   /** S3-R15(3): bắc cầu vẫn đưa 2 descriptor cùng evidence vào nhóm. */
   ambiguous: boolean;
   weak: boolean;
+  /** D-117: điểm FS cao nhất trong các cạnh FS chạm member trong nhóm (song song `members`, kể cả SEED); null khi không có. */
+  matches: Array<AssetFsVerdict | null>;
+  /** D-117: có cạnh POSSIBLE_MATCH mà nghi lỗi đọc (D-41) không giải thích được → tài sản không CONFIRMED. */
+  match_review: boolean;
 }
 
 const FAMILY = (t: string) => (t === 'real_estate' || t === 'apartment' ? 'property' : t === 'vehicle' ? 'vehicle' : null);
@@ -51,6 +57,9 @@ const IDENTIFIER_FIELDS = [
   'certificate_number', 'certificate_book_number', 'land_parcel_number', 'map_sheet_number', 'apartment_number',
   'building_name', 'project_name', 'license_plate', 'chassis_number', 'engine_number', 'registration_number',
 ] as const;
+
+/** D-117: FS chỉ chấm số GCN và số vào sổ; mọi field định danh khác mâu thuẫn (thửa/tờ, căn/tòa…) vẫn loại trừ cứng như S3-R15(2). */
+const FS_VETO_FIELDS = IDENTIFIER_FIELDS.filter((f) => f !== 'certificate_number' && f !== 'certificate_book_number');
 
 const keyOf = (field: string, v: string | null) => (field === 'license_plate' ? plateKey(v) : normKey(v));
 
@@ -104,18 +113,32 @@ function components(n: number, edges: Array<[number, number]>): number[][] {
   return [...groups.values()];
 }
 
+const noVetoConflict = (a: AssetDescriptor, b: AssetDescriptor) => FS_VETO_FIELDS.every((f) => {
+  const ka = keyOf(f, a.identifiers[f]); const kb = keyOf(f, b.identifiers[f]);
+  return !ka || !kb || ka === kb;
+});
+
 const hasSameEvidencePair = (idx: number[], ds: Descriptor[]) => new Set(idx.map((i) => ds[i].evidence_id)).size < idx.length;
 
-export function groupAssets(ds: Descriptor[]): AssetGroup[] {
+/**
+ * `scorer` (D-117): cặp BĐS chưa chung khóa được chấm Fellegi-Sunter thay cho nối gần đúng S3-R15(2); cặp scorer trả null
+ * (xe) vẫn theo luật cũ. Không truyền → toàn bộ theo luật cũ (`s3_asset_matcher = rules`).
+ */
+export function groupAssets(ds: Descriptor[], scorer?: AssetScorer): AssetGroup[] {
   const n = ds.length;
   const exact: Array<[number, number]> = [];
   const approx: Array<[number, number]> = [];
+  const verdicts = new Map<string, AssetFsVerdict>();
+  const edgeKey = (a: number, b: number) => `${Math.min(a, b)}-${Math.max(a, b)}`;
   const keys = ds.map((d) => new Set(assetKeys(d.descriptor)));
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
       if (ds[i].evidence_id === ds[j].evidence_id) continue;
-      if ([...keys[i]].some((k) => keys[j].has(k))) exact.push([i, j]);
-      else if (approxLink(ds[i].descriptor, ds[j].descriptor)) approx.push([i, j]);
+      if ([...keys[i]].some((k) => keys[j].has(k))) { exact.push([i, j]); continue; }
+      const v = scorer?.(ds[i], ds[j]) ?? null;
+      if (v) {
+        if (v.decision !== 'NO_MATCH' && noVetoConflict(ds[i].descriptor, ds[j].descriptor)) { approx.push([i, j]); verdicts.set(edgeKey(i, j), v); }
+      } else if (approxLink(ds[i].descriptor, ds[j].descriptor)) approx.push([i, j]);
     }
   }
   // S3-R15(3): bắc cầu đưa 2 descriptor cùng evidence vào 1 nhóm → bỏ cạnh gần đúng của nhóm đó.
@@ -147,6 +170,8 @@ export function groupAssets(ds: Descriptor[]): AssetGroup[] {
   }
 
   const approxSet = new Set(keptApprox.flat());
+  /** Cạnh gần đúng đã giữ chạm `i` và nằm trong nhóm `idx`. */
+  const approxEdgesOf = (i: number, idx: number[]) => keptApprox.filter(([a, b]) => (a === i || b === i) && idx.includes(a === i ? b : a));
   const groups = finalMembers
     .filter((m) => m.length > 0)
     .map((m) => m.sort((a, b) => ds[a].evidence_order - ds[b].evidence_order || ds[a].asset_index - ds[b].asset_index))
@@ -154,7 +179,16 @@ export function groupAssets(ds: Descriptor[]): AssetGroup[] {
 
   return groups.map((idx, gi) => {
     const members = idx.map((i) => ds[i]);
-    const links: LinkKind[] = idx.map((i, k) => (k === 0 ? 'SEED' : weakMembers.has(i) ? 'WEAK' : approxSet.has(i) && !exact.some(([a, b]) => (a === i || b === i) && idx.includes(a === i ? b : a)) ? 'APPROXIMATE' : 'EXACT'));
+    const links: LinkKind[] = idx.map((i, k) => {
+      if (k === 0) return 'SEED';
+      if (weakMembers.has(i)) return 'WEAK';
+      if (!approxSet.has(i) || exact.some(([a, b]) => (a === i || b === i) && idx.includes(a === i ? b : a))) return 'EXACT';
+      return approxEdgesOf(i, idx).every(([a, b]) => verdicts.get(edgeKey(a, b))?.decision === 'POSSIBLE_MATCH') ? 'POSSIBLE' : 'APPROXIMATE';
+    });
+    const matches = idx.map((i) => {
+      const vs = approxEdgesOf(i, idx).map(([a, b]) => verdicts.get(edgeKey(a, b))).filter((v): v is AssetFsVerdict => v !== undefined);
+      return vs.length === 0 ? null : vs.reduce((x, y) => (y.weight > x.weight ? y : x));
+    });
     const identifier_conflicts: IdentifierConflict[] = [];
     for (const f of IDENTIFIER_FIELDS) {
       const seen = new Map<string, { raw: string; evidence: Set<string> }>();
@@ -181,6 +215,10 @@ export function groupAssets(ds: Descriptor[]): AssetGroup[] {
         });
       }
     }
+    // Cạnh POSSIBLE_MATCH được D-41 giải thích khi một đầu là chứng từ lệch duy nhất của conflict nghi lỗi đọc.
+    const outliers = new Set(identifier_conflicts.flatMap((c) => c.outlier_evidence_ids));
+    const match_review = keptApprox.some(([a, b]) => idx.includes(a) && idx.includes(b) && verdicts.get(edgeKey(a, b))?.decision === 'POSSIBLE_MATCH'
+      && !outliers.has(ds[a].evidence_id) && !outliers.has(ds[b].evidence_id));
     return {
       asset_id: `asset-${gi + 1}`,
       members,
@@ -188,6 +226,8 @@ export function groupAssets(ds: Descriptor[]): AssetGroup[] {
       identifier_conflicts,
       ambiguous: hasSameEvidencePair(idx, ds),
       weak: idx.some((i) => weakMembers.has(i)),
+      matches,
+      match_review,
     };
   });
 }

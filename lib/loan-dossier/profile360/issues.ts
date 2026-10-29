@@ -123,7 +123,9 @@ export function buildIssues(input: IssueInput, conflicts: readonly Conflict[], l
   // 6. Tài sản bảo đảm.
   for (const a of collateral) {
     if (!a.usage_contexts.includes('collateral')) continue;
-    if (a.context_status !== 'CONFIRMED') push('warning', 'COLLATERAL_CONTEXT_AMBIGUOUS', a.asset_id, 'Chưa xác định chắc tài sản này là TSBĐ của khoản vay');
+    // D-117: gộp do số định danh gần khớp → một cảnh báo riêng thay cho "chưa xác định chắc", vì định giá đã đi theo tài sản.
+    if (a.match_review) push('warning', 'COLLATERAL_MATCH_REVIEW_REQUIRED', a.asset_id, 'Tài sản được gộp từ chứng từ ghi số định danh gần khớp — cần xác nhận cùng một tài sản', 'Giá trị định giá chỉ dùng tham khảo cho tới khi xác nhận.');
+    else if (a.context_status !== 'CONFIRMED') push('warning', 'COLLATERAL_CONTEXT_AMBIGUOUS', a.asset_id, 'Chưa xác định chắc tài sản này là TSBĐ của khoản vay');
     if (a.valuations.length === 0) push('warning', 'COLLATERAL_NOT_VALUED', a.asset_id, 'Chưa có chứng thư định giá');
     else if (policies) {
       const lo = Math.min(...a.valuations.map((v) => v.value)); const hi = Math.max(...a.valuations.map((v) => v.value));

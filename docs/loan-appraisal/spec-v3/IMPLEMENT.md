@@ -259,3 +259,10 @@ Xem [open_questions.md](open_questions.md).
     DSCR SME = (lợi nhuận trước thuế + chi phí lãi vay) của BCKQKD gần nhất / nghĩa vụ trả nợ năm (OQ-360-13).
   - Chưa làm: S4 chấm pháp lý cá nhân trên người đại diện (S4 đang tắt), segment pack riêng cho SME (vẫn `hkd-secured`, chỉ đầu vào tài
     chính rẽ nhánh), bảng địa danh 2025.
+- **D-117 (2026-10-29)** Nối tài sản BĐS bằng Fellegi-Sunter, bật mặc định (`s3_asset_matcher = fs`, `rules` quay về S3-R15(2)).
+  UAT: đơn vay ghi GCN `AA07898136`, GCN + chứng thư định giá in `AA08798136` (đảo 2 ký tự, Levenshtein = 2) → 2 tài sản, tài sản khai trên
+  đơn vay báo `COLLATERAL_NOT_VALUED`. Người dùng chọn logic linh động thay cho vá thêm luật: chấm số GCN (OSA = 1), số vào sổ (kể cả chỉ
+  trùng phần số), chủ sở hữu, địa chỉ; thửa/tờ, căn/tòa khác vẫn loại trừ cứng. Vùng nghi trùng **gộp, chờ xác nhận** (khác OQ-FS-01 của
+  người, có chủ đích): tài sản `AMBIGUOUS`, hồ sơ 360 `match_review` + `COLLATERAL_MATCH_REVIEW_REQUIRED`, giá trị định giá vào LTV dưới dạng
+  bản ghi cần xem. Tham số chuyên gia `asset_fs_params.json` 0.1.0-expert, chưa ước lượng trên dữ liệu thật. Chưa làm: S5 "Gần khớp" (D-41)
+  và S3-R15(5) chưa nhận đảo 2 ký tự; xe vẫn theo luật cũ. Spec `cross_cutting/s3_fellegi_sunter.md` §9.

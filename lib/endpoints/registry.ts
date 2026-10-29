@@ -1030,6 +1030,14 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
             options: ['rules', 'shadow'],
             default: 'rules',
           },
+          s3_asset_matcher: {
+            type: 'string',
+            description: 'Cách nối tài sản bất động sản chưa chung khóa (D-117): "fs" (mặc định) chấm Fellegi-Sunter trên số GCN (kể cả đảo 2 ký tự), ' +
+              'số vào sổ, thửa/tờ, căn/tòa, chủ sở hữu, địa chỉ; vùng nghi trùng vẫn gộp nhưng tài sản AMBIGUOUS, chờ xác nhận. ' +
+              '"rules" quay về nối gần đúng cũ (lệch đúng 1 ký tự). Giá trị khác coi như "fs".',
+            options: ['fs', 'rules'],
+            default: 'fs',
+          },
           loan_product_config: {
             type: 'object',
             description: 'Cấu hình workflow THEO SẢN PHẨM: { version, products: { <product_code>: { prompts, models, reasoning, policy, checks, checklist, flows } } }. ' +

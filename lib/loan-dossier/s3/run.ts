@@ -7,6 +7,8 @@ import { finalizeAssets } from './asset-attrs';
 import { collectDescriptors, groupAssets } from './asset-group';
 import { verifyByBirthCerts } from './birth-cert';
 import { buildCustomer360 } from './customer360';
+import { loadAssetFsParams, type AssetFsParams } from './fs/asset-params';
+import { descriptorOwners, makeAssetScorer } from './fs/asset-score';
 import { computeIdState, type IdState } from './id-check';
 import { matchParties } from './match-parties';
 import { buildRegistry, primaryRole } from './registry';
@@ -24,6 +26,17 @@ export interface MapDossierInput {
   now?: () => Date;
   /** Mặc định nạp từ checklist_catalog.json. */
   validityByDocType?: ReadonlyMap<string, DocValidityRule>;
+  /** D-117: `fs` (mặc định) chấm Fellegi-Sunter cặp BĐS; `rules` quay về nối gần đúng S3-R15(2). */
+  asset_matcher?: S3AssetMatcher;
+  /** Mặc định nạp từ asset_fs_params.json; catalog hỏng → chạy `rules`. */
+  asset_fs_params?: AssetFsParams;
+}
+
+export type S3AssetMatcher = 'fs' | 'rules';
+
+/** Biến chạy `s3_asset_matcher`; chỉ `rules` tắt FS, giá trị khác (kể cả trống) → `fs`. */
+export function resolveS3AssetMatcher(raw: unknown): S3AssetMatcher {
+  return typeof raw === 'string' && raw.trim().toLowerCase() === 'rules' ? 'rules' : 'fs';
 }
 
 /** Người của party chủ thể mỗi evidence (HOLDER, không có → party đầu tiên đã ghép). */
@@ -56,7 +69,9 @@ export function runMapDossier(input: MapDossierInput): MapDossierStageResult {
   const idStates = new Map<string, IdState>(persons.map((p) => [p.person_id, computeIdState(p)]));
 
   // Tài sản (dựng cả khi không có anchor — S3-R01)
-  const assets = finalizeAssets(groupAssets(collectDescriptors(evidences)), personOf, evidences);
+  const assetParams = (input.asset_matcher ?? 'fs') === 'fs' ? input.asset_fs_params ?? (() => { const r = loadAssetFsParams(); return r.ok ? r.params : null; })() : null;
+  const scorer = assetParams ? makeAssetScorer(assetParams, descriptorOwners(evidences, personOf)) : undefined;
+  const assets = finalizeAssets(groupAssets(collectDescriptors(evidences), scorer), personOf, evidences);
 
   // Bản bị thay thế
   const superseded = findSuperseded(evidences, personOfEvidence(personOf, evidences), assets, input.validityByDocType ?? loadValidity(), input.dossier_submitted_at);
