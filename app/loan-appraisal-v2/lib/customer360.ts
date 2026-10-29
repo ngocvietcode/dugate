@@ -28,7 +28,7 @@ export interface CustomerCard {
 export interface DealRow { object: string; seller: string; related: boolean; prices: string; price: string; mismatch: boolean }
 
 export interface IncomeRow { kind: string; owner: string; business: string | null; monthly: string; evidenced: boolean }
-export interface BusinessRow { name: string; registration: string; line: string; owners: string; verified: boolean; documents: string[] }
+export interface BusinessRow { kind: string; name: string; registration: string; line: string; owners: string; verified: boolean; documents: string[] }
 export interface ObligationRow { kind: string; owner: string; lender: string; amount: string; note: string }
 export interface CollateralCard {
   assetId: string;
@@ -46,7 +46,7 @@ export interface Customer360View {
   issues: { items: Issue[]; danger: number; warning: number; info: number };
   loan: { rows: Row[]; purposes: string[]; disputed: boolean; deals: DealRow[] };
   customers: CustomerCard[];
-  repayment: { monthlyTotal: string | null; dscrProfit: string | null; dscrRevenue: string | null; income: IncomeRow[]; businesses: BusinessRow[] };
+  repayment: { monthlyTotal: string | null; dscrProfit: string | null; dscrRevenue: string | null; dscrLabel: string; income: IncomeRow[]; businesses: BusinessRow[] };
   obligations: ObligationRow[];
   collateral: CollateralCard[];
   counts: { customers: number; collateral: number };
@@ -189,8 +189,10 @@ export function buildCustomer360View(p: Profile360, docLabel: (key: string) => s
     customers: p.customers.map((c) => customerCard(c, nameOf, docLabel, p.issues)),
     repayment: {
       monthlyTotal: monthly.length > 0 ? formatCurrencyVnd(monthly.reduce((n, x) => n + x, 0)) : null,
-      dscrProfit: basis.hkd_annual_profit ? formatCurrencyVnd(basis.hkd_annual_profit.value) : null,
-      dscrRevenue: basis.hkd_annual_revenue ? formatCurrencyVnd(basis.hkd_annual_revenue.value) : null,
+      // SME: lợi nhuận trước thuế + lãi vay của BCKQKD gần nhất (OQ-360-13); HKD: tổng lợi nhuận các HKD. Cùng số stage 2 dùng.
+      dscrProfit: (() => { const b = p.application.segment === 'SME' ? basis.sme_profit_before_interest : basis.hkd_annual_profit; return b ? formatCurrencyVnd(b.value) : null; })(),
+      dscrRevenue: (() => { const b = p.application.segment === 'SME' ? basis.sme_annual_revenue : basis.hkd_annual_revenue; return b ? formatCurrencyVnd(b.value) : null; })(),
+      dscrLabel: p.application.segment === 'SME' ? 'lợi nhuận trước thuế + lãi vay' : 'lợi nhuận hộ kinh doanh',
       income: p.income_streams.map((s) => ({
         kind: INCOME_KIND[s.kind] ?? s.kind,
         owner: nameOf(s.person_id),
@@ -199,6 +201,7 @@ export function buildCustomer360View(p: Profile360, docLabel: (key: string) => s
         evidenced: s.evidenced,
       })),
       businesses: p.business_units.map((u) => ({
+        kind: u.kind === 'ENTERPRISE' ? 'Doanh nghiệp' : 'Hộ kinh doanh',
         name: show(u.name.value) ?? 'Chưa rõ tên',
         registration: show(u.registration_number.value) ?? (u.registration_number.trust === 'DISPUTED' ? 'Ghi khác nhau' : 'Chưa có'),
         line: show(u.business_line.value) ?? '—',

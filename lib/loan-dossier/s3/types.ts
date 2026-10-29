@@ -4,7 +4,7 @@ import type { DocumentParty, EvidenceEnvelope } from '../s2/common-schema';
 
 export type Evidence = EvidenceEnvelope;
 export type Role = 'borrower' | 'co_borrower' | 'collateral_owner' | 'other';
-export type OtherRoleDetail = 'spouse' | 'reference_person' | 'guarantor' | 'unspecified';
+export type OtherRoleDetail = 'spouse' | 'reference_person' | 'guarantor' | 'legal_representative' | 'capital_member' | 'unspecified';
 export type MatchedBy = 'ANCHOR' | 'ID_NUMBER' | 'FULL_NAME';
 
 export const ID_DOC_TYPES: ReadonlySet<string> = new Set(['id_card', 'vneid', 'qr_code_info']);

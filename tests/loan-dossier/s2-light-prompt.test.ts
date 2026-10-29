@@ -16,7 +16,7 @@ function refsOf(node: unknown, out: string[] = []): string[] {
 }
 
 describe('S2 · prompt bóc tách nhẹ', () => {
-  it('có đủ 20 loại LIGHT', () => expect(LIGHT).toHaveLength(20));
+  it('có đủ 17 loại LIGHT', () => expect(LIGHT).toHaveLength(17));
 
   it.each(LIGHT)('%s: prompt kèm JSON Schema data + định nghĩa DocumentParty/enum; $ref đều tồn tại', (key) => {
     const prompt = buildExtractPrompt(key, [1, 1]);

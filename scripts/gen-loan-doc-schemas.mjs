@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Sinh zod cho 27 loại chứng từ FULL (T-DOC-01…27) từ JSON Schema đã đồng bộ ở
+// Sinh zod cho 30 loại chứng từ FULL (T-DOC-01…27 + 3 loại SME, D-116) từ JSON Schema đã đồng bộ ở
 // lib/loan-dossier/catalog/data/doc_schemas/ (spec-v3 03_catalogs/doc_schemas, D-33).
 //   → lib/loan-dossier/s2/schemas/{doc_type_key}.ts + index.ts
 // Dịch đúng JSON Schema, không thêm/bớt field. Ref `_common` dùng schema chung ở s2/common-schema.ts
@@ -16,7 +16,7 @@ const DATA = join(ROOT, 'lib', 'loan-dossier', 'catalog', 'data');
 const SCHEMA_DIR = join(DATA, 'doc_schemas');
 export const OUT_DIR = join(ROOT, 'lib', 'loan-dossier', 's2', 'schemas');
 
-/** Thứ tự T-DOC-01…27 (bảng §7 của S2). */
+/** Thứ tự T-DOC-01…27 (bảng §7 của S2), rồi 3 loại SME (D-116). */
 export const DOC_ORDER = [
   'id_card', 'vneid', 'qr_code_info', 'residence_confirmation', 'marital_status_confirmation',
   'local_cmnd_confirmation', 'same_person_commitment', 'marriage_certificate', 'birth_certificate',
@@ -24,6 +24,7 @@ export const DOC_ORDER = [
   'salary_confirmation', 'income_statement', 'land_use_certificate', 'apartment_ownership_certificate',
   'land_use_cert_to_buy', 'vehicle_registration', 'vehicle_inspection', 'real_estate_valuation_report',
   'movable_asset_valuation_report', 'asset_quote', 'external_valuation_certificate', 'cic', 'credit_contract',
+  'vat_tax_return', 'balance_sheet', 'financial_performance_report',
 ];
 
 /** `_common.schema.json#/$defs/X` → biểu thức zod trong common-schema.ts. */

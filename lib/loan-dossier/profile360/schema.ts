@@ -130,8 +130,9 @@ export const BusinessFlagSchema = z.enum(['BUSINESS_MATCH_REVIEW', 'BUSINESS_NUM
 
 export const BusinessUnitSchema = z.object({
   business_id: z.string().regex(/^biz-\d+$/),
-  /** v1 chỉ HKD; `ENTERPRISE` thêm ở T-360-09. Sản phẩm SME không dựng HKD từ đơn vay (D-112). */
-  kind: z.literal('HKD'),
+  /** `ENTERPRISE` = doanh nghiệp (GCN ĐKDN, BCTC, tờ khai GTGT; T-360-09). Khách vay SME là pháp nhân: đơn vị của nó có
+   * `owner_person_ids = [person_id của chính pháp nhân]` (L360-B08). Sản phẩm SME không dựng HKD từ đơn vay (D-112). */
+  kind: z.enum(['HKD', 'ENTERPRISE']),
   name: ProfileFieldSchema,
   registration_number: ProfileFieldSchema,
   tax_id: ProfileFieldSchema,
@@ -219,6 +220,9 @@ export const FinancialBasisSchema = z.object({
   existing_monthly_debt: BasisValueSchema.nullable(),
   hkd_annual_revenue: BasisValueSchema.nullable(),
   hkd_annual_profit: BasisValueSchema.nullable(),
+  /** SME (OQ-360-13, D-112): BCKQKD gần nhất của chính khách vay (`FILED_BY` VERIFIED). Doanh thu thuần; lợi nhuận trước thuế + chi phí lãi vay. */
+  sme_annual_revenue: BasisValueSchema.nullable(),
+  sme_profit_before_interest: BasisValueSchema.nullable(),
   collateral_value: BasisValueSchema.nullable(),
 }).strict();
 
@@ -239,6 +243,7 @@ export const IssueCodeSchema = z.enum([
   'ADVERSE_DEBT_GROUP', 'UNDECLARED_DEBT', 'VALUATION_GAP', 'COLLATERAL_NOT_VALUED', 'COLLATERAL_CONTEXT_AMBIGUOUS',
   'EVIDENCE_READ_ERROR', 'SUPERSEDED_EVIDENCE', 'MERGE_POLICY_INVALID',
   'ID_DOCUMENT_EXPIRED', 'RELATED_COUNTERPARTY', 'DEAL_PRICE_MISMATCH', 'LOAN_EXCEEDS_DEAL',
+  'LEGAL_REP_NOT_VERIFIED', 'FILING_NOT_LINKED',
 ]);
 
 /** Danh sách DUY NHẤT các điểm cần xử lý trước khi quyết định; đã gộp trùng theo (chủ thể, trường). */
@@ -252,8 +257,9 @@ export const IssueSchema = z.object({
 }).strict();
 
 export const ProfileRelationSchema = z.object({
-  /** `LOCATED_AT`: địa điểm kinh doanh `biz-n` trùng địa chỉ của tài sản `asset-n` (L360-G06, chỉ khi `full_text` chuẩn hóa trùng). */
-  type: z.enum(['OPERATES', 'EARNS_FROM', 'LOCATED_AT']),
+  /** `LOCATED_AT`: địa điểm kinh doanh `biz-n` trùng địa chỉ của tài sản `asset-n` (L360-G06, chỉ khi `full_text` chuẩn hóa trùng).
+   * `FILED_BY`: chứng từ tài chính `from = evidence_id` của đơn vị `to = biz-n` (L360-B11); VERIFIED khi cùng mã số thuế. */
+  type: z.enum(['OPERATES', 'EARNS_FROM', 'LOCATED_AT', 'FILED_BY']),
   from: z.string(),
   to: z.string(),
   verification: VerificationSchema,

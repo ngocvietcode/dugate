@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.loan-appraisal-hkd/v3/documents/vat_tax_return.schema.json",
+  "title": "vat_tax_return — data",
+  "description": "Schema của evidence.data cho doc_type_key = vat_tax_return (Tờ khai thuế GTGT (mẫu 01/GTGT)). Một kỳ tính thuế / tờ khai; tờ khai bổ sung là chứng từ riêng (`filing_type = SUPPLEMENTARY`). schema_version 3.0.0. Sinh bởi tools/build_doc_schemas.py — không sửa tay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parties",
+    "tax_return_info",
+    "legal_info"
+  ],
+  "properties": {
+    "parties": {
+      "description": "TAXPAYER = người nộp thuế. Doanh nghiệp lập (party_type = ORGANIZATION, `tax_id` = mã số thuế, `full_name` = tên doanh nghiệp).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Party"
+      },
+      "minItems": 1
+    },
+    "tax_return_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tax_period_raw",
+        "period_type",
+        "period_from",
+        "period_to",
+        "filing_type",
+        "sales_revenue",
+        "output_vat",
+        "deductible_input_vat",
+        "vat_payable"
+      ],
+      "properties": {
+        "tax_period_raw": {
+          "description": "Kỳ tính thuế (nguyên văn, VD 'Quý 2 năm 2026').",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "period_type": {
+          "description": "Khai theo tháng hay quý.",
+          "enum": [
+            "MONTH",
+            "QUARTER",
+            null
+          ]
+        },
+        "period_from": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "period_to": {
+          "$ref": "_common.schema.json#/$defs/NullableDate"
+        },
+        "filing_type": {
+          "description": "Lần đầu / bổ sung.",
+          "enum": [
+            "ORIGINAL",
+            "SUPPLEMENTARY",
+            null
+          ]
+        },
+        "sales_revenue": {
+          "description": "Doanh thu hàng hóa, dịch vụ bán ra chịu thuế + không chịu thuế (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "output_vat": {
+          "description": "Thuế GTGT của hàng hóa, dịch vụ bán ra (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "deductible_input_vat": {
+          "description": "Thuế GTGT đầu vào được khấu trừ (VND).",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        },
+        "vat_payable": {
+          "description": "Thuế GTGT phải nộp trong kỳ (VND); kỳ còn được khấu trừ → 0.",
+          "$ref": "_common.schema.json#/$defs/NullableMoney"
+        }
+      }
+    },
+    "legal_info": {
+      "description": "issue_date = ngày ký tờ khai / ngày nộp.",
+      "$ref": "_common.schema.json#/$defs/NullableLegalInfo"
+    }
+  },
+  "$defs": {
+    "Party": {
+      "allOf": [
+        {
+          "$ref": "_common.schema.json#/$defs/DocumentParty"
+        },
+        {
+          "properties": {
+            "party_role": {
+              "enum": [
+                "TAXPAYER"
+              ]
+            },
+            "ownership": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

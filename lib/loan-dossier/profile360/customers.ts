@@ -75,6 +75,25 @@ function householdRelations(lookup: Lookup): Map<string, Customer['relations']> 
   return out;
 }
 
+/**
+ * L360-B10: người đại diện xác minh khi số định danh in trên GCN ĐKDN (`fields.representative_id_number`) trùng số định danh của một cá nhân
+ * trong hồ sơ. Trùng → cặp `REPRESENTED_BY` / `LEGAL_REP_OF` VERIFIED (thay bản PARTIAL nối theo tên); không trùng ai → giữ nguyên.
+ */
+function verifyLegalReps(lookup: Lookup, customers: Customer[]): void {
+  const byId = new Map(customers.map((c) => [c.person_id, c]));
+  for (const e of lookup.evidences) {
+    if (e.doc_type_key !== 'enterprise_registration_license') continue;
+    const holder = ((e.data?.parties as DocumentParty[] | undefined) ?? []).find((p) => p.party_role === 'HOLDER');
+    const org = holder ? byId.get(lookup.personOf(e.evidence_id, holder.party_index)?.person_id ?? '') : undefined;
+    const repId = normIdNumber(text(valueAt(e.data, 'fields.representative_id_number')));
+    if (!org || !repId) continue;
+    const rep = customers.find((c) => c.party_type === 'INDIVIDUAL' && (c.id_number.value === repId || c.historical_id_numbers.includes(repId)));
+    if (!rep) continue;
+    org.relations = [...org.relations.filter((r) => r.type !== 'REPRESENTED_BY'), { type: 'REPRESENTED_BY', person_id: rep.person_id, verification: 'VERIFIED', detail: null }];
+    rep.relations = [...rep.relations.filter((r) => !(r.type === 'LEGAL_REP_OF' && r.person_id === org.person_id)), { type: 'LEGAL_REP_OF', person_id: org.person_id, verification: 'VERIFIED', detail: null }];
+  }
+}
+
 function relationsOf(s3: MapDossierData, personId: string): Customer['relations'] {
   const out: Customer['relations'] = [];
   const c360 = s3.customer_360.find((c) => c.person_id === personId);
@@ -86,7 +105,7 @@ function relationsOf(s3: MapDossierData, personId: string): Customer['relations'
     const detail = [r.relationship_type, r.required_count !== null ? `giấy khai sinh ${r.verified_count}/${r.required_count}` : null].filter(Boolean).join(' · ') || null;
     out.push({ type: 'RELATIVE_OF', person_id: other, verification, detail });
   }
-  // Người đại diện theo pháp luật chỉ nối theo tên (customer360.ts `organizationOf`): PARTIAL cho tới khi bóc được CCCD (T-360-09).
+  // Người đại diện theo pháp luật S3 nối theo tên (customer360.ts `organizationOf`): PARTIAL; `verifyLegalReps` nâng lên VERIFIED theo CCCD.
   if (c360?.organization?.representative_person_id) out.push({ type: 'REPRESENTED_BY', person_id: c360.organization.representative_person_id, verification: 'PARTIAL', detail: null });
   for (const org of s3.customer_360) {
     if (org.organization?.representative_person_id === personId) out.push({ type: 'LEGAL_REP_OF', person_id: org.person_id, verification: 'PARTIAL', detail: null });
@@ -102,7 +121,7 @@ export function buildCustomers(lookup: Lookup, s3: MapDossierData | null, asOf: 
   const subjects = new Map(lac.subjects.map((s) => [s.subject_id, s]));
   const c360 = new Map(s3.customer_360.map((c) => [c.person_id, c]));
   const factsOf = (personId: string, field: string) => lac.facts.filter((f) => f.subject_id === personId && f.field === field && !f.hidden && f.trust !== 'SUPERSEDED');
-  return s3.role_registry
+  const customers = s3.role_registry
     .map((p, order) => ({ p, order }))
     .sort((a, b) => rankOf(subjects.get(a.p.person_id)?.roles ?? a.p.roles) - rankOf(subjects.get(b.p.person_id)?.roles ?? b.p.roles) || a.order - b.order)
     .map(({ p }) => {
@@ -132,4 +151,6 @@ export function buildCustomers(lookup: Lookup, s3: MapDossierData | null, asOf: 
         details: detailsOf(lac, p.person_id, IDENTITY_FIELDS),
       } satisfies Customer;
     });
+  verifyLegalReps(lookup, customers);
+  return customers;
 }

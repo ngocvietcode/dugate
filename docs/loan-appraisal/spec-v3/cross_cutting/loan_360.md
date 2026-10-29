@@ -1,6 +1,6 @@
 # Hồ sơ 360 có kiểu và duyệt mâu thuẫn bởi CO (`loan_360`)
 
-> Trạng thái: **ĐỀ XUẤT (D-108, 2026-10-27), chưa cài đặt.** Mở rộng [loan_application_context.md](loan_application_context.md) (LAC, D-103).
+> Trạng thái: **ĐÃ CÀI phần lõi (D-114…D-116, 2026-10-29)**; còn mở: duyệt mâu thuẫn bởi CO, định giá (T-360-14), bảng địa danh 2025, S4 chấm theo người đại diện (L360-B09). Đề xuất gốc D-108. Mở rộng [loan_application_context.md](loan_application_context.md) (LAC, D-103).
 > Phạm vi: thẩm định **từng hồ sơ**; không lưu xuyên hồ sơ, không tích hợp nguồn ngoài (CIC, core, đăng ký kinh doanh).
 > Người quyết khi chứng từ mâu thuẫn là **CO**; luồng: workflow chạy xong → CO duyệt → hệ thống **tính lại**.
 
@@ -296,6 +296,7 @@ khi chúng ghi khác nhau (chính sách, Risk duyệt).
 - Files: `lib/loan-dossier/catalog/data/{light_extraction,doc_types}.json` (gỡ ba loại BCTC / tờ khai GTGT khỏi bóc tách nhẹ), `catalog/data/doc_schemas/{vat_tax_return,balance_sheet,financial_performance_report}.schema.json` + `scripts/gen-loan-doc-schemas.mjs` (sinh `lib/loan-dossier/s2/schemas/*`), `light_extraction.json` mục `enterprise_registration_license` (thêm CCCD người đại diện; hiện chỉ có `representative_name`), `lib/loan-dossier/s2/schemas/loan_application.ts` (vai trò mới, sinh từ schema), `lib/loan-dossier/s4/*` (L360-B09), `lib/loan-dossier/profile360/business.ts`
 - Refs: §3.1, L360-B08, L360-B09, L360-B10, L360-B11, AC-13, AC-14, AC-15, OQ-360-09, OQ-360-12, OQ-360-13
 - Verify: `npx jest tests/loan-dossier/profile360-sme.test.ts`
+- Đã cài (D-116): schema FULL 3 loại, vai trò đơn vay mới, `representative_id_number` trên GCN ĐKDN, `ENTERPRISE` + `FILED_BY`, `LEGAL_REP_NOT_VERIFIED`, `FILING_NOT_LINKED`, DSCR SME. Chưa: S4 chấm pháp lý cá nhân trên người đại diện (S4 đang tắt, D-97); `MEMBER_OF` kèm `%`.
 - Làm: L360-B08…B11; `kind = ENTERPRISE`; cạnh `LEGAL_REP_OF` theo CCCD, `MEMBER_OF` kèm `%`, `FUNDS`; `FILED_BY` có số liệu. Stage 2 của SME đọc chỉ tiêu BCTC thay `income_statement` (cách tính DSCR SME: OQ-360-13).
 - DoD: AC-13…AC-15; AC khác viết sau khi BA chốt danh mục `sme_secured`.
 
@@ -333,14 +334,14 @@ khi chúng ghi khác nhau (chính sách, Risk duyệt).
 
 ### T-360-13 — P2: Giao dịch mua
 - Depends: T-360-18
-- Files: `lib/loan-dossier/profile360/deals.ts`, `tests/loan-dossier/profile360-deals.test.ts`
+- Files: `lib/loan-dossier/profile360/trade.ts`, `tests/loan-dossier/profile360.test.ts`
 - Refs: §3.2, L360-G04, AC-19, S3-R14
 - Làm: L360-G04; cạnh `FUNDS` khoản vay → `PurchaseDeal` theo `loan_purpose_categories`.
 - DoD:
   - test: AC-19
   - test: HĐ mua xe có số khung trùng `asset_registry` → `PurchaseDeal` nối `asset_id`
   - test: `asset_registry` của S3 không đổi
-- Verify: `npx jest tests/loan-dossier/profile360-deals.test.ts`
+- Verify: `npx jest tests/loan-dossier/profile360.test.ts`
 
 ### T-360-14 — P2: Định giá
 - Depends: T-360-10
@@ -355,44 +356,45 @@ khi chúng ghi khác nhau (chính sách, Risk duyệt).
 
 ### T-360-15 — P3: Địa chỉ
 - Depends: T-360-02 và trả lời OQ-FS-04
-- Files: `lib/loan-dossier/common/address.ts`, `lib/loan-dossier/catalog/data/admin_units_2025.json` (khi có), `lib/loan-dossier/profile360/addresses.ts`, `tests/loan-dossier/profile360-addresses.test.ts`
+- Files: `lib/loan-dossier/profile360/build.ts` (cạnh `LOCATED_AT`), `lib/loan-dossier/catalog/data/admin_units_2025.json` (khi có), `tests/loan-dossier/profile360.test.ts`
 - Refs: §3.2, L360-G06, AC-21
 - Làm: chuẩn hóa địa chỉ, ánh xạ địa danh 2025 nếu có bảng; nối `Address` với người, tài sản, đơn vị kinh doanh.
+- Đã cài (D-116): `LOCATED_AT` đơn vị kinh doanh → tài sản khi `full_text` chuẩn hóa trùng tuyệt đối. Còn chờ bảng địa danh 2025 (OQ-FS-04).
 - DoD:
   - test: AC-21
   - test: cùng địa chỉ viết tắt / không dấu → cùng `Address`
-- Verify: `npx jest tests/loan-dossier/profile360-addresses.test.ts`
+- Verify: `npx jest tests/loan-dossier/profile360.test.ts`
 
 ### T-360-16 — P3: Hộ gia đình
 - Depends: T-360-15
-- Files: `lib/loan-dossier/profile360/household.ts`, `tests/loan-dossier/profile360-household.test.ts`
+- Files: `lib/loan-dossier/profile360/customers.ts`, `tests/loan-dossier/profile360.test.ts`
 - Refs: §3.2, L360-G07, AC-22, S3-R20, OQ-360-17
 - Làm: L360-G07.
 - DoD:
   - test: AC-22
   - test: thành viên CT07 chưa gom trong registry → không tạo người mới, ghi số đếm thành viên chưa gắn
-- Verify: `npx jest tests/loan-dossier/profile360-household.test.ts`
+- Verify: `npx jest tests/loan-dossier/profile360.test.ts`
 
 ### T-360-17 — P3: Giấy tờ định danh
 - Depends: T-360-02
-- Files: `lib/loan-dossier/profile360/identity-docs.ts`, `tests/loan-dossier/profile360-identity-docs.test.ts`
+- Files: `lib/loan-dossier/profile360/customers.ts`, `tests/loan-dossier/profile360.test.ts`
 - Refs: §3.2, L360-G08, AC-23, S3-R12
 - Làm: L360-G08; không đổi `current_id_number` của S3.
 - DoD:
   - test: AC-23
   - test: CCCD hết hạn tại ngày nộp → `ID_DOCUMENT_EXPIRED`
   - test: hai bản chụp cùng số, cùng ngày cấp → một `IdentityDocument`
-- Verify: `npx jest tests/loan-dossier/profile360-identity-docs.test.ts`
+- Verify: `npx jest tests/loan-dossier/profile360.test.ts`
 
 ### T-360-18 — P3: Đối tác
 - Depends: T-360-08
-- Files: `lib/loan-dossier/profile360/counterparties.ts`, `tests/loan-dossier/profile360-counterparties.test.ts`
+- Files: `lib/loan-dossier/profile360/trade.ts`, `tests/loan-dossier/profile360.test.ts`
 - Refs: §3.2, L360-G09, L360-B05, AC-24
 - Làm: L360-G09; vai cộng dồn; `TRADES_WITH` (T-360-08) đọc `Counterparty` từ đây.
 - DoD:
   - test: AC-24
   - test: cùng mã số thuế trên báo giá và HĐ mua → một `Counterparty`, hai vai
-- Verify: `npx jest tests/loan-dossier/profile360-counterparties.test.ts`
+- Verify: `npx jest tests/loan-dossier/profile360.test.ts`
 
 ## 7. Cập nhật spec LAC khi cài đặt
 
@@ -406,10 +408,10 @@ khi T-360-07 cài xong; `LacSubjectKind` thêm chủ thể `business` theo `biz-
 - Chưa đo chi phí chạy lại stage 3 (rule LLM); L360-R12 là tối ưu tùy chọn.
 - §3.1 rút ra từ code và catalog, chưa kiểm trên hồ sơ UAT: chưa biết số GCN ĐKHKD và mã số thuế đọc được tốt đến đâu, mà đó là điều
   quyết định khóa nào của L360-B01 dùng được. Cần đo tỷ lệ đọc được hai trường này trước khi cài T-360-07.
-- GCN ĐKDN hiện không bóc số CCCD của người đại diện, nên `LEGAL_REP_OF` chỉ đạt `PARTIAL` cho tới khi có T-360-09.
-- Chưa kiểm mẫu đơn vay hiện tại (`loan_application`, mẫu HKD) bóc được party `BORROWER` là pháp nhân hay không: `pickAnchor`
-  (S3) chỉ cần party `BORROWER` có tên, nhưng chưa có fixture SME nào chạy qua S3 / S4. Stage 2 (`financial-inputs.ts`) hiện chỉ đọc
-  `income_statement` / đơn vay, chưa có nhánh SME.
+- GCN ĐKDN bóc thêm `representative_id_number` (D-116); `LEGAL_REP_OF` VERIFIED khi số này trùng số định danh của một cá nhân trong hồ sơ
+  (người đại diện phải có mặt trên đơn vay với vai `LEGAL_REPRESENTATIVE` hoặc vai khác để S3 gom). Chưa đo tỷ lệ đọc được số này trên UAT.
+- Đã có fixture SME chạy qua S3 → LAC → hồ sơ 360 (`tests/loan-dossier/profile360-sme.test.ts`); chưa kiểm trên đơn vay SME thật, và S4 (đang tắt)
+  vẫn chấm mục pháp lý cá nhân trên pháp nhân (L360-B09).
 - §3.2 đọc từ schema S2, chưa kiểm trên UAT: chưa biết tỷ lệ đọc được `institution` trên CIC, `contract_number` trên HĐ tín dụng,
   hãng / model / năm trên báo giá xe — đó là khóa gộp của nhóm 1 và 3. `payroll_bank_statement`, `vssid_social_insurance`,
   `asset_lease_contract`, `rental_payment_receipt`, `passport` đang bóc tách nhẹ nên chưa có số tiền hay số giấy để gộp.

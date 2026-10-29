@@ -25,12 +25,15 @@ export interface IssueInput {
   declaredIncomeRows: number;
   trade: TradeResult;
   loan: Profile360['loan'];
+  segment: string | null;
+  /** Đơn vị doanh nghiệp của khách vay pháp nhân (SME), null khi không có. */
+  smeUnit: string | null;
 }
 
 export function subjectLabeler(customers: readonly Customer[], collateral: readonly Collateral[], business: BusinessResult) {
   const names = new Map(customers.map((c) => [c.person_id, typeof c.full_name.value === 'string' ? c.full_name.value : c.person_id]));
   const assets = new Map(collateral.map((a) => [a.asset_id, `${ASSET_TYPE_LABELS[a.asset_type] ?? a.asset_type}${a.key ? ` · ${a.key}` : ''}`]));
-  const units = new Map(business.units.map((u) => [u.business_id, `Hộ kinh doanh ${typeof u.name.value === 'string' ? u.name.value : u.business_id}`]));
+  const units = new Map(business.units.map((u) => [u.business_id, `${u.kind === 'ENTERPRISE' ? 'Doanh nghiệp' : 'Hộ kinh doanh'} ${typeof u.name.value === 'string' ? u.name.value : u.business_id}`]));
   return (id: string | null): string => {
     if (!id) return 'Hồ sơ';
     if (id === 'loan') return 'Khoản vay';
@@ -150,6 +153,20 @@ export function buildIssues(input: IssueInput, conflicts: readonly Conflict[], l
     : typeof input.loan.requested_amount.value === 'number' ? input.loan.requested_amount.value : null;
   if (loanAmount !== null && dealTotal > 0 && loanAmount > dealTotal) {
     push('warning', 'LOAN_EXCEEDS_DEAL', 'loan', 'Số tiền vay lớn hơn tổng giá trị giao dịch mua trên chứng từ', `Vay ${loanAmount} > giao dịch ${dealTotal}`);
+  }
+
+  // 9. SME (L360-B10, B11): khách vay pháp nhân phải có người đại diện khớp CCCD; chứng từ tài chính phải cùng mã số thuế khách vay.
+  const borrowerOrg = input.segment === 'SME' ? customers.find((c) => c.roles.includes('borrower') && c.party_type === 'ORGANIZATION') : undefined;
+  if (borrowerOrg && !borrowerOrg.relations.some((r) => r.type === 'REPRESENTED_BY' && r.verification === 'VERIFIED')) {
+    push('danger', 'LEGAL_REP_NOT_VERIFIED', borrowerOrg.person_id, 'Chưa xác minh người đại diện theo pháp luật bằng số định danh',
+      'Cần GCN ĐKDN có số định danh người đại diện và CCCD của người đó trong hồ sơ: thẩm quyền ký vay, ký thế chấp.');
+  }
+  if (borrowerOrg) {
+    for (const u of business.units) {
+      if (u.kind !== 'ENTERPRISE' || u.business_id === input.smeUnit) continue;
+      if (!u.mentioned_in.some((m) => ['vat_tax_return', 'balance_sheet', 'financial_performance_report'].includes(m.doc_type_key))) continue;
+      push('warning', 'FILING_NOT_LINKED', u.business_id, 'Báo cáo tài chính / tờ khai thuế không cùng mã số thuế khách vay', 'Không dùng số liệu này cho khả năng trả nợ.');
+    }
   }
 
   if (!policies) push('warning', 'MERGE_POLICY_INVALID', null, 'Cấu hình chọn giá trị (merge_policies.json) lỗi: chưa chọn số thu nhập và giá trị TSBĐ');

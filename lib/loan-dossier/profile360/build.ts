@@ -3,7 +3,7 @@
 import type { MapDossierData } from '../contracts/check-stages';
 import type { LoanApplicationContext } from '../context/schema';
 import type { EvidenceEnvelope } from '../s2/common-schema';
-import { buildBusinessUnits } from './business';
+import { buildBusinessUnits, type BusinessResult } from './business';
 import { buildCollateral } from './collateral';
 import { buildCustomers } from './customers';
 import { buildIncomeStreams } from './income';
@@ -34,7 +34,28 @@ function loanBasis(lookup: Lookup, loan: Profile360['loan'], key: (typeof LOAN_F
   return loan[key].trust === 'DISPUTED' ? null : basisAt(lookup.anchor, `loan_info.${key}`);
 }
 
-function financialBasis(lookup: Lookup, loan: Profile360['loan'], profile: Pick<Profile360, 'income_streams' | 'collateral'>): FinancialBasis {
+/** Đơn vị doanh nghiệp của chính khách vay pháp nhân (L360-B08). */
+export function borrowerEnterprise(business: Pick<BusinessResult, 'units'>, borrowerId: string | null): string | null {
+  return business.units.find((u) => u.kind === 'ENTERPRISE' && !!borrowerId && u.owner_person_ids.includes(borrowerId))?.business_id ?? null;
+}
+
+/**
+ * OQ-360-13 (D-112): BCKQKD gần nhất (theo `period_to`) nối `FILED_BY` VERIFIED tới doanh nghiệp khách vay. Lợi nhuận dùng cho DSCR =
+ * lợi nhuận trước thuế + chi phí lãi vay (không in chi phí lãi vay → chỉ lợi nhuận trước thuế). Không có → null, stage 2 báo thiếu dữ liệu.
+ */
+function smeBasis(lookup: Lookup, relations: Profile360['relations'], unitId: string | null): Pick<FinancialBasis, 'sme_annual_revenue' | 'sme_profit_before_interest'> {
+  const filed = new Set(relations.filter((r) => r.type === 'FILED_BY' && r.to === unitId && r.verification === 'VERIFIED').map((r) => r.from));
+  const latest = lookup.evidences
+    .filter((e) => e.doc_type_key === 'financial_performance_report' && filed.has(e.evidence_id))
+    .sort((a, b) => String(valueAt(b.data, 'performance_info.period_to') ?? '').localeCompare(String(valueAt(a.data, 'performance_info.period_to') ?? '')))[0];
+  const pbt = basisAt(latest, 'performance_info.profit_before_tax');
+  return {
+    sme_annual_revenue: basisAt(latest, 'performance_info.net_revenue'),
+    sme_profit_before_interest: pbt ? sumBasis([pbt, basisAt(latest, 'performance_info.interest_expense')]) : null,
+  };
+}
+
+function financialBasis(lookup: Lookup, loan: Profile360['loan'], profile: Pick<Profile360, 'income_streams' | 'collateral' | 'relations'>, smeUnit: string | null): FinancialBasis {
   const anchor = lookup.anchor;
   let existing = basisAt(anchor, 'financial_info.existing_monthly_debt_payment');
   if (!existing && anchor && valueAt(anchor.data, 'financial_info.has_existing_debt') === false) {
@@ -54,6 +75,7 @@ function financialBasis(lookup: Lookup, loan: Profile360['loan'], profile: Pick<
     existing_monthly_debt: existing,
     hkd_annual_revenue: sumBasis(hkd.map((s) => s.annual_revenue)),
     hkd_annual_profit: sumBasis(hkd.map((s) => s.annual_profit)),
+    ...smeBasis(lookup, profile.relations, smeUnit),
     collateral_value: sumBasis(collateral),
   };
 }
@@ -91,7 +113,9 @@ export function buildProfile360(input: BuildProfile360Input): Profile360 {
   const label = subjectLabeler(customers, collateral, business);
   const conflicts = buildConflicts(lac, label);
   const declaredIncomeRows = income.gaps.find((g) => g.code === 'DECLARED_INCOME_NOT_LINKED')?.count ?? 0;
-  const issues = buildIssues({ lac, customers, business, income: income.income_streams, obligations, collateral, policies, declaredIncomeRows, trade, loan }, conflicts, label);
+  const smeUnit = input.segment === 'SME' ? borrowerEnterprise(business, borrowerId) : null;
+  const issues = buildIssues({ lac, customers, business, income: income.income_streams, obligations, collateral, policies, declaredIncomeRows, trade, loan, segment: input.segment, smeUnit }, conflicts, label);
+  const relations = [...business.relations, ...income.relations, ...located];
 
   return {
     profile_version: PROFILE360_VERSION,
@@ -104,8 +128,8 @@ export function buildProfile360(input: BuildProfile360Input): Profile360 {
     collateral,
     counterparties: trade.counterparties,
     purchase_deals: trade.deals,
-    relations: [...business.relations, ...income.relations, ...located],
-    financial_basis: financialBasis(lookup, loan, { income_streams: income.income_streams, collateral }),
+    relations,
+    financial_basis: financialBasis(lookup, loan, { income_streams: income.income_streams, collateral, relations }, smeUnit),
     conflicts,
     issues,
     gaps: [...(policies ? [] : [{ code: 'MERGE_POLICY_INVALID' as const, count: 1 }]), ...income.gaps],

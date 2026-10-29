@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sinh JSON Schema cho 17 loại chứng từ `FULL` chưa có schema ở nguồn (D-33, bước C2).
+"""Sinh JSON Schema cho 20 loại chứng từ `FULL` chưa có schema ở nguồn (D-33, bước C2).
 
 Chạy (sau khi sửa định nghĩa trong file này; `03_catalogs/` là nguồn chuẩn, không còn sinh từ bộ nguồn ngoài — D-37):
     python docs/loan-appraisal/spec-v3/tools/build_doc_schemas.py
@@ -32,6 +32,8 @@ MONEY = {"$ref": C + "NullableMoney"}
 ADDR = {"$ref": C + "NullableAddress"}
 PCT = {"oneOf": [{"$ref": C + "Percent"}, {"type": "null"}]}
 DATETIME = {"oneOf": [{"$ref": C + "DateTimeString"}, {"type": "null"}]}
+# Chỉ tiêu tài chính có thể âm (lỗ, vốn chủ âm): số nguyên VND có dấu, không dùng MoneyVND (không âm).
+SIGNED = {"type": ["integer", "null"]}
 
 
 def d(desc: str, base: dict) -> dict:
@@ -375,10 +377,66 @@ def build() -> dict[str, dict]:
         "legal_info": LEGAL("document_number = số hợp đồng; issue_date = ngày ký."),
     }, {"Party": party_def(["BORROWER", "CO_BORROWER", "LENDER"])})
 
+    # SME (L360-B11, OQ-360-07 / OQ-360-12, D-112): một doanh nghiệp / chứng từ; party chủ thể là pháp nhân, `tax_id` = mã số thuế.
+    # Kỳ báo cáo đọc ra `period_from` / `period_to`; chỉ tiêu nào không in → null, không suy ra từ chỉ tiêu khác.
+    org_note = "Doanh nghiệp lập (party_type = ORGANIZATION, `tax_id` = mã số thuế, `full_name` = tên doanh nghiệp)."
+    s["vat_tax_return"] = schema("vat_tax_return", "Tờ khai thuế GTGT (mẫu 01/GTGT)",
+        "Một kỳ tính thuế / tờ khai; tờ khai bổ sung là chứng từ riêng (`filing_type = SUPPLEMENTARY`).", {
+        "parties": arr(ref("Party"), "TAXPAYER = người nộp thuế. " + org_note, 1),
+        "tax_return_info": obj({
+            "tax_period_raw": d("Kỳ tính thuế (nguyên văn, VD 'Quý 2 năm 2026').", STR),
+            "period_type": enum(["MONTH", "QUARTER"], "Khai theo tháng hay quý."),
+            "period_from": DATE, "period_to": DATE,
+            "filing_type": enum(["ORIGINAL", "SUPPLEMENTARY"], "Lần đầu / bổ sung."),
+            "sales_revenue": d("Doanh thu hàng hóa, dịch vụ bán ra chịu thuế + không chịu thuế (VND).", MONEY),
+            "output_vat": d("Thuế GTGT của hàng hóa, dịch vụ bán ra (VND).", MONEY),
+            "deductible_input_vat": d("Thuế GTGT đầu vào được khấu trừ (VND).", MONEY),
+            "vat_payable": d("Thuế GTGT phải nộp trong kỳ (VND); kỳ còn được khấu trừ → 0.", MONEY),
+        }),
+        "legal_info": LEGAL("issue_date = ngày ký tờ khai / ngày nộp."),
+    }, {"Party": party_def(["TAXPAYER"])})
+
+    s["balance_sheet"] = schema("balance_sheet", "Bảng cân đối kế toán",
+        "Số cuối kỳ (cột 'Số cuối năm' / 'Số cuối kỳ'); không lấy cột đầu kỳ.", {
+        "parties": arr(ref("Party"), "HOLDER = doanh nghiệp lập báo cáo. " + org_note, 1),
+        "balance_info": obj({
+            "period_raw": d("Kỳ báo cáo (nguyên văn, VD 'Năm 2025').", STR),
+            "report_date": d("Ngày chốt số liệu (cuối kỳ).", DATE),
+            "total_assets": d("Tổng cộng tài sản (VND).", MONEY),
+            "cash_and_equivalents": d("Tiền và các khoản tương đương tiền (VND).", MONEY),
+            "short_term_receivables": d("Các khoản phải thu ngắn hạn (VND).", MONEY),
+            "inventory": d("Hàng tồn kho (VND).", MONEY),
+            "fixed_assets": d("Tài sản cố định (VND).", MONEY),
+            "total_liabilities": d("Nợ phải trả (VND).", MONEY),
+            "short_term_borrowings": d("Vay và nợ thuê tài chính ngắn hạn (VND).", MONEY),
+            "long_term_borrowings": d("Vay và nợ thuê tài chính dài hạn (VND).", MONEY),
+            "owner_equity": d("Vốn chủ sở hữu (VND, có thể âm).", SIGNED),
+            "is_audited": d("Có báo cáo kiểm toán / dấu kiểm toán (OQ-360-12: nhận cả chưa kiểm toán).", BOOL),
+        }),
+        "legal_info": LEGAL("issue_date = ngày lập báo cáo."),
+    }, {"Party": party_def(["HOLDER"])})
+
+    s["financial_performance_report"] = schema("financial_performance_report", "Báo cáo kết quả hoạt động kinh doanh",
+        "Số kỳ này (cột 'Năm nay' / 'Kỳ này'); không lấy cột kỳ trước.", {
+        "parties": arr(ref("Party"), "HOLDER = doanh nghiệp lập báo cáo. " + org_note, 1),
+        "performance_info": obj({
+            "period_raw": d("Kỳ báo cáo (nguyên văn).", STR),
+            "period_from": DATE, "period_to": DATE,
+            "net_revenue": d("Doanh thu thuần về bán hàng và cung cấp dịch vụ (VND).", MONEY),
+            "cogs": d("Giá vốn hàng bán (VND).", MONEY),
+            "gross_profit": d("Lợi nhuận gộp (VND, có thể âm).", SIGNED),
+            "interest_expense": d("Chi phí lãi vay (dòng 'Trong đó: chi phí lãi vay', VND).", MONEY),
+            "profit_before_tax": d("Tổng lợi nhuận kế toán trước thuế (VND, có thể âm).", SIGNED),
+            "profit_after_tax": d("Lợi nhuận sau thuế thu nhập doanh nghiệp (VND, có thể âm).", SIGNED),
+            "is_audited": d("Có báo cáo kiểm toán / dấu kiểm toán.", BOOL),
+        }),
+        "legal_info": LEGAL("issue_date = ngày lập báo cáo."),
+    }, {"Party": party_def(["HOLDER"])})
+
     return s
 
 
-EXPECTED = 17
+EXPECTED = 20
 
 
 def write_all() -> list[str]:
