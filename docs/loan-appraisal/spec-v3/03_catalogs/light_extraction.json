@@ -127,48 +127,14 @@
           "key": "headquarters_address",
           "label": "Địa chỉ trụ sở",
           "value_type": "ADDRESS"
+        },
+        {
+          "key": "representative_id_number",
+          "label": "Số định danh người đại diện theo pháp luật",
+          "value_type": "TEXT"
         }
       ],
       "note": "Party chủ thể = công ty (`full_name` = tên công ty, `tax_id` = mã số DN, `representative_name` = người đại diện theo pháp luật)."
-    },
-    {
-      "doc_type_key": "vat_tax_return",
-      "subject_party_role": "TAXPAYER",
-      "subject_party_type": "ORGANIZATION",
-      "fields": [
-        {
-          "key": "tax_period",
-          "label": "Kỳ tính thuế (nguyên văn)",
-          "value_type": "TEXT"
-        }
-      ],
-      "note": null
-    },
-    {
-      "doc_type_key": "balance_sheet",
-      "subject_party_role": "HOLDER",
-      "subject_party_type": "ORGANIZATION",
-      "fields": [
-        {
-          "key": "period",
-          "label": "Kỳ báo cáo (nguyên văn)",
-          "value_type": "TEXT"
-        }
-      ],
-      "note": null
-    },
-    {
-      "doc_type_key": "financial_performance_report",
-      "subject_party_role": "HOLDER",
-      "subject_party_type": "ORGANIZATION",
-      "fields": [
-        {
-          "key": "period",
-          "label": "Kỳ báo cáo (nguyên văn)",
-          "value_type": "TEXT"
-        }
-      ],
-      "note": null
     },
     {
       "doc_type_key": "enterprise_photo",

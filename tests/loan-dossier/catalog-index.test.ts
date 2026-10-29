@@ -7,15 +7,15 @@ import {
 } from '@/lib/loan-dossier/catalog';
 
 describe('catalog index (T-CAT-02)', () => {
-  it('47 loại chứng từ: 27 cần bóc tách đầy đủ, 20 chỉ nhận diện', () => {
+  it('47 loại chứng từ: 30 cần bóc tách đầy đủ, 17 chỉ nhận diện', () => {
     const all = loadDocTypes();
     expect(all).toHaveLength(47);
-    expect(all.filter((d) => d.needs_extraction)).toHaveLength(27);
-    expect(all.filter((d) => !d.needs_extraction)).toHaveLength(20);
-    expect(all.filter((d) => d.extraction_level === 'LIGHT')).toHaveLength(20);
+    expect(all.filter((d) => d.needs_extraction)).toHaveLength(30);
+    expect(all.filter((d) => !d.needs_extraction)).toHaveLength(17);
+    expect(all.filter((d) => d.extraction_level === 'LIGHT')).toHaveLength(17);
   });
 
-  it('D-70: summary_fields — 27 loại FULL có danh mục ≤ 5 key (loan_application ≤ 7), key thuộc từ vựng, LIGHT không có', () => {
+  it('D-70: summary_fields — 30 loại FULL có danh mục ≤ 5 key (loan_application ≤ 7), key thuộc từ vựng, LIGHT không có', () => {
     const vocab = new Set(enumValues('SummaryFieldKey'));
     expect(vocab.size).toBe(12);
     for (const d of loadDocTypes()) {
@@ -57,7 +57,7 @@ describe('catalog index (T-CAT-02)', () => {
   it('sl_fields và light_extraction nạp được', () => {
     expect(loadSlFields().length).toBeGreaterThan(0);
     const light = loadLightExtraction();
-    expect(light).toHaveLength(20);
+    expect(light).toHaveLength(17);
     expect(light.find((d) => d.doc_type_key === 'household_business_license')?.fields.map((f) => f.key))
       .toEqual(['registration_number', 'business_name', 'business_address', 'business_line']);
   });

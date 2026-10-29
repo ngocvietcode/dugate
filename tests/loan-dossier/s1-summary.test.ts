@@ -143,7 +143,7 @@ describe('buildClassifyPrompt — danh mục key_facts', () => {
     expect(line('loan_application')).toContain('collateral_identifier');
     expect(line('loan_application')).toContain('income_source');
     expect(line('household_business_license')).not.toContain('key_facts');
-    expect(p.match(/key_facts: /g)).toHaveLength(27);
+    expect(p.match(/key_facts: /g)).toHaveLength(30);
   });
 
   it('ví dụ JSON có summary và key_facts; matches đứng trước phần tóm tắt', () => {

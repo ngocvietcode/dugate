@@ -29,6 +29,9 @@ import { AssetQuoteDataSchema } from './asset_quote';
 import { ExternalValuationCertificateDataSchema } from './external_valuation_certificate';
 import { CicDataSchema } from './cic';
 import { CreditContractDataSchema } from './credit_contract';
+import { VatTaxReturnDataSchema } from './vat_tax_return';
+import { BalanceSheetDataSchema } from './balance_sheet';
+import { FinancialPerformanceReportDataSchema } from './financial_performance_report';
 
 export const DOC_DATA_SCHEMAS: Readonly<Record<string, ZodTypeAny>> = {
   id_card: IdCardDataSchema,
@@ -58,6 +61,9 @@ export const DOC_DATA_SCHEMAS: Readonly<Record<string, ZodTypeAny>> = {
   external_valuation_certificate: ExternalValuationCertificateDataSchema,
   cic: CicDataSchema,
   credit_contract: CreditContractDataSchema,
+  vat_tax_return: VatTaxReturnDataSchema,
+  balance_sheet: BalanceSheetDataSchema,
+  financial_performance_report: FinancialPerformanceReportDataSchema,
 };
 
 export { IdCardDataSchema } from './id_card';
@@ -87,6 +93,9 @@ export { AssetQuoteDataSchema } from './asset_quote';
 export { ExternalValuationCertificateDataSchema } from './external_valuation_certificate';
 export { CicDataSchema } from './cic';
 export { CreditContractDataSchema } from './credit_contract';
+export { VatTaxReturnDataSchema } from './vat_tax_return';
+export { BalanceSheetDataSchema } from './balance_sheet';
+export { FinancialPerformanceReportDataSchema } from './financial_performance_report';
 export type { IdCardData } from './id_card';
 export type { VneidData } from './vneid';
 export type { QrCodeInfoData } from './qr_code_info';
@@ -114,3 +123,6 @@ export type { AssetQuoteData } from './asset_quote';
 export type { ExternalValuationCertificateData } from './external_valuation_certificate';
 export type { CicData } from './cic';
 export type { CreditContractData } from './credit_contract';
+export type { VatTaxReturnData } from './vat_tax_return';
+export type { BalanceSheetData } from './balance_sheet';
+export type { FinancialPerformanceReportData } from './financial_performance_report';

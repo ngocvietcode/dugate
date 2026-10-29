@@ -112,3 +112,37 @@ describe('một nguồn sự thật (D-114)', () => {
     expect(p.conflicts.map((c) => c.field)).toEqual(['parties[].id_number']);
   });
 });
+
+describe('nhóm gộp khác (T-360-13…18)', () => {
+  const seller = { party_role: 'SELLER', party_type: 'ORGANIZATION', full_name: 'CÔNG TY TNHH Ô TÔ MIỀN BẮC' };
+  const car = (price_key: string, v: number) => ({ asset_index: 0, vehicle_brand: 'TOYOTA', vehicle_model: 'VIOS', vehicle_type: null, manufacture_year: 2026, color: 'Trắng', [price_key]: v });
+
+  it('T-360-13: báo giá + HĐ mua cùng bên bán, cùng xe → một giao dịch giá theo HĐ; giá lệch và vay vượt giá → cảnh báo', () => {
+    const a = loanApp([A]);
+    a.data!.loan_info = { ...(a.data!.loan_info as object), requested_amount: 700_000_000 };
+    const quote = ev('asset_quote', { parties: [{ ...A, party_role: 'CUSTOMER' }], assets: [{ asset_type: 'vehicle' }],
+      data: { asset_details: [{ ...car('quoted_value', 620_000_000), asset_name: null, quantity: 1 }], quote_info: { quoting_company: 'Công ty TNHH Ô tô Miền Bắc', quote_number: null, total_quoted_value: 620_000_000 } } });
+    const contract = ev('vehicle_sale_contract', { parties: [seller, { ...A, party_role: 'BUYER' }], assets: [{ asset_type: 'vehicle' }],
+      data: { asset_details: [{ ...car('unit_price', 600_000_000), vehicle_name: null }], contract_info: { contract_number: 'HD-01', sign_date: null, total_amount: 600_000_000, payment_terms_raw: null } } });
+    const p = profile([a, quote, contract]);
+    expect(p.counterparties).toHaveLength(1);
+    expect(p.purchase_deals).toHaveLength(1);
+    expect(p.purchase_deals[0]).toMatchObject({ kind: 'VEHICLE', seller_counterparty_id: 'cp-1', price: 600_000_000, link: 'PARTIAL' });
+    expect(p.issues.map((i) => i.code)).toEqual(expect.arrayContaining(['DEAL_PRICE_MISMATCH', 'LOAN_EXCEEDS_DEAL']));
+  });
+
+  it('T-360-17 / T-360-16: CCCD hết hạn trước ngày nộp → cảnh báo; xác nhận cư trú → thành viên trỏ về chủ hộ', () => {
+    const id = ev('id_card', { parties: [{ ...A, party_role: 'HOLDER' }], valid_until: '2026-01-01' });
+    const ct07 = ev('residence_confirmation', {
+      parties: [{ ...A, party_role: 'HOLDER' }, { ...B, party_role: 'HOUSEHOLD_MEMBER', party_role_raw: 'Vợ' }],
+      data: { residence_info: { place_of_origin: null, temporary_address: null, temporary_residence_from: null, temporary_residence_until: null, temporary_residence_duration_raw: null, household_head_party_index: 0, holder_relationship_to_household_head_raw: 'Chủ hộ' } },
+    });
+    const p = profile([loanApp([A, B]), id, ct07]);
+    const an = p.customers.find((c) => c.person_id === 'person-1')!;
+    expect(an.id_documents).toEqual([expect.objectContaining({ doc_type_key: 'id_card', valid_until: '2026-01-01', expired: true })]);
+    expect(p.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'ID_DOCUMENT_EXPIRED', subject_id: 'person-1' })]));
+    expect(p.customers.find((c) => c.person_id === 'person-2')!.relations).toEqual(expect.arrayContaining([
+      { type: 'HOUSEHOLD_MEMBER_OF', person_id: 'person-1', verification: 'NOT_REQUIRED', detail: 'Vợ' },
+    ]));
+  });
+});

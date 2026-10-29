@@ -15,7 +15,7 @@ const missingId = row({ item_key: 'legal_id_card', item_label: 'Căn cước cô
 function rule(items: unknown[], o: Partial<IntakeAssessmentInput> = {}): IntakeAssessment {
   return buildIntakeAssessment({
     classify: { files: [], repeated_doc_types: [] } as never, evidences: [], s3: null,
-    checklist: { items, flow: 'FULL' } as never, crossCheck: { results: [] } as never, master: null, acknowledgements: [], ...o,
+    checklist: { items, flow: 'FULL' } as never, crossCheck: { results: [] } as never, acknowledgements: [], ...o,
   });
 }
 const crit = (a: IntakeAssessment, no: number) => a.criteria[no - 1];

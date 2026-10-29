@@ -1,11 +1,10 @@
-// Dựng hồ sơ thật qua S2 nhóm trùng → S3 → S4 → S5 → master (dùng chung cho test master_dossier).
+// Dựng hồ sơ thật qua S2 nhóm trùng → S3 → S4 → S5 (dùng chung cho test S4 / tiếp nhận). Lớp master_dossier đã gỡ (D-115).
 import type { AssetDescriptor, EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 import { groupDuplicates } from '@/lib/loan-dossier/s2/duplicates';
 import { assetKeys } from '@/lib/loan-dossier/s3/asset-key';
 import { runMapDossier } from '@/lib/loan-dossier/s3/run';
 import { runChecklist } from '@/lib/loan-dossier/s4/run';
 import { runCrossCheck } from '@/lib/loan-dossier/s5/run';
-import { buildMasterDossier } from '@/lib/loan-dossier/master/build';
 
 import { classifyOf } from './dossier';
 
@@ -21,6 +20,5 @@ export async function runDossier(raw: EvidenceEnvelope[], flow = 'FULL') {
     classify: classifyOf(evidences), evidences, s3: { status: s3.status, data: s3.data }, now,
   }, { llm: { classifyIncomeSource: async () => ['household_business'], classifyLoanPurpose: async () => ({ vehicle_purchase: 'NO', factory_purchase: 'NO' }) } });
   const s5 = await runCrossCheck({ evidences, s3: { status: s3.status, data: s3.data }, now }, { semantic: null });
-  const input = { evidences, s3: s3.data, checklist: s4.data, crossCheck: s5.data };
-  return { evidences, s3, s4, s5, input, master: buildMasterDossier(input) };
+  return { evidences, s3, s4, s5 };
 }

@@ -2,7 +2,7 @@
 import { buildIntakeAssessment } from '@/lib/pipelines/workflows/loan-appraisal/intake-assessment';
 
 import { ev, loanApp } from './fixtures/dossier';
-import { runDossier } from './fixtures/master';
+import { runDossier } from './fixtures/dossier-run';
 
 const H = '001054003818';
 const W = '001158000017';
@@ -64,7 +64,7 @@ describe('S4-R28: chứng từ có trong hồ sơ nhưng chưa gán chắc cho n
   it('tiêu chí 1 của Sale không báo "Thiếu" nữa; vấn đề chuyển sang tiêu chí 2 (cần xác nhận), mỗi người một điểm', async () => {
     const { r } = await marriageRows([loanApp([borrower(H), spouse('NGHIỆM THỊ MINH', null)]), cert('NGHIÊM THỊ MINH', H, W)]);
     const a = buildIntakeAssessment({
-      classify: null, evidences: r.evidences, s3: r.s3.data, checklist: r.s4.data, crossCheck: r.s5.data, master: r.master, acknowledgements: [],
+      classify: null, evidences: r.evidences, s3: r.s3.data, checklist: r.s4.data, crossCheck: r.s5.data, acknowledgements: [],
     });
     expect(a.criteria[0].findings.filter((f) => f.message.includes('kết hôn'))).toEqual([]);
     const owner = a.criteria[1].findings.filter((f) => f.code.startsWith('DOC_OWNER:legal_marriage_certificate:'));

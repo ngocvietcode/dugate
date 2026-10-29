@@ -3,7 +3,6 @@ import { formatOperationResponse } from '@/lib/pipelines/format';
 import { hiddenChecklistCount, checklistGroups } from '@/app/loan-appraisal-v2/lib/dossier-view';
 import { buildEvidenceLookup, sourceDocumentsOf } from '@/app/loan-appraisal-v2/lib/selectors';
 import { applyOperation } from '@/app/loan-appraisal-v2/lib/operation-mapper';
-import { masterGroups } from '@/app/loan-appraisal-v2/lib/master-view';
 
 const rec = (id: string, extra: Record<string, unknown> = {}) => ({
   evidence_id: id, field_path: 'f', value: 'v', normalized_value: 'v', file_name: `${id}.pdf`, doc_type_key: 'id_card', doc_type_label: 'CCCD',
@@ -30,17 +29,6 @@ function result() {
     config_snapshot: { x: 1 },
     dossier_readiness: { missing_required_keys: ['c'] },
     policy_compliance: { rule_results: [{ rule_id: 'R', evidence_ids: ['ev-1'] }] },
-    master_dossier: {
-      summary: {},
-      persons: [{ entity_id: 'person-1', label: 'p', fields: [field('x', 'MISSING'), field('y', 'AGREED', 'v')] }],
-      assets: [],
-      other_documents: [],
-      documents: [
-        { document_id: 'd1', checklist_status: 'PRESENT', checklist_group: 'legal', copies: [{ role: 'PRIMARY', file_name: 'a.pdf' }], fields: [{ ...field('p', 'MISSING') }, { ...field('q', 'AGREED', 1) }] },
-        { document_id: 'd2', checklist_status: 'NOT_APPLICABLE', checklist_group: 'legal', copies: [], fields: [field('p', 'MISSING')] },
-        { document_id: 'd3', checklist_status: 'NOT_APPLICABLE', checklist_group: 'legal', copies: [{ role: 'PRIMARY', file_name: 'z.pdf' }], fields: [field('p', 'AGREED', 2)] },
-      ],
-    },
     evidence: {
       records: [
         rec('ev-1'), rec('ev-2'), rec('ev-3'),
@@ -87,18 +75,6 @@ describe('compactAppraisalResult', () => {
     expect(out).not.toHaveProperty('not_applicable_count');
   });
 
-  it('master_dossier: bỏ chứng từ "không áp dụng" không có bản nộp và trường MISSING; UI hiển thị y hệt', () => {
-    const full = result().master_dossier;
-    const out = (compactAppraisalResult(result()) as { master_dossier: typeof full }).master_dossier;
-    expect(out.documents.map((d) => d.document_id)).toEqual(['d1', 'd3']);
-    expect(out.documents[0].fields.map((f) => f.path)).toEqual(['q']);
-    // Giao diện lọc cùng quy tắc: cùng danh sách chứng từ và cùng dòng hiển thị.
-    const view = (m: never) => masterGroups(m, (id) => id).map((g) => [g.key, g.documents.map((d) => [d.id, d.rows.length])]);
-    expect(view(out as never)).toEqual(view(full as never));
-    // persons/assets không bị đụng.
-    expect(out.persons).toEqual(full.persons);
-  });
-
   it('evidence: bỏ by_file/by_document_type và bản ghi không ai tham chiếu; giữ bản ghi được tham chiếu và nguồn của chúng', () => {
     const out = (compactAppraisalResult(result()) as { evidence: { records: Array<{ evidence_id: string }> } }).evidence;
     expect(out).not.toHaveProperty('by_file');
@@ -129,7 +105,7 @@ describe('compactAppraisalResult', () => {
     expect(compactAppraisalResult(null)).toBeNull();
     expect(compactAppraisalResult('x')).toBe('x');
     expect(compactAppraisalResult({ output_version: '2.0' })).toEqual({ output_version: '2.0' });
-    expect(compactAppraisalResult({ checklist: 'lạ', master_dossier: null, evidence: { records: 'lạ' } })).toEqual({ checklist: 'lạ', master_dossier: null, evidence: { records: 'lạ' } });
+    expect(compactAppraisalResult({ checklist: 'lạ', evidence: { records: 'lạ' } })).toEqual({ checklist: 'lạ', evidence: { records: 'lạ' } });
   });
 });
 

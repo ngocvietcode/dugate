@@ -114,7 +114,7 @@ export function detailsOf(lac: LoanApplicationContext, subjectId: string, exclud
     const key = `${f.label}\u0000${normText(f.value)}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ fact_id: f.fact_id, label: f.label, value: f.value, trust: f.trust, review: f.review, doc_types: [...new Set(f.sources.map((s) => s.doc_type_key))] });
+    out.push({ fact_id: f.fact_id, field: f.field, label: f.label, value: f.value, trust: f.trust, review: f.review, doc_types: [...new Set(f.sources.map((s) => s.doc_type_key))] });
   }
   return out;
 }

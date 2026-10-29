@@ -8,8 +8,8 @@ type Json = Record<string, unknown>;
 const LIGHT_KEYS = loadDocTypes().filter((d) => d.extraction_level === 'LIGHT').map((d) => d.doc_type_key);
 
 describe('bóc tách nhẹ (T-S2-10)', () => {
-  it('20 loại LIGHT đều dựng được schema và nhận fixture; loại FULL → ném lỗi', () => {
-    expect(LIGHT_KEYS).toHaveLength(20);
+  it('17 loại LIGHT đều dựng được schema và nhận fixture; loại FULL → ném lỗi', () => {
+    expect(LIGHT_KEYS).toHaveLength(17);
     for (const k of LIGHT_KEYS) {
       const r = lightSchema(k).safeParse(makeLightData(k));
       expect({ k, issues: r.success ? [] : r.error.issues }).toEqual({ k, issues: [] });

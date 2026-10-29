@@ -86,6 +86,7 @@ function CustomerItem({ c }: { c: CustomerCard }) {
         </div>
       </div>
       <div className="mt-2"><Rows rows={c.identity} /></div>
+      {c.idDocuments.length > 0 && <div className="mt-2 border-t border-border pt-2"><Rows rows={c.idDocuments} /></div>}
       {c.relations.length > 0 && (
         <ul className="mt-2 space-y-0.5 border-t border-border pt-2">
           {c.relations.map((r) => (
@@ -189,6 +190,22 @@ export function Customer360Panel({ result }: { result: AppraisalResult }) {
                 <ul className="list-disc space-y-0.5 pl-4 text-foreground">{loan.purposes.map((x) => <li key={x}>{x}</li>)}</ul>
               </div>
             )}
+            {loan.deals.length > 0 && (
+              <div className="text-xs md:col-span-2">
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Giao dịch mua</p>
+                <ul className="space-y-1">
+                  {loan.deals.map((d, i) => (
+                    <li key={i} className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="font-medium text-foreground">{d.object}</span>
+                      <span className="text-muted-foreground">bên bán {d.seller}</span>
+                      {d.related && <Badge tone="warning">Bên liên quan</Badge>}
+                      <span className="tabular-nums text-foreground">{d.price}</span>
+                      {d.prices && <span className={d.mismatch ? 'text-[rgb(var(--la2-warning))]' : 'text-muted-foreground'}>({d.prices})</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </Section>
 
@@ -200,7 +217,7 @@ export function Customer360Panel({ result }: { result: AppraisalResult }) {
           <div className="space-y-3">
             {(repayment.dscrProfit || repayment.dscrRevenue) && (
               <p className={`rounded-lg border px-3 py-2 text-xs ${TONE_BOX.info}`}>
-                Dùng tính DSCR: lợi nhuận hộ kinh doanh <strong className="tabular-nums">{repayment.dscrProfit ?? '—'}</strong>/năm · doanh thu <strong className="tabular-nums">{repayment.dscrRevenue ?? '—'}</strong>/năm
+                Dùng tính DSCR: {repayment.dscrLabel} <strong className="tabular-nums">{repayment.dscrProfit ?? '—'}</strong>/năm · doanh thu <strong className="tabular-nums">{repayment.dscrRevenue ?? '—'}</strong>/năm
               </p>
             )}
             <DataTable
@@ -218,12 +235,12 @@ export function Customer360Panel({ result }: { result: AppraisalResult }) {
             />
             {repayment.businesses.length > 0 && (
               <DataTable
-                caption="Hộ kinh doanh"
+                caption="Đơn vị kinh doanh"
                 rows={repayment.businesses}
                 rowKey={(r) => `${r.name}-${r.registration}`}
                 empty="Chưa có hộ kinh doanh"
                 columns={[
-                  { key: 'name', header: 'Hộ kinh doanh', cell: (r) => r.name },
+                  { key: 'name', header: 'Đơn vị', cell: (r) => `${r.kind} ${r.name}` },
                   { key: 'registration', header: 'Số GCN', cell: (r) => r.registration },
                   { key: 'line', header: 'Ngành', cell: (r) => r.line },
                   { key: 'owners', header: 'Chủ hộ', cell: (r) => r.owners },

@@ -6,7 +6,7 @@ import type { LoanApplicationData } from '@/lib/loan-dossier/s2/schemas';
 import { describeDocSchema } from './fixtures/doc-schema-suite';
 import { makeRichData } from './fixtures/build';
 
-describeDocSchema('loan_application', ['BORROWER', 'CO_BORROWER', 'SPOUSE', 'COLLATERAL_OWNER', 'REFERENCE_PERSON']);
+describeDocSchema('loan_application', ['BORROWER', 'CO_BORROWER', 'SPOUSE', 'COLLATERAL_OWNER', 'REFERENCE_PERSON', 'LEGAL_REPRESENTATIVE', 'GUARANTOR', 'CAPITAL_MEMBER']);
 
 const schema = getDocSchema('loan_application');
 const rich = () => makeRichData('loan_application') as unknown as LoanApplicationData;

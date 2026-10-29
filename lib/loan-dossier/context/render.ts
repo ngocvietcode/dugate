@@ -200,11 +200,11 @@ export function renderLoanApplicationContext(
         }
       }
       if (profile.business_units.length) {
-        out.push('', 'HỘ KINH DOANH');
+        out.push('', profile.business_units.some((u) => u.kind === 'ENTERPRISE') ? 'ĐƠN VỊ KINH DOANH' : 'HỘ KINH DOANH');
         for (const u of profile.business_units) {
           const field = (label: string, f: (typeof u)['name']) => (f.value !== null ? `${label} ${one(f.value)}${cite(f.fact_ids)}` : f.trust === 'DISPUTED' ? `${label} ghi khác nhau${cite(f.fact_ids)}` : null);
           const verified = profile.relations.some((r) => r.type === 'OPERATES' && r.to === u.business_id && r.verification === 'VERIFIED');
-          const parts = [u.business_id, field('tên', u.name), field('số GCN', u.registration_number), field('MST', u.tax_id), field('ngành', u.business_line), field('địa điểm', u.business_address),
+          const parts = [u.business_id, u.kind === 'ENTERPRISE' ? 'doanh nghiệp' : null, field('tên', u.name), field('số GCN', u.registration_number), field('MST', u.tax_id), field('ngành', u.business_line), field('địa điểm', u.business_address),
             `chủ ${u.owner_person_ids.join(', ') || 'chưa xác định'} (${verified ? 'đã xác minh bằng GCN' : 'chưa xác minh'})`, ...(u.flags.length ? [`lưu ý: ${u.flags.join(', ')}`] : [])];
           out.push(`- ${parts.filter(Boolean).join(' · ')}`);
         }

@@ -41,8 +41,8 @@ Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đ�
 | T-360-03 | Tài chính đọc lớp 2 | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-appraisal/v2-financial-inputs.test.ts tests/loan-appraisal/segment-packs.test.ts` |
 | T-360-07 | P0: Hộ kinh doanh | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
 | T-360-10 | Catalog chính sách chọn giá trị | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
-| T-360-15 | P3: Địa chỉ | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-addresses.test.ts` |
-| T-360-17 | P3: Giấy tờ định danh | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-identity-docs.test.ts` |
+| T-360-15 | P3: Địa chỉ | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
+| T-360-17 | P3: Giấy tờ định danh | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
 | T-FS-02 | Bộ so sánh và catalog tham số | T-COM-01, T-COM-02 | `cross_cutting/s3_fellegi_sunter.md` | `npx jest tests/loan-dossier/s3-fs-compare.test.ts` |
 | T-LAC-03 | Dữ kiện, trạng thái, mâu thuẫn, khoảng trống | T-LAC-02 | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-dossier/context-build.test.ts` |
 | T-S1-01 | Nhận dạng định dạng và `file_id` | T-CAT-02 | `stages/S1_classify.md` | `npx jest tests/loan-dossier/s1-file-id.test.ts` |
@@ -65,7 +65,7 @@ Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đ�
 | T-360-11 | P1: Nghĩa vụ nợ | T-360-10 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-obligations.test.ts` |
 | T-360-12 | P1: Nguồn thu | T-360-07, T-360-10 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
 | T-360-14 | P2: Định giá | T-360-10 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-valuations.test.ts` |
-| T-360-16 | P3: Hộ gia đình | T-360-15 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-household.test.ts` |
+| T-360-16 | P3: Hộ gia đình | T-360-15 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
 | T-CON-01 | Hợp đồng `StageResult` và `data` của S1, S2 | T-CAT-02, T-S2-02 | `04_data_model.md` | `npx jest tests/loan-dossier/contract-stage-result.test.ts` |
 | T-DOC-01 | Schema id_card | T-S2-02 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-schema-id_card.test.ts` |
 | T-DOC-02 | Schema vneid | T-S2-02 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-schema-vneid.test.ts` |
@@ -120,7 +120,7 @@ Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đ�
 | T-360-05 | Tính lại | T-360-04 | `cross_cutting/loan_360.md` | `npx jest tests/loan-appraisal/recompute.test.ts` |
 | T-360-06 | Giao diện CO | T-360-04 | `cross_cutting/loan_360.md` | `npx jest tests/loan-appraisal-v2/co-resolution-view.test.ts` |
 | T-360-09 | P2: Doanh nghiệp (SME) | T-360-08 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-sme.test.ts` |
-| T-360-18 | P3: Đối tác | T-360-08 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-counterparties.test.ts` |
+| T-360-18 | P3: Đối tác | T-360-08 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
 | T-CON-02 | Hợp đồng `data` của S3–S6 | T-CON-01 | `04_data_model.md` | `npx jest tests/loan-dossier/contract-check-stages.test.ts` |
 | T-FS-04 | Báo cáo shadow | T-FS-03 | `cross_cutting/s3_fellegi_sunter.md` | `npx jest tests/scripts/fs-shadow-report.test.ts` |
 | T-LAC-05 | Nối vào Rule LLM | T-LAC-04 | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-appraisal/prompt-checks-lac.test.ts tests/loan-appraisal/lac-mode-param.test.ts` |
@@ -136,7 +136,7 @@ Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đ�
 
 | Task | Tiêu đề | Phụ thuộc | Spec | Verify |
 |---|---|---|---|---|
-| T-360-13 | P2: Giao dịch mua | T-360-18 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-deals.test.ts` |
+| T-360-13 | P2: Giao dịch mua | T-360-18 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
 | T-FS-06 | Đánh giá và bật `fs` | T-FS-04 | `cross_cutting/s3_fellegi_sunter.md` | `npx jest tests/scripts/fs-estimate-params.test.ts tests/loan-dossier/s3-fs-compare.test.ts tests/loan-dossier/s3-fs-score.test.ts` |
 | T-LAC-06 | Lưu trữ, an toàn, tài liệu | T-LAC-05 | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-appraisal/lac-pii.test.ts` |
 | T-LAC-07 | Đo trên UAT và quyết định bật | T-LAC-05 | `cross_cutting/loan_application_context.md` | `npx jest tests/scripts/lac-compare.test.ts` |

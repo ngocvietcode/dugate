@@ -8,7 +8,6 @@ import type {
 } from '../prompts/loan-appraisal-prompts';
 import type { CheckChecklistData, CrossCheckData, MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
 import type { ClassifyData } from '@/lib/loan-dossier/contracts/stage-result';
-import type { MasterDossier } from '@/lib/loan-dossier/contracts/master-dossier';
 import type { DossierGraphView } from '@/lib/loan-dossier/graph/view-contract';
 import type { FsShadowSummary } from '@/lib/loan-dossier/s3/fs/shadow';
 import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
@@ -404,8 +403,6 @@ export interface AppraisalResultV2 extends DossierOutputV3 {
    */
   system_notes?: string[];
   config_snapshot: LoanConfigSnapshot;
-  /** Master data chuẩn hóa theo checklist (master_dossier.md); null khi không dựng được (MD-AC12). */
-  master_dossier?: MasterDossier | null;
   /** Kết quả tiếp nhận theo 4 tiêu chí của Sale (D-47). */
   intake_assessment?: IntakeAssessment;
   /** Kiểm tra sơ bộ bằng LLM ngay sau S1 (D-73); null khi chưa có (kết quả cũ). */

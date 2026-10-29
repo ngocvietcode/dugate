@@ -69,6 +69,9 @@
         "REFERENCE_PERSON",
         "TAXPAYER",
         "LENDER",
+        "LEGAL_REPRESENTATIVE",
+        "GUARANTOR",
+        "CAPITAL_MEMBER",
         "OTHER"
       ]
     },
