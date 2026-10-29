@@ -84,6 +84,19 @@ describe('nối tài sản BĐS bằng FS (D-117)', () => {
     expect(parcel).toHaveLength(2);
   });
 
+  it('D-119: hai GCN khác thửa của cùng chủ, số chỉ đảo 2 ký tự → không gộp qua đơn vay; đơn vay theo GCN trùng số', () => {
+    const evs = [
+      app('BX123456'),
+      gcn({ certificate_number: 'BX123456', land_parcel_number: '10', map_sheet_number: '3' }),
+      gcn({ certificate_number: 'BX123465', land_parcel_number: '77', map_sheet_number: '9' }),
+    ];
+    const assets = run(evs).data!.asset_registry;
+    expect(assets).toHaveLength(2);
+    expect((assets[0].sources as Array<{ evidence_id: string }>).map((s) => s.evidence_id)).toEqual([evs[0].evidence_id, evs[1].evidence_id]);
+    expect(assets[0]).toMatchObject({ context_status: 'CONFIRMED', identifier_conflicts: [] });
+    expect((assets[1].sources as Array<{ evidence_id: string }>).map((s) => s.evidence_id)).toEqual([evs[2].evidence_id]);
+  });
+
   it('số vào sổ chỉ khác tiền tố / số 0 đầu (CN 6475 ↔ CS 06475) vẫn là bằng chứng nối', () => {
     const r = run([app('AA07898136', { certificate_book_number: 'CS 06475' }), gcn(GCN_IDS)]);
     const src = (r.data!.asset_registry[0].sources as Array<{ match?: { decision: string; breakdown: Record<string, string> } }>)[1];

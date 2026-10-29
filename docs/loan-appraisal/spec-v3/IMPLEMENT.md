@@ -273,3 +273,8 @@ Xem [open_questions.md](open_questions.md).
   `COLLATERAL_MATCH_REVIEW_REQUIRED` cho cùng tài sản. Sau D-118 ca này theo đúng D-41: `PROBABLE_OCR_ERROR` (cảnh báo), tài sản `CONFIRMED`,
   giá trị định giá vào LTV chính thức. Ca chỉ một chứng từ mỗi bên (không có đa số) vẫn `DISPUTED` và gộp chờ xác nhận (D-117).
   Không đổi: nối gần đúng S3-R15(2) khi `s3_asset_matcher = rules` (giữ đường quay lui), số định danh người (S3-R13).
+- **D-119 (2026-10-29)** Sửa lỗi của D-117: điều kiện loại trừ cứng (thửa/tờ, căn/tòa…) chỉ xét cho cặp đang chấm, nên đơn vay ghi
+  `BX123456` (không thửa/tờ) nối chính xác với GCN-A cùng số và nối FS (`NEAR` + cùng chủ, `MATCH`) với GCN-B `BX123465` của mảnh đất khác
+  → hai GCN khác thửa thành một tài sản `AMBIGUOUS`; sau D-118 conflict số GCN còn bị gắn nghi lỗi đọc. Nay xét ở cấp cụm: cạnh FS chỉ
+  nhận khi mọi cặp giữa hai cụm hai đầu không mâu thuẫn, cạnh điểm cao xét trước. `s3_asset_matcher = rules` không đổi.
+  Spec `cross_cutting/s3_fellegi_sunter.md` §9.1.

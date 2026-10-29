@@ -128,6 +128,8 @@ export function groupAssets(ds: Descriptor[], scorer?: AssetScorer): AssetGroup[
   const n = ds.length;
   const exact: Array<[number, number]> = [];
   const approx: Array<[number, number]> = [];
+  /** Cạnh FS ứng viên; chỉ vào `approx` sau kiểm tra cấp cụm (D-119). */
+  const scored: Array<[number, number]> = [];
   const verdicts = new Map<string, AssetFsVerdict>();
   const edgeKey = (a: number, b: number) => `${Math.min(a, b)}-${Math.max(a, b)}`;
   const keys = ds.map((d) => new Set(assetKeys(d.descriptor)));
@@ -137,9 +139,19 @@ export function groupAssets(ds: Descriptor[], scorer?: AssetScorer): AssetGroup[
       if ([...keys[i]].some((k) => keys[j].has(k))) { exact.push([i, j]); continue; }
       const v = scorer?.(ds[i], ds[j]) ?? null;
       if (v) {
-        if (v.decision !== 'NO_MATCH' && noVetoConflict(ds[i].descriptor, ds[j].descriptor)) { approx.push([i, j]); verdicts.set(edgeKey(i, j), v); }
+        if (v.decision !== 'NO_MATCH' && noVetoConflict(ds[i].descriptor, ds[j].descriptor)) { scored.push([i, j]); verdicts.set(edgeKey(i, j), v); }
       } else if (approxLink(ds[i].descriptor, ds[j].descriptor)) approx.push([i, j]);
     }
+  }
+  // D-119: cạnh FS chỉ nhận khi MỌI cặp giữa hai cụm hai đầu (đã nối chính xác + cạnh FS đã nhận) không mâu thuẫn field loại trừ cứng.
+  // Thiếu bước này, descriptor ít field (đơn vay chỉ ghi số GCN) bắc cầu hai GCN khác thửa vào một tài sản. Cạnh điểm cao xét trước.
+  const uf = new UnionFind(n);
+  for (const [a, b] of [...exact, ...approx]) uf.union(a, b);
+  const clusterOf = (i: number) => { const r = uf.find(i); return ds.map((_, k) => k).filter((k) => uf.find(k) === r); };
+  const byWeight = [...scored].sort((x, y) => verdicts.get(edgeKey(...y))!.weight - verdicts.get(edgeKey(...x))!.weight || x[0] - y[0] || x[1] - y[1]);
+  for (const [a, b] of byWeight) {
+    const A = clusterOf(a); const B = clusterOf(b);
+    if (A.includes(b) || A.every((x) => B.every((y) => noVetoConflict(ds[x].descriptor, ds[y].descriptor)))) { uf.union(a, b); approx.push([a, b]); }
   }
   // S3-R15(3): bắc cầu đưa 2 descriptor cùng evidence vào 1 nhóm → bỏ cạnh gần đúng của nhóm đó.
   let comps = components(n, [...exact, ...approx]);

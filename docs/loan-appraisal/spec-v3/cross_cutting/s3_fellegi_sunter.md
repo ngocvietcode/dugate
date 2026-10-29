@@ -243,7 +243,9 @@ S3-R15(2) không nối; tài sản khai trên đơn vay mất chứng thư đị
 | `address` | `AGREE` | Chỉ `AGREE` / `MISSING` theo OQ-FS-04 (chưa có bảng địa danh 2025) |
 
 Thiếu ở một bên → `MISSING`, trọng số 0 (thiếu không phải bất đồng). Thửa/tờ, căn/tòa không chấm: trùng đã là khóa chính xác, còn mọi
-field định danh khác (ngoài số GCN, số vào sổ) mâu thuẫn là **điều kiện loại trừ cứng** như S3-R15(2). S3-R15(3) (bắc cầu gom 2
+field định danh khác (ngoài số GCN, số vào sổ) mâu thuẫn là **điều kiện loại trừ cứng** như S3-R15(2). Điều kiện xét ở **cấp cụm** (D-119):
+cạnh FS chỉ được nhận khi mọi cặp descriptor giữa hai cụm ở hai đầu (đã nối chính xác và qua cạnh FS đã nhận) không mâu thuẫn; cạnh điểm
+cao xét trước. Nhờ vậy đơn vay chỉ ghi số GCN không bắc cầu được hai GCN khác thửa của cùng chủ. S3-R15(3) (bắc cầu gom 2
 descriptor cùng evidence) áp cho cạnh FS như cạnh gần đúng.
 
 ### 9.2 Điểm, quyết định, tham số chuyên gia `0.1.0-expert`
