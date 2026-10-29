@@ -265,4 +265,11 @@ Xem [open_questions.md](open_questions.md).
   trùng phần số), chủ sở hữu, địa chỉ; thửa/tờ, căn/tòa khác vẫn loại trừ cứng. Vùng nghi trùng **gộp, chờ xác nhận** (khác OQ-FS-01 của
   người, có chủ đích): tài sản `AMBIGUOUS`, hồ sơ 360 `match_review` + `COLLATERAL_MATCH_REVIEW_REQUIRED`, giá trị định giá vào LTV dưới dạng
   bản ghi cần xem. Tham số chuyên gia `asset_fs_params.json` 0.1.0-expert, chưa ước lượng trên dữ liệu thật. Chưa làm: S5 "Gần khớp" (D-41)
-  và S3-R15(5) chưa nhận đảo 2 ký tự; xe vẫn theo luật cũ. Spec `cross_cutting/s3_fellegi_sunter.md` §9.
+  và S3-R15(5) chưa nhận đảo 2 ký tự (làm ở D-118); xe vẫn theo luật cũ. Spec `cross_cutting/s3_fellegi_sunter.md` §9.
+- **D-118 (2026-10-29)** Một ngưỡng "lệch một lỗi" cho mã/số ở cả bốn nơi: S2 bản trùng (D-43, S2-R18b), S3-R15(5), S5 "Gần khớp" (D-41,
+  S5-R07) và sổ claim / LAC (`PROBABLE_OCR_ERROR`). Lệch một lỗi = thêm / bớt / thay 1 ký tự **hoặc đảo 2 ký tự liền nhau** (OSA = 1),
+  cả hai dài ≥ 6 (`nearIdentifier`, `s5/compare-exact.ts`). Lý do: đối chiếu LAC với deck — tên khác dấu đã là biến thể, nhưng số GCN
+  `AA07898136` (đơn vay) / `AA08798136` (GCN + chứng thư định giá) vẫn ra `DISPUTED` → `FIELD_CONFLICT` mức danger, cộng
+  `COLLATERAL_MATCH_REVIEW_REQUIRED` cho cùng tài sản. Sau D-118 ca này theo đúng D-41: `PROBABLE_OCR_ERROR` (cảnh báo), tài sản `CONFIRMED`,
+  giá trị định giá vào LTV chính thức. Ca chỉ một chứng từ mỗi bên (không có đa số) vẫn `DISPUTED` và gộp chờ xác nhận (D-117).
+  Không đổi: nối gần đúng S3-R15(2) khi `s3_asset_matcher = rules` (giữ đường quay lui), số định danh người (S3-R13).

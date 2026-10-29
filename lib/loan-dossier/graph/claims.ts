@@ -2,14 +2,13 @@
 // Sổ cái lossless: MỌI lá của `evidences[].data` được gán đúng MỘT lần làm nguồn của đúng MỘT Claim (không lược, không nhân đôi),
 // bất kể loại chứng từ. Giá trị mâu thuẫn là hai Claim riêng nối bằng CONTRADICTS, không phải một giá trị kèm ghi chú.
 // Hàm thuần, tất định, không log. Claim MANG GIÁ TRỊ (có thể là PII): chỉ dùng cho UI / lưu DB / LLM, không bao giờ vào log (S3-R26).
-import { distance } from 'fastest-levenshtein';
 
 import { isDeclaredDocType } from '../catalog/declared';
 import { isNameMatch, nameLevel, normalizeName, stripDiacritics } from '../common/name';
 import { normDate, normIdNumber, normKey, normMoney, normName } from '../common/normalize';
 import type { MapDossierData } from '../contracts/check-stages';
 import type { EvidenceEnvelope } from '../s2/common-schema';
-import { NEAR_MATCH_MIN_LENGTH } from '../s5/compare-exact';
+import { nearIdentifier } from '../s5/compare-exact';
 
 /** Loại chủ thể mà Claim nói về. `document` = thông tin về chính chứng từ (số, ngày cấp, nơi cấp, người ký…). */
 export type SubjectKind = 'person' | 'asset' | 'loan' | 'business' | 'document';
@@ -313,7 +312,7 @@ const variantName = (a: Claim, b: Claim) => a.value_kind === 'name' && nameLevel
 /**
  * Xếp trạng thái cho nhóm có nhiều giá trị khác nhau cùng (chủ thể, trường).
  *  - Tên: chỉ khác dấu → SPELLING_VARIANT (hai bên đều giữ, KHÔNG nối CONTRADICTS). Đảo họ tên → coi như cùng, bỏ qua.
- *  - Còn lại: nối CONTRADICTS; lệch đúng 1 ký tự so với đa số (mã dài ≥ NEAR_MATCH_MIN_LENGTH) → nghi lỗi đọc, ngược lại DISPUTED.
+ *  - Còn lại: nối CONTRADICTS; lệch một lỗi so với đa số (`nearIdentifier`: 1 ký tự hoặc đảo 2 ký tự liền nhau, mã dài ≥ 6) → nghi lỗi đọc, ngược lại DISPUTED.
  */
 function markStatus(group: Claim[]): void {
   const weight = (c: Claim) => new Set(c.sources.map((s) => s.evidence_id)).size;
@@ -329,7 +328,7 @@ function markStatus(group: Claim[]): void {
   for (const c of real) {
     const textual = typeof c.value_norm === 'string' && typeof major.value_norm === 'string';
     const near = c !== major && textual && c.value_kind === 'key' && weight(c) === 1 && weight(major) >= 2
-      && (c.value_norm as string).length >= NEAR_MATCH_MIN_LENGTH && (major.value_norm as string).length >= NEAR_MATCH_MIN_LENGTH && distance(c.value_norm as string, major.value_norm as string) === 1;
+      && nearIdentifier(c.value_norm as string, major.value_norm as string);
     c.status = near ? 'PROBABLE_OCR_ERROR' : 'DISPUTED';
   }
 }

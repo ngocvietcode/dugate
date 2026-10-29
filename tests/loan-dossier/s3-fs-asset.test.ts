@@ -1,7 +1,7 @@
 // D-117 — nối tài sản BĐS bằng Fellegi-Sunter (spec s3_fellegi_sunter.md §9). Dữ liệu giả, không PII thật.
 import { MapDossierStageResultSchema } from '@/lib/loan-dossier/contracts/check-stages';
 import { loadAssetFsParams, parseAssetFsParams } from '@/lib/loan-dossier/s3/fs/asset-params';
-import { osaDistance } from '@/lib/loan-dossier/s3/fs/asset-score';
+import { osaDistance } from '@/lib/loan-dossier/common/edit-distance';
 import { resolveS3AssetMatcher, runMapDossier, type S3AssetMatcher } from '@/lib/loan-dossier/s3/run';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 
@@ -20,7 +20,7 @@ const gcn = (ids: Record<string, string>, parties = [owner()]) => ev('land_use_c
 const valuation = (ids: Record<string, string>, value: number) => {
   const v = ev('real_estate_valuation_report', { issue_date: '2026-09-01', parties: [], assets: [{ asset_type: 'real_estate', usage_context_hint: null, identifiers: ids }] });
   v.data!.asset_details = [{ ...((v.data!.asset_details as Array<Record<string, unknown>> | undefined)?.[0] ?? {}), asset_index: 0, valuation_value: value }];
-  return v;
+  return { ...v, field_confidences: { ...v.field_confidences, asset_details: 0.95 } };
 };
 
 const run = (evidences: EvidenceEnvelope[], asset_matcher?: S3AssetMatcher) => runMapDossier({ evidences, dossier_submitted_at: D0, asset_matcher });
@@ -45,17 +45,18 @@ describe('asset_fs_params.json', () => {
 });
 
 describe('nối tài sản BĐS bằng FS (D-117)', () => {
-  it('UAT: đơn vay ghi GCN đảo 2 ký tự, cùng số vào sổ, cùng chủ → 1 tài sản gộp, AMBIGUOUS, có điểm FS', () => {
+  it('UAT: đơn vay ghi GCN đảo 2 ký tự, GCN + định giá cùng số → 1 tài sản; nghi lỗi đọc (D-41, D-118) nên CONFIRMED', () => {
     const evs = [app('AA07898136', { certificate_book_number: 'CN 6475' }), gcn(GCN_IDS), valuation({ certificate_number: 'AA08798136', land_parcel_number: '933', map_sheet_number: '18' }, 2_386_560_000)];
     const r = run(evs);
     expect(MapDossierStageResultSchema.safeParse(r).success).toBe(true);
     const assets = r.data!.asset_registry;
     expect(assets).toHaveLength(1);
-    expect(assets[0]).toMatchObject({ usage_contexts: ['collateral'], context_status: 'AMBIGUOUS', context_reason_code: 'ASSET_IDENTIFIER_CONFLICT' });
+    expect(assets[0]).toMatchObject({ usage_contexts: ['collateral'], context_status: 'CONFIRMED', context_reason_code: null });
     const sources = assets[0].sources as Array<{ doc_type_key: string; link: string; match?: { decision: string; breakdown: Record<string, string> } }>;
     expect(sources.map((s) => s.link)).toEqual(['SEED', 'EXACT', 'EXACT']);
     expect(sources.find((s) => s.doc_type_key === 'land_use_certificate')!.match).toMatchObject({ decision: 'MATCH', breakdown: { certificate_number: 'NEAR', certificate_book_number: 'AGREE', owner: 'AGREE' } });
-    expect((assets[0].identifier_conflicts as Array<{ field: string }>).map((c) => c.field)).toEqual(['certificate_number']);
+    const appId = evs[0].evidence_id;
+    expect(assets[0].identifier_conflicts).toEqual([expect.objectContaining({ field: 'certificate_number', probable_ocr_error: true, outlier_evidence_ids: [appId] })]);
   });
 
   it('s3_asset_matcher = rules → luật cũ (Levenshtein 1) tách 2 tài sản như trước', () => {
@@ -91,10 +92,19 @@ describe('nối tài sản BĐS bằng FS (D-117)', () => {
   });
 });
 
-describe('hồ sơ 360 với tài sản gộp chờ xác nhận (D-117)', () => {
-  it('định giá đi theo tài sản; báo COLLATERAL_MATCH_REVIEW_REQUIRED thay cho NOT_VALUED; giá trị LTV là bản ghi cần xem', () => {
-    const evs = [app('AA07898136', { certificate_book_number: 'CN 6475' }), gcn(GCN_IDS), valuation({ certificate_number: 'AA08798136', land_parcel_number: '933', map_sheet_number: '18' }, 2_386_560_000)];
-    const p = profileOf(evs);
+describe('hồ sơ 360 với tài sản gộp (D-117, D-118)', () => {
+  it('UAT: số GCN đảo 2 ký tự là biến thể nghi đọc sai, không phải mâu thuẫn; LTV dùng giá định giá chính thức', () => {
+    const p = profileOf([app('AA07898136', { certificate_book_number: 'CN 6475' }), gcn(GCN_IDS), valuation({ certificate_number: 'AA08798136', land_parcel_number: '933', map_sheet_number: '18' }, 2_386_560_000)]);
+    expect(p.conflicts.map((c) => [c.subject_id, c.field, c.kind])).toEqual([['asset-1', 'assets[].identifiers.certificate_number', 'PROBABLE_OCR_ERROR']]);
+    expect(p.collateral[0]).toMatchObject({ context_status: 'CONFIRMED', match_review: false, chosen_value: 2_386_560_000 });
+    const codes = p.issues.map((i) => i.code);
+    expect(codes).toContain('PROBABLE_OCR_ERROR');
+    for (const c of ['FIELD_CONFLICT', 'COLLATERAL_MATCH_REVIEW_REQUIRED', 'COLLATERAL_NOT_VALUED', 'COLLATERAL_CONTEXT_AMBIGUOUS']) expect(codes).not.toContain(c);
+    expect(p.financial_basis.collateral_value).toMatchObject({ value: 2_386_560_000, review_record_ids: [] });
+  });
+
+  it('chỉ một chứng từ ghi số đúng (không có đa số) → vẫn gộp chờ xác nhận: COLLATERAL_MATCH_REVIEW_REQUIRED, LTV là bản ghi cần xem', () => {
+    const p = profileOf([app('AA07898136'), valuation({ certificate_number: 'AA08798136' }, 2_386_560_000)]);
     expect(p.collateral).toHaveLength(1);
     expect(p.collateral[0]).toMatchObject({ match_review: true, chosen_value: 2_386_560_000 });
     const codes = p.issues.map((i) => i.code);

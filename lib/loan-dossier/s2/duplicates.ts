@@ -1,7 +1,6 @@
 // Trạng thái nhóm trùng (T-S2-07; S2-R17, S2-R18). Nhóm tính trên toàn request, theo (loại, dedup_key).
-import { distance } from 'fastest-levenshtein';
 
-import { NEAR_MATCH_MIN_LENGTH } from '../s5/compare-exact';
+import { nearIdentifier } from '../s5/compare-exact';
 import { dedupKey, type AssetKeyFn } from './dedup-key';
 
 export const CONFLICT_CONFIDENCE = 0.8;
@@ -83,8 +82,8 @@ function isCodeLeaf(path: string): boolean {
 }
 
 /**
- * S2-R18b (D-43): trong một nhóm trùng, lá mã/số mà ≥ 2 bản ghi giống nhau và đúng 1 bản lệch đúng 1 ký tự
- * (độ dài ≥ NEAR_MATCH_MIN_LENGTH) là lệch do đọc sai, không phải 2 nội dung khác nhau → không tính xung đột.
+ * S2-R18b (D-43): trong một nhóm trùng, lá mã/số mà ≥ 2 bản ghi giống nhau và đúng 1 bản lệch một lỗi
+ * (`nearIdentifier`: 1 ký tự hoặc đảo 2 ký tự liền nhau, D-118; độ dài ≥ 6) là lệch do đọc sai, không phải 2 nội dung khác nhau → không tính xung đột.
  */
 function ocrVariantLeaves(memberLeaves: ReadonlyArray<Map<string, unknown>>, paths: Iterable<string>): Set<string> {
   const out = new Set<string>();
@@ -99,7 +98,7 @@ function ocrVariantLeaves(memberLeaves: ReadonlyArray<Map<string, unknown>>, pat
     }
     if (counts.size !== 2) continue;
     const [[a, na], [b, nb]] = [...counts.entries()].sort((x, y) => y[1] - x[1]);
-    if (na >= 2 && nb === 1 && a.length >= NEAR_MATCH_MIN_LENGTH && b.length >= NEAR_MATCH_MIN_LENGTH && distance(a, b) === 1) out.add(path);
+    if (na >= 2 && nb === 1 && nearIdentifier(a, b)) out.add(path);
   }
   return out;
 }

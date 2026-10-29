@@ -2,7 +2,7 @@
 // Hàm thuần, tất định. Chỉ ghi mức so sánh, không ghi giá trị (FS-R13). Xe vẫn theo luật gần đúng S3-R15(2).
 import { normIdNumber, normKey } from '../../common/normalize';
 import type { DocumentParty } from '../../s2/common-schema';
-import { NEAR_MATCH_MIN_LENGTH } from '../../s5/compare-exact';
+import { nearIdentifier } from '../../s5/compare-exact';
 import { ownedAssetIndex, personsOfParty } from '../asset-attrs';
 import type { Descriptor } from '../asset-group';
 import type { Evidence } from '../types';
@@ -24,19 +24,6 @@ export type AssetScorer = (a: Descriptor, b: Descriptor) => AssetFsVerdict | nul
 const isProperty = (t: string) => t === 'real_estate' || t === 'apartment';
 const ROLES_OWNING: ReadonlySet<string> = new Set(['OWNER', 'COLLATERAL_OWNER']);
 
-/** Optimal string alignment: thêm / bớt / thay 1 ký tự, hoặc đảo 2 ký tự liền nhau đều tính 1 (`AA08798136` ↔ `AA07898136`). */
-export function osaDistance(a: string, b: string): number {
-  const d = Array.from({ length: a.length + 1 }, (_, i) => Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
-      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
-    }
-  }
-  return d[a.length][b.length];
-}
-
 const norm = (s: string | null | undefined) => (s ?? '').normalize('NFC').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().toLocaleUpperCase('vi-VN');
 /** Phần số của số vào sổ, bỏ số 0 đầu: `CN 6475` ≡ `CS 06475` ở mức DIGITS_AGREE. */
 const bookDigits = (k: string) => k.replace(/\D+/g, '').replace(/^0+/, '');
@@ -45,7 +32,7 @@ function certLevel(a: string | null, b: string | null): AssetFsLevel<'certificat
   const ka = normKey(a); const kb = normKey(b);
   if (!ka || !kb) return 'MISSING';
   if (ka === kb) return 'AGREE';
-  return ka.length >= NEAR_MATCH_MIN_LENGTH && kb.length >= NEAR_MATCH_MIN_LENGTH && osaDistance(ka, kb) === 1 ? 'NEAR' : 'DISAGREE';
+  return nearIdentifier(ka, kb) ? 'NEAR' : 'DISAGREE';
 }
 
 function bookLevel(a: string | null, b: string | null): AssetFsLevel<'certificate_book_number'> {

@@ -3,7 +3,7 @@ import { distance } from 'fastest-levenshtein';
 
 import { normKey } from '../common/normalize';
 import type { AssetDescriptor, DocumentParty } from '../s2/common-schema';
-import { NEAR_MATCH_MIN_LENGTH } from '../s5/compare-exact';
+import { nearIdentifier } from '../s5/compare-exact';
 import { assetKeys, hasFullKey, plateKey } from './asset-key';
 import type { AssetFsVerdict, AssetScorer } from './fs/asset-score';
 import { confidenceOf, type Evidence } from './types';
@@ -28,7 +28,7 @@ export interface IdentifierConflict {
   values: string[];
   evidence_ids: string[];
   /**
-   * D-41 (S3-R15): ≥ 2 chứng từ ghi giống nhau, đúng 1 chứng từ lệch đúng 1 ký tự (mã dài ≥ 6) — nghi lỗi đọc.
+   * D-41 (S3-R15): ≥ 2 chứng từ ghi giống nhau, đúng 1 chứng từ lệch một lỗi (1 ký tự hoặc đảo 2 ký tự, D-118; mã dài ≥ 6) — nghi lỗi đọc.
    * Vẫn ghi nhận để S5 hiện "Gần khớp", nhưng không làm tài sản mất trạng thái CONFIRMED.
    */
   probable_ocr_error: boolean;
@@ -204,7 +204,7 @@ export function groupAssets(ds: Descriptor[], scorer?: AssetScorer): AssetGroup[
         const entries = [...seen.entries()];
         const [major, minor] = [...entries].sort((x, y) => y[1].evidence.size - x[1].evidence.size);
         const probable = entries.length === 2 && minor[1].evidence.size === 1 && major[1].evidence.size >= 2
-          && major[0].length >= NEAR_MATCH_MIN_LENGTH && minor[0].length >= NEAR_MATCH_MIN_LENGTH && distance(major[0], minor[0]) === 1
+          && nearIdentifier(major[0], minor[0])
           && !major[1].evidence.has([...minor[1].evidence][0]);
         identifier_conflicts.push({
           field: f,

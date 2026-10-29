@@ -276,4 +276,4 @@ descriptor cùng evidence) áp cho cạnh FS như cạnh gần đúng.
 ### 9.4 Chưa kiểm chứng
 
 - Tham số là giá trị chuyên gia, chưa đo trên bộ hồ sơ có nhãn tài sản; OQ-FS-02 (0 gộp nhầm) chưa chứng minh cho tài sản.
-- S3-R15(5) và S5 "Gần khớp" (D-41) vẫn dùng Levenshtein = 1: đảo 2 ký tự ở S5 vẫn là "Không khớp".
+- Từ D-118, S3-R15(5), S5 "Gần khớp" và sổ claim dùng cùng `nearIdentifier` (OSA = 1): khi ≥ 2 chứng từ ghi số đúng, chứng từ đảo 2 ký tự là nghi lỗi đọc và tài sản giữ `CONFIRMED` (D-41) dù cạnh FS là `POSSIBLE_MATCH`.
