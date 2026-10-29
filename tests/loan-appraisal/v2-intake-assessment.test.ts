@@ -3,36 +3,23 @@ import { buildIntakeAssessment, parseAcknowledgements, type IntakeAssessmentInpu
 import { criterionViews } from '@/app/loan-appraisal-v2/lib/intake-view';
 
 import { ev, ID_A12, loanApp } from '../loan-dossier/fixtures/dossier';
-import { runDossier } from '../loan-dossier/fixtures/master';
+import { runDossier } from '../loan-dossier/fixtures/dossier-run';
 
 const borrower = { party_role: 'BORROWER', full_name: 'NGUYỄN VĂN AN', id_number: ID_A12, date_of_birth: '1990-01-01' };
 const empty = (o: Partial<IntakeAssessmentInput> = {}): IntakeAssessmentInput => ({
   classify: { files: [], repeated_doc_types: [] } as never, evidences: [], s3: null,
-  checklist: { items: [], flow: 'FULL' } as never, crossCheck: { results: [] } as never, master: null, acknowledgements: [], ...o,
+  checklist: { items: [], flow: 'FULL' } as never, crossCheck: { results: [] } as never, acknowledgements: [], ...o,
 });
 const crit = (a: ReturnType<typeof buildIntakeAssessment>, no: number) => a.criteria[no - 1];
 
 async function dossier(dob = '1990-01-01') {
   const r = await runDossier([loanApp([borrower]), ev('id_card', { parties: [{ ...borrower, party_role: 'HOLDER', date_of_birth: dob }] })]);
   return (acks: Array<{ finding_code: string; reason: string }> = []) => buildIntakeAssessment({
-    classify: null, evidences: r.evidences, s3: r.s3.data, checklist: r.s4.data, crossCheck: r.s5.data, master: r.master, acknowledgements: acks,
+    classify: null, evidences: r.evidences, s3: r.s3.data, checklist: r.s4.data, crossCheck: r.s5.data, acknowledgements: acks,
   });
 }
 
 describe('4 tiêu chí tiếp nhận', () => {
-  it('D-61: bản trùng xung đột ở thông tin phụ (người ký) không thành điểm cần kiểm tra; họ tên chủ thể vẫn tính', () => {
-    const doc = (path: string) => ({
-      item_key: 'legal_id_card', doc_type_key: 'id_card', item_label: 'Căn cước công dân', doc_type_label: 'CCCD', person_id: null, asset_id: null,
-      fields: [{ status: 'CONFLICT', path }],
-    });
-    const run = (path: string) => buildIntakeAssessment(empty({ master: { documents: [doc(path)] } as never }));
-    expect(crit(run('data.legal_info.signatories[0].full_name'), 2).findings).toEqual([]);
-    expect(crit(run('data.legal_info.signatories[1].full_name'), 2).status).toBe('PASS');
-    const main = crit(run('data.parties[0].full_name'), 2);
-    expect(main.findings.map((f) => f.code)).toEqual(['COPY_CONFLICT:legal_id_card:dossier:data.parties[0].full_name']);
-    expect(main.status).toBe('NEEDS_EXPLANATION');
-  });
-
   it('luôn đủ 4 tiêu chí; tiêu chí 3 (LOS/Secure App) chưa áp dụng', () => {
     const a = buildIntakeAssessment(empty());
     expect(a.criteria.map((c) => [c.no, c.key])).toEqual([[1, 'DOCUMENTS_COMPLETE'], [2, 'CONSISTENT_ACROSS_DOCUMENTS'], [3, 'SYSTEM_DATA_ACCURATE'], [4, 'READY_FOR_HANDOVER']]);
@@ -74,7 +61,7 @@ describe('4 tiêu chí tiếp nhận', () => {
       ev('id_card', { parties: [{ ...borrower, party_role: 'HOLDER', permanent_address: addr('Số 9, Xã B') }] }),
     ]);
     expect(r.s5.data!.results.find((x) => x.field_group === 'permanent_address')?.match_status).toBe('MISMATCH');
-    const a = buildIntakeAssessment({ classify: null, evidences: r.evidences, s3: r.s3.data, checklist: r.s4.data, crossCheck: r.s5.data, master: r.master, acknowledgements: [] });
+    const a = buildIntakeAssessment({ classify: null, evidences: r.evidences, s3: r.s3.data, checklist: r.s4.data, crossCheck: r.s5.data, acknowledgements: [] });
     expect(crit(a, 2)).toMatchObject({ status: 'PASS', findings: [] });
   });
 

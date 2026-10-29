@@ -7,7 +7,7 @@ import type { DocumentParty } from '../s2/common-schema';
 import { splitJointOwner } from './split-names';
 import { confidenceOf, type Evidence, type OtherRoleDetail, type PartyRef, type Person, type Role } from './types';
 
-const ROLE_ORDER = ['BORROWER', 'CO_BORROWER', 'COLLATERAL_OWNER', 'SPOUSE', 'REFERENCE_PERSON'];
+const ROLE_ORDER = ['BORROWER', 'CO_BORROWER', 'COLLATERAL_OWNER', 'SPOUSE', 'LEGAL_REPRESENTATIVE', 'GUARANTOR', 'CAPITAL_MEMBER', 'REFERENCE_PERSON'];
 const MAIN_ROLES: Role[] = ['borrower', 'co_borrower', 'collateral_owner'];
 
 /** S3-R02: `party_role` → (Role, chi tiết `other`). */
@@ -18,6 +18,10 @@ export function mapRole(partyRole: string): { role: Role; detail: OtherRoleDetai
     case 'COLLATERAL_OWNER': return { role: 'collateral_owner', detail: null };
     case 'SPOUSE': return { role: 'other', detail: 'spouse' };
     case 'REFERENCE_PERSON': return { role: 'other', detail: 'reference_person' };
+    // Đơn vay SME (OQ-360-09, D-112): người đại diện, người bảo lãnh, thành viên góp vốn của khách vay pháp nhân.
+    case 'LEGAL_REPRESENTATIVE': return { role: 'other', detail: 'legal_representative' };
+    case 'GUARANTOR': return { role: 'other', detail: 'guarantor' };
+    case 'CAPITAL_MEMBER': return { role: 'other', detail: 'capital_member' };
     default: return { role: 'other', detail: 'unspecified' };
   }
 }

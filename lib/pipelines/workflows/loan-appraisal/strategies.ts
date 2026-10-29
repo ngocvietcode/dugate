@@ -177,7 +177,7 @@ export class HkdSecuredFinancialStrategy implements StageStrategy<{ inputs: Fina
   readonly strategyId = 'hkd-secured-v2:financial';
 
   /**
-   * `inputs` từ `financialInputsV3` (V2-R06). Đường đọc registry bằng regex của v2 cũ đã gỡ (D-99).
+   * `inputs` từ `financialInputsFromProfile` (hồ sơ 360, D-114).
    * skipCollateral: không đánh giá giá trị TSBĐ / LTV (NOT_APPLICABLE). Dùng khi S3 lỗi: TSBĐ được chọn theo
    * asset_registry của S3; không có S3 thì không biết tài sản nào là TSBĐ.
    */

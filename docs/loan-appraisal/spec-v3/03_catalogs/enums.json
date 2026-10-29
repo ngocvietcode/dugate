@@ -28,7 +28,10 @@
       "labor_contract",
       "salary_confirmation",
       "cic",
-      "credit_contract"
+      "credit_contract",
+      "vat_tax_return",
+      "balance_sheet",
+      "financial_performance_report"
     ],
     "RecognitionOnlyDocTypeKey": [
       "deposit_certificate",
@@ -40,9 +43,6 @@
       "business_account_ledger",
       "household_business_photo",
       "enterprise_registration_license",
-      "vat_tax_return",
-      "balance_sheet",
-      "financial_performance_report",
       "enterprise_photo",
       "board_meeting_minutes",
       "passport",
@@ -62,6 +62,8 @@
       "spouse",
       "reference_person",
       "guarantor",
+      "legal_representative",
+      "capital_member",
       "unspecified"
     ],
     "ChecklistGroup": [
@@ -144,6 +146,9 @@
       "REFERENCE_PERSON",
       "TAXPAYER",
       "LENDER",
+      "LEGAL_REPRESENTATIVE",
+      "GUARANTOR",
+      "CAPITAL_MEMBER",
       "OTHER"
     ],
     "IdType": [

@@ -70,13 +70,14 @@ describe('Business Operations rollout controls', () => {
     }, 'any')).toBe(true);
   });
 
-  it('keeps both route implementations wired while the server wrapper selects one', () => {
+  it('keeps request monitoring and the business dashboard on their dedicated routes', () => {
     const wrapper = readFileSync('app/operations/page.tsx', 'utf8');
     const business = readFileSync('app/operations/BusinessOperationsPage.tsx', 'utf8');
     const legacy = readFileSync('app/operations/LegacyOperationsPage.tsx', 'utf8');
 
-    expect(wrapper).toContain('selectOperationsDashboardVariant');
-    expect(wrapper).toContain('<BusinessOperationsPage />');
+    const dashboardRoute = readFileSync('app/operations/dashboard/page.tsx', 'utf8');
+    expect(dashboardRoute).toContain('BusinessOperationsPage');
+    expect(dashboardRoute).toContain('<BusinessOperationsPage />');
     expect(wrapper).toContain('<LegacyOperationsPage />');
     expect(business).toContain('useBusinessOperationsDashboard');
     expect(legacy).toContain('useOperationsList');

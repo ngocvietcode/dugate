@@ -130,6 +130,15 @@ describe('parse với LAC (LAC-R13)', () => {
     expect(r).toMatchObject({ result: 'REVIEW', reason_code: 'PROMPT_CHECK_DECLARED_ONLY' });
   });
 
+  it('D-112: PASS dẫn DECLARED kèm một dữ kiện CORROBORATED không liên quan → vẫn REVIEW / PROMPT_CHECK_DECLARED_ONLY', () => {
+    const s = setup([app(500_000_000), idCard()], { input: ['lac.loan', 'lac.person'] });
+    const { outcome } = build(s.lac, s, 'on');
+    const declared = codeOf(outcome!, s.lac, (f) => f.field === 'loan_info.bank_proposed_amount');
+    const other = codeOf(outcome!, s.lac, (f) => f.trust === 'CORROBORATED' && f.review === 'ACCEPTED' && f.field.endsWith('full_name'));
+    const [r] = parsePromptCheckResults(answer([declared, other]), s.checkSet, s.evidence, undefined, { render: outcome!.render!, lac: s.lac });
+    expect(r).toMatchObject({ result: 'REVIEW', reason_code: 'PROMPT_CHECK_DECLARED_ONLY' });
+  });
+
   it('AC-6: rule khai allow_declared_pass → PASS trên dữ kiện DECLARED', () => {
     const s = setup([app(500_000_000), idCard()], { allow_declared_pass: true });
     const { outcome } = build(s.lac, s, 'on');

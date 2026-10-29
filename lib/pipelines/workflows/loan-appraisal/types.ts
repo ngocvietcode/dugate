@@ -8,9 +8,9 @@ import type {
 } from '../prompts/loan-appraisal-prompts';
 import type { CheckChecklistData, CrossCheckData, MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
 import type { ClassifyData } from '@/lib/loan-dossier/contracts/stage-result';
-import type { MasterDossier } from '@/lib/loan-dossier/contracts/master-dossier';
-import type { StoredClaims } from '@/lib/loan-dossier/graph/claims-store';
 import type { DossierGraphView } from '@/lib/loan-dossier/graph/view-contract';
+import type { FsShadowSummary } from '@/lib/loan-dossier/s3/fs/shadow';
+import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
 import type { IntakeAssessment } from './intake-assessment';
 import type { DossierPrecheck } from './dossier-precheck';
 import type { ReproducibilitySnapshot } from './reproducibility';
@@ -339,16 +339,21 @@ export interface DossierOutputV3 {
    */
   dossier_graph?: DossierGraphView | null;
   /**
-   * Claim ĐÁNG CHÚ Ý (đồng thuận, tranh chấp, nghi lỗi đọc, cách viết khác, chưa gắn chủ thể) kèm nguồn từng claim. CÓ GIÁ TRỊ (có thể là PII).
-   * Claim thường (đơn vay khai, một nguồn) không lưu: còn nguyên ở documents.evidences[].data, dựng lại bằng buildClaimLedger.
-   * leaf_count = lá đã lưu + omitted_leaves (bất biến lossless). Không có ở kết quả cũ hoặc khi S3 lỗi.
+   * D-114: hồ sơ 360 — NGUỒN SỰ THẬT DUY NHẤT của hồ sơ (đề nghị vay → khách hàng → nguồn trả nợ → nghĩa vụ → TSBĐ, mâu thuẫn, vấn đề,
+   * số cho stage 2). CÓ GIÁ TRỊ (PII), cùng mức với `customer_360`. Mỗi trường dẫn về fact LAC (`fact_ids`). null khi S3 hoặc LAC lỗi; vắng ở kết quả giai đoạn 1.
+   * Thay `claims` (sổ Claim đáng chú ý) đã gỡ: mâu thuẫn nằm ở `profile_360.conflicts`, tính trên LAC (bỏ bản bị thay thế).
    */
-  claims?: StoredClaims | null;
+  profile_360?: Profile360 | null;
   /**
    * D-103 (LAC-R18): tóm tắt Loan Application Context của lần chạy — chỉ số đếm và mã, KHÔNG có giá trị dữ kiện. LAC đầy đủ
    * không lưu: dựng lại được từ documents.evidences + S3 (`source_hash` để đối chiếu). Vắng khi lac_mode = off hoặc kết quả cũ.
    */
   loan_application_context_summary?: LoanApplicationContextSummary | null;
+  /**
+   * D-109 (FS-R08): so khớp party của bộ chấm Fellegi-Sunter với luật S3 khi `s3_matcher = shadow` — chỉ số đếm, không giá trị.
+   * Vắng khi `s3_matcher = rules` (mặc định), catalog tham số hỏng, hoặc kết quả cũ.
+   */
+  s3_matcher_summary?: S3MatcherSummary | null;
   /** S4. `items` rỗng khi S4 FAILED (VD flow sai). */
   checklist: {
     status: string;
@@ -384,6 +389,8 @@ export interface LoanApplicationContextSummary {
   gaps: Array<{ code: string; count: number }>;
 }
 
+export type S3MatcherSummary = { mode: 'shadow' } & FsShadowSummary;
+
 export interface AppraisalResultV2 extends DossierOutputV3 {
   risk_notes: string[];
   output_version: typeof LOAN_APPRAISAL_OUTPUT_VERSION;
@@ -396,8 +403,6 @@ export interface AppraisalResultV2 extends DossierOutputV3 {
    */
   system_notes?: string[];
   config_snapshot: LoanConfigSnapshot;
-  /** Master data chuẩn hóa theo checklist (master_dossier.md); null khi không dựng được (MD-AC12). */
-  master_dossier?: MasterDossier | null;
   /** Kết quả tiếp nhận theo 4 tiêu chí của Sale (D-47). */
   intake_assessment?: IntakeAssessment;
   /** Kiểm tra sơ bộ bằng LLM ngay sau S1 (D-73); null khi chưa có (kết quả cũ). */

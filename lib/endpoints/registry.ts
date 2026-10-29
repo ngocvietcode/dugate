@@ -963,7 +963,6 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
           'policy_checks ({{checks}}, {{evidence}}, {{financial}}, {{master_data}}, {{output_schema}}; model/reasoning mặc định lấy của evaluate), ' +
           'dossier_summary ({{dossier}}, {{review}}, {{output_schema}}; tổng kết tóm tắt hồ sơ, model/reasoning mặc định lấy của evaluate), ' +
           'dossier_precheck ({{checklist}}, {{documents}}, {{output_schema}}; kiểm tra sơ bộ checklist và quan hệ giữa các chứng từ ngay sau phân loại, dựa trên summary/key_facts của S1, model/reasoning mặc định lấy của evaluate), ' +
-          'master_correction ({{proposals}}, {{output_schema}}; chọn giá trị đúng trong các giá trị đã đọc cho trường xung đột của master_dossier, model/reasoning mặc định lấy của evaluate), ' +
           'income_source_classify ({{sources}}, {{output_schema}}; S4 phân loại nguồn thu cho điều kiện checklist, model/reasoning mặc định lấy của evaluate), ' +
           'loan_purpose_classify ({{purposes}}, {{output_schema}}; S4 trả lời YES/NO về mục đích vay cho điều kiện checklist, model/reasoning mặc định lấy của evaluate). ' +
           'Mọi prompt luôn được thêm đoạn chống prompt injection; override thiếu placeholder dữ liệu bắt buộc sẽ được tự nối vào cuối. ' +
@@ -1008,18 +1007,28 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
               'false: chỉ dùng tổng kết bằng quy tắc, không gọi LLM. LLM lỗi hoặc trả sai định dạng thì tự dùng tổng kết bằng quy tắc.',
             default: true,
           },
-          master_correction: {
-            type: 'boolean',
-            description: 'true (mặc định): sau khi dựng master_dossier (cùng lúc với S3–S5: giai đoạn 2, hoặc giai đoạn 1 nếu intake_run_consolidate = true), một lần gọi LLM (step key master_correction) chọn giá trị đúng trong các giá trị đã đọc ' +
-              'cho trường định danh / tên / ngày bị xung đột khi đủ căn cứ (đa số tuyệt đối từ ≥ 2 chứng từ, lệch 1–2 ký tự, các bản lệch chỉ ở một loại tài liệu). ' +
-              'Trường được chọn có status = CORRECTED, review_status = REVIEW, vẫn giữ các giá trị đã đọc ở candidates. LLM chỉ chọn, không tạo giá trị mới. ' +
-              'false: không gọi LLM, trường giữ CONFLICT. LLM lỗi hoặc trả sai định dạng thì không hiệu chỉnh trường nào.',
-            default: true,
-          },
           acknowledgements: {
             type: 'string',
             description: 'Giải trình cho các điểm của intake_assessment khi chạy lại hồ sơ: JSON [{ "finding_code": "...", "reason": "..." }] ' +
               '(tối đa 200 mục, lý do ≤ 500 ký tự). Mã lấy từ intake_assessment.criteria[].findings[].code của lần chạy trước; thiếu chứng từ bắt buộc không giải trình được.',
+          },
+          lac_mode: {
+            type: 'string',
+            description: 'Loan Application Context (D-103) cho rule LLM (stage 3): "off" (mặc định) chạy như cũ; ' +
+              '"shadow" dựng ngữ cảnh đơn vay chỉ để thống kê (loan_application_context_summary, content_preview.lac), không đổi prompt; ' +
+              '"on" prompt rule LLM dùng {{context}} (dữ kiện mã F<n> có trạng thái tin cậy, mâu thuẫn, khoảng trống) thay cho {{master_data}} + {{evidence}}, ' +
+              'kèm rào hạ PASS khi dữ kiện bị tranh chấp hoặc chỉ dựa trên lời khai (allow_declared_pass của từng rule). ' +
+              'Dựng ngữ cảnh lỗi thì tự chạy đường cũ và ghi cảnh báo. Giá trị khác coi như "off".',
+            options: ['off', 'shadow', 'on'],
+            default: 'off',
+          },
+          s3_matcher: {
+            type: 'string',
+            description: 'Cách ghép người trên chứng từ (D-109): "rules" (mặc định) theo luật số định danh rồi tên; ' +
+              '"shadow" chạy thêm bộ chấm Fellegi-Sunter chỉ để thống kê khác biệt (s3_matcher_summary, chỉ số đếm), không đổi kết quả. ' +
+              'Giá trị khác coi như "rules".',
+            options: ['rules', 'shadow'],
+            default: 'rules',
           },
           loan_product_config: {
             type: 'object',

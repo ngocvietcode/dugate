@@ -2,6 +2,7 @@
 import { buildLoanApplicationContext } from '@/lib/loan-dossier/context/build';
 import { renderLoanApplicationContext } from '@/lib/loan-dossier/context/render';
 import { lacScopeFromInputs } from '@/lib/loan-dossier/context/scope';
+import { buildProfile360 } from '@/lib/loan-dossier/profile360/build';
 import { runMapDossier } from '@/lib/loan-dossier/s3/run';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 
@@ -96,5 +97,40 @@ describe('render', () => {
     // eslint-disable-next-line no-console
     if (process.env.LAC_PRINT) console.log(all.text);
     expect(all.stats.chars).toBe(all.text.length);
+  });
+});
+
+// D-114: có hồ sơ 360 thì nguồn thu / hộ kinh doanh render theo đơn vị (inc-n, biz-n), không làm phẳng, không có `business-1`.
+describe('render theo hồ sơ 360 (D-114)', () => {
+  const row = (i: number, income_type: string, monthly_amount: number) => ({
+    source_index: i, party_index: 0, income_type, source_label_raw: null, monthly_amount, frequency_raw: null,
+    salary: null, rental: null, household_business: null, trip_trading: null, enterprise: null,
+  });
+  const setup = () => {
+    const a = loanApp([borrower]);
+    a.data!.business_info = { business_name: 'Tạp hóa An', business_line: 'Bán lẻ', business_address: null, tax_id: null, registration_number: '01A8001234' };
+    const statement = ev('income_statement', { parties: [{ ...borrower, party_role: 'BORROWER' }], data: { income_sources: [row(0, 'salary', 20_000_000), row(1, 'rental', 5_000_000), row(2, 'other', 5_000_000)], assets: [] } });
+    const evidences = [a, statement];
+    const s3 = runMapDossier({ evidences, dossier_submitted_at: '2026-10-14' }).data;
+    const lac = buildLoanApplicationContext({ product_code: 'hkd-loan', flow: 'FULL', evidences, s3, s3_status: 'SUCCESS' });
+    return { lac, profile: buildProfile360({ evidences, s3, lac, segment: 'HKD' }) };
+  };
+
+  it('mỗi luồng thu nhập một dòng, dẫn đúng lá của dòng đó; không còn fact phẳng income_sources và mục business-1', () => {
+    const { lac, profile } = setup();
+    const r = renderLoanApplicationContext(lac, lacScopeFromInputs([[]]), undefined, profile);
+    const lines = r.text.split('\n').filter((l) => l.startsWith('- inc-'));
+    expect(lines).toHaveLength(3);
+    const code = lines[0].match(/\[(F\d+)\]/)![1];
+    expect(r.refIndex.get(code)).toEqual([expect.stringMatching(/#income_sources\[0\]\.monthly_amount$/)]);
+    expect(r.text).not.toContain('HOẠT ĐỘNG KINH DOANH');
+    expect(r.text).toContain('HỘ KINH DOANH');
+    const flat = [...r.factIndex].filter(([, id]) => lac.facts.find((f) => f.fact_id === id)!.field.startsWith('income_sources[]')).map(([c]) => c);
+    for (const c of flat) expect(r.text.split('\n').filter((l) => new RegExp(`^${c} `).test(l))).toEqual([]);
+  });
+
+  it('không có hồ sơ 360: render như trước (có mục HOẠT ĐỘNG KINH DOANH)', () => {
+    const { lac } = setup();
+    expect(renderLoanApplicationContext(lac, lacScopeFromInputs([[]])).text).toContain('HOẠT ĐỘNG KINH DOANH');
   });
 });

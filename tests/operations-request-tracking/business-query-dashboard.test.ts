@@ -100,8 +100,10 @@ const populatedDashboardRow = {
     costUsd: '12.34',
     averageTokensPerBusinessOperation: 1750,
     averageDurationSeconds: 30.5,
-    maxDurationOperationIdentifier: 'CASE-2',
-    maxTokenOperationIdentifier: 'CASE-1',
+    maxDurationOperation: { identifier: 'CASE-2', normalizedReference: 'case-2', profileScopeId: 'profile-a', standaloneRequestId: '' },
+    maxTokenOperation: { identifier: 'CASE-1', normalizedReference: 'case-1', profileScopeId: 'profile-a', standaloneRequestId: '' },
+    maxDurationSeconds: 42,
+    maxTokenCount: 2500,
     unpricedRequestCount: 1,
     costIncomplete: true,
   }],
@@ -182,6 +184,7 @@ describe('atomic Business Operations dashboard query', () => {
       preset: 'today',
     });
     expect(response.appliedFilter).toEqual({
+      sort: 'recent',
       range: 'today',
       profile: 'profile-a',
       operationType: 'workflows:payroll',
@@ -193,9 +196,14 @@ describe('atomic Business Operations dashboard query', () => {
       ...populatedDashboardRow.summary,
       totalCostUsd: '12.3400000000',
     });
+    const { maxDurationOperation, maxTokenOperation, ...card } = populatedDashboardRow.breakdownCards[0];
     expect(response.breakdownCards).toEqual([{
-      ...populatedDashboardRow.breakdownCards[0],
+      ...card,
       costUsd: '12.3400000000',
+      maxDurationOperationIdentifier: maxDurationOperation.identifier,
+      maxTokenOperationIdentifier: maxTokenOperation.identifier,
+      maxDurationOperationToken: expect.stringMatching(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/),
+      maxTokenOperationToken: expect.stringMatching(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/),
     }]);
     expect(response.trend.points).toEqual(populatedDashboardRow.trendPoints);
     expect(response.list).toMatchObject({ page: 2, pageSize: 50, total: 51, totalPages: 2 });
@@ -240,7 +248,7 @@ describe('atomic Business Operations dashboard query', () => {
       'CASE-9',
     ]));
     expect(projection.params.some((value) => (
-      value instanceof Date && value.getTime() === QUERY_TIMESTAMP.getTime()
+      value === QUERY_TIMESTAMP.toISOString()
     ))).toBe(true);
   });
 

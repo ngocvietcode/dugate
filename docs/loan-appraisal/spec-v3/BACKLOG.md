@@ -4,36 +4,47 @@
 > Theo dõi tiến độ ở `PLAN.md` (milestone) và `IMPLEMENT.md` (nhật ký); file này không lưu trạng thái.
 > Nền v2 (D-32): triển khai trong workflow `loan-appraisal` 8 stage — xem `cross_cutting/v2_integration.md`.
 
-Tổng: **121 task cần làm**, 19 lớp song song + 3 cổng cuối; 57 task không áp dụng trên nền v2 (cuối file).
+Tổng: **151 task cần làm**, 19 lớp song song + 3 cổng cuối; 57 task không áp dụng trên nền v2 (cuối file).
 
 Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đã xong mới làm. Trong cùng một lớp, các task độc lập — có thể giao song song.
 
-## Lớp 1 (5 task)
+## Lớp 1 (7 task)
 
 | Task | Tiêu đề | Phụ thuộc | Spec | Verify |
 |---|---|---|---|---|
+| T-360-01 | Nền: bất biến và hàm trust thuần | — | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/context-properties.test.ts` |
 | T-CAT-01 | Script đồng bộ catalog vào code | — | `cross_cutting/foundation.md` | `npm run sync:loan-catalogs && npx jest tests/loan-dossier/catalog-sync.test.ts` |
+| T-LAC-01 | Hợp đồng LAC | — | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-dossier/context-build.test.ts tests/loan-appraisal-v2` |
 | T-S1-03 | Chia batch PDF và ghép segment | — | `stages/S1_classify.md` | `npx jest tests/loan-dossier/s1-batching.test.ts` |
 | T-S2-03 | Chuẩn hóa giá trị | — | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/common-normalize.test.ts` |
 | T-S3-02 | Tách chủ sở hữu ghép | — | `stages/S3_map_dossier_roles.md` | `npx jest tests/loan-dossier/s3-split-names.test.ts` |
 | T-SEC-01 | Che dữ liệu (hàm thuần) | — | `cross_cutting/security.md` | `npx jest tests/loan-dossier/mask.test.ts` |
 
-## Lớp 2 (7 task)
+## Lớp 2 (9 task)
 
 | Task | Tiêu đề | Phụ thuộc | Spec | Verify |
 |---|---|---|---|---|
+| T-360-02 | Lớp 2 | T-360-01 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
 | T-CAT-02 | Bộ nạp catalog dùng chung | T-CAT-01 | `cross_cutting/foundation.md` | `npx jest tests/loan-dossier/catalog-index.test.ts` |
 | T-COM-01 | Chuẩn hóa và so khớp tên | T-S2-03 | `stages/S3_map_dossier_roles.md` | `npx jest tests/loan-dossier/common-name.test.ts` |
 | T-COM-02 | So khớp số định danh | T-S2-03 | `stages/S3_map_dossier_roles.md` | `npx jest tests/loan-dossier/common-id-number.test.ts` |
+| T-LAC-02 | Gộp chủ thể khoản vay và hộ kinh doanh | T-LAC-01 | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-dossier/context-build.test.ts` |
 | T-S2-06 | Khóa trùng (`dedup_key`) | T-S2-03 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-dedup-key.test.ts` |
 | T-S3-07 | Khóa và nối tài sản | T-S2-03 | `stages/S3_map_dossier_roles.md` | `npx jest tests/loan-dossier/s3-asset-key.test.ts` |
 | T-S4-02 | Hiệu lực chứng từ (hàm dùng chung S3/S4) | T-S2-03 | `stages/S4_check_checklist.md` | `npx jest tests/loan-dossier/common-validity.test.ts` |
 | T-S5-03 | So khớp `EXACT` | T-S2-03 | `stages/S5_cross_check_documents.md` | `npx jest tests/loan-dossier/s5-compare-exact.test.ts` |
 
-## Lớp 3 (10 task)
+## Lớp 3 (17 task)
 
 | Task | Tiêu đề | Phụ thuộc | Spec | Verify |
 |---|---|---|---|---|
+| T-360-03 | Tài chính đọc lớp 2 | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-appraisal/v2-financial-inputs.test.ts tests/loan-appraisal/segment-packs.test.ts` |
+| T-360-07 | P0: Hộ kinh doanh | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
+| T-360-10 | Catalog chính sách chọn giá trị | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
+| T-360-15 | P3: Địa chỉ | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
+| T-360-17 | P3: Giấy tờ định danh | T-360-02 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
+| T-FS-02 | Bộ so sánh và catalog tham số | T-COM-01, T-COM-02 | `cross_cutting/s3_fellegi_sunter.md` | `npx jest tests/loan-dossier/s3-fs-compare.test.ts` |
+| T-LAC-03 | Dữ kiện, trạng thái, mâu thuẫn, khoảng trống | T-LAC-02 | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-dossier/context-build.test.ts` |
 | T-S1-01 | Nhận dạng định dạng và `file_id` | T-CAT-02 | `stages/S1_classify.md` | `npx jest tests/loan-dossier/s1-file-id.test.ts` |
 | T-S1-02 | Bảng trạng thái file → mã lý do | T-CAT-02 | `stages/S1_classify.md` | `npx jest tests/loan-dossier/s1-file-status.test.ts` |
 | T-S2-01 | Nạp schema chứng từ (registry zod) | T-CAT-02 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-schema-registry.test.ts` |
@@ -45,10 +56,16 @@ Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đ�
 | T-S5-01 | Nạp và kiểm tra ma trận | T-CAT-02 | `stages/S5_cross_check_documents.md` | `npx jest tests/loan-dossier/s5-matrix.test.ts` |
 | T-S5-07 | Quy tắc số định danh và bản trùng | T-S5-03 | `stages/S5_cross_check_documents.md` | `npx jest tests/loan-dossier/s5-id-and-dup.test.ts` |
 
-## Lớp 4 (44 task)
+## Lớp 4 (52 task)
 
 | Task | Tiêu đề | Phụ thuộc | Spec | Verify |
 |---|---|---|---|---|
+| T-360-04 | Lưu và áp quyết định | T-360-03 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/context-resolutions.test.ts` |
+| T-360-08 | P1: Khóa mã số thuế, giao dịch, mặt bằng, nghĩa vụ | T-360-07 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-relations.test.ts` |
+| T-360-11 | P1: Nghĩa vụ nợ | T-360-10 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-obligations.test.ts` |
+| T-360-12 | P1: Nguồn thu | T-360-07, T-360-10 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
+| T-360-14 | P2: Định giá | T-360-10 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-valuations.test.ts` |
+| T-360-16 | P3: Hộ gia đình | T-360-15 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
 | T-CON-01 | Hợp đồng `StageResult` và `data` của S1, S2 | T-CAT-02, T-S2-02 | `04_data_model.md` | `npx jest tests/loan-dossier/contract-stage-result.test.ts` |
 | T-DOC-01 | Schema id_card | T-S2-02 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-schema-id_card.test.ts` |
 | T-DOC-02 | Schema vneid | T-S2-02 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-schema-vneid.test.ts` |
@@ -77,6 +94,8 @@ Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đ�
 | T-DOC-25 | Schema external_valuation_certificate | T-S2-02 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-schema-external_valuation_certificate.test.ts` |
 | T-DOC-26 | Schema cic | T-S2-02 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-schema-cic.test.ts` |
 | T-DOC-27 | Schema credit_contract | T-S2-02 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-schema-credit_contract.test.ts` |
+| T-FS-03 | Bộ chấm, quyết định và chế độ `s3_matcher` | T-FS-02 | `cross_cutting/s3_fellegi_sunter.md` | `npx jest tests/loan-dossier/s3-fs-score.test.ts tests/loan-dossier/s3-match-parties.test.ts` |
+| T-LAC-04 | Render và bảng mã | T-LAC-03 | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-dossier/context-render.test.ts` |
 | T-S1-04 | Hậu xử lý kết quả model | T-S1-02, T-CAT-02 | `stages/S1_classify.md` | `npx jest tests/loan-dossier/s1-postprocess.test.ts` |
 | T-S2-04 | Chủ sở hữu hiện tại trong 1 chứng từ | T-S2-02 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-current-owner.test.ts` |
 | T-S2-05 | Hạ confidence khi đọc nhầm trang | T-S2-02 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-page-guard.test.ts` |
@@ -94,11 +113,17 @@ Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đ�
 | T-S5-09 | Logic rule liên chứng từ | T-S5-01 | `stages/S5_cross_check_documents.md` | `npx jest tests/loan-dossier/s5-logic-rules.test.ts` |
 | T-TEST-01 | Bộ dựng fixture giả | T-S2-02 | `cross_cutting/test.md` | `npx jest tests/loan-dossier/fixtures-build.test.ts` |
 
-## Lớp 5 (8 task)
+## Lớp 5 (14 task)
 
 | Task | Tiêu đề | Phụ thuộc | Spec | Verify |
 |---|---|---|---|---|
+| T-360-05 | Tính lại | T-360-04 | `cross_cutting/loan_360.md` | `npx jest tests/loan-appraisal/recompute.test.ts` |
+| T-360-06 | Giao diện CO | T-360-04 | `cross_cutting/loan_360.md` | `npx jest tests/loan-appraisal-v2/co-resolution-view.test.ts` |
+| T-360-09 | P2: Doanh nghiệp (SME) | T-360-08 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360-sme.test.ts` |
+| T-360-18 | P3: Đối tác | T-360-08 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
 | T-CON-02 | Hợp đồng `data` của S3–S6 | T-CON-01 | `04_data_model.md` | `npx jest tests/loan-dossier/contract-check-stages.test.ts` |
+| T-FS-04 | Báo cáo shadow | T-FS-03 | `cross_cutting/s3_fellegi_sunter.md` | `npx jest tests/scripts/fs-shadow-report.test.ts` |
+| T-LAC-05 | Nối vào Rule LLM | T-LAC-04 | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-appraisal/prompt-checks-lac.test.ts tests/loan-appraisal/lac-mode-param.test.ts` |
 | T-S1-05 | Tín hiệu nghi trùng mức loại | T-S1-04 | `stages/S1_classify.md` | `npx jest tests/loan-dossier/s1-repeated.test.ts` |
 | T-S1-06 | Cổng gọi model phân loại | T-S1-03, T-S1-04 | `stages/S1_classify.md` | `npx jest tests/loan-dossier/s1-classifier-port.test.ts` |
 | T-S2-09 | Lắp ráp stage S2 | T-S2-04, T-S2-05, T-S2-07, T-S2-08, T-S2-10 | `stages/S2_extract_evidence.md` | `npx jest tests/loan-dossier/s2-run.test.ts` |
@@ -107,19 +132,24 @@ Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đ�
 | T-S5-08 | Dòng từ `identifier_conflicts` | T-S5-02 | `stages/S5_cross_check_documents.md` | `npx jest tests/loan-dossier/s5-identifier-conflicts.test.ts` |
 | T-V2-10 | Bảng ánh xạ và bộ chấm UAT | T-CAT-02, T-S2-10 | `cross_cutting/v2_integration.md` | `npx jest tests/loan-appraisal/v2-uat-map.test.ts` |
 
-## Lớp 6 (4 task)
+## Lớp 6 (8 task)
 
 | Task | Tiêu đề | Phụ thuộc | Spec | Verify |
 |---|---|---|---|---|
+| T-360-13 | P2: Giao dịch mua | T-360-18 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
+| T-FS-06 | Đánh giá và bật `fs` | T-FS-04 | `cross_cutting/s3_fellegi_sunter.md` | `npx jest tests/scripts/fs-estimate-params.test.ts tests/loan-dossier/s3-fs-compare.test.ts tests/loan-dossier/s3-fs-score.test.ts` |
+| T-LAC-06 | Lưu trữ, an toàn, tài liệu | T-LAC-05 | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-appraisal/lac-pii.test.ts` |
+| T-LAC-07 | Đo trên UAT và quyết định bật | T-LAC-05 | `cross_cutting/loan_application_context.md` | `npx jest tests/scripts/lac-compare.test.ts` |
 | T-S1-07 | Lắp ráp stage S1 | T-S1-01, T-S1-02, T-S1-04, T-S1-05, T-S1-06 | `stages/S1_classify.md` | `npx jest tests/loan-dossier/s1-run.test.ts` |
 | T-S3-04 | Ghép party chứng từ khác theo số, rồi theo tên | T-S3-03 | `stages/S3_map_dossier_roles.md` | `npx jest tests/loan-dossier/s3-match-parties.test.ts` |
 | T-S4-07 | Quyết định trạng thái dòng | T-S4-02, T-S4-05, T-S4-06 | `stages/S4_check_checklist.md` | `npx jest tests/loan-dossier/s4-row-status.test.ts` |
 | T-S5-10 | Lắp ráp stage S5 | T-S5-04, T-S5-05, T-S5-06, T-S5-07, T-S5-08, T-S5-09 | `stages/S5_cross_check_documents.md` | `npx jest tests/loan-dossier/s5-run.test.ts` |
 
-## Lớp 7 (7 task)
+## Lớp 7 (8 task)
 
 | Task | Tiêu đề | Phụ thuộc | Spec | Verify |
 |---|---|---|---|---|
+| T-FS-01 | Vá S3: không ghép theo tên khi số và ngày sinh cùng khác | T-S3-04 | `cross_cutting/s3_fellegi_sunter.md` | `npx jest tests/loan-dossier/s3-match-parties.test.ts` |
 | T-S1-08 | Tóm tắt và `key_facts` theo danh mục cố định | T-S1-04, T-S1-06, T-S1-07 | `stages/S1_classify.md` | `npx jest tests/loan-dossier/s1- tests/loan-dossier/contract-stage-result.test.ts` |
 | T-S3-05 | Dựng `unmapped_evidences` | T-S3-04 | `stages/S3_map_dossier_roles.md` | `npx jest tests/loan-dossier/s3-unmapped.test.ts` |
 | T-S3-06 | Số định danh hiện tại / lịch sử / kiểm tra | T-S3-04, T-COM-02 | `stages/S3_map_dossier_roles.md` | `npx jest tests/loan-dossier/s3-id-check.test.ts` |

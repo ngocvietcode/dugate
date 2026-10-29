@@ -3,6 +3,7 @@
 import { createHash } from 'crypto';
 
 import { docTypeByKey } from '../catalog';
+import { isDeclaredDocType } from '../catalog/declared';
 import { fieldLabel } from '../catalog/field-labels';
 import type { MapDossierData } from '../contracts/check-stages';
 import { buildClaimLedger, type Claim } from '../graph/claims';
@@ -120,17 +121,27 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
   ordered.forEach((d, i) => d.claimIds.forEach((cid) => factIdOfClaim.set(cid, `fact-${i + 1}`)));
 
   // ── Trust + review (LAC-R05, R06) ──
+  const liveSourcesOf = (d: Draft) => d.sources.filter((s) => !superseded.has(evidenceIdOf(s.record_id)));
+  const draftOfClaim = new Map<string, Draft>();
+  for (const d of drafts) for (const cid of d.claimIds) draftOfClaim.set(cid, d);
   const facts: LacFact[] = ordered.map((d, i) => {
-    const live = d.sources.filter((s) => !superseded.has(evidenceIdOf(s.record_id)));
-    const docs = new Set(live.map((s) => evidenceIdOf(s.record_id)));
+    const live = liveSourcesOf(d);
+    // D-112: xác nhận độc lập đếm theo LOẠI chứng từ; hai bản chụp của cùng một CCCD không phải hai nguồn.
+    const docTypes = new Set(live.map((s) => s.doc_type_key));
+    // Sổ Claim không loại bản bị thay thế: mâu thuẫn mà mọi bên đối lập đều chỉ còn nguồn đã bị thay thế thì không còn (LAC-R05),
+    // fact tính lại trust trên nguồn còn hiệu lực thay vì kẹt ở DISPUTED mà không có MÂU THUẪN nào giải thích.
+    const contested = d.status === 'DISPUTED' || d.status === 'PROBABLE_OCR_ERROR';
+    const opponentsGone = contested && d.contradictsClaims.every((cid) => { const o = draftOfClaim.get(cid); return !o || o === d || liveSourcesOf(o).length === 0; });
     let trust: LacTrust;
     if (live.length === 0) trust = 'SUPERSEDED';
-    else if (d.status === 'DISPUTED' || d.status === 'PROBABLE_OCR_ERROR' || d.status === 'SPELLING_VARIANT') trust = d.status;
-    else if (docs.size >= 2) trust = 'CORROBORATED';
-    else trust = live.every((s) => s.doc_type_key === 'loan_application') ? 'DECLARED' : 'SINGLE_SOURCE';
+    else if (contested && !opponentsGone) trust = d.status as LacTrust;
+    else if (d.status === 'SPELLING_VARIANT') trust = d.status;
+    // Chỉ có lời khai của khách hàng (đơn vay, bảng kê…) thì vẫn là DECLARED dù có nhiều bản / nhiều loại lời khai (D-114).
+    else if (live.every((s) => isDeclaredDocType(s.doc_type_key))) trust = 'DECLARED';
+    else trust = docTypes.size >= 2 ? 'CORROBORATED' : 'SINGLE_SOURCE';
     const judged = live.length > 0 ? live : d.sources;
     const review = judged.every((s) => typeof s.read_confidence === 'number' && s.read_confidence >= LAC_ACCEPT_CONFIDENCE) ? 'ACCEPTED' : 'REVIEW';
-    const contradicts = [...new Set(d.contradictsClaims.map((cid) => factIdOfClaim.get(cid)).filter((x): x is string => !!x && x !== `fact-${i + 1}`))];
+    const contradicts = opponentsGone ? [] : [...new Set(d.contradictsClaims.map((cid) => factIdOfClaim.get(cid)).filter((x): x is string => !!x && x !== `fact-${i + 1}`))];
     return {
       fact_id: `fact-${i + 1}`, subject_id: d.subject_id, field: d.field, label: d.label, value: d.value, value_kind: d.value_kind,
       trust, review, sources: d.sources, contradicts, hidden: d.hidden,

@@ -1,7 +1,6 @@
 // Client-side mirror of the Loan Appraisal public contract (output 3.0, spec-v3).
 // Phần hồ sơ (documents/customer_360/checklist/cross_check) dùng thẳng kiểu của backend (type-only import).
 import type { DossierOutputV3, LoanApplicationContextSummary } from '@/lib/pipelines/workflows/loan-appraisal/types';
-import type { MasterDossier } from '@/lib/loan-dossier/contracts/master-dossier';
 import type { IntakeAssessment } from '@/lib/pipelines/workflows/loan-appraisal/intake-assessment';
 import type { DossierPrecheck } from '@/lib/pipelines/workflows/loan-appraisal/dossier-precheck';
 
@@ -349,8 +348,8 @@ export interface AppraisalResult {
   customer_360: DossierOutputV3['customer_360'];
   /** Quan hệ người – tài sản – chứng từ dạng nodes + edges (id và nhãn, không PII). Không có ở kết quả cũ. */
   dossier_graph?: DossierOutputV3['dossier_graph'];
-  /** Claim đáng chú ý kèm nguồn (có giá trị). Không có ở kết quả cũ. */
-  claims?: DossierOutputV3['claims'];
+  /** Hồ sơ 360 — nguồn sự thật duy nhất của giao diện Customer 360 (D-114). null khi S3 / LAC lỗi; vắng ở kết quả trước D-114. */
+  profile_360?: DossierOutputV3['profile_360'];
   /** S4: checklist 46 mục theo nhóm. */
   checklist: DossierOutputV3['checklist'];
   completeness_percent: number;
@@ -364,8 +363,6 @@ export interface AppraisalResult {
   workflow_version?: string;
   processing_status?: 'COMPLETE' | 'PARTIAL' | 'REVIEW_REQUIRED' | 'BLOCKED';
   config_snapshot?: LoanConfigSnapshot;
-  /** Master data chuẩn hóa theo checklist (master_dossier.md, MD-R14). */
-  master_dossier?: MasterDossier | null;
   /** 4 tiêu chí tiếp nhận (D-47). */
   intake_assessment?: IntakeAssessment;
   /** D-73: kiểm tra sơ bộ checklist + quan hệ hồ sơ bằng LLM ngay sau S1 (nháp). */

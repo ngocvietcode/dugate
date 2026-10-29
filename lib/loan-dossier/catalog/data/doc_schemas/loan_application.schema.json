@@ -58,7 +58,7 @@
         { "$ref": "_common.schema.json#/$defs/DocumentParty" },
         {
           "properties": {
-            "party_role": { "enum": ["BORROWER", "CO_BORROWER", "SPOUSE", "COLLATERAL_OWNER", "REFERENCE_PERSON"] },
+            "party_role": { "enum": ["BORROWER", "CO_BORROWER", "SPOUSE", "COLLATERAL_OWNER", "REFERENCE_PERSON", "LEGAL_REPRESENTATIVE", "GUARANTOR", "CAPITAL_MEMBER"] },
             "ownership": { "type": "null" }
           }
         }

@@ -4,6 +4,7 @@
 // Hàm thuần, tất định, không log. Claim MANG GIÁ TRỊ (có thể là PII): chỉ dùng cho UI / lưu DB / LLM, không bao giờ vào log (S3-R26).
 import { distance } from 'fastest-levenshtein';
 
+import { isDeclaredDocType } from '../catalog/declared';
 import { isNameMatch, nameLevel, normalizeName, stripDiacritics } from '../common/name';
 import { normDate, normIdNumber, normKey, normMoney, normName } from '../common/normalize';
 import type { MapDossierData } from '../contracts/check-stages';
@@ -296,9 +297,10 @@ export function buildClaimLedger(evidences: ReadonlyArray<EvidenceEnvelope>, map
     if (c.status === 'SINGLE_SOURCE' || c.status === 'DISPUTED' || c.status === 'PROBABLE_OCR_ERROR' || c.status === 'SPELLING_VARIANT') {
       if (c.contradicts.length > 0 || c.status === 'SPELLING_VARIANT') continue;
     }
-    const docs = new Set(c.sources.map((s) => s.evidence_id));
-    const declared = c.sources.every((s) => s.doc_type_key === 'loan_application');
-    c.status = docs.size >= 2 ? 'CORROBORATED' : declared ? 'DECLARED' : 'SINGLE_SOURCE';
+    // D-112: cùng quy tắc với LAC — xác nhận độc lập cần ≥ 2 LOẠI chứng từ; nhiều bản của cùng một loại (kể cả đơn vay) không tính.
+    const docTypes = new Set(c.sources.map((s) => s.doc_type_key));
+    const declared = c.sources.every((s) => isDeclaredDocType(s.doc_type_key));
+    c.status = docTypes.size >= 2 ? 'CORROBORATED' : declared ? 'DECLARED' : 'SINGLE_SOURCE';
   }
   return { claims, leaf_count: leafCount, unresolved_count: unresolvedCount };
 }

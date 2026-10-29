@@ -69,8 +69,6 @@ import {
 import { createDossierPorts } from './loan-appraisal/stage-adapters';
 import { runMapStage } from './loan-appraisal/dossier-map';
 import { buildDossierGraph, toDossierGraphView, type DossierGraph } from '@/lib/loan-dossier/graph';
-import { buildClaimLedger } from '@/lib/loan-dossier/graph/claims';
-import { selectNotableClaims } from '@/lib/loan-dossier/graph/claims-store';
 import { resolveLoanProductPolicy, snapshotPolicy } from './loan-appraisal/product-policy';
 import { buildReproducibilitySnapshot } from './loan-appraisal/reproducibility';
 import { resolveLoanConfig, LOAN_PRODUCT_CONFIG_PARAM } from './loan-appraisal/product-config';
@@ -88,7 +86,10 @@ import { buildLoanApplicationContext } from '@/lib/loan-dossier/context/build';
 import { renderLoanApplicationContext } from '@/lib/loan-dossier/context/render';
 import type { LoanApplicationContext } from '@/lib/loan-dossier/context/schema';
 import { lacScopeFromInputs } from '@/lib/loan-dossier/context/scope';
+import { buildProfile360 } from '@/lib/loan-dossier/profile360/build';
+import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
 import { packForProduct } from './loan-appraisal/segment-packs/registry';
+import { consolidateParams } from './loan-appraisal/run-params';
 import { deriveProcessingStatus, LOAN_STAGE_DEFINITIONS } from './loan-appraisal/state-machine';
 import {
   LOAN_APPRAISAL_OUTPUT_VERSION,
@@ -261,7 +262,6 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
         risk_notes: [],
         system_notes: ['Đã dừng sau bước phân loại và kiểm tra sơ bộ; bóc tách (OCR), kiểm tra nháp & tổng kết hồ sơ, gom người & tài sản, checklist 46 mục và đối chiếu chéo chạy ở giai đoạn 2.'],
         config_snapshot: configWarnings.length && !configSnapshot.warnings ? { ...configSnapshot, warnings: configWarnings } : configSnapshot,
-        master_dossier: null,
         dossier_precheck: precheckOnly,
         flow: loanFlow,
         dossier_readiness: buildPrecheckReadiness(precheckOnly, classifyCheckpoint, []),
@@ -301,39 +301,43 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
         logger.warn(`[LOAN-APPRAISAL] DOSSIER_GRAPH_UNAVAILABLE: ${error instanceof Error ? error.name : 'Error'}`);
       }
     }
-    // Sổ Claim lossless dựng từ OCR + S3, chỉ LƯU phần đáng chú ý (phần còn lại dựng lại được từ evidences[].data). Lỗi không đổ workflow.
-    let storedClaims: ReturnType<typeof selectNotableClaims> | null = null;
-    if (mapOutcome.data) {
-      try { storedClaims = selectNotableClaims(buildClaimLedger(extractCheckpoint.evidences, mapOutcome.data)); } catch (error) {
-        logger.warn(`[LOAN-APPRAISAL] CLAIMS_UNAVAILABLE: ${error instanceof Error ? error.name : 'Error'}`);
-      }
-    }
 
-    // ── Loan Application Context (D-103): view tất định, dẫn nguồn được cho rule LLM. Dựng lại mỗi lần, không checkpoint. ──
-    // lac_mode: off (mặc định) | shadow (chỉ thống kê, không đổi prompt) | on (prompt dùng {{context}}). Lỗi dựng → đường cũ + warning.
+    // ── Loan Application Context (D-103) và hồ sơ 360 (D-114). Dựng lại mỗi lần (hàm thuần), không checkpoint. LAC luôn dựng vì hồ sơ 360 —
+    // nguồn sự thật duy nhất cho tài chính, giao diện và danh sách vấn đề — đứng trên nó; `lac_mode` chỉ quyết định prompt rule LLM dùng LAC
+    // (off | shadow | on). Lỗi dựng → warning, stage không đổ.
     const lacMode = resolveLacMode(pipelineVars.lac_mode);
-    let lac: LoanApplicationContext | null = null;
-    if (lacMode !== 'off') {
+    let context: LoanApplicationContext | null = null;
+    try {
+      context = buildLoanApplicationContext({
+        product_code: product.code,
+        flow: typeof loanFlow === 'string' ? loanFlow : null,
+        evidences: extractCheckpoint.evidences,
+        s3: mapOutcome.data,
+        s3_status: mapOutcome.data ? mapOutcome.status : null,
+      });
+    } catch (error) {
+      const name = error instanceof Error ? error.name : 'Error';
+      configWarnings.push(`LAC_UNAVAILABLE:${name}`);
+      logger.warn(`[LOAN-APPRAISAL] LAC_UNAVAILABLE: ${name}`);
+    }
+    const lac: LoanApplicationContext | null = lacMode !== 'off' ? context : null;
+    let profile360: Profile360 | null = null;
+    if (context) {
       try {
-        lac = buildLoanApplicationContext({
-          product_code: product.code,
-          flow: typeof loanFlow === 'string' ? loanFlow : null,
-          evidences: extractCheckpoint.evidences,
-          s3: mapOutcome.data,
-          s3_status: mapOutcome.data ? mapOutcome.status : null,
-        });
+        const { dossier_submitted_at } = consolidateParams(pipelineVars);
+        profile360 = buildProfile360({ evidences: extractCheckpoint.evidences, s3: mapOutcome.data, lac: context, segment: packSnapshot.segment, as_of: dossier_submitted_at });
       } catch (error) {
         const name = error instanceof Error ? error.name : 'Error';
-        configWarnings.push(`LAC_UNAVAILABLE:${name}`);
-        logger.warn(`[LOAN-APPRAISAL] LAC_UNAVAILABLE: ${name}`);
+        configWarnings.push(`PROFILE_360_UNAVAILABLE:${name}`);
+        logger.warn(`[LOAN-APPRAISAL] PROFILE_360_UNAVAILABLE: ${name}`);
       }
     }
 
-    // ── Stage 2: deterministic financial calculations (đọc OCR + asset_registry của S3 để tính giá trị TSBĐ / LTV) ──
+    // ── Stage 2: deterministic financial calculations — đọc hồ sơ 360 (D-114) ──
     let financial = getStep(ctx, 2)?.extracted_data as FinancialMetrics | undefined;
     if (resumeFromStep <= 2) {
       await beginStage(ctx, 2, 'Đang tính toán CFADS, DSCR và các chỉ số tài chính...');
-      financial = pack.calculateFinancials({ evidences: extractCheckpoint.evidences, s3: mapOutcome.data });
+      financial = pack.calculateFinancials({ profile: profile360, s3Available: mapOutcome.data !== null });
       const calculated = Object.values(financial).filter((metric) => metric.status === 'CALCULATED').length;
       saveStep(ctx, stageResult(2, {
         stepName: 'Tính toán tài chính deterministic',
@@ -366,7 +370,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       let lacOutcome: LacPromptOutcome | null = null;
       // LAC-R17: shadow chỉ đo (độ dài, số dữ kiện, cắt bớt…) để so với đường cũ; không gửi model, không đổi kết quả.
       const lacStats = lac && lacMode === 'shadow' && promptChecks.length > 0
-        ? renderLoanApplicationContext(lac, lacScopeFromInputs(promptChecks.map((c) => c.input))).stats
+        ? renderLoanApplicationContext(lac, lacScopeFromInputs(promptChecks.map((c) => c.input)), undefined, profile360).stats
         : null;
       if (promptChecks.length > 0) {
         try {
@@ -383,6 +387,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
               financial,
               lac,
               lacMode,
+              profile: profile360,
             }, ctx.promptOverrides.policy_checks, (stats) => {
               promptEvidenceStats = { ...stats };
               logger.info(`[LOAN-APPRAISAL] Rule LLM evidence: ${JSON.stringify(stats)}`);
@@ -460,7 +465,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       ...buildDeferredDossierOutput(product, classifyCheckpoint, extractCheckpoint.evidences, typeof loanFlow === 'string' ? loanFlow : null, DOSSIER_CHECKS_DISABLED),
       customer_360: mapOutcome.data,
       dossier_graph: dossierGraph ? toDossierGraphView(dossierGraph) : null,
-      claims: storedClaims,
+      profile_360: profile360,
       ...(lac && lacMode !== 'off' ? {
         loan_application_context_summary: {
           lac_version: lac.lac_version,
@@ -473,6 +478,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
           gaps: lac.gaps.map((g) => ({ code: g.code, count: g.count })),
         },
       } : {}),
+      ...(mapOutcome.fs_shadow ? { s3_matcher_summary: { mode: 'shadow' as const, ...mapOutcome.fs_shadow } } : {}),
       risk_notes: [],
       system_notes: [
         'Các bước kiểm tra hồ sơ (checklist, đối chiếu chéo, master data, kiểm tra nháp) đang tạm tắt ở giai đoạn 2; kết quả gồm OCR, gom người & tài sản, chỉ số tài chính, bộ rule và khuyến nghị.',

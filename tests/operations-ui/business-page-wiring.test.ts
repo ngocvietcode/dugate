@@ -171,7 +171,7 @@ describe('Operations business dashboard page wiring', () => {
     const listIndex = html.indexOf('Danh sách Business Operations');
 
     expect((html.match(/data-applied=/g) ?? [])).toHaveLength(4);
-    expect((html.match(/<article/g) ?? [])).toHaveLength(6); // five KPI cards + one breakdown card
+    expect((html.match(/<article/g) ?? [])).toHaveLength(7); // six KPI cards + one breakdown card
     expect(presetIndex).toBeLessThan(kpiIndex);
     expect(kpiIndex).toBeLessThan(breakdownIndex);
     expect(breakdownIndex).toBeLessThan(trendIndex);
@@ -274,8 +274,9 @@ describe('Operations business dashboard page wiring', () => {
     const wrapperSource = readFileSync('app/operations/page.tsx', 'utf8');
     const businessSource = readFileSync('app/operations/BusinessOperationsPage.tsx', 'utf8');
     const legacySource = readFileSync('app/operations/LegacyOperationsPage.tsx', 'utf8');
-    expect(wrapperSource).toContain('selectOperationsDashboardVariant');
-    expect(wrapperSource).toContain('BusinessOperationsPage');
+    const dashboardRoute = readFileSync('app/operations/dashboard/page.tsx', 'utf8');
+    expect(dashboardRoute).toContain('BusinessOperationsPage');
+    expect(dashboardRoute).toContain('<BusinessOperationsPage />');
     expect(wrapperSource).toContain('LegacyOperationsPage');
     expect(businessSource).toContain('useBusinessOperationsDashboard');
     expect(businessSource).toContain('useBusinessOperationFilterOptions');

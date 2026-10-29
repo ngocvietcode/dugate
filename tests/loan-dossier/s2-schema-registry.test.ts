@@ -11,8 +11,8 @@ import { DOC_DATA_SCHEMAS } from '@/lib/loan-dossier/s2/schemas';
 const ROOT = join(__dirname, '..', '..');
 
 describe('schema registry (T-S2-01)', () => {
-  it('27 key FULL đều có entry, không thừa key', () => {
-    expect(fullDocTypeKeys()).toHaveLength(27);
+  it('30 key FULL đều có entry, không thừa key', () => {
+    expect(fullDocTypeKeys()).toHaveLength(30);
     expect(Object.keys(DOC_DATA_SCHEMAS).sort()).toEqual(fullDocTypeKeys().sort());
     for (const k of fullDocTypeKeys()) expect(getDocSchema(k)).toBe(DOC_DATA_SCHEMAS[k]);
   });

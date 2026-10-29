@@ -21,6 +21,12 @@ export function readChecks(saved: Record<string, unknown> | undefined): Editable
     out.push({
       ...(base ?? { id, name: id, kind: 'PROMPT', enabled: true, flows: [], products: [], input: [], action: 'warn', severity: 'REVIEW', exception_allowed: false, version: '1.0.0', prompt: '', threshold: 0.85 }),
       ...(typeof item.name === 'string' && item.name.trim() ? { name: item.name.trim() } : {}),
+      // Giữ nguồn dữ liệu và phiên bản đã lưu khi sửa các thuộc tính khác của rule.
+      input: [...new Set([
+        ...(Array.isArray(item.input) ? item.input.filter((entry): entry is string => typeof entry === 'string') : []),
+        ...(base?.input ?? []),
+      ])],
+      version: typeof item.version === 'string' && item.version.trim() ? item.version.trim() : base?.version ?? '1.0.0',
       kind: engine ? 'DETERMINISTIC' : 'PROMPT',
       group: isRuleGroupKey(item.group) ? item.group : resolveRuleGroup({ id, group: base?.group }),
       enabled: item.enabled !== false,

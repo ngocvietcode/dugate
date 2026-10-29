@@ -29,10 +29,10 @@ const evidenceOf = (key: string, level: string): EvidenceEnvelope => {
 describe('sổ Claim — lossless trên mọi loại chứng từ', () => {
   const docs = allDocTypes();
 
-  it('phủ đủ danh mục chứng từ (47 loại: 27 FULL + 20 LIGHT); thêm loại mới sẽ tự được kiểm', () => {
+  it('phủ đủ danh mục chứng từ (47 loại: 30 FULL + 17 LIGHT); thêm loại mới sẽ tự được kiểm', () => {
     expect(docs).toHaveLength(47);
-    expect(docs.filter((d) => d.level === 'FULL').length).toBe(27);
-    expect(docs.filter((d) => d.level === 'LIGHT').length).toBe(20);
+    expect(docs.filter((d) => d.level === 'FULL').length).toBe(30);
+    expect(docs.filter((d) => d.level === 'LIGHT').length).toBe(17);
   });
 
   it.each(docs.map((d) => [d.key, d.level]))('%s (%s): số nguồn = số lá OCR; không rơi, không nhân đôi', (key, level) => {

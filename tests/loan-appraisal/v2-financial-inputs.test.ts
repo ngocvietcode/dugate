@@ -1,10 +1,11 @@
-// T-V2-06 — đầu vào tài chính theo spec (V2-R06).
-import { financialInputsV3 } from '@/lib/pipelines/workflows/loan-appraisal/financial-inputs';
+// T-V2-06, T-360-03 (D-114) — đầu vào tài chính đọc hồ sơ 360 (nguồn sự thật duy nhất).
+import { financialInputsFromProfile } from '@/lib/pipelines/workflows/loan-appraisal/financial-inputs';
 import { HkdSecuredFinancialStrategy } from '@/lib/pipelines/workflows/loan-appraisal/strategies';
 import { runMapDossier } from '@/lib/loan-dossier/s3/run';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 
 import { ev, ID_A12, loanApp } from '../loan-dossier/fixtures/dossier';
+import { profileOf } from '../loan-dossier/fixtures/profile';
 
 const D0 = '2026-10-14';
 const borrower = { party_role: 'BORROWER', full_name: 'NGUYỄN VĂN AN', id_number: ID_A12 };
@@ -25,11 +26,11 @@ const valuation = (value: number, issue: string) => {
 
 function metrics(evs: EvidenceEnvelope[]) {
   const s3 = runMapDossier({ evidences: evs, dossier_submitted_at: D0 });
-  const inputs = financialInputsV3(evs, s3.data);
+  const inputs = financialInputsFromProfile(profileOf(evs, { s3: s3.data }));
   return { inputs, m: new HkdSecuredFinancialStrategy().execute({ inputs }), s3 };
 }
 
-describe('financialInputsV3', () => {
+describe('financialInputsFromProfile', () => {
   it('đủ dữ liệu → DSCR, LTV tính được; số tiền vay = bank_proposed_amount', () => {
     const { m } = metrics([app({}), income([hkd]), valuation(1_000_000_000, '2026-06-01')]);
     expect(m.requested_amount.value).toBe(500_000_000);
@@ -60,19 +61,31 @@ describe('financialInputsV3', () => {
     expect(metrics([app({}), income([other, hkd])]).inputs.profit?.value).toBe(360_000_000);
   });
 
-  it('định giá bị thay thế không dùng cho LTV; nhiều bản → bản mới nhất', () => {
+  it('định giá bị thay thế không dùng cho LTV', () => {
     const { inputs, s3 } = metrics([app({}), valuation(800_000_000, '2025-01-01'), valuation(1_000_000_000, '2026-06-01')]);
     expect(s3.data!.superseded_evidences.length).toBe(1);
     expect(inputs.collateral?.value).toBe(1_000_000_000);
   });
 
+  it('D-112: nhiều chứng thư còn hiệu lực cho một tài sản → LTV dùng giá thấp nhất', () => {
+    const external = ev('external_valuation_certificate', { issue_date: '2026-06-01', parties: [], assets: [{ asset_type: 'real_estate', identifiers: { certificate_number: 'CS1' } }] });
+    external.data!.asset_details = [{ ...((external.data!.asset_details as Array<Record<string, unknown>> | undefined)?.[0] ?? {}), asset_index: 0, valuation_value: 900_000_000 }];
+    expect(metrics([app({}), valuation(1_000_000_000, '2026-06-01'), external]).inputs.collateral?.value).toBe(900_000_000);
+  });
+
+  it('D-114: hai HKD khác nhau → cộng lợi nhuận; một HKD trên hai bảng kê → không cộng trùng', () => {
+    const named = (business_name: string, net_profit_annual: number) => ({ ...hkd, household_business: { business_name, net_revenue_annual: 100, net_profit_annual } });
+    expect(metrics([app({}), income([named('HKD A', 300), named('HKD B', 40)])]).inputs.profit?.value).toBe(340);
+    expect(metrics([app({}), income([named('HKD A', 300)]), income([named('HKD A', 300)])]).inputs.profit?.value).toBe(300);
+  });
+
   it('có S3 và không skipCollateral: giá trị TSBĐ và LTV tính được từ tài sản collateral; không có S3 thì không biết TSBĐ nào', () => {
     const evs = [app({}), valuation(1_000_000_000, '2026-06-01')];
     const s3 = runMapDossier({ evidences: evs, dossier_submitted_at: D0 });
-    const withS3 = new HkdSecuredFinancialStrategy().execute({ inputs: financialInputsV3(evs, s3.data), skipCollateral: false });
+    const withS3 = new HkdSecuredFinancialStrategy().execute({ inputs: financialInputsFromProfile(profileOf(evs, { s3: s3.data })), skipCollateral: false });
     expect(withS3.collateral_value).toMatchObject({ status: 'CALCULATED', value: 1_000_000_000 });
     expect(withS3.ltv.value).toBeCloseTo(0.5);
-    const noS3 = new HkdSecuredFinancialStrategy().execute({ inputs: financialInputsV3(evs, null), skipCollateral: true });
+    const noS3 = new HkdSecuredFinancialStrategy().execute({ inputs: financialInputsFromProfile(profileOf(evs, { s3: null })), skipCollateral: true });
     expect([noS3.collateral_value.status, noS3.ltv.status]).toEqual(['NOT_APPLICABLE', 'NOT_APPLICABLE']);
   });
 });

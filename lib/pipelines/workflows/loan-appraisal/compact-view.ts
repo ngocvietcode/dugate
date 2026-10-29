@@ -13,7 +13,6 @@
 //       - `audit`: giao diện không đọc; `audit.config_snapshot` trùng hệt `config_snapshot`.
 //       - `evidence.by_file`, `evidence.by_document_type`: chỉ là chỉ mục ngược của `records`.
 //       - `checklist.items` NOT_APPLICABLE: giao diện ẩn chúng (D-65); số lượng giữ ở `checklist.not_applicable_count`.
-//       - `master_dossier.documents`: bỏ chứng từ "không áp dụng" không có bản nộp, và trường MISSING (giao diện đều ẩn).
 //       - `evidence.records`: chỉ giữ bản ghi có ai tham chiếu (giao diện tra theo evidence_id), rút còn các trường giao diện đọc.
 
 type Json = Record<string, unknown>;
@@ -49,21 +48,6 @@ function compactChecklist(checklist: unknown): unknown {
   return { ...checklist, items: kept, not_applicable_count: items.length - kept.length };
 }
 
-/** Chứng từ master mà giao diện hiển thị: có bản nộp, hoặc không phải "không áp dụng". */
-function hasUsedCopy(doc: Json): boolean {
-  return Array.isArray(doc.copies) && doc.copies.some((c) => isRecord(c) && (c.role === 'PRIMARY' || c.role === 'DUPLICATE'));
-}
-
-function compactMaster(master: unknown): unknown {
-  if (!isRecord(master) || !Array.isArray(master.documents)) return master;
-  const documents = master.documents
-    .filter((doc) => !(isRecord(doc) && doc.checklist_status === 'NOT_APPLICABLE' && !hasUsedCopy(doc)))
-    .map((doc) => {
-      if (!isRecord(doc) || !Array.isArray(doc.fields)) return doc;
-      return { ...doc, fields: doc.fields.filter((f) => !(isRecord(f) && f.status === 'MISSING')) };
-    });
-  return { ...master, documents };
-}
 
 /** Mọi chuỗi trong cây (id nằm ở `evidence_id`, `evidence_ids[]`, `sources[]`...). Một lượt duyệt, tra cứu O(1). */
 function collectStrings(value: unknown, into: Set<string>): void {
@@ -102,7 +86,6 @@ export function compactAppraisalResult(result: unknown): unknown {
   const { intake: _intake, audit: _audit, ...rest } = result;
   const out: Json = { ...rest };
   if ('checklist' in out) out.checklist = compactChecklist(out.checklist);
-  if ('master_dossier' in out) out.master_dossier = compactMaster(out.master_dossier);
   if ('evidence' in out) {
     const { evidence, ...others } = out;
     const referenced = new Set<string>();

@@ -183,8 +183,9 @@ export async function splitPdf(pdfBuffer: Buffer): Promise<Buffer[]> {
 
 /**
  * Merge OCR results from all pages into a single Payroll_JSON.
- * Sorts by page index, concatenates lists, re-indexes stt sequentially from 1,
- * and updates thong_ke_tong_quan counts.
+ * Sorts by page index and concatenates lists, preserving original STT values
+ * and document-declared counts in thong_tin_chung. Only when the total count
+ * is 0 are the total and per-bank counts filled from the merged list lengths.
  */
 export function mergeOcrResults(
   pageResults: Array<{ pageIndex: number; data: PayrollJSON }>,

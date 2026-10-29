@@ -177,6 +177,16 @@ describe('migrateLegacyForProduct', () => {
 });
 
 describe('summarizeLoanProductConfigChange', () => {
+  it('giữ dấu vết rule/field và ngưỡng đã đổi sau khi chuyển sang cấu hình sản phẩm', () => {
+    const before = cfg({ checks: { checks: [{ id: 'LOAN.CUSTOM.X', enabled: true, prompt: 'prompt cũ' }] }, policy: { minimum_dscr: 1.2 } });
+    const after = cfg({ checks: { checks: [{ id: 'LOAN.CUSTOM.X', enabled: false, prompt: 'prompt mới' }] }, policy: { minimum_dscr: 1.4 } });
+    const summary = summarizeLoanProductConfigChange(before, after) ?? '';
+    expect(summary).toContain('hkd-loan: policy, checks');
+    expect(summary).toContain('LOAN.CUSTOM.X[enabled,prompt]');
+    expect(summary).toContain('minimum_dscr:1.2→1.4');
+    expect(summary).not.toContain('prompt cũ');
+    expect(summary).not.toContain('prompt mới');
+  });
   it('chỉ ghi tên sản phẩm + nhóm đã đổi, không lộ nội dung prompt', () => {
     const before = cfg({ models: { evaluate: 'a' } });
     const after = cfg({ models: { evaluate: 'b' }, prompts: { dossier_summary: 'BÍ MẬT' } });

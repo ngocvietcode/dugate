@@ -1,5 +1,7 @@
 ﻿/**
- * Operator submits the same dossier via the existing API with lac_mode=off/on.
+ * Operator submits the same dossier twice to POST /api/v1/docs/workflows (process=loan-appraisal), once with
+ * form field lac_mode=off (or omitted) and once with lac_mode=on — or picks the mode on /loan-appraisal-v2.
+ * If the Profile locks lac_mode, the request is rejected; unlock it for the UAT Profile first.
  * Set DUGATE_BASE_URL and DUGATE_API_KEY in the environment (never in pairs.json).
  * npx tsx scripts/lac-shadow-report.ts --pairs pairs.json --out report.md [--csv report.csv]
  * pairs.json: [{"label":"HS-01","off":"operation-off","on":"operation-on"}]

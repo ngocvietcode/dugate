@@ -53,10 +53,10 @@ describe('AppraisalResultV2 3.0 (giai đoạn 2: chỉ OCR + rule)', () => {
     // Khối quan hệ (nodes + edges) đi cùng customer_360, chỉ có id và nhãn.
     expect(r.dossier_graph).toMatchObject({ version: '1.0' });
     expect(r.dossier_graph!.nodes.map((n) => n.id)).toEqual(expect.arrayContaining(['person-1']));
-    // Claim đáng chú ý đi cùng kết quả: hợp lệ, bất biến lossless giữ được, và KHÔNG chứa claim thường (còn ở evidences[].data).
-    expect(r.claims).toMatchObject({ version: '1.0' });
-    expect(r.claims!.claims.reduce((n, c) => n + c.sources.length, 0) + r.claims!.omitted_leaves).toBe(r.claims!.leaf_count);
-    expect(r.claims!.leaf_count).toBeGreaterThan(0);
+    // D-114: hồ sơ 360 là nguồn sự thật duy nhất, đi cùng kết quả; sổ Claim không còn lưu riêng.
+    expect(r.profile_360).toMatchObject({ profile_version: '1.0' });
+    expect(r.profile_360!.customers.map((c) => c.person_id)).toEqual(['person-1']);
+    expect('claims' in r).toBe(false);
     expect(JSON.stringify(r.dossier_graph)).not.toContain('NGUYỄN VĂN AN');
     expect(r.checklist).toMatchObject({ status: 'NOT_RUN', status_code: 'DOSSIER_CHECKS_DISABLED', items: [], summary_by_group: [] });
     expect(r.cross_check).toMatchObject({ status: 'NOT_RUN', status_code: 'DOSSIER_CHECKS_DISABLED', results: [], logic_findings: [] });

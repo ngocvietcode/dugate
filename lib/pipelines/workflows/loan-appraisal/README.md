@@ -117,7 +117,7 @@ suy ra `COMPLETE` khi còn stage bắt buộc chưa chạy.
 | `segment-packs/` | Segment pack theo phân khúc (D-100): `types.ts` (interface stage 2–4), `hkd-secured.ts`, `registry.ts` (phân khúc → pack, `validateSegmentPackRegistry` chạy khi worker khởi động). Workflow gọi stage 2–4 qua pack, không gọi strategy trực tiếp |
 | `strategies.ts` | Strategy pattern cho các stage deterministic (financial, policy, recommendation); pack `hkd-secured` dùng các strategy này |
 | `prompt-render.ts`, `dossier-facts.ts`, `run-params.ts` | Hàm dùng chung tách khỏi các module đang tắt (D-98): `renderPrompt`, `buildDossierFacts`, `consolidateParams` / `vnToday` |
-| `intake-review.ts`, `intake-assessment.ts`, `master-dossier.ts`, `master-correction.ts`, `dossier-consolidate.ts` | Logic của các bước **đang tắt** (xem "Các bước kiểm tra hồ sơ tạm tắt"). Đường chạy chính không import S4, S5, `dossier-consolidate`, `master-dossier` lúc chạy (khóa bằng `tests/loan-appraisal/phase2-isolation.test.ts`). Bật lại một bước thì phải khai lại bước AI của nó trong `step-catalog.ts` và bỏ khỏi `RETIRED_STEP_KEYS` |
+| `intake-review.ts`, `intake-assessment.ts`, `dossier-consolidate.ts` | Logic của các bước **đang tắt** (xem "Các bước kiểm tra hồ sơ tạm tắt"). `master_dossier` và hiệu chỉnh LLM đã gỡ hẳn (D-115): hồ sơ 360 (`lib/loan-dossier/profile360/`) là nguồn sự thật. Đường chạy chính không import S4, S5, `dossier-consolidate` lúc chạy (khóa bằng `tests/loan-appraisal/phase2-isolation.test.ts`). Bật lại một bước thì phải khai lại bước AI của nó trong `step-catalog.ts` và bỏ khỏi `RETIRED_STEP_KEYS` |
 
 ## Sản phẩm & ngưỡng policy
 

@@ -45,6 +45,16 @@ describe('submitWorkflow', () => {
     expect((fetchMock.mock.calls[0][1]?.body as FormData).get('stop_after_intake')).toBe('true');
   });
 
+  it('omits lac_mode by default and sends it only when not off', async () => {
+    reply(200, { name: 'operations/abc12345' });
+    await submitWorkflow([file], 'key', 'hkd-loan', 'FAST');
+    // Không gửi khi off: Profile có thể khoá lac_mode, gửi giá trị bị từ chối.
+    expect((fetchMock.mock.calls[0][1]?.body as FormData).has('lac_mode')).toBe(false);
+    reply(200, { name: 'operations/abc12345' });
+    await submitWorkflow([file], 'key', 'hkd-loan', 'FAST', undefined, false, 'on');
+    expect((fetchMock.mock.calls[1][1]?.body as FormData).get('lac_mode')).toBe('on');
+  });
+
   it('falls back to id and reports missing id', async () => {
     reply(200, { id: 'zzz99999' });
     expect(await submitWorkflow([file], undefined, 'hkd-loan', undefined)).toBe('zzz99999');

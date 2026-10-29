@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { AlertTriangle, ListChecks, Sparkles } from 'lucide-react';
 import type { AppraisalResult, DossierEvidence } from '@/app/loan-appraisal/types';
 import { borrowerName } from '@/app/loan-appraisal-v2/lib/dossier-view';
-import { hasCustomer360, hasDossierCheckResults, safeArray } from '@/app/loan-appraisal-v2/lib/selectors';
+import { hasDossierCheckResults, safeArray } from '@/app/loan-appraisal-v2/lib/selectors';
 import { Badge } from '../ui/Badge';
 import { Card, CardBody, CardHeader } from '../ui/Card';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
@@ -13,7 +13,6 @@ import { DossierChecklist } from '../intake/DossierChecklist';
 import { DossierCrossCheck } from '../intake/DossierCrossCheck';
 import { DossierSummaryCard } from '../intake/DossierSummaryCard';
 import { IntakeCriteria } from '../intake/IntakeCriteria';
-import { MasterDataPanel } from '../intake/MasterDataPanel';
 import { OcrResults } from '../intake/OcrResults';
 import { Customer360Panel } from './Customer360Panel';
 
@@ -94,13 +93,12 @@ export function CustomerProfile({ result, evidences }: { result: AppraisalResult
           <TodoCard supplements={safeArray(result.dossier_readiness?.supplement_requests)} />
         </>
       )}
-      {/* Bảng người & tài sản chỉ cần S3 (customer_360); không gắn với checklist / đối chiếu chéo đang tạm tắt. */}
-      {hasCustomer360(result) && <Customer360Panel result={result} evidences={docs} />}
+      {/* D-114: Customer 360 đọc hồ sơ 360 — nguồn sự thật duy nhất; tự báo khi kết quả chưa có. */}
+      <Customer360Panel result={result} />
       {/* Sơ đồ quan hệ: có khi S3 chạy (kể cả khi checklist / đối chiếu chéo tạm tắt); nạp động vì thư viện đồ thị khá nặng. */}
       {result.dossier_graph && <ErrorBoundary label="Sơ đồ quan hệ hồ sơ"><DossierGraphPanel result={result} /></ErrorBoundary>}
       {checks && <DossierChecklist checklist={result.checklist} people={result.customer_360} />}
       {checks && <DossierCrossCheck crossCheck={result.cross_check} people={result.customer_360} evidences={docs} />}
-      <MasterDataPanel result={result} />
       <OcrResults evidences={docs} />
     </div>
   );
