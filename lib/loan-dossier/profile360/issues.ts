@@ -54,7 +54,8 @@ export function buildConflicts(lac: LoanApplicationContext, label: (id: string) 
     kind: c.kind,
     options: c.fact_ids.map((id) => {
       const f = facts.get(id)!;
-      return { fact_id: id, value: f.value, doc_types: [...new Set(f.sources.map((s) => s.doc_type_key))] };
+      const live = f.sources.filter((s) => !lac.meta.superseded_evidence_ids.includes(s.record_id.split('#')[0]));
+      return { fact_id: id, value: f.value, doc_types: [...new Set(f.sources.map((s) => s.doc_type_key))], record_ids: (live.length ? live : f.sources).map((s) => s.record_id) };
     }),
   }));
 }
@@ -123,7 +124,9 @@ export function buildIssues(input: IssueInput, conflicts: readonly Conflict[], l
   // 6. Tài sản bảo đảm.
   for (const a of collateral) {
     if (!a.usage_contexts.includes('collateral')) continue;
-    if (a.context_status !== 'CONFIRMED') push('warning', 'COLLATERAL_CONTEXT_AMBIGUOUS', a.asset_id, 'Chưa xác định chắc tài sản này là TSBĐ của khoản vay');
+    // D-117: gộp do số định danh gần khớp → một cảnh báo riêng thay cho "chưa xác định chắc", vì định giá đã đi theo tài sản.
+    if (a.match_review) push('warning', 'COLLATERAL_MATCH_REVIEW_REQUIRED', a.asset_id, 'Tài sản được gộp từ chứng từ ghi số định danh gần khớp — cần xác nhận cùng một tài sản', 'Giá trị định giá chỉ dùng tham khảo cho tới khi xác nhận.');
+    else if (a.context_status !== 'CONFIRMED') push('warning', 'COLLATERAL_CONTEXT_AMBIGUOUS', a.asset_id, 'Chưa xác định chắc tài sản này là TSBĐ của khoản vay');
     if (a.valuations.length === 0) push('warning', 'COLLATERAL_NOT_VALUED', a.asset_id, 'Chưa có chứng thư định giá');
     else if (policies) {
       const lo = Math.min(...a.valuations.map((v) => v.value)); const hi = Math.max(...a.valuations.map((v) => v.value));

@@ -6,6 +6,7 @@ import type {
   Customer360,
   ExtractedDoc,
 } from '../prompts/loan-appraisal-prompts';
+import type { CaseSeal, CorrectionReport } from '@/lib/loan-dossier/corrections/schema';
 import type { CheckChecklistData, CrossCheckData, MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
 import type { ClassifyData } from '@/lib/loan-dossier/contracts/stage-result';
 import type { DossierGraphView } from '@/lib/loan-dossier/graph/view-contract';
@@ -346,7 +347,7 @@ export interface DossierOutputV3 {
   profile_360?: Profile360 | null;
   /**
    * D-103 (LAC-R18): tóm tắt Loan Application Context của lần chạy — chỉ số đếm và mã, KHÔNG có giá trị dữ kiện. LAC đầy đủ
-   * không lưu: dựng lại được từ documents.evidences + S3 (`source_hash` để đối chiếu). Vắng khi lac_mode = off hoặc kết quả cũ.
+   * không lưu: dựng lại được từ documents.evidences + S3 (`source_hash` để đối chiếu). Vắng khi LAC dựng lỗi hoặc kết quả cũ.
    */
   loan_application_context_summary?: LoanApplicationContextSummary | null;
   /**
@@ -354,6 +355,10 @@ export interface DossierOutputV3 {
    * Vắng khi `s3_matcher = rules` (mặc định), catalog tham số hỏng, hoặc kết quả cũ.
    */
   s3_matcher_summary?: S3MatcherSummary | null;
+  /** COR-R03: niêm phong `documents` + `dossier_precheck` để tính lại từ case_input.json. Vắng khi không dựng được khóa hoặc kết quả cũ. */
+  case_seal?: CaseSeal;
+  /** COR-R13: chỉ ở kết quả tính lại — hiệu chỉnh nào áp được, hiệu chỉnh nào bị bỏ (chỉ mã, không giá trị). */
+  correction_report?: CorrectionReport;
   /** S4. `items` rỗng khi S4 FAILED (VD flow sai). */
   checklist: {
     status: string;
@@ -378,8 +383,7 @@ export interface DossierOutputV3 {
 
 export interface LoanApplicationContextSummary {
   lac_version: string;
-  mode: 'shadow' | 'on';
-  /** LAC đã vào prompt rule LLM của lần chạy này. */
+  /** LAC đã vào prompt rule LLM của lần chạy này (false khi không có rule LLM hoặc stage rule không chạy lại). */
   used_in_prompt: boolean;
   source_hash: string;
   fact_count: number;

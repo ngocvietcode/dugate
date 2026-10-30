@@ -16,7 +16,8 @@ import {
   integrationJsonSchema,
 } from '@/lib/pipelines/workflows/loan-appraisal/integration-contract';
 import { DEFAULT_CHECK_SET, LOAN_CHECK_CATALOG, parseCheckSet, validateCheckSetValue } from '@/lib/pipelines/workflows/loan-appraisal/check-set';
-import { parsePromptCheckResults, buildPromptCheckVars } from '@/lib/pipelines/workflows/loan-appraisal/prompt-checks';
+import { parsePromptCheckResults, buildPromptCheckVars, selectPromptEvidence } from '@/lib/pipelines/workflows/loan-appraisal/prompt-checks';
+import { buildLoanApplicationContext } from '@/lib/loan-dossier/context/build';
 import { parseIntegrationIncludes } from '@/lib/pipelines/workflows/loan-appraisal/integration-payload';
 import type { EvidenceRecord, EvidenceRegistry, FinancialMetrics, RuleResult } from '@/lib/pipelines/workflows/loan-appraisal/types';
 
@@ -168,7 +169,8 @@ describe('parse đầu ra model bằng zod + mã đóng', () => {
   });
   const evidence: EvidenceRegistry = { records: [record('ev-1')], by_file: [], by_document_type: [] };
   const check = DEFAULT_CHECK_SET.checks.find((c) => c.id === 'LOAN.COLLATERAL.OWNER_MATCH')!;
-  const run = (entry: Record<string, unknown>) => parsePromptCheckResults({ results: [{ id: check.id, status: 'PASS', confidence: 0.95, reason: 'ok', evidence_ids: ['D1:field'], ...entry }] }, DEFAULT_CHECK_SET, evidence)
+  const run = (entry: Record<string, unknown>) => parsePromptCheckResults({ results: [{ id: check.id, status: 'PASS', confidence: 0.95, reason: 'ok', evidence_ids: ['D1:field'], ...entry }] }, DEFAULT_CHECK_SET, evidence,
+    { render: { refIndex: new Map() }, ocr: selectPromptEvidence(evidence, null) }, { facts: [] })
     .find((r) => r.rule_id === check.id)!;
 
   it('parseModelCheckOutput: bỏ phần tử sai hình dạng nhưng giữ phần tử đúng; nhận cả mảng trần', () => {
@@ -200,7 +202,7 @@ describe('parse đầu ra model bằng zod + mã đóng', () => {
   });
 
   it('prompt liệt kê MÃ KẾT QUẢ của từng kiểm tra và yêu cầu không lặp tên/số định danh trong reason', () => {
-    const prompt = String(buildPromptCheckVars({ checkSet: DEFAULT_CHECK_SET, evidence, customer360: {}, financial: {} as FinancialMetrics })._prompt);
+    const prompt = String(buildPromptCheckVars({ checkSet: DEFAULT_CHECK_SET, evidence, financial: {} as FinancialMetrics, lac: buildLoanApplicationContext({ product_code: 'hkd-loan', flow: null, evidences: [], s3: null }) })._prompt);
     expect(prompt).toContain('MÃ KẾT QUẢ');
     expect(prompt).toContain('OWNER_MATCH | OWNER_DIFFERENT | NOT_VERIFIABLE');
     expect(prompt).toContain('không lặp lại họ tên hay số định danh');

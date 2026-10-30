@@ -1,0 +1,13 @@
+{
+  "params_version": "0.1.0-expert",
+  "source": "EXPERT",
+  "estimated_at": null,
+  "dataset_ref": null,
+  "thresholds": { "upper": 15, "lower": 8 },
+  "comparisons": {
+    "certificate_number": { "AGREE": { "m": 0.95, "u": 0.00001 }, "NEAR": { "m": 0.048, "u": 0.0001 }, "DISAGREE": { "m": 0.002, "u": 0.99989 } },
+    "certificate_book_number": { "AGREE": { "m": 0.85, "u": 0.001 }, "DIGITS_AGREE": { "m": 0.1, "u": 0.001 }, "DISAGREE": { "m": 0.05, "u": 0.998 } },
+    "owner": { "AGREE": { "m": 0.95, "u": 0.05 }, "DISAGREE": { "m": 0.05, "u": 0.95 } },
+    "address": { "AGREE": { "m": 0.5, "u": 0.1 }, "DISAGREE": { "m": 0.5, "u": 0.9 } }
+  }
+}

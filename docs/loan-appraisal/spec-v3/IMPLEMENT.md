@@ -259,3 +259,48 @@ Xem [open_questions.md](open_questions.md).
     DSCR SME = (lợi nhuận trước thuế + chi phí lãi vay) của BCKQKD gần nhất / nghĩa vụ trả nợ năm (OQ-360-13).
   - Chưa làm: S4 chấm pháp lý cá nhân trên người đại diện (S4 đang tắt), segment pack riêng cho SME (vẫn `hkd-secured`, chỉ đầu vào tài
     chính rẽ nhánh), bảng địa danh 2025.
+- **D-117 (2026-10-29)** Nối tài sản BĐS bằng Fellegi-Sunter, bật mặc định (`s3_asset_matcher = fs`, `rules` quay về S3-R15(2)).
+  UAT: đơn vay ghi GCN `AA07898136`, GCN + chứng thư định giá in `AA08798136` (đảo 2 ký tự, Levenshtein = 2) → 2 tài sản, tài sản khai trên
+  đơn vay báo `COLLATERAL_NOT_VALUED`. Người dùng chọn logic linh động thay cho vá thêm luật: chấm số GCN (OSA = 1), số vào sổ (kể cả chỉ
+  trùng phần số), chủ sở hữu, địa chỉ; thửa/tờ, căn/tòa khác vẫn loại trừ cứng. Vùng nghi trùng **gộp, chờ xác nhận** (khác OQ-FS-01 của
+  người, có chủ đích): tài sản `AMBIGUOUS`, hồ sơ 360 `match_review` + `COLLATERAL_MATCH_REVIEW_REQUIRED`, giá trị định giá vào LTV dưới dạng
+  bản ghi cần xem. Tham số chuyên gia `asset_fs_params.json` 0.1.0-expert, chưa ước lượng trên dữ liệu thật. Chưa làm: S5 "Gần khớp" (D-41)
+  và S3-R15(5) chưa nhận đảo 2 ký tự (làm ở D-118); xe vẫn theo luật cũ. Spec `cross_cutting/s3_fellegi_sunter.md` §9.
+- **D-118 (2026-10-29)** Một ngưỡng "lệch một lỗi" cho mã/số ở cả bốn nơi: S2 bản trùng (D-43, S2-R18b), S3-R15(5), S5 "Gần khớp" (D-41,
+  S5-R07) và sổ claim / LAC (`PROBABLE_OCR_ERROR`). Lệch một lỗi = thêm / bớt / thay 1 ký tự **hoặc đảo 2 ký tự liền nhau** (OSA = 1),
+  cả hai dài ≥ 6 (`nearIdentifier`, `s5/compare-exact.ts`). Lý do: đối chiếu LAC với deck — tên khác dấu đã là biến thể, nhưng số GCN
+  `AA07898136` (đơn vay) / `AA08798136` (GCN + chứng thư định giá) vẫn ra `DISPUTED` → `FIELD_CONFLICT` mức danger, cộng
+  `COLLATERAL_MATCH_REVIEW_REQUIRED` cho cùng tài sản. Sau D-118 ca này theo đúng D-41: `PROBABLE_OCR_ERROR` (cảnh báo), tài sản `CONFIRMED`,
+  giá trị định giá vào LTV chính thức. Ca chỉ một chứng từ mỗi bên (không có đa số) vẫn `DISPUTED` và gộp chờ xác nhận (D-117).
+  Không đổi: nối gần đúng S3-R15(2) khi `s3_asset_matcher = rules` (giữ đường quay lui), số định danh người (S3-R13).
+- **D-119 (2026-10-29)** Sửa lỗi của D-117: điều kiện loại trừ cứng (thửa/tờ, căn/tòa…) chỉ xét cho cặp đang chấm, nên đơn vay ghi
+  `BX123456` (không thửa/tờ) nối chính xác với GCN-A cùng số và nối FS (`NEAR` + cùng chủ, `MATCH`) với GCN-B `BX123465` của mảnh đất khác
+  → hai GCN khác thửa thành một tài sản `AMBIGUOUS`; sau D-118 conflict số GCN còn bị gắn nghi lỗi đọc. Nay xét ở cấp cụm: cạnh FS chỉ
+  nhận khi mọi cặp giữa hai cụm hai đầu không mâu thuẫn, cạnh điểm cao xét trước. `s3_asset_matcher = rules` không đổi.
+  Spec `cross_cutting/s3_fellegi_sunter.md` §9.1.
+
+- **D-120 (2026-10-30)** LAC là đường duy nhất của rule LLM (yêu cầu người dùng; không giữ tương thích ngược, như D-114/D-115).
+  (1) Gỡ tham số `lac_mode` (registry, ô chọn trên `/loan-appraisal-v2`), chế độ `shadow`, đường prompt cũ `{{master_data}}` + OCR thô
+  cho mọi rule (`promptDataScope`, `compactMasterData`, `renderDossierGraph` / `graph/render.ts`), `scripts/lac-shadow-report.ts` và
+  `lac-compare`. T-LAC-07 bỏ: không còn `off` để so; bộ hồ sơ chuẩn vẫn dùng cho T-FS-06. `POLICY_CHECKS_PROMPT_TEMPLATE` là template LAC
+  (nên `reproducibility.prompt_sha256` của `policy_checks` ghi đúng template thực gửi — trước đây ghi template cũ khi chạy `on`).
+  (2) OCR thô **giữ** làm phụ lục `{{evidence}}` (đổi OQ-LAC-07): chỉ loại chứng từ rule khai `ocr.<doc_type_key>` (khóa mới,
+  `isKnownInput` kiểm như `evidence.*`; cũng đưa dữ kiện LAC của loại đó vào phạm vi), ngân sách một phần ba `EVIDENCE_CHAR_BUDGET`,
+  LAC nhận phần còn lại. Model dẫn `D<n>:<field>`; `resolvePromptRefs` đổi cả `F<n>` lẫn `D<n>` về `record_id`, rào trust của LAC áp
+  như nhau (dẫn `D<n>` của đơn vay vẫn `DECLARED_ONLY`). (3) Template ghi đè thiếu `{{context}}` được tự chuyển
+  (`upgradeLegacyPolicyTemplate`: `{{master_data}}` đầu tiên → `{{context}}`), warning `LAC_TEMPLATE_LEGACY` (đổi nghĩa LAC-R16).
+  (4) Dựng LAC lỗi → rule LLM `NOT_RUN` (`LAC_UNAVAILABLE`), không còn đường dự phòng. `loan_application_context_summary` bỏ `mode`;
+  `content_preview.lac` luôn có khi rule LLM chạy. Kết quả cũ trong DB còn `mode` — giao diện bỏ qua.
+- **D-121 (2026-10-30)** Hiệu chỉnh hồ sơ và tính lại theo [case_corrections.md](cross_cutting/case_corrections.md), T-COR-01…08, nhánh
+  `feat/case-corrections`. Không lưu trạng thái (D-01, D-02): mọi kết quả có `case_seal` (HMAC-SHA256, HKDF từ `ENCRYPTION_KEY`) trên
+  `documents` + `dossier_precheck`; tính lại = Operation mới với đúng một `case_input.json`, bỏ S1/S2 (spike: `documents.classify` +
+  `dossier_precheck` đủ dựng checkpoint 0–1). Ba loại hiệu chỉnh: `OCR_FIX` (`applyOcrFixes`, thay T-EDIT-01; chỉ đánh dấu lá đã sửa, không
+  nâng `field_confidences` cấp 1), `SAME/DIFFERENT_SUBJECT` (S3 must-link / cannot-link, `matched_by = HUMAN_LINK`, tài sản `link = HUMAN`;
+  thêm mã `LINK_UNSUPPORTED`, `LINK_CONFLICT`), `FACT_RESOLUTION` (trust mới `OVERRULED`, rào như `DISPUTED`; hồ sơ 360 dùng giá trị được
+  chọn cho trường khoản vay / định danh, số tiền thu nhập chưa — OQ-COR-06). Hồ sơ 360 `conflicts[].options[].record_ids` để UI dựng hiệu
+  chỉnh bằng mã ổn định. Upload `.json` chỉ cho `workflows:loan-appraisal` và `workflows:loan-correction-draft`. UI: tab "Hiệu chỉnh"
+  (`CorrectionsPanel`), khay giữ trong state trang, tải `case_input.json`, "Tính lại". Trợ lý LLM (`loan-correction-draft`): một lời gọi,
+  bảng ứng viên mã ngắn, mọi mục kiểm bằng code (`validateDrafts`), không tự áp. **Lệch so với spec:** hạn tính lại hiện là câu nhắc cố định
+  ("lưu 7 ngày"), chưa tính ngày theo `created_at` vì kết quả không mang thời điểm tạo Operation; tab UI chưa chạy thử trên app (không có
+  Postgres / Redis trên máy lúc làm). Endpoint `workflows:loan-correction-draft` phải được bật trên Profile thì UI mới gọi được. Kiểm tra:
+  `tsc` 0 lỗi; full jest 334 suite / 3476 test qua (một test thời gian `property-17-trend` chập chờn khi chạy cả bộ, chạy riêng qua).

@@ -21,7 +21,7 @@ describe('Nhãn chỉ số tài chính', () => {
 
 describe('Tóm tắt ngữ cảnh đơn vay', () => {
   const summary: LoanApplicationContextSummary = {
-    lac_version: '1.0', mode: 'shadow', used_in_prompt: false,
+    lac_version: '1.0', used_in_prompt: false,
     source_hash: '0123456789abcdef0123456789abcdef', fact_count: 4,
     rendered_fact_count: null, conflicts: 2, gaps: [],
   };
@@ -29,10 +29,9 @@ describe('Tóm tắt ngữ cảnh đơn vay', () => {
     expect(lacSummaryView()).toBeNull();
     expect(lacSummaryView(null)).toBeNull();
   });
-  it('hiển thị chế độ thử, số đếm và chỉ 12 ký tự mã nguồn', () => {
+  it('hiển thị số đếm và chỉ 12 ký tự mã nguồn', () => {
     expect(lacSummaryView(summary)).toEqual({ rows: [
       { label: 'Phiên bản', value: '1.0' },
-      { label: 'Chế độ', value: 'Chạy thử (chỉ đo, không đổi kết quả)' },
       { label: 'Đã dùng trong prompt', value: 'Không' },
       { label: 'Mã nguồn dữ liệu', value: '0123456789ab' },
       { label: 'Số dữ kiện', value: '4' },
@@ -40,10 +39,9 @@ describe('Tóm tắt ngữ cảnh đơn vay', () => {
       { label: 'Số mâu thuẫn', value: '2' },
     ], gaps: [] });
   });
-  it('hiển thị chế độ dùng thật và giữ số 0', () => {
-    const view = lacSummaryView({ ...summary, mode: 'on', used_in_prompt: true, rendered_fact_count: 0 });
+  it('hiển thị đã dùng trong prompt và giữ số 0', () => {
+    const view = lacSummaryView({ ...summary, used_in_prompt: true, rendered_fact_count: 0 });
     expect(view?.rows).toEqual(expect.arrayContaining([
-      { label: 'Chế độ', value: 'Đang dùng cho rule LLM' },
       { label: 'Đã dùng trong prompt', value: 'Có' },
       { label: 'Số dữ kiện đưa vào prompt', value: '0' },
     ]));

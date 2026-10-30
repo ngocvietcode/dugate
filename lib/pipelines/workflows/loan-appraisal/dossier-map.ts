@@ -2,9 +2,10 @@
 // không cần checkpoint và không thêm stage vào DAG. Lỗi S3 không làm đổ workflow: trả null kèm cảnh báo không chứa PII.
 import type { MapDossierData } from '@/lib/loan-dossier/contracts/check-stages';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
+import { loadAssetFsParams } from '@/lib/loan-dossier/s3/fs/asset-params';
 import { loadFsParams } from '@/lib/loan-dossier/s3/fs/params';
 import { fsShadow, resolveS3Matcher, type FsShadowSummary } from '@/lib/loan-dossier/s3/fs/shadow';
-import { runMapDossier } from '@/lib/loan-dossier/s3/run';
+import { resolveS3AssetMatcher, runMapDossier, type MapDossierInput } from '@/lib/loan-dossier/s3/run';
 import { checkInvariants } from '@/lib/loan-dossier/s3/status';
 
 import { consolidateParams } from './run-params';
@@ -28,13 +29,18 @@ export function runMapStage(
   evidences: ReadonlyArray<EvidenceEnvelope>,
   pipelineVars: Record<string, unknown>,
   now?: () => Date,
+  /** COR-R08: liên kết chủ thể của lần tính lại và nơi nhận báo cáo áp. */
+  corrections?: Pick<MapDossierInput, 'links' | 'onLinkReport'>,
 ): MapStageOutcome {
   try {
     const { dossier_submitted_at } = consolidateParams(pipelineVars, now ? now() : undefined);
-    const result = runMapDossier({ evidences, dossier_submitted_at, now });
+    const asset_matcher = resolveS3AssetMatcher(pipelineVars.s3_asset_matcher);
+    const result = runMapDossier({ evidences, dossier_submitted_at, now, asset_matcher, ...corrections });
     if (!result.data) return { data: null, status: result.status, status_code: result.status_code, warning: 'MAP_DOSSIER_NO_DATA: S3 không trả dữ liệu.' };
     const violations = checkInvariants(result.data, new Set(evidences.filter((e) => e.status === 'SUCCESS').map((e) => e.evidence_id)));
     const warnings = violations.length > 0 ? [`MAP_DOSSIER_INVARIANT: ${violations.length} vi phạm nhất quán ở kết quả gom người & tài sản.`] : [];
+    // D-117: catalog FS tài sản hỏng → runMapDossier đã chạy luật cũ; báo để không âm thầm đổi cách nối.
+    if (asset_matcher === 'fs' && !loadAssetFsParams().ok) warnings.push('ASSET_FS_PARAMS_INVALID: catalog asset_fs_params.json không hợp lệ, nối tài sản theo luật cũ.');
     let fs_shadow: FsShadowSummary | undefined;
     if (resolveS3Matcher(pipelineVars.s3_matcher) === 'shadow') {
       // FS-R09: catalog hỏng thì bỏ shadow, không đoán tham số.

@@ -206,6 +206,8 @@ export const CollateralSchema = z.object({
   key: z.string().nullable(),
   usage_contexts: z.array(z.string()),
   context_status: z.string(),
+  /** D-117: tài sản gộp từ nguồn nối gần đúng / nghi trùng và chưa CONFIRMED — giá trị định giá chỉ tham khảo, chờ xác nhận. */
+  match_review: z.boolean(),
   owners: z.array(z.object({ person_id: z.string(), current: z.boolean() }).strict()),
   valuations: z.array(ValuationSchema),
   /** Giá trị dùng tính LTV theo `merge_policies.json` (D-112: thấp nhất các chứng thư). */
@@ -233,14 +235,15 @@ export const ConflictSchema = z.object({
   field: z.string(),
   field_label: z.string(),
   kind: z.enum(['DISPUTED', 'PROBABLE_OCR_ERROR']),
-  options: z.array(z.object({ fact_id: z.string(), value: Scalar, doc_types: z.array(z.string()) }).strict()).min(2),
+  /** `record_ids` (COR-R05): mã ổn định của các lá ghi giá trị này — để giao diện dựng FACT_RESOLUTION; fact_id đổi sau mỗi lần tính lại. */
+  options: z.array(z.object({ fact_id: z.string(), value: Scalar, doc_types: z.array(z.string()), record_ids: z.array(z.string()) }).strict()).min(2),
 }).strict();
 
 export const IssueCodeSchema = z.enum([
   'FIELD_CONFLICT', 'PROBABLE_OCR_ERROR', 'ROLE_CONFLICT', 'ID_NUMBER_REVIEW', 'LOW_MATCH_CONFIDENCE', 'PARTY_NOT_MAPPED',
   'RELATIVE_NOT_VERIFIED', 'BUSINESS_NUMBER_MISMATCH', 'BUSINESS_MATCH_REVIEW', 'BUSINESS_OWNER_NOT_VERIFIED',
   'INCOME_NOT_EVIDENCED', 'INCOME_AMOUNT_MISSING', 'INCOME_OWNER_NOT_MAPPED', 'DECLARED_INCOME_NOT_LINKED',
-  'ADVERSE_DEBT_GROUP', 'UNDECLARED_DEBT', 'VALUATION_GAP', 'COLLATERAL_NOT_VALUED', 'COLLATERAL_CONTEXT_AMBIGUOUS',
+  'ADVERSE_DEBT_GROUP', 'UNDECLARED_DEBT', 'VALUATION_GAP', 'COLLATERAL_NOT_VALUED', 'COLLATERAL_CONTEXT_AMBIGUOUS', 'COLLATERAL_MATCH_REVIEW_REQUIRED',
   'EVIDENCE_READ_ERROR', 'SUPERSEDED_EVIDENCE', 'MERGE_POLICY_INVALID',
   'ID_DOCUMENT_EXPIRED', 'RELATED_COUNTERPARTY', 'DEAL_PRICE_MISMATCH', 'LOAN_EXCEEDS_DEAL',
   'LEGAL_REP_NOT_VERIFIED', 'FILING_NOT_LINKED',

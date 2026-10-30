@@ -223,3 +223,59 @@ có nhãn. Script TypeScript `scripts/fs-estimate-params.ts`, chạy trong môi 
 | **OQ-FS-03** | Ai duyệt một `params_version` mới; có áp quy trình quản lý rủi ro mô hình của ngân hàng không | **Đã quyết (D-112):** Dev lead + Risk, có báo cáo đánh giá đi kèm | Risk |
 | **OQ-FS-04** | Bảng ánh xạ địa danh trước / sau sáp nhập đơn vị hành chính 2025 (trùng câu hỏi Q5 của uat-analysis) | **Đã quyết (D-112):** Chưa có thì `permanent_address` chỉ có `AGREE` / `MISSING` | Đơn vị |
 | **OQ-FS-05** | Dùng bảng tần suất tên riêng tiếng Việt để chỉnh `u` theo độ phổ biến của tên không; nguồn bảng | **Đã quyết (D-112):** Không ở v1 | BA |
+
+## 9. Nối tài sản bất động sản (D-117, `s3_asset_matcher`)
+
+Áp cho **cặp descriptor BĐS** (`real_estate`, `apartment`) **chưa chung khóa đầy đủ** (S3-R14). Thay cho nối gần đúng S3-R15(2) ở
+cặp này; xe vẫn theo S3-R15(2). Bật mặc định (`s3_asset_matcher = fs`), `rules` quay về luật cũ. Catalog
+`03_catalogs/asset_fs_params.json`; hỏng → chạy luật cũ + cảnh báo `ASSET_FS_PARAMS_INVALID`.
+
+Ca gốc (UAT): đơn vay ghi GCN `AA07898136`, GCN và chứng thư định giá in `AA08798136` — đảo 2 ký tự liền nhau, Levenshtein = 2 nên
+S3-R15(2) không nối; tài sản khai trên đơn vay mất chứng thư định giá → `COLLATERAL_NOT_VALUED`.
+
+### 9.1 Trường và mức
+
+| Trường | Mức | Ghi chú |
+|---|---|---|
+| `certificate_number` | `AGREE` / `NEAR` / `DISAGREE` | `NEAR`: cả hai dài ≥ 6, khoảng cách OSA = 1 (thêm / bớt / thay 1 ký tự **hoặc đảo 2 ký tự liền nhau**) |
+| `certificate_book_number` | `AGREE` / `DIGITS_AGREE` / `DISAGREE` | `DIGITS_AGREE`: phần số bỏ số 0 đầu trùng, ≥ 3 chữ số (`CN 6475` ≡ `CS 06475`, ca V-24) |
+| `owner` | `AGREE` / `DISAGREE` | Người của party `OWNER` / `COLLATERAL_OWNER` trỏ tới tài sản (S3-R17); party chưa ghép người → so theo số định danh. Khác `owner_person_ids`: chủ TSBĐ khai trên đơn vay cũng tính, chỉ dùng làm bằng chứng nối |
+| `address` | `AGREE` | Chỉ `AGREE` / `MISSING` theo OQ-FS-04 (chưa có bảng địa danh 2025) |
+
+Thiếu ở một bên → `MISSING`, trọng số 0 (thiếu không phải bất đồng). Thửa/tờ, căn/tòa không chấm: trùng đã là khóa chính xác, còn mọi
+field định danh khác (ngoài số GCN, số vào sổ) mâu thuẫn là **điều kiện loại trừ cứng** như S3-R15(2). Điều kiện xét ở **cấp cụm** (D-119):
+cạnh FS chỉ được nhận khi mọi cặp descriptor giữa hai cụm ở hai đầu (đã nối chính xác và qua cạnh FS đã nhận) không mâu thuẫn; cạnh điểm
+cao xét trước. Nhờ vậy đơn vay chỉ ghi số GCN không bắc cầu được hai GCN khác thửa của cùng chủ. S3-R15(3) (bắc cầu gom 2
+descriptor cùng evidence) áp cho cạnh FS như cạnh gần đúng.
+
+### 9.2 Điểm, quyết định, tham số chuyên gia `0.1.0-expert`
+
+`W = Σ log2(m/u)`; `W ≥ 15` → `MATCH`, `8 < W < 15` → `POSSIBLE_MATCH`, `W ≤ 8` → `NO_MATCH`.
+
+| Mức | log2(m/u) |
+|---|---|
+| GCN `NEAR` / `DISAGREE` | +8.91 / −8.97 |
+| Số vào sổ `AGREE` / `DIGITS_AGREE` / `DISAGREE` | +9.73 / +6.64 / −4.32 |
+| Chủ `AGREE` / `DISAGREE` | +4.25 / −4.25 |
+| Địa chỉ `AGREE` | +2.32 |
+
+| Ca | W | Quyết định |
+|---|---|---|
+| GCN `NEAR` + số vào sổ + chủ trùng (ca gốc) | 22.9 | `MATCH` |
+| GCN `NEAR`, không bằng chứng khác (giữ hành vi S3-R15(2)) | 8.91 | `POSSIBLE_MATCH` |
+| GCN `NEAR` + chủ khác | 4.66 | `NO_MATCH` |
+| GCN khác hẳn + số vào sổ + chủ + địa chỉ trùng | 7.33 | `NO_MATCH` |
+
+### 9.3 Rule
+
+| ID | Rule |
+|---|---|
+| **FSA-R01** | `MATCH` và `POSSIBLE_MATCH` đều **gộp** vào một tài sản (khác OQ-FS-01 của người: định giá phải đi theo tài sản thì mới thấy được để xác nhận; tài sản không bị tính tự động vì FSA-R02). Member chỉ vào nhóm qua cạnh `POSSIBLE_MATCH` có `link = POSSIBLE` |
+| **FSA-R02** | Nhóm có cạnh `POSSIBLE_MATCH` → `AMBIGUOUS` / `ASSET_IDENTIFIER_CONFLICT` (S3-R19), trừ khi một đầu cạnh là chứng từ lệch của conflict nghi lỗi đọc S3-R15(5) |
+| **FSA-R03** | `sources[].match` = `{ decision, weight, breakdown }` của cạnh FS điểm cao nhất chạm nguồn đó; chỉ mức, không giá trị (FS-R13) |
+| **FSA-R04** | Hồ sơ 360: `collateral[].match_review` = tài sản chưa `CONFIRMED` và có nguồn nối gần đúng / FS. Khi đúng: cảnh báo `COLLATERAL_MATCH_REVIEW_REQUIRED` thay cho `COLLATERAL_CONTEXT_AMBIGUOUS`; giá trị định giá vẫn vào `collateral_value` nhưng nằm trong `review_record_ids` (LTV tham khảo, chưa chính thức) |
+
+### 9.4 Chưa kiểm chứng
+
+- Tham số là giá trị chuyên gia, chưa đo trên bộ hồ sơ có nhãn tài sản; OQ-FS-02 (0 gộp nhầm) chưa chứng minh cho tài sản.
+- Từ D-118, S3-R15(5), S5 "Gần khớp" và sổ claim dùng cùng `nearIdentifier` (OSA = 1): khi ≥ 2 chứng từ ghi số đúng, chứng từ đảo 2 ký tự là nghi lỗi đọc và tài sản giữ `CONFIRMED` (D-41) dù cạnh FS là `POSSIBLE_MATCH`.

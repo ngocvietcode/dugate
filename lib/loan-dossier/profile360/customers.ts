@@ -120,7 +120,7 @@ export function buildCustomers(lookup: Lookup, s3: MapDossierData | null, asOf: 
   const household = householdRelations(lookup);
   const subjects = new Map(lac.subjects.map((s) => [s.subject_id, s]));
   const c360 = new Map(s3.customer_360.map((c) => [c.person_id, c]));
-  const factsOf = (personId: string, field: string) => lac.facts.filter((f) => f.subject_id === personId && f.field === field && !f.hidden && f.trust !== 'SUPERSEDED');
+  const factsOf = (personId: string, field: string) => lac.facts.filter((f) => f.subject_id === personId && f.field === field && !f.hidden && f.trust !== 'SUPERSEDED' && f.trust !== 'OVERRULED');
   const customers = s3.role_registry
     .map((p, order) => ({ p, order }))
     .sort((a, b) => rankOf(subjects.get(a.p.person_id)?.roles ?? a.p.roles) - rankOf(subjects.get(b.p.person_id)?.roles ?? b.p.roles) || a.order - b.order)

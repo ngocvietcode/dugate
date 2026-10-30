@@ -209,53 +209,53 @@ Mọi thay đổi được tóm tắt cho audit qua `summarizeCheckSetChange`/
 - Rule được khai báo nhưng model không trả kết quả ⇒ `NOT_RUN`, không được coi
   là đạt.
 
-### Ngân sách prompt của rule LLM (`selectPromptEvidence`)
+### Dữ liệu của rule LLM: Loan Application Context (D-103, D-120)
 
-Toàn bộ rule LLM chạy trong một lần gọi. Evidence đưa vào prompt được lọc để
-giữ chi phí/độ trễ ổn định với hồ sơ lớn:
-
-1. Chỉ loại chứng từ mà rule khai trong `input` (`evidence.<doc_type>`) và chỉ
-   nhóm Customer 360 khai trong `master_data.<group>`. Có rule không khai nguồn
-   nào ⇒ nhận toàn bộ (vẫn trong ngân sách).
-2. Bỏ metadata mẫu biểu `legal_info.*`; field lặp trong mảng chỉ giữ
-   `MAX_ARRAY_ITEMS_PER_FIELD` phần tử đầu (`instances[i]` không bị cắt).
-3. Ngân sách `EVIDENCE_CHAR_BUDGET` ký tự, chia xoay vòng giữa các chứng từ.
-4. Mỗi chứng từ (file + loại) có mã ngắn `D<n>` và dữ liệu dạng **JSON lồng
-   nhau** (không lặp đường dẫn đầy đủ trên từng dòng). Field chưa chấp nhận
-   được liệt kê ở dòng `REVIEW:` của chứng từ.
-
-Model dẫn nguồn bằng `"D<n>:<đường dẫn field>"`. `resolveEvidenceRefs` đổi về
-`evidence_id` thật trước khi áp rào an toàn (tồn tại, `ACCEPTED`, ngưỡng), nên
-`RuleResult.evidence_ids` và UI không đổi:
-
-- khớp đúng field đã hiển thị ⇒ evidence_id của field đó; `a.b.2.c` ≡ `a.b[2].c`;
-- đường dẫn nhóm (`D2:owners[0]`) ⇒ tối đa 6 field đã hiển thị bên trong;
-- mã/field không hiển thị cho model ⇒ bị loại; `ev-…` gốc vẫn được nhận
-  (template override kiểu cũ).
-
-`selectPromptEvidence` thuần và tất định nên bước parse dựng lại đúng bảng mã.
-Thống kê lọc được ghi vào `content_preview.prompt_evidence` của stage 5.
-**Khi thêm rule LLM tuỳ chỉnh, khai báo đủ `input`**; thiếu loại chứng từ thì
-rule chỉ thấy dữ liệu của loại đã khai.
-
-### Loan Application Context (`lac_mode`, D-103)
-
-Thay cặp `{{master_data}}` + `{{evidence}}` bằng **một** khối `{{context}}`: mọi dữ kiện là một dòng `F<n>` có trạng thái tin cậy
+Toàn bộ rule LLM chạy trong một lần gọi, trên **một** khối `{{context}}`: mọi dữ kiện là một dòng `F<n>` có trạng thái tin cậy
 (`CORROBORATED` / `DECLARED` / `DISPUTED` …) và cờ "cần soát", người / tài sản dùng mã `person-n` / `asset-n` của S3, kèm quan hệ,
 mâu thuẫn và khoảng trống dựng sẵn. Code: `lib/loan-dossier/context/` (`build.ts`, `render.ts`, `scope.ts`, `schema.ts`). Spec:
-[loan_application_context.md](../../../../docs/loan-appraisal/spec-v3/cross_cutting/loan_application_context.md).
+[loan_application_context.md](../../../../docs/loan-appraisal/spec-v3/cross_cutting/loan_application_context.md). Không còn tham
+số `lac_mode` hay đường prompt cũ (`{{master_data}}` + OCR thô cho mọi rule) — gỡ ở D-120.
 
-| `lac_mode` | Hành vi |
-|---|---|
-| `off` (mặc định) | Như cũ |
-| `shadow` | Dựng + render LAC chỉ để đo (`content_preview.lac`); prompt và lời gọi model giống hệt `off` |
-| `on` | Template mặc định `POLICY_CHECKS_LAC_PROMPT_TEMPLATE`; model dẫn `F<n>` / `F<n>.<k>`. Template ghi đè không có `{{context}}` → đường cũ + warning `LAC_TEMPLATE_LEGACY`; dựng LAC lỗi → đường cũ + `LAC_UNAVAILABLE:*` |
+`F<n>` đổi về `record_id` (= `evidence_id` của registry) rồi chạy rào an toàn ở trên, cộng hai rào chỉ cho `PASS`: dẫn dữ kiện
+`DISPUTED` / `PROBABLE_OCR_ERROR` / `SUPERSEDED` → `REVIEW` (`PROMPT_CHECK_EVIDENCE_DISPUTED`); dẫn bất kỳ dữ kiện `DECLARED` nào →
+`REVIEW` (`PROMPT_CHECK_DECLARED_ONLY`), trừ rule khai `allow_declared_pass: true`. Khóa `input`: `lac.loan`, `lac.business`,
+`lac.person[.<role>]`, `lac.asset[.<usage>]`, `lac.relations`, `lac.document.<doc_type_key>`, `ocr.<doc_type_key>`; khóa cũ
+(`evidence.*`, `master_data.*`) được ánh xạ sang phạm vi LAC. Kết quả mang `loan_application_context_summary` (số đếm, mã gap,
+`source_hash`; không có giá trị dữ kiện). Dựng LAC lỗi → rule LLM `NOT_RUN` + warning `LAC_UNAVAILABLE:*`.
 
-Khi `on`, `F<n>` đổi về `record_id` (= `evidence_id` của registry) rồi chạy **nguyên** rào hiện có, cộng hai rào chỉ cho `PASS`:
-dẫn dữ kiện `DISPUTED` / `PROBABLE_OCR_ERROR` / `SUPERSEDED` → `REVIEW` (`PROMPT_CHECK_EVIDENCE_DISPUTED`); chỉ dẫn dữ kiện
-`DECLARED` → `REVIEW` (`PROMPT_CHECK_DECLARED_ONLY`), trừ rule khai `allow_declared_pass: true`. Khóa `input` mới: `lac.loan`,
-`lac.business`, `lac.person[.<role>]`, `lac.asset[.<usage>]`, `lac.relations`, `lac.document.<doc_type_key>`; khóa cũ được ánh xạ.
-Kết quả mang `loan_application_context_summary` (số đếm, mã gap, `source_hash`; không có giá trị dữ kiện).
+**Phụ lục OCR thô (`ocr.<doc_type_key>`, `{{evidence}}`).** Rule khai `ocr.<loại>` thì prompt kèm thêm OCR thô của loại chứng từ đó
+(VD bảng CIC dài mà dòng dữ kiện không trình bày tốt), qua `selectPromptEvidence`:
+
+1. Chỉ loại chứng từ được khai `ocr.<loại>`; không rule nào khai ⇒ không có phụ lục.
+2. Bỏ metadata mẫu biểu `legal_info.*`; field lặp trong mảng chỉ giữ `MAX_ARRAY_ITEMS_PER_FIELD` phần tử đầu.
+3. Ngân sách `OCR_APPENDIX_CHAR_BUDGET` (một phần ba `EVIDENCE_CHAR_BUDGET`), chia xoay vòng giữa các chứng từ; LAC nhận phần còn lại.
+4. Mỗi chứng từ (file + loại) có mã `D<n>` và JSON lồng nhau; field chưa chấp nhận ở dòng `REVIEW:`.
+
+Model dẫn `"D<n>:<đường dẫn field>"` khi dữ liệu chỉ có ở phụ lục; `resolveEvidenceRefs` đổi về `evidence_id` (đường dẫn nhóm ⇒ tối đa
+6 field; mã/field không hiển thị ⇒ bị loại). Record của phụ lục là lá của LAC, nên rào trust ở trên áp như khi dẫn `F<n>`.
+Thống kê phụ lục ghi ở `content_preview.prompt_evidence`, của LAC ở `content_preview.lac`.
+
+**Template ghi đè.** Placeholder bắt buộc `{{checks}}`, `{{context}}`, `{{output_schema}}` (thiếu thì tự nối). Template kiểu cũ trên
+Profile không có `{{context}}` được tự chuyển: `{{master_data}}` đầu tiên thành `{{context}}`, các chỗ khác bỏ, `{{evidence}}` giữ nghĩa
+phụ lục; ghi warning `LAC_TEMPLATE_LEGACY` để người cấu hình sửa lại hướng dẫn dẫn nguồn (`F<n>` thay `D<n>`).
+
+## Hiệu chỉnh và tính lại (COR, `case_input.json`)
+
+Spec: [case_corrections.md](../../../../docs/loan-appraisal/spec-v3/cross_cutting/case_corrections.md). Không lưu trạng thái: mọi kết quả có
+`documents` mang `case_seal` (HMAC-SHA256 qua `canonical(documents + dossier_precheck + …)`, khóa HKDF từ `ENCRYPTION_KEY`,
+`lib/loan-dossier/corrections/seal.ts`). Gửi lại đúng một `case_input.json` thì workflow (`case-input.ts`) kiểm schema + niêm phong,
+dựng checkpoint stage 0–1 từ `documents` (không phân loại, không OCR, không gọi lại kiểm tra sơ bộ) rồi áp theo thứ tự COR-R06:
+
+| Hiệu chỉnh | Áp ở | Hiệu ứng |
+|---|---|---|
+| `OCR_FIX` | `applyOcrFixes` (bản sao, trước S3) | Lá đã sửa: registry `ACCEPTED`, nguồn LAC `origin = HUMAN_EDIT`, dòng prompt "đã sửa đọc" |
+| `SAME_SUBJECT` / `DIFFERENT_SUBJECT` | S3 (`s3/links.ts`, `matchParties`, `groupAssets`) | Must-link (`matched_by = HUMAN_LINK`, tài sản `link = HUMAN`) / cannot-link; không thắng khóa / số định danh |
+| `FACT_RESOLUTION` | LAC (`applyResolutions`) | Fact chọn tính lại trust; fact bị bác `OVERRULED` (rào như `DISPUTED`); mục `HIỆU CHỈNH` trong prompt; hồ sơ 360 dùng giá trị được chọn cho trường khoản vay / định danh |
+
+`documents` của kết quả luôn là OCR gốc (hiệu chỉnh chỉ áp trong bộ nhớ) nên niêm phong lại giống hệt và `case_seal.source_operation_id`
+giữ Operation gốc qua nhiều lần tính lại. Kết quả có `correction_report` (chỉ mã), `config_snapshot.reproducibility.corrections_sha256`.
+Lý do / người sửa không vào prompt, log, `content_preview`.
 
 ## Evidence & provenance
 

@@ -6,6 +6,7 @@ import { docTypeByKey } from '../catalog';
 import { isDeclaredDocType } from '../catalog/declared';
 import { fieldLabel } from '../catalog/field-labels';
 import type { MapDossierData } from '../contracts/check-stages';
+import type { CorrectionReport, FactResolution } from '../corrections/schema';
 import { buildClaimLedger, type Claim } from '../graph/claims';
 import type { EvidenceEnvelope } from '../s2/common-schema';
 import {
@@ -14,6 +15,7 @@ import {
   type LacFact,
   type LacGap,
   type LacRelation,
+  type LacResolution,
   type LacSubject,
   type LacSubjectFlag,
   type LacTrust,
@@ -28,6 +30,12 @@ export interface BuildLacInput {
   /** Output S3; null khi S3 lỗi (LAC vẫn dựng, LAC-R10). */
   s3: MapDossierData | null;
   s3_status?: string | null;
+  /** COR-R07: record_id của lá đã qua OCR_FIX — nguồn đó mang `origin = HUMAN_EDIT`, `read_confidence = 1.0`. */
+  edited_record_ids?: ReadonlyArray<string>;
+  /** COR-R09: lựa chọn giá trị của người thẩm định trên nhóm mâu thuẫn. */
+  resolutions?: ReadonlyArray<FactResolution>;
+  /** Nhận báo cáo áp FACT_RESOLUTION (chỉ mã). */
+  onResolutionReport?: (report: Pick<CorrectionReport, 'applied' | 'skipped'>) => void;
 }
 
 /** Ngưỡng ACCEPTED của độ tin cậy đọc (cùng V2-R04 / ACCEPT_CONFIDENCE). */
@@ -67,6 +75,7 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
   const { evidences, s3 } = input;
   const ledger = buildClaimLedger(evidences, s3);
   const superseded = new Set((s3?.superseded_evidences ?? []).map((s) => s.evidence_id));
+  const edited = new Set(input.edited_record_ids ?? []);
 
   // ── Chủ thể của từng Claim: loan:* → loan, business:* → business-1, document:<ev> → doc-<n> theo thứ tự S2 ──
   const docOrder = new Map(evidences.map((e, i) => [e.evidence_id, i]));
@@ -92,7 +101,9 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
     const hidden = HIDDEN_FIELD.test(c.field);
     const mergeable = !hidden && c.value_norm !== null && c.contradicts.length === 0 && c.status !== 'SPELLING_VARIANT';
     const key = mergeable ? `${subject_id}\u0000${c.field}\u0000${String(c.value_norm)}` : null;
-    const sources = c.sources.map((s) => ({ record_id: s.record_id, doc_type_key: s.doc_type_key, page: s.page, read_confidence: s.read_confidence }));
+    const sources = c.sources.map((s) => (edited.has(s.record_id)
+      ? { record_id: s.record_id, doc_type_key: s.doc_type_key, page: s.page, read_confidence: 1, origin: 'HUMAN_EDIT' as const }
+      : { record_id: s.record_id, doc_type_key: s.doc_type_key, page: s.page, read_confidence: s.read_confidence }));
     const existing = key ? mergeIndex.get(key) : undefined;
     if (existing) {
       existing.sources.push(...sources);
@@ -126,8 +137,6 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
   for (const d of drafts) for (const cid of d.claimIds) draftOfClaim.set(cid, d);
   const facts: LacFact[] = ordered.map((d, i) => {
     const live = liveSourcesOf(d);
-    // D-112: xác nhận độc lập đếm theo LOẠI chứng từ; hai bản chụp của cùng một CCCD không phải hai nguồn.
-    const docTypes = new Set(live.map((s) => s.doc_type_key));
     // Sổ Claim không loại bản bị thay thế: mâu thuẫn mà mọi bên đối lập đều chỉ còn nguồn đã bị thay thế thì không còn (LAC-R05),
     // fact tính lại trust trên nguồn còn hiệu lực thay vì kẹt ở DISPUTED mà không có MÂU THUẪN nào giải thích.
     const contested = d.status === 'DISPUTED' || d.status === 'PROBABLE_OCR_ERROR';
@@ -136,9 +145,7 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
     if (live.length === 0) trust = 'SUPERSEDED';
     else if (contested && !opponentsGone) trust = d.status as LacTrust;
     else if (d.status === 'SPELLING_VARIANT') trust = d.status;
-    // Chỉ có lời khai của khách hàng (đơn vay, bảng kê…) thì vẫn là DECLARED dù có nhiều bản / nhiều loại lời khai (D-114).
-    else if (live.every((s) => isDeclaredDocType(s.doc_type_key))) trust = 'DECLARED';
-    else trust = docTypes.size >= 2 ? 'CORROBORATED' : 'SINGLE_SOURCE';
+    else trust = sourceTrust(live);
     const judged = live.length > 0 ? live : d.sources;
     const review = judged.every((s) => typeof s.read_confidence === 'number' && s.read_confidence >= LAC_ACCEPT_CONFIDENCE) ? 'ACCEPTED' : 'REVIEW';
     const contradicts = opponentsGone ? [] : [...new Set(d.contradictsClaims.map((cid) => factIdOfClaim.get(cid)).filter((x): x is string => !!x && x !== `fact-${i + 1}`))];
@@ -164,6 +171,8 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
     }
   }
 
+  const resolutions = applyResolutions(facts, input.resolutions ?? [], (f) => liveSourcesOfFact(f, superseded), input.onResolutionReport);
+
   const factsBySubject = new Map<string, LacFact[]>();
   for (const f of facts) factsBySubject.set(f.subject_id, [...(factsBySubject.get(f.subject_id) ?? []), f]);
 
@@ -181,6 +190,7 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
     facts,
     relations,
     conflicts,
+    ...(resolutions.length > 0 ? { resolutions } : {}),
     gaps,
     meta: {
       leaf_count: ledger.leaf_count,
@@ -191,6 +201,74 @@ export function buildLoanApplicationContext(input: BuildLacInput): LoanApplicati
       source_hash: sha256(sourceLines.join('\n')),
     },
   };
+}
+
+/** Trust theo nguồn còn hiệu lực khi không có mâu thuẫn (D-112, D-114). */
+function sourceTrust(live: ReadonlyArray<LacFact['sources'][number]>): LacTrust {
+  if (live.length === 0) return 'SUPERSEDED';
+  // Chỉ có lời khai của khách hàng (đơn vay, bảng kê…) thì vẫn là DECLARED dù có nhiều bản / nhiều loại lời khai (D-114).
+  if (live.every((s) => isDeclaredDocType(s.doc_type_key))) return 'DECLARED';
+  // D-112: xác nhận độc lập đếm theo LOẠI chứng từ; hai bản chụp của cùng một CCCD không phải hai nguồn.
+  return new Set(live.map((s) => s.doc_type_key)).size >= 2 ? 'CORROBORATED' : 'SINGLE_SOURCE';
+}
+
+const liveSourcesOfFact = (f: LacFact, superseded: ReadonlySet<string>) => f.sources.filter((s) => !superseded.has(evidenceIdOf(s.record_id)));
+
+/**
+ * COR-R09: áp FACT_RESOLUTION lên facts (sửa tại chỗ). Áp khi mọi record còn trong LAC, cùng (chủ thể, trường) và nhóm đang mâu thuẫn.
+ * Fact được chọn: trust tính lại như không mâu thuẫn — trừ khi nhóm còn giá trị đang tranh chấp mà người chưa xem; các fact còn lại → OVERRULED.
+ */
+function applyResolutions(
+  facts: LacFact[],
+  resolutions: ReadonlyArray<FactResolution>,
+  liveOf: (f: LacFact) => LacFact['sources'],
+  onReport?: BuildLacInput['onResolutionReport'],
+): LacResolution[] {
+  const factOfRecord = new Map(facts.flatMap((f) => f.sources.map((s) => [s.record_id, f] as const)));
+  const applied: CorrectionReport['applied'] = [];
+  const skipped: CorrectionReport['skipped'] = [];
+  const skip = (r: FactResolution, code: CorrectionReport['skipped'][number]['code']) => skipped.push({ correction_id: r.correction_id, kind: 'FACT_RESOLUTION', code });
+  const out: LacResolution[] = [];
+  const contested = (f: LacFact) => f.trust === 'DISPUTED' || f.trust === 'PROBABLE_OCR_ERROR';
+
+  // Kiểm trước, bỏ trùng sau: trong các bản hợp lệ cùng nhóm (cùng chủ thể + trường sau S3), corrected_at mới nhất thắng (hòa → bản đứng sau).
+  const checked = resolutions.map((r) => {
+    const seen = r.record_ids.map((id) => factOfRecord.get(id));
+    if (seen.some((f) => !f)) return { r, code: 'RESOLUTION_ORPHAN' as const };
+    const group = [...new Set(seen as LacFact[])];
+    const chosen = factOfRecord.get(r.chosen_record_id)!;
+    if (group.some((f) => f.subject_id !== chosen.subject_id || f.field !== chosen.field) || group.length < 2 || !group.some(contested)) return { r, code: 'RESOLUTION_STALE' as const };
+    return { r, group, chosen, key: `${chosen.subject_id}\u0000${chosen.field}` };
+  });
+  const winner = new Map<string, number>();
+  checked.forEach((c, i) => {
+    if (!('key' in c) || !c.key) return;
+    const prev = winner.get(c.key);
+    if (prev === undefined || Date.parse(c.r.corrected_at) >= Date.parse(checked[prev].r.corrected_at)) winner.set(c.key, i);
+  });
+
+  checked.forEach((c, i) => {
+    const { r } = c;
+    if ('code' in c && c.code) return skip(r, c.code);
+    if (!('key' in c) || winner.get(c.key!) !== i) return skip(r, 'DUPLICATE_TARGET');
+    const { group, chosen } = c as { group: LacFact[]; chosen: LacFact };
+    const overruled = group.filter((f) => f !== chosen);
+    const overruledIds = new Set(overruled.map((f) => f.fact_id));
+    for (const f of overruled) {
+      f.trust = 'OVERRULED';
+      f.contradicts = [];
+      f.adjudication = { correction_id: r.correction_id, role: 'OVERRULED' };
+    }
+    chosen.contradicts = chosen.contradicts.filter((id) => !overruledIds.has(id));
+    const unseen = facts.some((f) => f.subject_id === chosen.subject_id && f.field === chosen.field && !group.includes(f) && contested(f));
+    if (!unseen) chosen.trust = sourceTrust(liveOf(chosen));
+    chosen.adjudication = { correction_id: r.correction_id, role: 'CHOSEN' };
+    for (const f of facts) if (!overruledIds.has(f.fact_id)) f.contradicts = f.contradicts.filter((id) => !overruledIds.has(id));
+    out.push({ correction_id: r.correction_id, subject_id: chosen.subject_id, field: chosen.field, chosen_fact_id: chosen.fact_id, overruled_fact_ids: [...overruledIds] });
+    applied.push({ correction_id: r.correction_id, kind: 'FACT_RESOLUTION' });
+  });
+  onReport?.({ applied, skipped });
+  return out;
 }
 
 function mentionedIn(facts: ReadonlyArray<LacFact>, superseded: ReadonlySet<string>): LacSubject['mentioned_in'] {
@@ -224,6 +302,7 @@ function buildSubjects(
     const mapped = p.mapped_evidences as Array<{ match_confidence?: unknown; warnings?: unknown }>;
     if (mapped.some((m) => typeof m.match_confidence === 'number' && m.match_confidence < LOW_MATCH_CONFIDENCE)) flags.push('LOW_MATCH_CONFIDENCE');
     if (mapped.some((m) => Array.isArray(m.warnings) && m.warnings.includes('NAME_SPELLING_DIFFERENCE'))) flags.push('NAME_SPELLING_DIFFERENCE');
+    if ((mapped as Array<{ matched_by?: unknown }>).some((m) => m.matched_by === 'HUMAN_LINK')) flags.push('HUMAN_LINK');
     const name = c360.get(p.person_id)?.identity.full_name ?? p.full_name;
     out.push({
       subject_id: p.person_id, kind: 'person', label: name ?? '(không rõ tên)',
@@ -236,7 +315,8 @@ function buildSubjects(
     const ident = ['certificate_number', 'license_plate', 'chassis_number', 'apartment_number'].map((k) => ids[k]).find((v) => typeof v === 'string' && v);
     out.push({
       subject_id: a.asset_id, kind: 'asset', label: ident ? `${a.asset_type} ${String(ident)}` : a.asset_type,
-      roles: [...(a.usage_contexts as string[])], mentioned_in: mentionedIn(of(a.asset_id), superseded), flags: [],
+      roles: [...(a.usage_contexts as string[])], mentioned_in: mentionedIn(of(a.asset_id), superseded),
+      flags: (a.sources as Array<{ link?: unknown }>).some((s) => s.link === 'HUMAN') ? ['HUMAN_LINK'] : [],
     });
   }
   const docs = [...factsBySubject.keys()].filter((id) => id.startsWith('doc-')).sort((x, y) => (subjectRank.get(x) ?? 0) - (subjectRank.get(y) ?? 0));

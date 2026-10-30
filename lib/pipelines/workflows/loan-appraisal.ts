@@ -10,7 +10,7 @@
 //
 // Giai đoạn 2 TẠM THỜI không chạy các bước kiểm tra hồ sơ: checklist, đối chiếu chéo, master data, kiểm tra nháp (intake_assessment) và
 // readiness. Gom người & tài sản (S3, Customer 360) CHẠY sau S2 (thuần, không LLM, không stage riêng) và được dùng cho: `customer_360` của kết quả,
-// giá trị TSBĐ / LTV, và khối người & tài sản (dạng gọn dựng từ DossierGraph) trong prompt rule LLM. Kết quả gồm OCR (S2), Customer 360, chỉ số
+// giá trị TSBĐ / LTV, và Loan Application Context trong prompt rule LLM (D-120). Kết quả gồm OCR (S2), Customer 360, chỉ số
 // tài chính, bộ rule (engine + LLM) và khuyến nghị chạy cuối cùng.
 // Code các bước còn lại (lib/loan-dossier/s4..s5, master, intake-*) còn nguyên, chỉ không được gọi từ workflow (D-98).
 // Đường resume operation cũ (checkpoint `consolidate_dossier`, artifact không có stage_key) đã gỡ ở D-99.
@@ -68,6 +68,10 @@ import {
 } from './loan-appraisal/dossier-stages';
 import { createDossierPorts } from './loan-appraisal/stage-adapters';
 import { runMapStage } from './loan-appraisal/dossier-map';
+import { byKind, checkpointsFromCase, correctionsSha256, findCaseInputFile, loadCaseInput, mergeReports } from './loan-appraisal/case-input';
+import { applyOcrFixes } from '@/lib/loan-dossier/corrections/ocr-fix';
+import type { CaseInput, CorrectionReport } from '@/lib/loan-dossier/corrections/schema';
+import { sealCase } from '@/lib/loan-dossier/corrections/seal';
 import { buildDossierGraph, toDossierGraphView, type DossierGraph } from '@/lib/loan-dossier/graph';
 import { resolveLoanProductPolicy, snapshotPolicy } from './loan-appraisal/product-policy';
 import { buildReproducibilitySnapshot } from './loan-appraisal/reproducibility';
@@ -79,13 +83,10 @@ import {
   enabledPromptChecks,
   parsePromptCheckResults,
   promptChecksNotRun,
-  resolveLacMode,
-  type LacPromptOutcome,
+  type PromptCheckRefs,
 } from './loan-appraisal/prompt-checks';
 import { buildLoanApplicationContext } from '@/lib/loan-dossier/context/build';
-import { renderLoanApplicationContext } from '@/lib/loan-dossier/context/render';
 import type { LoanApplicationContext } from '@/lib/loan-dossier/context/schema';
-import { lacScopeFromInputs } from '@/lib/loan-dossier/context/scope';
 import { buildProfile360 } from '@/lib/loan-dossier/profile360/build';
 import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
 import { packForProduct } from './loan-appraisal/segment-packs/registry';
@@ -165,6 +166,27 @@ function stageResult(
 
 export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
   const { logger, filesData, pipelineVars } = ctx;
+  // ── Tính lại từ case_input.json (COR-R02, R03): bỏ S1/S2, dựng checkpoint 0–1 từ `documents` đã niêm phong. Đọc lại file ở mọi lần
+  // chạy (kể cả resume) vì hiệu chỉnh không nằm trong checkpoint. Sản phẩm / luồng lấy từ niêm phong, không từ form. ──
+  let caseInput: CaseInput | null = null;
+  try {
+    const caseFile = findCaseInputFile(filesData);
+    caseInput = caseFile ? await loadCaseInput(caseFile) : null;
+  } catch (error) {
+    await failWorkflow(ctx, error);
+    return;
+  }
+  if (caseInput) {
+    pipelineVars.product_code = caseInput.case_seal.product_code;
+    if (caseInput.case_seal.flow) pipelineVars.flow = caseInput.case_seal.flow;
+    pipelineVars.stop_after_intake = false;
+    if (ctx.currentStep < 2) {
+      const cp = checkpointsFromCase(caseInput);
+      saveStep(ctx, stageResult(0, { stepName: 'Phân loại (từ case_input)', processor: 'case-input', extracted_data: cp.classify }));
+      saveStep(ctx, stageResult(1, { stepName: 'Bóc tách (từ case_input)', processor: 'case-input', extracted_data: cp.extract }));
+      ctx.currentStep = 2;
+    }
+  }
   const resumeFromStep = ctx.currentStep;
   const product = getLoanProduct(pipelineVars.product_code as string | undefined);
   // Logic stage 2–4 theo phân khúc của sản phẩm (D-100); sản phẩm chưa có pack ném lỗi, không có pack mặc định.
@@ -191,7 +213,10 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
     ...snapshotPolicy(productPolicy, checkSet),
     ...(configWarnings.length ? { warnings: configWarnings } : {}),
     segment_pack: packSnapshot,
-    reproducibility: buildReproducibilitySnapshot(ctx),
+    reproducibility: {
+      ...buildReproducibilitySnapshot(ctx),
+      ...(caseInput ? { corrections_sha256: correctionsSha256(caseInput.corrections) } : {}),
+    },
   };
   const fileCount = filesData.length;
 
@@ -288,12 +313,22 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
 
     // ── Dữ liệu cho các stage sau: CHỈ OCR (S2). Registry dựng từ EvidenceEnvelope (V2-R04), thuần nên dựng lại mỗi lần resume. ──
     // Không có bản ghi trạng thái checklist (không có S4) và không loại bản bị thay thế (không có S3).
-    const evidence: EvidenceRegistry = buildEvidenceRegistryV3(extractCheckpoint.evidences, new Set(), null);
+    // COR-R06/R07: OCR_FIX áp trên bản sao trước mọi bước sau; `documents` của kết quả giữ OCR gốc (để niêm phong lại giống hệt).
+    const corrections = caseInput?.corrections ?? [];
+    const reports: Array<Pick<CorrectionReport, 'applied' | 'skipped'>> = [];
+    const fixed = applyOcrFixes(extractCheckpoint.evidences, byKind(corrections, 'OCR_FIX'));
+    if (caseInput) reports.push(fixed.report);
+    const workEvidences = caseInput ? fixed.evidences : extractCheckpoint.evidences;
+    const editedIds = new Set(fixed.edited_record_ids);
+    const registry: EvidenceRegistry = buildEvidenceRegistryV3(workEvidences, new Set(), null);
+    // Lá người đã sửa là ACCEPTED (đúng lá đó, không phải cả khóa cấp 1).
+    const evidence: EvidenceRegistry = editedIds.size === 0 ? registry
+      : { ...registry, records: registry.records.map((r) => (editedIds.has(r.evidence_id) ? { ...r, review_status: 'ACCEPTED' as const } : r)) };
 
     // ── Gom người & tài sản (S3): thuần, tất định, không LLM → dựng lại mỗi lần (kể cả resume), không checkpoint, không thêm stage. ──
-    // Kết quả đi vào: (1) `customer_360` của kết quả; (2) giá trị TSBĐ / LTV ở stage tài chính; (3) khối {{master_data}} của rule LLM, dưới dạng
-    // gọn dựng từ DossierGraph. Lỗi S3 không đổ workflow: customer_360 = null, tài chính giữ skipCollateral, rule LLM không có khối người & tài sản.
-    const mapOutcome = runMapStage(extractCheckpoint.evidences, pipelineVars);
+    // Kết quả đi vào: (1) `customer_360` và `dossier_graph` (giao diện) của kết quả; (2) LAC và hồ sơ 360 bên dưới. Lỗi S3 không đổ workflow:
+    // customer_360 = null, LAC vẫn dựng với gap S3_UNAVAILABLE (LAC-R10).
+    const mapOutcome = runMapStage(workEvidences, pipelineVars, undefined, caseInput ? { links: byKind(corrections, 'SAME_SUBJECT', 'DIFFERENT_SUBJECT'), onLinkReport: (r) => reports.push(r) } : undefined);
     if (mapOutcome.warning) logger.warn(`[LOAN-APPRAISAL] ${mapOutcome.warning}`);
     let dossierGraph: DossierGraph | null = null;
     if (mapOutcome.data) {
@@ -302,30 +337,32 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       }
     }
 
-    // ── Loan Application Context (D-103) và hồ sơ 360 (D-114). Dựng lại mỗi lần (hàm thuần), không checkpoint. LAC luôn dựng vì hồ sơ 360 —
-    // nguồn sự thật duy nhất cho tài chính, giao diện và danh sách vấn đề — đứng trên nó; `lac_mode` chỉ quyết định prompt rule LLM dùng LAC
-    // (off | shadow | on). Lỗi dựng → warning, stage không đổ.
-    const lacMode = resolveLacMode(pipelineVars.lac_mode);
+    // ── Loan Application Context (D-103) và hồ sơ 360 (D-114). Dựng lại mỗi lần (hàm thuần), không checkpoint. LAC là đầu vào của hồ sơ 360
+    // và là dữ liệu duy nhất của rule LLM (D-120, kèm phụ lục OCR thô khi rule khai `ocr.<doc>`). Lỗi dựng → warning, rule LLM NOT_RUN.
     let context: LoanApplicationContext | null = null;
     try {
       context = buildLoanApplicationContext({
         product_code: product.code,
         flow: typeof loanFlow === 'string' ? loanFlow : null,
-        evidences: extractCheckpoint.evidences,
+        evidences: workEvidences,
         s3: mapOutcome.data,
         s3_status: mapOutcome.data ? mapOutcome.status : null,
+        ...(caseInput ? {
+          edited_record_ids: fixed.edited_record_ids,
+          resolutions: byKind(corrections, 'FACT_RESOLUTION'),
+          onResolutionReport: (r) => reports.push(r),
+        } : {}),
       });
     } catch (error) {
       const name = error instanceof Error ? error.name : 'Error';
       configWarnings.push(`LAC_UNAVAILABLE:${name}`);
       logger.warn(`[LOAN-APPRAISAL] LAC_UNAVAILABLE: ${name}`);
     }
-    const lac: LoanApplicationContext | null = lacMode !== 'off' ? context : null;
     let profile360: Profile360 | null = null;
     if (context) {
       try {
         const { dossier_submitted_at } = consolidateParams(pipelineVars);
-        profile360 = buildProfile360({ evidences: extractCheckpoint.evidences, s3: mapOutcome.data, lac: context, segment: packSnapshot.segment, as_of: dossier_submitted_at });
+        profile360 = buildProfile360({ evidences: workEvidences, s3: mapOutcome.data, lac: context, segment: packSnapshot.segment, as_of: dossier_submitted_at });
       } catch (error) {
         const name = error instanceof Error ? error.name : 'Error';
         configWarnings.push(`PROFILE_360_UNAVAILABLE:${name}`);
@@ -366,34 +403,19 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       let promptResults: RuleResult[] = [];
       const promptChecks = enabledPromptChecks(checkSet);
       let promptSubOperationId: string | null = null;
-      let promptEvidenceStats: Record<string, number> | null = null;
-      let lacOutcome: LacPromptOutcome | null = null;
-      // LAC-R17: shadow chỉ đo (độ dài, số dữ kiện, cắt bớt…) để so với đường cũ; không gửi model, không đổi kết quả.
-      const lacStats = lac && lacMode === 'shadow' && promptChecks.length > 0
-        ? renderLoanApplicationContext(lac, lacScopeFromInputs(promptChecks.map((c) => c.input)), undefined, profile360).stats
-        : null;
-      if (promptChecks.length > 0) {
+      let promptRefs: PromptCheckRefs | null = null;
+      if (promptChecks.length > 0 && !context) {
+        // Không có LAC thì không có dữ liệu để dẫn nguồn: rule LLM không gọi model (đường OCR-only cũ đã gỡ, D-120).
+        promptResults = promptChecksNotRun(checkSet, 'LAC_UNAVAILABLE: chưa dựng được ngữ cảnh đơn vay.');
+      } else if (promptChecks.length > 0 && context) {
+        const lacForPrompt = context;
         try {
           const response = await enqueueChecked(
             ctx,
             'ext-fact-verifier',
-            buildPromptCheckVars({
-              checkSet,
-              // Rule LLM đọc OCR trực tiếp + người & tài sản đã gom (S3) dạng gọn dựng từ graph. S3 lỗi ⇒ khối master_data ra rỗng.
-              // lac_mode = on: thay bằng Loan Application Context ({{context}}, mã F<n>).
-              evidence,
-              customer360: {},
-              dossierGraph,
-              financial,
-              lac,
-              lacMode,
-              profile: profile360,
-            }, ctx.promptOverrides.policy_checks, (stats) => {
-              promptEvidenceStats = { ...stats };
-              logger.info(`[LOAN-APPRAISAL] Rule LLM evidence: ${JSON.stringify(stats)}`);
-            }, (outcome) => {
-              lacOutcome = outcome;
-              if (outcome.legacyTemplate) configWarnings.push('LAC_TEMPLATE_LEGACY');
+            buildPromptCheckVars({ checkSet, evidence, financial, lac: lacForPrompt, profile: profile360 }, ctx.promptOverrides.policy_checks, (refs) => {
+              promptRefs = refs;
+              if (refs.legacyTemplate) configWarnings.push('LAC_TEMPLATE_LEGACY');
             }),
             null,
             // Step key riêng `policy_checks`; chưa cấu hình thì dùng model của bước evaluate
@@ -402,11 +424,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
             ctx.reasoningEffortOverrides.policy_checks ?? ctx.reasoningEffortOverrides.evaluate,
           );
           promptSubOperationId = response.operation.id;
-          const usedLac = lacOutcome as LacPromptOutcome | null;
-          promptResults = parsePromptCheckResults(
-            parseDeep(cleanLlmJson(response.content)), checkSet, evidence, undefined,
-            usedLac?.used && usedLac.render && lac ? { render: usedLac.render, lac } : undefined,
-          );
+          promptResults = parsePromptCheckResults(parseDeep(cleanLlmJson(response.content)), checkSet, evidence, (promptRefs as PromptCheckRefs | null)!, lacForPrompt);
         } catch (error) {
           if (error instanceof WorkflowCancelledError) throw error;
           const message = error instanceof Error ? error.message : String(error);
@@ -415,9 +433,10 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
         }
       }
 
-      const lacUsedRender = (lacOutcome as LacPromptOutcome | null)?.render ?? null;
-      const lacRenderedStats = lacStats ?? lacUsedRender?.stats ?? null;
-      if (lacRenderedStats) lacPromptUse = { used: Boolean((lacOutcome as LacPromptOutcome | null)?.used), facts_rendered: lacRenderedStats.facts_rendered };
+      const usedRefs = promptRefs as PromptCheckRefs | null;
+      if (usedRefs) lacPromptUse = { used: true, facts_rendered: usedRefs.render.stats.facts_rendered };
+      const ocrStats = usedRefs?.ocr ? (({ text: _text, refIndex: _refIndex, ...stats }) => stats)(usedRefs.ocr) : null;
+      if (ocrStats) logger.info(`[LOAN-APPRAISAL] Rule LLM OCR appendix: ${JSON.stringify(ocrStats)}`);
 
       policy = pack.evaluatePolicy({ policy: productPolicy, checkSet, financial, promptResults });
       const passed = policy.rule_results.filter((rule) => rule.result === 'PASS').length;
@@ -434,15 +453,9 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
           deterministic_rules: policy.rule_results.filter((rule) => rule.check_kind !== 'PROMPT').length,
           prompt_rules: policy.rule_results.filter((rule) => rule.check_kind === 'PROMPT').length,
           check_set_source: checkSet.source,
-          ...(promptEvidenceStats ? { prompt_evidence: promptEvidenceStats } : {}),
-          // D-103: chỉ số đếm của LAC (không có giá trị dữ kiện — LAC-R19).
-          ...(lacMode !== 'off' ? {
-            lac: {
-              mode: lacMode,
-              used: (lacOutcome as LacPromptOutcome | null)?.used ?? false,
-              ...(lacStats ?? (lacOutcome as LacPromptOutcome | null)?.render?.stats ?? {}),
-            },
-          } : {}),
+          // Chỉ số đếm của LAC và phụ lục OCR thô (không có giá trị dữ kiện — LAC-R19).
+          ...(ocrStats ? { prompt_evidence: ocrStats } : {}),
+          ...(usedRefs ? { lac: usedRefs.render.stats } : {}),
           external_checks: policy.external_checks,
         },
         extracted_data: policy,
@@ -466,16 +479,15 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       customer_360: mapOutcome.data,
       dossier_graph: dossierGraph ? toDossierGraphView(dossierGraph) : null,
       profile_360: profile360,
-      ...(lac && lacMode !== 'off' ? {
+      ...(context ? {
         loan_application_context_summary: {
-          lac_version: lac.lac_version,
-          mode: lacMode,
+          lac_version: context.lac_version,
           used_in_prompt: lacPromptUse?.used ?? false,
-          source_hash: lac.meta.source_hash,
-          fact_count: lac.meta.fact_count,
+          source_hash: context.meta.source_hash,
+          fact_count: context.meta.fact_count,
           rendered_fact_count: lacPromptUse?.facts_rendered ?? null,
-          conflicts: lac.conflicts.length,
-          gaps: lac.gaps.map((g) => ({ code: g.code, count: g.count })),
+          conflicts: context.conflicts.length,
+          gaps: context.gaps.map((g) => ({ code: g.code, count: g.count })),
         },
       } : {}),
       ...(mapOutcome.fs_shadow ? { s3_matcher_summary: { mode: 'shadow' as const, ...mapOutcome.fs_shadow } } : {}),
@@ -492,11 +504,25 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       dossier_precheck: classifyCheckpoint.precheck ?? null,
       flow: loanFlow,
       evidence: toStoredEvidence(evidence),
+      ...(caseInput ? { correction_report: mergeReports(caseInput.case_seal.source_operation_id, reports) } : {}),
       financial_metrics: financial,
       policy_compliance: policy,
       recommendation: decision.recommendation,
       review: decision.review,
     };
+    // COR-R03, R13: niêm phong `documents` + kiểm tra sơ bộ để lần tính lại sau nhận lại đúng OCR này; source_operation_id giữ Operation gốc.
+    try {
+      finalResult.case_seal = sealCase({
+        source_operation_id: caseInput?.case_seal.source_operation_id ?? ctx.operationId,
+        product_code: product.code,
+        flow: typeof loanFlow === 'string' ? loanFlow : null,
+        workflow_version: LOAN_APPRAISAL_WORKFLOW_VERSION,
+        documents: JSON.parse(JSON.stringify(finalResult.documents)),
+        dossier_precheck: finalResult.dossier_precheck ? JSON.parse(JSON.stringify(finalResult.dossier_precheck)) : null,
+      });
+    } catch (error) {
+      configWarnings.push(`CASE_SEAL_UNAVAILABLE:${error instanceof Error ? error.name : 'Error'}`);
+    }
     if (resumeFromStep <= 4) {
       saveStep(ctx, stageResult(4, {
         stepName: 'Khuyến nghị & định tuyến rà soát',

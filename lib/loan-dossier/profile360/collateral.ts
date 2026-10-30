@@ -13,7 +13,8 @@ export function buildCollateral(lookup: Lookup, s3: MapDossierData | null, polic
   return (s3?.asset_registry ?? []).map((a) => {
     const ids = a.identifiers as Record<string, unknown>;
     const valuations: Collateral['valuations'] = [];
-    for (const src of a.sources as Array<{ evidence_id: string; asset_index: number }>) {
+    const sources = a.sources as Array<{ evidence_id: string; asset_index: number; link?: string; match?: unknown }>;
+    for (const src of sources) {
       const e = live.get(src.evidence_id);
       if (!e || !VALUATION_DOC_TYPES.has(e.doc_type_key)) continue;
       const details = (e.data?.asset_details as Array<{ asset_index?: number }> | undefined) ?? [];
@@ -36,6 +37,7 @@ export function buildCollateral(lookup: Lookup, s3: MapDossierData | null, polic
       key: KEY_FIELDS.map((k) => text(ids[k])).find((x): x is string => !!x) ?? null,
       usage_contexts: [...a.usage_contexts],
       context_status: a.context_status,
+      match_review: a.context_status !== 'CONFIRMED' && sources.some((s) => s.match !== undefined || s.link === 'APPROXIMATE' || s.link === 'POSSIBLE'),
       owners,
       valuations,
       chosen_value: policies && valuations.length > 0 ? Math.min(...valuations.map((v) => v.value)) : null,

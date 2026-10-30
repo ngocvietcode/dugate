@@ -1,6 +1,6 @@
 // Client-side mirror of the Loan Appraisal public contract (output 3.0, spec-v3).
 // Phần hồ sơ (documents/customer_360/checklist/cross_check) dùng thẳng kiểu của backend (type-only import).
-import type { DossierOutputV3, LoanApplicationContextSummary } from '@/lib/pipelines/workflows/loan-appraisal/types';
+import type { AppraisalResultV2, DossierOutputV3, LoanApplicationContextSummary } from '@/lib/pipelines/workflows/loan-appraisal/types';
 import type { IntakeAssessment } from '@/lib/pipelines/workflows/loan-appraisal/intake-assessment';
 import type { DossierPrecheck } from '@/lib/pipelines/workflows/loan-appraisal/dossier-precheck';
 
@@ -350,6 +350,10 @@ export interface AppraisalResult {
   dossier_graph?: DossierOutputV3['dossier_graph'];
   /** Hồ sơ 360 — nguồn sự thật duy nhất của giao diện Customer 360 (D-114). null khi S3 / LAC lỗi; vắng ở kết quả trước D-114. */
   profile_360?: DossierOutputV3['profile_360'];
+  /** COR-R03: niêm phong để tính lại từ case_input.json. */
+  case_seal?: AppraisalResultV2['case_seal'];
+  /** COR-R13: chỉ ở kết quả tính lại. */
+  correction_report?: AppraisalResultV2['correction_report'];
   /** S4: checklist 46 mục theo nhóm. */
   checklist: DossierOutputV3['checklist'];
   completeness_percent: number;
