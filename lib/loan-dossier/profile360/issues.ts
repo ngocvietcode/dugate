@@ -54,7 +54,8 @@ export function buildConflicts(lac: LoanApplicationContext, label: (id: string) 
     kind: c.kind,
     options: c.fact_ids.map((id) => {
       const f = facts.get(id)!;
-      return { fact_id: id, value: f.value, doc_types: [...new Set(f.sources.map((s) => s.doc_type_key))] };
+      const live = f.sources.filter((s) => !lac.meta.superseded_evidence_ids.includes(s.record_id.split('#')[0]));
+      return { fact_id: id, value: f.value, doc_types: [...new Set(f.sources.map((s) => s.doc_type_key))], record_ids: (live.length ? live : f.sources).map((s) => s.record_id) };
     }),
   }));
 }

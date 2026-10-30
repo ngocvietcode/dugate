@@ -211,7 +211,8 @@ export default function LoanAppraisalV2Page() {
                         ? <UsageCard usage={state.usage} />
                         : <EmptyState icon={Coins} title="Chưa có số liệu chi phí">Chi phí và token hiển thị sau khi phiên thẩm định chạy xong.</EmptyState>
                     ) : (
-                      <AppraisalWorkspace result={result} extraction={state.extraction} />
+                      <AppraisalWorkspace result={result} extraction={state.extraction} busy={running}
+                        onRecompute={(file) => { void run.submit([file], apiKey, flow, productCode, false); }} />
                     )}
                   </ErrorBoundary>
                 </div>
