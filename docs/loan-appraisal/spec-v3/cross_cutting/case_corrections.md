@@ -198,7 +198,7 @@ Kết quả (`AppraisalResultV2`) thêm `case_seal`, `correction_report` (chỉ 
 | COR-AC07 | `SAME_SUBJECT` hai tài sản (GCN và chứng thư, số lệch thật) → một `asset-n`; hồ sơ 360, graph, LAC cùng một tài sản |
 | COR-AC08 | `DIFFERENT_SUBJECT` cha / con trùng tên → hai người; cùng liên kết trên hai party cùng số định danh hợp lệ → `LINK_CONTRADICTS_ID`, không tách |
 | COR-AC09 | A=B, B=C, A≠C → cả ba liên kết `LINK_CYCLE`, kết quả S3 như không có liên kết |
-| COR-AC10 | Không có `reason`, `corrected_by`, `value` nào trong log, `content_preview`, warning, prompt (test quét theo giá trị của fixture, như `lac-pii.test.ts`) |
+| COR-AC10 | `reason`, `corrected_by` không có trong prompt, log, `content_preview`, warning, `correction_report`; `value` của `OCR_FIX` không có trong log, `content_preview` (nó là dữ liệu đã sửa nên có trong prompt) |
 | COR-AC12 | Chỉ thị "Số CCCD của khách vay đúng là 001090000001" khi CCCD đọc …07 → một bản nháp `OCR_FIX` đúng lá, `value` = …01; model trả `value` không có trong chỉ thị → `REJECTED` |
 | COR-AC13 | Chỉ thị "AA 1234 và AA 123 4 là cùng một tài sản" khi hai số đã cùng `normKey` → `NO_CHANGE`, không có bản nháp áp được |
 | COR-AC14 | Model trả mã `P99` không có trong bảng ứng viên, hoặc `quote` không có trong chỉ thị → `REJECTED`; không lời gọi tính lại nào được gửi khi chưa có mục Đồng ý |
@@ -278,13 +278,13 @@ Kết quả (`AppraisalResultV2`) thêm `case_seal`, `correction_report` (chỉ 
 
 ### T-COR-07 — PII, tài liệu
 - Depends: T-COR-05
-- Files: `tests/loan-appraisal/corrections-pii.test.ts`, `lib/pipelines/workflows/loan-appraisal/README.md`, `docs/DU_INTEGRATION_GUIDE.md`
+- Files: `tests/loan-appraisal/case-recompute.test.ts`, `lib/pipelines/workflows/loan-appraisal/README.md`, `docs/DU_INTEGRATION_GUIDE.md`
 - Refs: COR-R12, COR-R01
 - Làm: test quét PII theo COR-AC10; README (mục tính lại); hướng dẫn tích hợp cho hệ thống gọi: giữ `documents` + `case_seal`, giữ danh sách hiệu chỉnh, gửi lại đủ.
 - DoD:
   - test: COR-AC10
   - tài liệu có ví dụ `case_input.json` với dữ liệu giả
-- Verify: `npx jest tests/loan-appraisal/corrections-pii.test.ts`
+- Verify: `npx jest tests/loan-appraisal/case-recompute.test.ts`
 
 ### T-COR-08 — Trợ lý hiệu chỉnh bằng LLM
 - Depends: T-COR-05, T-COR-06

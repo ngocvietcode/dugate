@@ -144,3 +144,29 @@ it('upload: chỉ loan-appraisal nhận .json (case_input.json); workflow khác 
   expect(validateFileMetadata('case_input.json', 'application/json', 10, resolveAllowedExtensions('workflows:loan-appraisal')).valid).toBe(true);
   expect(validateFileMetadata('case_input.json', 'application/json', 10, resolveAllowedExtensions('workflows:disbursement')).valid).toBe(false);
 });
+
+it('COR-AC10: lý do, người sửa không vào prompt / log / content_preview / warning; giá trị sửa không vào log / content_preview', async () => {
+  const REASON = 'LY-DO-RIENG-7f3a';
+  const BY = 'NGUOI-SUA-9c1d';
+  const VALUE = 'Nguyễn Văn An';
+  const meta = { reason: REASON, corrected_by: BY, corrected_at: '2026-10-30T09:00:00Z' };
+  const ctx = recomputeCtx(caseInputOf(original, [
+    { ...meta, correction_id: 'f1', kind: 'OCR_FIX', record_id: `${card.evidence_id}#parties[0].full_name`, original_value: 'NGUYỄN VĂN AN', value: VALUE },
+    { ...meta, correction_id: 'r1', kind: 'FACT_RESOLUTION', record_ids: [`${app.evidence_id}#parties[0].id_number`, `${card.evidence_id}#parties[0].id_number`], chosen_record_id: `${card.evidence_id}#parties[0].id_number` },
+  ]));
+  await runLoanAppraisal(ctx as never);
+  const final = lastResult();
+  const logged = JSON.stringify([ctx.logger.info.mock.calls, ctx.logger.warn.mock.calls, ctx.logger.error.mock.calls]);
+  const previews = JSON.stringify(ctx.stepsResult.map((s) => (s as { content_preview?: unknown }).content_preview ?? null));
+  const warnings = JSON.stringify(final.config_snapshot.warnings ?? []);
+  const report = JSON.stringify(final.correction_report);
+  for (const v of [REASON, BY]) {
+    for (const p of prompts()) expect(p).not.toContain(v);
+    expect(logged).not.toContain(v);
+    expect(previews).not.toContain(v);
+    expect(warnings).not.toContain(v);
+    expect(report).not.toContain(v);
+  }
+  expect(logged).not.toContain(VALUE);
+  expect(previews).not.toContain(VALUE);
+});

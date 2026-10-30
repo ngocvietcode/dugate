@@ -184,6 +184,33 @@ Ba kênh nhận cùng cấu trúc:
 
 Mã hoá (bật trên Profile): ở chế độ `selective`, path cụ thể không tồn tại trong cấu trúc tích hợp bị từ chối (poll trả 422, webhook không gửi) thay vì gửi plaintext. Dùng `**.<ten_field>` (VD `**.id_number`) hoặc `encryption_mode=full`.
 
+#### 3.8. Hiệu chỉnh và tính lại hồ sơ vay (`case_input.json`)
+Người thẩm định sửa lỗi đọc OCR, chọn giá trị đúng khi hai chứng từ ghi khác nhau, hoặc xác nhận hai người / tài sản là một (hay không phải một), rồi tính lại mà không OCR lại. DUGate **không lưu** hiệu chỉnh: hệ thống gọi giữ chúng và gửi lại đủ mỗi lần tính lại. Spec: `docs/loan-appraisal/spec-v3/cross_cutting/case_corrections.md`.
+
+1. Sau lần chạy thường, lấy từ `GET /operations/{id}` (view mặc định hoặc `view=compact` — **không** phải `view=integration`) ba khóa của `result.extracted_data`: `documents`, `dossier_precheck`, `case_seal`. Lưu nguyên văn; sửa bất kỳ ký tự nào là hỏng niêm phong.
+2. Gửi `POST /docs/workflows` với `process=loan-appraisal` và `files[]` = **đúng một** file `case_input.json` (`application/json`, ≤ 20 MB). Sản phẩm / luồng lấy từ niêm phong; tham số form khác bị bỏ qua.
+3. Kết quả có thêm `correction_report` (`applied[]`, `skipped[]` kèm mã). Tính lại tiếp từ kết quả mới cũng được (cùng `documents`).
+
+```json
+{
+  "contract": "loan-appraisal.case-input", "contract_version": "1.0",
+  "documents": { "classify": { "files": [] , "repeated_doc_types": [] }, "evidences": [] },
+  "dossier_precheck": null,
+  "case_seal": { "alg": "HMAC-SHA256", "key_id": "v1", "source_operation_id": "<id>", "product_code": "hkd-loan", "flow": "FULL", "workflow_version": "<ver>", "mac": "<64 hex>" },
+  "corrections": [
+    { "correction_id": "c1", "kind": "OCR_FIX", "record_id": "ev-0123456789ab#parties[0].id_number",
+      "original_value": "001090000007", "value": "001090000001", "reason": "Đối chiếu bản scan", "corrected_by": "user-01", "corrected_at": "2026-10-30T09:00:00+07:00" },
+    { "correction_id": "c2", "kind": "FACT_RESOLUTION", "record_ids": ["ev-0123456789ab#assets[0].identifiers.certificate_number", "ev-ba9876543210#assets[0].identifiers.certificate_number"],
+      "chosen_record_id": "ev-0123456789ab#assets[0].identifiers.certificate_number", "reason": "Đơn vay ghi nhầm", "corrected_by": "user-01", "corrected_at": "2026-10-30T09:05:00+07:00" },
+    { "correction_id": "c3", "kind": "DIFFERENT_SUBJECT", "subject_kind": "person",
+      "a": { "evidence_id": "ev-0123456789ab", "index": 0 }, "b": { "evidence_id": "ev-ba9876543210", "index": 1 },
+      "reason": "Cha con trùng tên", "corrected_by": "user-01", "corrected_at": "2026-10-30T09:10:00+07:00" }
+  ]
+}
+```
+
+Lỗi đầu vào → Operation `FAILED`, `errorCode = INPUT_INVALID`, thông điệp mang mã `CASE_INPUT_MIXED`, `INVALID_CASE_INPUT` (kèm đường dẫn) hoặc `CASE_SEAL_INVALID`. Profile giới hạn `allowedFileExtensions` phải cho `.json`. Nội dung Operation bị xoá sau `OPERATION_CONTENT_RETENTION_DAYS`: hệ thống gọi tự lưu ba khóa ở bước 1 nếu cần tính lại muộn hơn.
+
 ---
 
 ## Phần 2: Hướng Dẫn Thiết Lập Cho Admin (Quản Trị Viên)

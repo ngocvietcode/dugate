@@ -240,6 +240,23 @@ Thống kê phụ lục ghi ở `content_preview.prompt_evidence`, của LAC ở
 Profile không có `{{context}}` được tự chuyển: `{{master_data}}` đầu tiên thành `{{context}}`, các chỗ khác bỏ, `{{evidence}}` giữ nghĩa
 phụ lục; ghi warning `LAC_TEMPLATE_LEGACY` để người cấu hình sửa lại hướng dẫn dẫn nguồn (`F<n>` thay `D<n>`).
 
+## Hiệu chỉnh và tính lại (COR, `case_input.json`)
+
+Spec: [case_corrections.md](../../../../docs/loan-appraisal/spec-v3/cross_cutting/case_corrections.md). Không lưu trạng thái: mọi kết quả có
+`documents` mang `case_seal` (HMAC-SHA256 qua `canonical(documents + dossier_precheck + …)`, khóa HKDF từ `ENCRYPTION_KEY`,
+`lib/loan-dossier/corrections/seal.ts`). Gửi lại đúng một `case_input.json` thì workflow (`case-input.ts`) kiểm schema + niêm phong,
+dựng checkpoint stage 0–1 từ `documents` (không phân loại, không OCR, không gọi lại kiểm tra sơ bộ) rồi áp theo thứ tự COR-R06:
+
+| Hiệu chỉnh | Áp ở | Hiệu ứng |
+|---|---|---|
+| `OCR_FIX` | `applyOcrFixes` (bản sao, trước S3) | Lá đã sửa: registry `ACCEPTED`, nguồn LAC `origin = HUMAN_EDIT`, dòng prompt "đã sửa đọc" |
+| `SAME_SUBJECT` / `DIFFERENT_SUBJECT` | S3 (`s3/links.ts`, `matchParties`, `groupAssets`) | Must-link (`matched_by = HUMAN_LINK`, tài sản `link = HUMAN`) / cannot-link; không thắng khóa / số định danh |
+| `FACT_RESOLUTION` | LAC (`applyResolutions`) | Fact chọn tính lại trust; fact bị bác `OVERRULED` (rào như `DISPUTED`); mục `HIỆU CHỈNH` trong prompt; hồ sơ 360 dùng giá trị được chọn cho trường khoản vay / định danh |
+
+`documents` của kết quả luôn là OCR gốc (hiệu chỉnh chỉ áp trong bộ nhớ) nên niêm phong lại giống hệt và `case_seal.source_operation_id`
+giữ Operation gốc qua nhiều lần tính lại. Kết quả có `correction_report` (chỉ mã), `config_snapshot.reproducibility.corrections_sha256`.
+Lý do / người sửa không vào prompt, log, `content_preview`.
+
 ## Evidence & provenance
 
 `evidence-v3.ts` (`buildEvidenceRegistryV3`, V2-R04) xây `EvidenceRegistry` từ EvidenceEnvelope của S2: mỗi lá của

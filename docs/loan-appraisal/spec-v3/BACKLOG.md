@@ -128,7 +128,7 @@ Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đ�
 | T-360-18 | P3: Đối tác | T-360-08 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
 | T-CON-02 | Hợp đồng `data` của S3–S6 | T-CON-01 | `04_data_model.md` | `npx jest tests/loan-dossier/contract-check-stages.test.ts` |
 | T-COR-06 | Giao diện hiệu chỉnh và tính lại | T-COR-05 | `cross_cutting/case_corrections.md` | `npx jest tests/loan-appraisal-v2/corrections.test.ts` |
-| T-COR-07 | PII, tài liệu | T-COR-05 | `cross_cutting/case_corrections.md` | `npx jest tests/loan-appraisal/corrections-pii.test.ts` |
+| T-COR-07 | PII, tài liệu | T-COR-05 | `cross_cutting/case_corrections.md` | `npx jest tests/loan-appraisal/case-recompute.test.ts` |
 | T-FS-04 | Báo cáo shadow | T-FS-03 | `cross_cutting/s3_fellegi_sunter.md` | `npx jest tests/scripts/fs-shadow-report.test.ts` |
 | T-LAC-05 | Nối vào Rule LLM | T-LAC-04 | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-appraisal/prompt-checks-lac.test.ts tests/loan-appraisal/lac-mode-param.test.ts` |
 | T-S1-05 | Tín hiệu nghi trùng mức loại | T-S1-04 | `stages/S1_classify.md` | `npx jest tests/loan-dossier/s1-repeated.test.ts` |
