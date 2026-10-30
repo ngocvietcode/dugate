@@ -6,10 +6,11 @@ import type { AssetDescriptor, DocumentParty } from '../s2/common-schema';
 import { nearIdentifier } from '../s5/compare-exact';
 import { assetKeys, hasFullKey, plateKey } from './asset-key';
 import type { AssetFsVerdict, AssetScorer } from './fs/asset-score';
+import { EMPTY_LINKS, occurrenceKey, type LinkOutcome, type SubjectLinks } from './links';
 import { confidenceOf, type Evidence } from './types';
 
-/** `POSSIBLE` (D-117): chỉ vào nhóm qua cạnh FS vùng nghi trùng — gộp nhưng chờ xác nhận. */
-export type LinkKind = 'SEED' | 'EXACT' | 'APPROXIMATE' | 'POSSIBLE' | 'WEAK';
+/** `POSSIBLE` (D-117): chỉ vào nhóm qua cạnh FS vùng nghi trùng — gộp nhưng chờ xác nhận. `HUMAN` (COR-R08): vào nhóm do người thẩm định khẳng định. */
+export type LinkKind = 'SEED' | 'EXACT' | 'APPROXIMATE' | 'POSSIBLE' | 'WEAK' | 'HUMAN';
 
 export interface Descriptor {
   evidence_id: string;
@@ -123,9 +124,17 @@ const hasSameEvidencePair = (idx: number[], ds: Descriptor[]) => new Set(idx.map
 /**
  * `scorer` (D-117): cặp BĐS chưa chung khóa được chấm Fellegi-Sunter thay cho nối gần đúng S3-R15(2); cặp scorer trả null
  * (xe) vẫn theo luật cũ. Không truyền → toàn bộ theo luật cũ (`s3_asset_matcher = rules`).
+ * `links` (COR-R08): SAME là cạnh bắt buộc (không bị bỏ ở S3-R15(3)); DIFFERENT chặn mọi cạnh gần đúng / FS / nối yếu đưa hai đầu vào cùng
+ * nhóm, nhưng không thắng khóa chính xác — khi đó `outcome` ghi `LINK_CONTRADICTS_ID`. Không có liên kết → kết quả như trước.
  */
-export function groupAssets(ds: Descriptor[], scorer?: AssetScorer): AssetGroup[] {
+export function groupAssets(ds: Descriptor[], scorer?: AssetScorer, links: SubjectLinks = EMPTY_LINKS, outcome?: LinkOutcome): AssetGroup[] {
   const n = ds.length;
+  const indexOf = new Map(ds.map((d, i) => [occurrenceKey(d.evidence_id, d.asset_index), i]));
+  const human: Array<[number, number]> = links.same.map((l) => [indexOf.get(l.a), indexOf.get(l.b)]).filter((e): e is [number, number] => e[0] !== undefined && e[1] !== undefined);
+  const cannot = links.different.map((l) => ({ id: l.correction_id, a: indexOf.get(l.a), b: indexOf.get(l.b) }))
+    .filter((c): c is { id: string; a: number; b: number } => c.a !== undefined && c.b !== undefined);
+  /** Gộp hai cụm có làm hai đầu của một DIFFERENT vào cùng nhóm không. */
+  const violates = (A: number[], B: number[]) => cannot.some((c) => (A.includes(c.a) && B.includes(c.b)) || (A.includes(c.b) && B.includes(c.a)));
   const exact: Array<[number, number]> = [];
   const approx: Array<[number, number]> = [];
   /** Cạnh FS ứng viên; chỉ vào `approx` sau kiểm tra cấp cụm (D-119). */
@@ -146,18 +155,24 @@ export function groupAssets(ds: Descriptor[], scorer?: AssetScorer): AssetGroup[
   // D-119: cạnh FS chỉ nhận khi MỌI cặp giữa hai cụm hai đầu (đã nối chính xác + cạnh FS đã nhận) không mâu thuẫn field loại trừ cứng.
   // Thiếu bước này, descriptor ít field (đơn vay chỉ ghi số GCN) bắc cầu hai GCN khác thửa vào một tài sản. Cạnh điểm cao xét trước.
   const uf = new UnionFind(n);
-  for (const [a, b] of [...exact, ...approx]) uf.union(a, b);
   const clusterOf = (i: number) => { const r = uf.find(i); return ds.map((_, k) => k).filter((k) => uf.find(k) === r); };
+  for (const [a, b] of [...exact, ...human]) uf.union(a, b);
+  // Khóa chính xác (hoặc SAME bắc cầu qua khóa) đã đưa hai đầu DIFFERENT vào một nhóm: khóa thắng, liên kết bị bỏ.
+  for (const c of cannot) if (uf.find(c.a) === uf.find(c.b)) outcome?.set(c.id, 'LINK_CONTRADICTS_ID');
+  const vetoed = (a: number, b: number) => cannot.length > 0 && violates(clusterOf(a), clusterOf(b));
+  const keptRuleApprox = approx.filter(([a, b]) => { if (uf.find(a) !== uf.find(b) && vetoed(a, b)) return false; uf.union(a, b); return true; });
+  approx.length = 0;
+  approx.push(...keptRuleApprox);
   const byWeight = [...scored].sort((x, y) => verdicts.get(edgeKey(...y))!.weight - verdicts.get(edgeKey(...x))!.weight || x[0] - y[0] || x[1] - y[1]);
   for (const [a, b] of byWeight) {
     const A = clusterOf(a); const B = clusterOf(b);
-    if (A.includes(b) || A.every((x) => B.every((y) => noVetoConflict(ds[x].descriptor, ds[y].descriptor)))) { uf.union(a, b); approx.push([a, b]); }
+    if (A.includes(b) || (A.every((x) => B.every((y) => noVetoConflict(ds[x].descriptor, ds[y].descriptor))) && !violates(A, B))) { uf.union(a, b); approx.push([a, b]); }
   }
   // S3-R15(3): bắc cầu đưa 2 descriptor cùng evidence vào 1 nhóm → bỏ cạnh gần đúng của nhóm đó.
-  let comps = components(n, [...exact, ...approx]);
+  let comps = components(n, [...exact, ...human, ...approx]);
   const badRoots = new Set(comps.filter((c) => hasSameEvidencePair(c, ds)).flatMap((c) => c));
   const keptApprox = approx.filter(([a, b]) => !badRoots.has(a) && !badRoots.has(b));
-  comps = components(n, [...exact, ...keptApprox]);
+  comps = components(n, [...exact, ...human, ...keptApprox]);
 
   // S3-R15(4): nối yếu descriptor có hint nhưng không có khóa đầy đủ vào đúng 1 nhóm cùng họ có khóa đầy đủ.
   const weakInto = new Map<number, number>();
@@ -169,7 +184,7 @@ export function groupAssets(ds: Descriptor[], scorer?: AssetScorer): AssetGroup[
     if (!fam || hasFullKey(d.descriptor) || d.descriptor.usage_context_hint === null || comps[compOf.get(i)!].length > 1) continue;
     const candidates = comps
       .map((c, ci) => ({ c, ci }))
-      .filter(({ c, ci }) => ci !== compOf.get(i) && c.some((j) => FAMILY(ds[j].descriptor.asset_type) === fam && hasFullKey(ds[j].descriptor)));
+      .filter(({ c, ci }) => ci !== compOf.get(i) && c.some((j) => FAMILY(ds[j].descriptor.asset_type) === fam && hasFullKey(ds[j].descriptor)) && !violates([i], c));
     if (candidates.length === 1) weakInto.set(i, candidates[0].ci);
   }
   const finalMembers = comps.map((c) => [...c]);
@@ -194,6 +209,8 @@ export function groupAssets(ds: Descriptor[], scorer?: AssetScorer): AssetGroup[
     const links: LinkKind[] = idx.map((i, k) => {
       if (k === 0) return 'SEED';
       if (weakMembers.has(i)) return 'WEAK';
+      const inGroup = ([a, b]: [number, number]) => (a === i || b === i) && idx.includes(a === i ? b : a);
+      if (!exact.some(inGroup) && human.some(inGroup)) return 'HUMAN';
       if (!approxSet.has(i) || exact.some(([a, b]) => (a === i || b === i) && idx.includes(a === i ? b : a))) return 'EXACT';
       return approxEdgesOf(i, idx).every(([a, b]) => verdicts.get(edgeKey(a, b))?.decision === 'POSSIBLE_MATCH') ? 'POSSIBLE' : 'APPROXIMATE';
     });

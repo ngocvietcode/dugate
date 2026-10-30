@@ -181,13 +181,12 @@ export function ChecksPanel({ config, update, canEdit, productCode, flow, flows,
                       <input type="checkbox" checked={c.allow_declared_pass === true} disabled={!canEdit} onChange={(e) => patch(c.id, { allow_declared_pass: e.target.checked })} className="h-4 w-4" />
                       Cho phép PASS khi chỉ dựa trên lời khai trong đơn vay
                     </label>
-                    <p className="text-[11px] text-muted-foreground">Chỉ có tác dụng khi tham số lac_mode = on</p>
                     <label className="block"><span className="text-[11px] font-semibold text-muted-foreground">Ngưỡng tin cậy (0..1)</span>
                       <input type="number" step={0.05} min={0} max={1} disabled={!canEdit} value={c.threshold ?? 0.85} onChange={(e) => patch(c.id, { threshold: Number(e.target.value) })} className={`${INPUT} mt-1 w-32 font-mono`} /></label>
                     <label className="block"><span className="text-[11px] font-semibold text-muted-foreground">Prompt kiểm tra</span>
                       <textarea value={c.prompt ?? ''} maxLength={MAX_PROMPT_LENGTH} disabled={!canEdit} spellCheck={false} onChange={(e) => patch(c.id, { prompt: e.target.value })}
                         placeholder="Nêu rõ cần đối chiếu gì, giữa chứng từ nào, và khi nào coi là mâu thuẫn thực chất…" className={`${INPUT} mt-1 min-h-[140px] resize-y font-mono`} />
-                      <span className="text-[11px] text-muted-foreground">{(c.prompt ?? '').length}/{MAX_PROMPT_LENGTH} ký tự. Runtime tự gắn danh sách evidence, master data và schema output.</span></label>
+                      <span className="text-[11px] text-muted-foreground">{(c.prompt ?? '').length}/{MAX_PROMPT_LENGTH} ký tự. Runtime tự gắn ngữ cảnh đơn vay (LAC), phụ lục OCR thô cho loại chứng từ khai <code>ocr.&lt;loại&gt;</code> và schema output.</span></label>
                     {c.action === 'block' && c.severity !== 'BLOCKER' && (
                       <p className="flex items-start gap-1.5 text-[11px] text-[rgb(var(--la2-warning))]"><FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />Rule LLM chỉ chặn được khi mức độ = BLOCKER; nếu không, runtime hạ về cảnh báo.</p>
                     )}

@@ -61,10 +61,9 @@ export const LOAN_APPRAISAL_STEPS: LoanStepMeta[] = [
     description: 'Chạy mọi rule LLM đang bật trong bộ kiểm tra (một lần gọi). Kết quả PASS chỉ được chấp nhận khi evidence đã ACCEPTED; ngưỡng tin cậy chỉ áp ở hệ thống. Chưa cấu hình model/reasoning riêng thì dùng của bước Model mặc định (evaluate).',
     variables: [
       { name: '{{checks}}', desc: 'Danh sách rule LLM đang bật (id, tên, nguồn dữ liệu, yêu cầu) — bắt buộc' },
-      { name: '{{evidence}}', desc: 'Bảng evidence (ưu tiên loại chứng từ rule khai báo, tối đa 400 dòng), bọc trong <untrusted_evidence> — bắt buộc' },
+      { name: '{{context}}', desc: 'Loan Application Context: dữ kiện F<n> có trạng thái tin cậy, quan hệ, mâu thuẫn, khoảng trống, bọc trong <untrusted_loan_context> — bắt buộc. Template ghi đè kiểu cũ (không có {{context}}) được tự chuyển: {{master_data}} thành {{context}}' },
       { name: '{{financial}}', desc: 'Chỉ số tài chính đã tính deterministic' },
-      { name: '{{master_data}}', desc: 'Người & tài sản do hệ thống gom từ OCR (S3, chưa xác minh), bọc trong <untrusted_master_data>' },
-      { name: '{{context}}', desc: 'Chỉ khi tham số lac_mode = on: Loan Application Context (dữ kiện F<n> có trạng thái tin cậy, quan hệ, mâu thuẫn, khoảng trống), thay cho {{master_data}} + {{evidence}}; template ghi đè không có {{context}} thì chạy đường cũ' },
+      { name: '{{evidence}}', desc: 'Phụ lục OCR thô (mã D<n>:<field>), chỉ gồm loại chứng từ mà rule khai ocr.<loại> trong nguồn dữ liệu; không rule nào khai thì để trống' },
       { name: '{{output_schema}}', desc: 'Schema JSON bắt buộc của kết quả — bắt buộc' },
     ],
     codePromptPreview: POLICY_CHECKS_PROMPT_TEMPLATE,

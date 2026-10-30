@@ -82,7 +82,7 @@ const assetRef = (assetId: string | null | undefined): string | undefined => (as
 
 const FIELD_STATUS: Record<DetailFact['trust'], Field['status']> = {
   CORROBORATED: 'AGREED', SINGLE_SOURCE: 'SINGLE_SOURCE', DECLARED: 'SINGLE_SOURCE', SPELLING_VARIANT: 'OCR_NORMALIZED',
-  PROBABLE_OCR_ERROR: 'CONFLICT', DISPUTED: 'CONFLICT', SUPERSEDED: 'SINGLE_SOURCE',
+  PROBABLE_OCR_ERROR: 'CONFLICT', DISPUTED: 'CONFLICT', SUPERSEDED: 'SINGLE_SOURCE', OVERRULED: 'CORRECTED',
 };
 
 function field(f: DetailFact, path: string): Field {

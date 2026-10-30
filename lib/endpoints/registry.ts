@@ -950,6 +950,16 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
         connections: [],
         isWorkflow: true,
       },
+      'loan-correction-draft': {
+        displayName: 'Trợ lý hiệu chỉnh hồ sơ vay',
+        description: 'Dịch chỉ thị tự do của người thẩm định thành bản nháp hiệu chỉnh (OCR_FIX, FACT_RESOLUTION, SAME/DIFFERENT_SUBJECT) cho loan-appraisal (COR-R18…R21). ' +
+          'files[] = đúng một JSON { contract: "loan-appraisal.correction-draft-input", contract_version: "1.0", documents, dossier_precheck, case_seal, instruction } lấy từ kết quả thẩm định; ' +
+          'kết quả là drafts[] (PROPOSED / REJECTED / NO_CHANGE / NEEDS_CLARIFICATION). Không áp hiệu chỉnh nào: bản người đồng ý gửi lại qua case_input.json của loan-appraisal. ' +
+          'Step key correction_draft ({{instruction}}, {{context}}, {{candidates}}, {{output_schema}}; model/reasoning mặc định lấy của evaluate).',
+        parameters: {},
+        connections: [],
+        isWorkflow: true,
+      },
       'loan-appraisal': {
         displayName: 'Thẩm định Bộ Hồ sơ Vay',
         description: 'Loan Appraisal V2 theo state machine 5 stage: AI phân loại/bóc tách (OCR) hồ sơ → ' +
@@ -957,10 +967,12 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
           'Các bước kiểm tra hồ sơ (Customer 360, checklist, đối chiếu chéo, master data, kiểm tra nháp) đang TẠM TẮT ở giai đoạn 2: kết quả chỉ có OCR, chỉ số tài chính, bộ rule và khuyến nghị. ' +
           'Giữ các field AppraisalResult V1, bổ sung evidence, financial_metrics, policy_compliance, ' +
           'recommendation, review và audit có version. Các kiểm tra ngoài chưa cấu hình trả NOT_RUN. ' +
+          'Tính lại sau hiệu chỉnh (COR): gửi files[] = đúng một case_input.json (documents + dossier_precheck + case_seal của kết quả trước, kèm corrections[]); ' +
+          'workflow kiểm niêm phong, bỏ phân loại / OCR, áp hiệu chỉnh rồi chạy từ gom người & tài sản; kết quả có correction_report. ' +
           'Step key (cấu hình prompt / model / reasoning THEO SẢN PHẨM trong loan_product_config, không còn theo Profile): ' +
           'classify ({{file_name}}, {{product_name}}, {{doc_types}}), extract ({{file_name}}, {{doc_sections}}, {{doc_keys}}), ' +
           'evaluate ({{product_name}}, {{checklist}}, {{classification}}, {{extracted_data}}), ' +
-          'policy_checks ({{checks}}, {{evidence}}, {{financial}}, {{master_data}}, {{output_schema}}; model/reasoning mặc định lấy của evaluate), ' +
+          'policy_checks ({{checks}}, {{context}}, {{financial}}, {{evidence}} = phụ lục OCR thô cho rule khai ocr.<doc>, {{output_schema}}; model/reasoning mặc định lấy của evaluate), ' +
           'dossier_summary ({{dossier}}, {{review}}, {{output_schema}}; tổng kết tóm tắt hồ sơ, model/reasoning mặc định lấy của evaluate), ' +
           'dossier_precheck ({{checklist}}, {{documents}}, {{output_schema}}; kiểm tra sơ bộ checklist và quan hệ giữa các chứng từ ngay sau phân loại, dựa trên summary/key_facts của S1, model/reasoning mặc định lấy của evaluate), ' +
           'income_source_classify ({{sources}}, {{output_schema}}; S4 phân loại nguồn thu cho điều kiện checklist, model/reasoning mặc định lấy của evaluate), ' +
@@ -1011,16 +1023,6 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
             type: 'string',
             description: 'Giải trình cho các điểm của intake_assessment khi chạy lại hồ sơ: JSON [{ "finding_code": "...", "reason": "..." }] ' +
               '(tối đa 200 mục, lý do ≤ 500 ký tự). Mã lấy từ intake_assessment.criteria[].findings[].code của lần chạy trước; thiếu chứng từ bắt buộc không giải trình được.',
-          },
-          lac_mode: {
-            type: 'string',
-            description: 'Loan Application Context (D-103) cho rule LLM (stage 3): "off" (mặc định) chạy như cũ; ' +
-              '"shadow" dựng ngữ cảnh đơn vay chỉ để thống kê (loan_application_context_summary, content_preview.lac), không đổi prompt; ' +
-              '"on" prompt rule LLM dùng {{context}} (dữ kiện mã F<n> có trạng thái tin cậy, mâu thuẫn, khoảng trống) thay cho {{master_data}} + {{evidence}}, ' +
-              'kèm rào hạ PASS khi dữ kiện bị tranh chấp hoặc chỉ dựa trên lời khai (allow_declared_pass của từng rule). ' +
-              'Dựng ngữ cảnh lỗi thì tự chạy đường cũ và ghi cảnh báo. Giá trị khác coi như "off".',
-            options: ['off', 'shadow', 'on'],
-            default: 'off',
           },
           s3_matcher: {
             type: 'string',
@@ -1222,8 +1224,11 @@ export const ENDPOINT_ALLOWED_EXTENSIONS: Record<string, readonly string[]> = {
   'workflows:payment-account-management': [...PDF_EXTENSIONS, ...IMAGE_EXTENSIONS],
   // Statement analyze reads bank statement PDFs only.
   'workflows:statement-analyze': [...PDF_EXTENSIONS],
-  // Loan appraisal ingests a whole loan dossier: PDF + images + Office docs.
-  'workflows:loan-appraisal': EXT_DOC_SHEET,
+  // Loan appraisal ingests a whole loan dossier: PDF + images + Office docs. `.json` = case_input.json của lần tính lại
+  // (COR-R02): workflow chỉ nhận đúng một file JSON đứng một mình, kiểm schema + niêm phong HMAC trước khi dùng.
+  'workflows:loan-appraisal': [...EXT_DOC_SHEET, '.json'],
+  // Trợ lý hiệu chỉnh: chỉ nhận một file JSON đầu vào (COR-R18).
+  'workflows:loan-correction-draft': ['.json'],
   // Account opening ingests a whole onboarding dossier: scanned forms, ID images,
   // legal documents — same breadth as a loan dossier.
   'workflows:account-opening': EXT_DOC_SHEET,

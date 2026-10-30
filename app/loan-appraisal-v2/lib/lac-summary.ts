@@ -20,7 +20,6 @@ export function lacSummaryView(summary?: LoanApplicationContextSummary | null): 
   return {
     rows: [
       { label: 'Phiên bản', value: summary.lac_version },
-      { label: 'Chế độ', value: summary.mode === 'shadow' ? 'Chạy thử (chỉ đo, không đổi kết quả)' : 'Đang dùng cho rule LLM' },
       { label: 'Đã dùng trong prompt', value: summary.used_in_prompt ? 'Có' : 'Không' },
       { label: 'Mã nguồn dữ liệu', value: summary.source_hash.slice(0, 12) },
       { label: 'Số dữ kiện', value: String(summary.fact_count) },

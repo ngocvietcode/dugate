@@ -60,6 +60,7 @@ const TRUST_NOTE: Record<LacTrust, { note: string; tone: Tone | null }> = {
   PROBABLE_OCR_ERROR: { note: 'nghi đọc sai', tone: 'warning' },
   DISPUTED: { note: 'mâu thuẫn', tone: 'danger' },
   SUPERSEDED: { note: 'bản cũ', tone: null },
+  OVERRULED: { note: 'người thẩm định đã bác', tone: null },
 };
 const MARITAL: Record<string, string> = { SINGLE: 'Độc thân', MARRIED: 'Đã kết hôn', DIVORCED: 'Ly hôn', WIDOWED: 'Góa' };
 const INCOME_KIND: Record<string, string> = {

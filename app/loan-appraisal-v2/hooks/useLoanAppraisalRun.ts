@@ -7,7 +7,7 @@ import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { toast } from 'sonner';
 import type { LoanFlow, LoanStageKey } from '@/app/loan-appraisal/types';
 import { DEFAULT_PRODUCT_CODE } from '../lib/product-options';
-import { ApiError, cancelOperation, getOperation, isAbortError, resumeOperation, submitWorkflow, type LacMode } from '../lib/api';
+import { ApiError, cancelOperation, getOperation, isAbortError, resumeOperation, submitWorkflow } from '../lib/api';
 import { applyOperation, toRunErrorKind, type ApiContext } from '../lib/operation-mapper';
 import { isValidOperationId } from '../lib/operation-id';
 import { createPoller, type Poller } from '../lib/poller';
@@ -37,7 +37,7 @@ function failureAction(error: unknown, context: ApiContext, stage: LoanStageKey 
 export interface LoanAppraisalRun {
   state: RunState;
   isBusy: boolean;
-  submit: (files: File[], apiKey: string, flow: LoanFlow, productCode?: string, stopAfterIntake?: boolean, lacMode?: LacMode) => Promise<void>;
+  submit: (files: File[], apiKey: string, flow: LoanFlow, productCode?: string, stopAfterIntake?: boolean) => Promise<void>;
   attach: (operationId: string, apiKey?: string) => Promise<void>;
   cancel: () => Promise<void>;
   /** D-51: chạy giai đoạn 2 của operation đang dừng sau giai đoạn 1. */
@@ -104,7 +104,7 @@ export function useLoanAppraisalRun(): LoanAppraisalRun {
 
   useEffect(() => stopAll, [stopAll]);
 
-  const submit = useCallback(async (files: File[], apiKey: string, flow: LoanFlow, productCode: string = DEFAULT_PRODUCT_CODE, stopAfterIntake = false, lacMode: LacMode = 'off') => {
+  const submit = useCallback(async (files: File[], apiKey: string, flow: LoanFlow, productCode: string = DEFAULT_PRODUCT_CODE, stopAfterIntake = false) => {
     const phase = stateRef.current.phase;
     if (isBusyPhase(phase)) return;
     stopAll();
@@ -114,7 +114,7 @@ export function useLoanAppraisalRun(): LoanAppraisalRun {
     const controller = new AbortController();
     requestRef.current = controller;
     try {
-      const operationId = await submitWorkflow(files, apiKey, productCode, flow, controller.signal, stopAfterIntake, lacMode);
+      const operationId = await submitWorkflow(files, apiKey, productCode, flow, controller.signal, stopAfterIntake);
       if (controller.signal.aborted) return;
       dispatch({ type: 'SUBMITTED', operationId });
       startPolling(operationId, apiKey);

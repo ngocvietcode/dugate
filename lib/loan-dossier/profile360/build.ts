@@ -12,7 +12,7 @@ import { buildObligations } from './obligations';
 import { buildTrade } from './trade';
 import { loadMergePolicies, type MergePolicies } from './policies';
 import { PROFILE360_VERSION, type BasisValue, type FinancialBasis, type Profile360 } from './schema';
-import { basisAt, buildLookup, fieldAt, normText, sumBasis, text, valueAt, type Lookup } from './sources';
+import { basisAt, buildLookup, chosenFor, fieldAt, normText, sumBasis, text, valueAt, type Lookup } from './sources';
 
 export interface BuildProfile360Input {
   evidences: ReadonlyArray<EvidenceEnvelope>;
@@ -31,7 +31,17 @@ const LOAN_FIELDS = ['requested_amount', 'bank_proposed_amount', 'loan_term_mont
 
 /** Số tiền / kỳ hạn / lãi suất của đơn vay gốc; đơn vay khác ghi khác (LAC-R03 `DISPUTED`) → không đưa vào stage 2, ghi xung đột. */
 function loanBasis(lookup: Lookup, loan: Profile360['loan'], key: (typeof LOAN_FIELDS)[number]): BasisValue | null {
-  return loan[key].trust === 'DISPUTED' ? null : basisAt(lookup.anchor, `loan_info.${key}`);
+  if (loan[key].trust === 'DISPUTED') return null;
+  // COR-R09: số trên đơn vay gốc bị người thẩm định bác → lấy số của bản được chọn (cùng đường dẫn trên chứng từ của nó).
+  const path = `loan_info.${key}`;
+  const fact = lookup.anchor ? lookup.factOf(lookup.anchor.evidence_id, path) : undefined;
+  const chosen = fact?.trust === 'OVERRULED' ? chosenFor(lookup.lac, fact) : undefined;
+  if (chosen) {
+    const src = chosen.sources[0]?.record_id ?? '';
+    const hash = src.indexOf('#');
+    return basisAt(lookup.evidences.find((e) => e.evidence_id === src.slice(0, hash)), src.slice(hash + 1));
+  }
+  return basisAt(lookup.anchor, path);
 }
 
 /** Đơn vị doanh nghiệp của chính khách vay pháp nhân (L360-B08). */

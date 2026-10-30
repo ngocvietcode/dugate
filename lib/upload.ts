@@ -48,6 +48,8 @@ export const MIME_MAP: Record<string, string> = {
   '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   '.xls': 'application/vnd.ms-excel',
   '.csv': 'text/csv',
+  // Chỉ endpoint khai `.json` trong ENDPOINT_ALLOWED_EXTENSIONS mới nhận (loan-appraisal: case_input.json).
+  '.json': 'application/json',
   // Images — only formats Gemini 2.5 vision can decode
   '.jpg':  'image/jpeg',
   '.jpeg': 'image/jpeg',

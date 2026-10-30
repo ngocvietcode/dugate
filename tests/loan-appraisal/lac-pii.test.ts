@@ -27,7 +27,7 @@ const ID = '079199912345';
 const AMOUNT = 987_654_321;
 const borrower = { party_role: 'BORROWER', full_name: NAME, id_number: ID };
 
-it('lac_mode = on: PII có trong prompt rule LLM nhưng không có trong log, content_preview, warning, bản tóm tắt', async () => {
+it('PII có trong prompt rule LLM nhưng không có trong log, content_preview, warning, bản tóm tắt', async () => {
   const a = loanApp([borrower]);
   a.data!.loan_info = { ...(a.data!.loan_info as object), requested_amount: AMOUNT, bank_proposed_amount: AMOUNT, loan_term_months: 60, interest_rate: 10 };
   const evs = [{ ...a, field_confidences: { ...a.field_confidences, loan_info: 0.95 } }, ev('id_card', { parties: [{ ...borrower, party_role: 'HOLDER' }] })];
@@ -38,7 +38,7 @@ it('lac_mode = on: PII có trong prompt rule LLM nhưng không có trong log, co
   const ctx = {
     operationId: 'op-1', endpointSlug: 'workflows:loan-appraisal', stepsResult: [step(0, 'classify', classify), step(1, 'extract_evidence', extract)], currentStep: 2,
     totalInputTokens: 0, totalOutputTokens: 0, totalCost: 0, usageBreakdown: [],
-    pipelineVars: { flow: 'FAST', stop_after_intake: false, lac_mode: 'on' },
+    pipelineVars: { flow: 'FAST', stop_after_intake: false },
     promptOverrides: {}, modelOverrides: {}, reasoningEffortOverrides: {},
     filesData: [{ name: 'a.pdf', path: '/s/a.pdf', mime: 'application/pdf', size: 1 }],
     webhookUrl: null, apiKeyId: null, logger,
@@ -58,7 +58,7 @@ it('lac_mode = on: PII có trong prompt rule LLM nhưng không có trong log, co
   const final = (completeWorkflow as jest.Mock).mock.calls[0][2] as { config_snapshot: { warnings?: string[] }; loan_application_context_summary?: unknown };
   const summary = JSON.stringify(final.loan_application_context_summary);
   const warnings = JSON.stringify(final.config_snapshot.warnings ?? []);
-  expect(final.loan_application_context_summary).toMatchObject({ mode: 'on', used_in_prompt: true, fact_count: expect.any(Number), rendered_fact_count: expect.any(Number) });
+  expect(final.loan_application_context_summary).toMatchObject({ used_in_prompt: true, fact_count: expect.any(Number), rendered_fact_count: expect.any(Number) });
   for (const v of pii) {
     expect(logged).not.toContain(v);
     expect(previews).not.toContain(v);

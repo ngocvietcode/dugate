@@ -235,7 +235,8 @@ export const ConflictSchema = z.object({
   field: z.string(),
   field_label: z.string(),
   kind: z.enum(['DISPUTED', 'PROBABLE_OCR_ERROR']),
-  options: z.array(z.object({ fact_id: z.string(), value: Scalar, doc_types: z.array(z.string()) }).strict()).min(2),
+  /** `record_ids` (COR-R05): mã ổn định của các lá ghi giá trị này — để giao diện dựng FACT_RESOLUTION; fact_id đổi sau mỗi lần tính lại. */
+  options: z.array(z.object({ fact_id: z.string(), value: Scalar, doc_types: z.array(z.string()), record_ids: z.array(z.string()) }).strict()).min(2),
 }).strict();
 
 export const IssueCodeSchema = z.enum([

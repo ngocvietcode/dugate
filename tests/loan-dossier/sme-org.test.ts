@@ -1,7 +1,7 @@
 // SME: bên vay là pháp nhân. Khớp theo mã số thuế (không theo tên người), không gộp pháp nhân với cá nhân, không gán vợ/chồng cho công ty,
 // người đại diện nối bằng cạnh LEGAL_REP_OF, và output HKD không đổi.
 import { MapDossierDataSchema } from '@/lib/loan-dossier/contracts/check-stages';
-import { buildDossierGraph, projectMapDossierData, renderDossierGraph, toDossierGraphView, DossierGraphViewSchema } from '@/lib/loan-dossier/graph';
+import { buildDossierGraph, projectMapDossierData, toDossierGraphView, DossierGraphViewSchema } from '@/lib/loan-dossier/graph';
 import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 import { runMapDossier } from '@/lib/loan-dossier/s3/run';
 import { checkInvariants } from '@/lib/loan-dossier/s3/status';
@@ -145,18 +145,6 @@ describe('graph với doanh nghiệp', () => {
     for (const pii of [MST, 'CÔNG TY', 'NGUYỄN', ID_A12, 'LÊ LỢI']) expect(json).not.toContain(pii);
   });
 
-  it('render cho LLM: dòng doanh nghiệp có MST / ĐKDN / trụ sở / đại diện, không có giới tính-số ĐD cá nhân; đại diện nối bằng id', () => {
-    const text = renderDossierGraph(buildDossierGraph(data()), null);
-    const line = text.split('\n').find((l) => l.startsWith('person-1'))!;
-    expect(line).toContain('(doanh nghiệp)');
-    expect(line).toContain(`MST ${MST}`);
-    expect(line).toContain(`số ĐKDN ${MST}`);
-    expect(line).toContain('trụ sở 12 LÊ LỢI');
-    expect(line).toContain('đại diện NGUYỄN VĂN AN (Giám đốc)');
-    expect(line).not.toMatch(/giới tính|sinh |số ĐD/);
-    expect(text).toContain('person-2 → person-1: người đại diện theo pháp luật');
-    expect(text).not.toMatch(/ev-[0-9a-f]{12}/);
-  });
 });
 
 describe('UI: Customer 360 và sơ đồ cho doanh nghiệp', () => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BarChart3, ShieldCheck, Sparkles, UserRound } from 'lucide-react';
+import { BarChart3, Pencil, ShieldCheck, Sparkles, UserRound } from 'lucide-react';
 import type { AppraisalResult, DossierEvidence } from '@/app/loan-appraisal/types';
 import { Badge } from '../ui/Badge';
 import { Card, CardBody } from '../ui/Card';
@@ -10,6 +10,7 @@ import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { Tabs, panelProps } from '../ui/Tabs';
 import { OcrResults } from '../intake/OcrResults';
 import { hasDossierCheckResults } from '@/app/loan-appraisal-v2/lib/selectors';
+import { CorrectionsPanel } from './CorrectionsPanel';
 import { CustomerProfile } from './CustomerProfile';
 import { DecisionCockpit } from './DecisionCockpit';
 import { FindingsPanel } from './FindingsPanel';
@@ -17,12 +18,13 @@ import { PolicyPanel } from './PolicyPanel';
 import { ProvisionalBanner } from './ProvisionalBanner';
 import { RecommendationPanel } from './RecommendationPanel';
 
-type View = 'profile' | 'controls' | 'decision';
+type View = 'profile' | 'controls' | 'decision' | 'corrections';
 const PREFIX = 'la2-appraisal';
 const TABS = [
   { id: 'profile' as const, label: 'Hồ sơ khách hàng', icon: UserRound },
   { id: 'controls' as const, label: 'Kiểm tra theo rule', icon: ShieldCheck },
   { id: 'decision' as const, label: 'Rủi ro & khuyến nghị', icon: BarChart3 },
+  { id: 'corrections' as const, label: 'Hiệu chỉnh', icon: Pencil },
 ];
 
 /** Kết quả V1 cũ (không có output_version): chỉ có tóm tắt hợp nhất. */
@@ -40,10 +42,14 @@ function LegacySummary({ result }: { result: AppraisalResult }) {
 }
 
 /** Giai đoạn 2. Luôn xem được, kể cả khi hồ sơ chưa đủ chứng từ. */
-export function AppraisalWorkspace({ result, extraction = null }: {
+export function AppraisalWorkspace({ result, extraction = null, onRecompute, busy = false, apiKey }: {
   result: AppraisalResult | null;
   /** OCR giữa chừng (từ checkpoint bước 1) để tab Hồ sơ khách hàng hiện sớm khi giai đoạn 2 đang chạy; kết quả cuối ưu tiên hơn. */
   extraction?: DossierEvidence[] | null;
+  /** COR-R16: gửi case_input.json để tính lại sau hiệu chỉnh. */
+  onRecompute?: (file: File) => void;
+  busy?: boolean;
+  apiKey?: string;
 }) {
   const [view, setView] = useState<View>('profile');
   if (!result) {
@@ -80,6 +86,7 @@ export function AppraisalWorkspace({ result, extraction = null }: {
                 {view === 'decision' && (
                   <RecommendationPanel result={result} />
                 )}
+                {view === 'corrections' && <CorrectionsPanel result={result} onRecompute={onRecompute} busy={busy} apiKey={apiKey} />}
               </ErrorBoundary>
             </div>
           </Card>

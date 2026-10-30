@@ -5,7 +5,7 @@ import type { EvidenceEnvelope } from '@/lib/loan-dossier/s2/common-schema';
 import { loadAssetFsParams } from '@/lib/loan-dossier/s3/fs/asset-params';
 import { loadFsParams } from '@/lib/loan-dossier/s3/fs/params';
 import { fsShadow, resolveS3Matcher, type FsShadowSummary } from '@/lib/loan-dossier/s3/fs/shadow';
-import { resolveS3AssetMatcher, runMapDossier } from '@/lib/loan-dossier/s3/run';
+import { resolveS3AssetMatcher, runMapDossier, type MapDossierInput } from '@/lib/loan-dossier/s3/run';
 import { checkInvariants } from '@/lib/loan-dossier/s3/status';
 
 import { consolidateParams } from './run-params';
@@ -29,11 +29,13 @@ export function runMapStage(
   evidences: ReadonlyArray<EvidenceEnvelope>,
   pipelineVars: Record<string, unknown>,
   now?: () => Date,
+  /** COR-R08: liên kết chủ thể của lần tính lại và nơi nhận báo cáo áp. */
+  corrections?: Pick<MapDossierInput, 'links' | 'onLinkReport'>,
 ): MapStageOutcome {
   try {
     const { dossier_submitted_at } = consolidateParams(pipelineVars, now ? now() : undefined);
     const asset_matcher = resolveS3AssetMatcher(pipelineVars.s3_asset_matcher);
-    const result = runMapDossier({ evidences, dossier_submitted_at, now, asset_matcher });
+    const result = runMapDossier({ evidences, dossier_submitted_at, now, asset_matcher, ...corrections });
     if (!result.data) return { data: null, status: result.status, status_code: result.status_code, warning: 'MAP_DOSSIER_NO_DATA: S3 không trả dữ liệu.' };
     const violations = checkInvariants(result.data, new Set(evidences.filter((e) => e.status === 'SUCCESS').map((e) => e.evidence_id)));
     const warnings = violations.length > 0 ? [`MAP_DOSSIER_INVARIANT: ${violations.length} vi phạm nhất quán ở kết quả gom người & tài sản.`] : [];

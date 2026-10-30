@@ -33,7 +33,8 @@ const NOTE = 'Ký hiệu: F<n> là mã dữ kiện, dẫn nguồn bằng mã nà
   + 'Trạng thái: CORROBORATED = ≥2 loại chứng từ khớp · SINGLE_SOURCE = 1 loại chứng từ · DECLARED = chỉ có lời khai của khách hàng (đơn vay, bảng kê) · '
   + 'DISPUTED = các chứng từ ghi khác nhau · PROBABLE_OCR_ERROR = nghi đọc sai 1 ký tự · SPELLING_VARIANT = khác cách viết · '
   + '"cần soát" = độ tin cậy đọc thấp. person-n / asset-n là người / tài sản đã được hệ thống gom: cùng một chủ thể trên mọi chứng từ. '
-  + 'inc-n là một luồng thu nhập (đã gộp các chứng từ cùng nguồn, chỉ tính một lần); biz-n là một hộ kinh doanh.';
+  + 'inc-n là một luồng thu nhập (đã gộp các chứng từ cùng nguồn, chỉ tính một lần); biz-n là một hộ kinh doanh. '
+  + '"đã sửa đọc" = người thẩm định đã sửa lỗi OCR của giá trị này; HUMAN_LINK = người thẩm định đã gộp / tách chủ thể này.';
 
 const GAP_TEXT: Record<string, string> = {
   NO_LOAN_APPLICATION: 'không có giấy đề nghị vay đọc được: chưa xác định được vai trò từng người',
@@ -101,21 +102,21 @@ export function renderLoanApplicationContext(
   const folded = (f: LacFact) => profile !== null && (f.field.startsWith('income_sources[]') || f.subject_id === 'business-1' || structured.has(f.fact_id));
 
   const subjectById = new Map(lac.subjects.map((s) => [s.subject_id, s]));
-  const live = (f: LacFact) => !f.hidden && f.trust !== 'SUPERSEDED';
+  const live = (f: LacFact) => !f.hidden && f.trust !== 'SUPERSEDED' && f.trust !== 'OVERRULED';
   const renderable = (f: LacFact) => live(f) && !folded(f);
   const inScope = lac.facts.filter((f) => renderable(f) && factInScope(scope, f, subjectById.get(f.subject_id)));
-  const conflictFactIds = new Set(lac.conflicts.flatMap((c) => c.fact_ids));
+  const conflictFactIds = new Set([...lac.conflicts.flatMap((c) => c.fact_ids), ...(lac.resolutions ?? []).map((r) => r.chosen_fact_id)]);
   const factById = new Map(lac.facts.map((f) => [f.fact_id, f]));
 
   // ── Chọn fact theo ngân sách: fact của mâu thuẫn và của mục NGUỒN TRẢ NỢ luôn giữ; còn lại theo trust rồi xoay vòng giữa chủ thể ──
-  const factLine = (code: string, f: LacFact) => `${code} ${f.label} = ${one(f.value)} [${f.trust}; ${sourceList(f, superseded)}${f.review === 'REVIEW' ? '; cần soát' : ''}]`;
+  const factLine = (code: string, f: LacFact) => `${code} ${f.label} = ${one(f.value)} [${f.trust}; ${sourceList(f, superseded)}${f.sources.some((s) => s.origin === 'HUMAN_EDIT') ? '; đã sửa đọc' : ''}${f.review === 'REVIEW' ? '; cần soát' : ''}]`;
   const estimate = (f: LacFact) => factLine('F000', f).length + 1;
   const selected = new Set<string>();
   const mandatory = lac.facts.filter((f) => live(f) && (conflictFactIds.has(f.fact_id) || (repayment && structured.has(f.fact_id))));
   const subjectsShown = lac.subjects.filter((s) => s.kind !== 'document' && !(profile && s.kind === 'business')
     && (subjectInScope(scope, s) || inScope.some((f) => f.subject_id === s.subject_id) || mandatory.some((f) => f.subject_id === s.subject_id && !folded(f))));
   const repaymentLines = repayment ? profile!.income_streams.length + profile!.business_units.length : 0;
-  const fixedCost = NOTE.length + lac.gaps.length * 90 + lac.conflicts.length * 140 + subjectsShown.length * 80 + lac.relations.length * 90 + repaymentLines * 120 + 200;
+  const fixedCost = NOTE.length + lac.gaps.length * 90 + (lac.conflicts.length + (lac.resolutions?.length ?? 0)) * 140 + subjectsShown.length * 80 + lac.relations.length * 90 + repaymentLines * 120 + 200;
   let used = fixedCost;
   for (const f of mandatory) { selected.add(f.fact_id); used += folded(f) ? 12 : estimate(f); }
 
@@ -173,6 +174,15 @@ export function renderLoanApplicationContext(
         return `${ref(id)} "${one(f.value)}" (${docs} chứng từ)`;
       });
       out.push(`- ${c.subject_id} · ${factById.get(c.fact_ids[0])?.label ?? c.field}: ${values.join(' ≠ ')} — ${c.kind}`);
+    }
+  }
+  // COR-R11: lựa chọn của người thẩm định — không có lý do, người sửa hay mã hiệu chỉnh trong prompt.
+  if (lac.resolutions?.length) {
+    out.push('', 'HIỆU CHỈNH CỦA NGƯỜI THẨM ĐỊNH (quyết định đã có, không đánh giá lại)');
+    for (const r of lac.resolutions) {
+      const chosen = factById.get(r.chosen_fact_id)!;
+      const others = r.overruled_fact_ids.map((id) => `"${one(factById.get(id)!.value)}" (${sourceList(factById.get(id)!, superseded)})`).join(', ');
+      out.push(`- ${r.subject_id} · ${chosen.label}: chọn ${ref(r.chosen_fact_id)} "${one(chosen.value)}" (${sourceList(chosen, superseded)}), bác ${others}`);
     }
   }
   const dropped = new Map<string, number>();

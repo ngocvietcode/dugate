@@ -84,6 +84,9 @@ export const EMPTY_FIELD: ProfileField = { value: null, fact_ids: [], trust: nul
  */
 export function pickField(candidates: readonly Candidate[], mode: 'identity' | 'text', norm: (v: string | number | boolean) => string): ProfileField {
   if (candidates.length === 0) return EMPTY_FIELD;
+  // COR-R09: giá trị người thẩm định đã bác không dự phần chọn (còn lại ít nhất một lần nhắc thì mới bỏ).
+  const kept = candidates.filter((c) => c.fact?.trust !== 'OVERRULED');
+  if (kept.length > 0 && kept.length < candidates.length) return pickField(kept, mode, norm);
   const groups = new Map<string, Candidate[]>();
   for (const c of candidates) groups.set(norm(c.value), [...(groups.get(norm(c.value)) ?? []), c]);
   const fact_ids = [...new Set(candidates.map((c) => c.fact?.fact_id).filter((x): x is string => !!x))];
@@ -99,8 +102,17 @@ export function fieldAt(e: EvidenceEnvelope | null | undefined, path: string, lo
   const v = get(e.data, path);
   if (v === null || v === undefined || (typeof v !== 'string' && typeof v !== 'number' && typeof v !== 'boolean')) return EMPTY_FIELD;
   const fact = lookup.factOf(e.evidence_id, path);
-  const siblings = fact ? lookup.lac.facts.filter((f) => f.subject_id === fact.subject_id && f.field === fact.field && f.trust !== 'SUPERSEDED' && !f.hidden) : [];
+  const siblings = fact ? lookup.lac.facts.filter((f) => f.subject_id === fact.subject_id && f.field === fact.field && f.trust !== 'SUPERSEDED' && f.trust !== 'OVERRULED' && !f.hidden) : [];
+  // COR-R09: giá trị của bản này bị người thẩm định bác → trình bày giá trị được chọn của cùng trường.
+  const chosen = fact?.trust === 'OVERRULED' ? chosenFor(lookup.lac, fact) : undefined;
+  if (chosen) return { value: chosen.value, fact_ids: siblings.map((f) => f.fact_id), trust: chosen.trust, review: chosen.review };
   return { value: v, fact_ids: siblings.map((f) => f.fact_id), trust: fact?.trust ?? null, review: fact?.review ?? 'REVIEW' };
+}
+
+/** Fact được chọn (FACT_RESOLUTION) thay cho `overruled`. */
+export function chosenFor(lac: LoanApplicationContext, overruled: LacFact): LacFact | undefined {
+  const r = lac.resolutions?.find((x) => x.overruled_fact_ids.includes(overruled.fact_id));
+  return r ? lac.facts.find((f) => f.fact_id === r.chosen_fact_id) : undefined;
 }
 
 export const normText = (v: string | number | boolean): string => String(v).normalize('NFC').replace(/\s+/g, ' ').trim().toLocaleUpperCase('vi-VN');
@@ -110,7 +122,7 @@ export function detailsOf(lac: LoanApplicationContext, subjectId: string, exclud
   const seen = new Set<string>();
   const out: DetailFact[] = [];
   for (const f of lac.facts) {
-    if (f.subject_id !== subjectId || f.hidden || f.trust === 'SUPERSEDED' || exclude.has(f.field)) continue;
+    if (f.subject_id !== subjectId || f.hidden || f.trust === 'SUPERSEDED' || f.trust === 'OVERRULED' || exclude.has(f.field)) continue;
     const key = `${f.label}\u0000${normText(f.value)}`;
     if (seen.has(key)) continue;
     seen.add(key);

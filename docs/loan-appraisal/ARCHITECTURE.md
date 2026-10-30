@@ -247,7 +247,7 @@ mũ; ghi prompt/output vào log job ở Bull Board (D-95); chi phí và token th
 | E4 | Job cha giữ slot worker khi chờ sub-step | Thông lượng bị giới hạn bởi thời gian chờ LLM (pipeline concurrency 5). *Đính chính:* fan-out S1/S2 **đã có** giới hạn 4 lời gọi đồng thời mỗi operation (`MAX_PARALLEL_MODEL_CALLS`, `stage-adapters.ts`); `Promise.all` ở tầng domain chỉ xếp hàng. Phương án A đã làm (D-106): queue `workflow` riêng, `WORKFLOW_CONCURRENCY`; còn mở phương án B — job cha không giữ slot khi chờ (docs/WORKFLOW-SUSPEND-DESIGN.md) |
 | E5 | ~~Code tắt nằm lẫn trong luồng chính~~ **Đã xử lý (D-97…D-99):** S4, S5, `dossier-consolidate`, dựng `master_dossier` không còn trong đồ thị import lúc chạy (test khóa); trang cấu hình chỉ còn bước AI thực sự chạy; đường resume operation cũ và đầu vào tài chính kiểu v2 cũ đã gỡ | — |
 | E9 | ~~Đầu vào tài chính không lọc evidence `REVIEW`~~ **Đã xử lý (D-101, chọn "vẫn tính nhưng gắn cờ"):** đầu vào có độ tin cậy đọc < 0.80 (hoặc không có) mang `reviewIds`; chỉ số tính từ chúng có `needs_review` + `review_evidence_ids` + cảnh báo đầu danh sách (UI hiện) | Đã đóng (D-104): rule engine trả `REVIEW` / `INPUT_NEEDS_REVIEW` khi chỉ số `needs_review` lẽ ra PASS; payload tích hợp 5.2 có `financials[].review` |
-| E6 | ~~Rule LLM nhận hai khối dữ liệu tách rời~~ **Đã cài đặt (D-103), mặc định tắt:** `lac_mode = on` dùng một khối LAC dẫn nguồn được (`F<n>`), có trạng thái tin cậy, quan hệ, mâu thuẫn, khoảng trống; thêm rào `EVIDENCE_DISPUTED` / `DECLARED_ONLY`. [Spec LAC](spec-v3/cross_cutting/loan_application_context.md) | Còn: T-LAC-07 (đo shadow / on trên bộ UAT) trước khi bật mặc định |
+| E6 | ~~Rule LLM nhận hai khối dữ liệu tách rời~~ **Đã xử lý (D-103, D-120):** rule LLM chỉ dùng một khối LAC dẫn nguồn được (`F<n>`), có trạng thái tin cậy, quan hệ, mâu thuẫn, khoảng trống, rào `EVIDENCE_DISPUTED` / `DECLARED_ONLY`; OCR thô chỉ còn là phụ lục cho rule khai `ocr.<loại>`. [Spec LAC](spec-v3/cross_cutting/loan_application_context.md) | Không đo off / on trên UAT (T-LAC-07 bỏ ở D-120). Chưa có đường để người thẩm định hiệu chỉnh rồi tính lại: [đề xuất COR](spec-v3/cross_cutting/case_corrections.md) |
 | E7 | Một điểm phụ thuộc: anchor `loan_application` | Không có đơn vay thì không gom được người nào và không có đầu vào khoản vay |
 | E8 | Thiếu quan sát chất lượng nghiệp vụ | Không có chỉ số drift: tỉ lệ `REVIEW`, dẫn chiếu bị loại, độ chính xác trên bộ UAT |
 
@@ -376,7 +376,8 @@ CIC/core hay đọc file); phạm vi scorecard.
 | [spec-v3/cross_cutting/v2_integration.md](spec-v3/cross_cutting/v2_integration.md) | Rule V2-R* | Thân bài mô tả 8 stage; **ghi chú trạng thái ở đầu file** (D-97) liệt kê các rule không còn đúng với code |
 | [spec-v3/stages/S1…S5](spec-v3/stages/) | Rule và AC của từng stage | S4, S5 đang không được workflow gọi |
 | [spec-v3/cross_cutting/master_dossier.md](spec-v3/cross_cutting/master_dossier.md) | Master dossier, hiệu chỉnh | Đang tắt cùng S4/S5 |
-| [spec-v3/cross_cutting/loan_application_context.md](spec-v3/cross_cutting/loan_application_context.md) | LAC | Đề xuất, chưa duyệt |
+| [spec-v3/cross_cutting/loan_application_context.md](spec-v3/cross_cutting/loan_application_context.md) | LAC | Đã cài đặt; đường duy nhất của rule LLM từ D-120 |
+| [spec-v3/cross_cutting/case_corrections.md](spec-v3/cross_cutting/case_corrections.md) | Hiệu chỉnh hồ sơ và tính lại (COR) | Đề xuất, chưa duyệt |
 | [spec-v3/IMPLEMENT.md](spec-v3/IMPLEMENT.md), [open_questions.md](spec-v3/open_questions.md) | Nhật ký quyết định D-*, câu hỏi mở OQ-* | Append-only |
 
 ---
