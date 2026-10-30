@@ -144,7 +144,7 @@ Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đ�
 | Task | Tiêu đề | Phụ thuộc | Spec | Verify |
 |---|---|---|---|---|
 | T-360-13 | P2: Giao dịch mua | T-360-18 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
-| T-COR-08 | Trợ lý hiệu chỉnh bằng LLM | T-COR-05, T-COR-06 | `cross_cutting/case_corrections.md` | `npx jest tests/loan-dossier/corrections-draft.test.ts` |
+| T-COR-08 | Trợ lý hiệu chỉnh bằng LLM | T-COR-05, T-COR-06 | `cross_cutting/case_corrections.md` | `npx jest tests/loan-dossier/corrections-draft.test.ts tests/loan-appraisal/correction-draft-workflow.test.ts` |
 | T-FS-06 | Đánh giá và bật `fs` | T-FS-04 | `cross_cutting/s3_fellegi_sunter.md` | `npx jest tests/scripts/fs-estimate-params.test.ts tests/loan-dossier/s3-fs-compare.test.ts tests/loan-dossier/s3-fs-score.test.ts` |
 | T-LAC-06 | Lưu trữ, an toàn, tài liệu | T-LAC-05 | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-appraisal/lac-pii.test.ts` |
 | T-LAC-07 | Đo trên UAT và quyết định bật | T-LAC-05 | `cross_cutting/loan_application_context.md` | `npx jest tests/scripts/lac-compare.test.ts` |

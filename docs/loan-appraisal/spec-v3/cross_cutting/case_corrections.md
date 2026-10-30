@@ -288,14 +288,14 @@ Kết quả (`AppraisalResultV2`) thêm `case_seal`, `correction_report` (chỉ 
 
 ### T-COR-08 — Trợ lý hiệu chỉnh bằng LLM
 - Depends: T-COR-05, T-COR-06
-- Files: `lib/pipelines/workflows/loan-correction-draft.ts`, `lib/loan-dossier/corrections/draft.ts`, `lib/loan-dossier/corrections/candidates.ts`, `lib/endpoints/registry.ts`, `components/loan-appraisal-v2/appraisal/CorrectionAssistant.tsx`, `tests/loan-dossier/corrections-draft.test.ts`
+- Files: `lib/pipelines/workflows/loan-correction-draft.ts`, `lib/loan-dossier/corrections/draft.ts`, `lib/pipelines/workflow-engine.ts`, `lib/endpoints/registry.ts`, `app/loan-appraisal-v2/lib/api.ts`, `components/loan-appraisal-v2/appraisal/CorrectionAssistant.tsx`, `tests/loan-dossier/corrections-draft.test.ts`, `tests/loan-appraisal/correction-draft-workflow.test.ts`
 - Refs: D-01, COR-R18, COR-R19, COR-R20, COR-R21
 - Làm: bảng ứng viên `C/P/A/K` từ LAC + S3 (`candidates.ts`); prompt + schema đầu ra; `validateDrafts(instruction, candidates, raw) → CorrectionDraft[]` thuần (COR-R20); workflow sync; UI ô chỉ thị + danh sách đề xuất (Đồng ý / Bỏ; cần làm rõ; không cần sửa) đổ vào cùng khay của T-COR-06.
 - DoD:
   - test: COR-AC12, COR-AC13, COR-AC14 (model giả lập)
   - test: `validateDrafts` thuần, không phụ thuộc thứ tự mục model trả
   - test: chỉ thị không có trong log / `content_preview`
-- Verify: `npx jest tests/loan-dossier/corrections-draft.test.ts`
+- Verify: `npx jest tests/loan-dossier/corrections-draft.test.ts tests/loan-appraisal/correction-draft-workflow.test.ts`
 
 ## 8. Điểm cần quyết
 

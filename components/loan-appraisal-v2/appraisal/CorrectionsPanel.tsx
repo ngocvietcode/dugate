@@ -13,6 +13,7 @@ import { docTypeLabelOf } from '@/app/loan-appraisal-v2/lib/classification-view'
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Card, CardBody, CardHeader } from '../ui/Card';
+import { CorrectionAssistant } from './CorrectionAssistant';
 import { FOCUS_RING } from '../ui/toneClasses';
 
 const INPUT = `w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground disabled:opacity-60 ${FOCUS_RING}`;
@@ -28,8 +29,10 @@ function describe(c: Correction, labelOf: (id: string) => string): string {
   return `${c.subject_kind === 'person' ? 'Người' : 'Tài sản'}: ${labelOf(c.a.evidence_id)} #${c.a.index} ${c.kind === 'SAME_SUBJECT' ? '=' : '≠'} ${labelOf(c.b.evidence_id)} #${c.b.index}`;
 }
 
-export function CorrectionsPanel({ result, onRecompute, busy = false }: {
+export function CorrectionsPanel({ result, onRecompute, busy = false, apiKey }: {
   result: AppraisalResult;
+  /** API key đang dùng — cho trợ lý hiệu chỉnh (COR-R18). */
+  apiKey?: string;
   /** Gửi case_input.json (một file) như một lần chạy mới. */
   onRecompute?: (file: File) => void;
   busy?: boolean;
@@ -95,6 +98,8 @@ export function CorrectionsPanel({ result, onRecompute, busy = false }: {
             )}
           </section>
         )}
+
+        <CorrectionAssistant result={result} apiKey={apiKey} author={author} onAccept={(c) => dispatch({ type: 'add', correction: c })} />
 
         {conflicts.length > 0 && (
           <section aria-label="Mâu thuẫn giữa chứng từ">
@@ -200,11 +205,13 @@ export function CorrectionsPanel({ result, onRecompute, busy = false }: {
             <div className="mb-3 space-y-2 rounded-lg border border-border bg-card p-2 text-xs">
               <p><strong>{KIND_LABELS[draft.correction.kind]}:</strong> {draft.label}</p>
               <input className={INPUT} placeholder="Lý do (bắt buộc), VD: đã đối chiếu bản gốc GCN" value={reason} onChange={(e) => { setReason(e.target.value); setError(null); }} maxLength={500} />
-              <input className={INPUT} placeholder="Người sửa (bắt buộc)" value={author} onChange={(e) => { setAuthor(e.target.value); setError(null); }} maxLength={64} />
               {error && <p className="text-[rgb(var(--la2-danger))]">{error}</p>}
               <div className="flex gap-2"><Button size="sm" variant="primary" onClick={confirm}>Thêm hiệu chỉnh</Button><Button size="sm" variant="ghost" onClick={() => { setDraft(null); setError(null); }}>Bỏ</Button></div>
             </div>
           )}
+          <label className="mb-2 block text-xs"><span className="font-semibold">Người sửa</span>
+            <input className={`${INPUT} mt-1`} placeholder="Mã nhân viên / tên đăng nhập (bắt buộc)" value={author} onChange={(e) => { setAuthor(e.target.value); setError(null); }} maxLength={64} />
+          </label>
           <p className="text-xs font-semibold">{corrections.length} hiệu chỉnh chưa tính <span className="font-normal text-muted-foreground">· giữ trong trang, mất khi tải lại; nội dung hồ sơ lưu {DEFAULT_RETENTION_DAYS} ngày, sau đó chỉ tính lại được từ file đã tải</span></p>
           {corrections.length > 0 && (
             <ul className="mt-2 space-y-1 text-xs">

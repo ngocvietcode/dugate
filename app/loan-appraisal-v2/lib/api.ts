@@ -63,7 +63,18 @@ export async function submitWorkflow(
   // true: giai đoạn 2 chỉ chạy khi người dùng chuyển (resumeOperation); false: chạy hết một lần.
   formData.append('stop_after_intake', stopAfterIntake ? 'true' : 'false');
   files.forEach((file) => formData.append('files[]', file));
+  return postWorkflow(formData, apiKey, signal);
+}
 
+/** COR-R18: gửi chỉ thị (trong file JSON) cho trợ lý hiệu chỉnh; trả id operation để poll. */
+export async function submitCorrectionDraft(file: File, apiKey: string | undefined, signal?: AbortSignal): Promise<string> {
+  const formData = new FormData();
+  formData.append('process', 'loan-correction-draft');
+  formData.append('files[]', file);
+  return postWorkflow(formData, apiKey, signal);
+}
+
+async function postWorkflow(formData: FormData, apiKey: string | undefined, signal?: AbortSignal): Promise<string> {
   const response = await request('/api/v1/docs/workflows', {
     method: 'POST',
     body: formData,

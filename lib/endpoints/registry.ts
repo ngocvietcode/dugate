@@ -950,6 +950,16 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
         connections: [],
         isWorkflow: true,
       },
+      'loan-correction-draft': {
+        displayName: 'Trợ lý hiệu chỉnh hồ sơ vay',
+        description: 'Dịch chỉ thị tự do của người thẩm định thành bản nháp hiệu chỉnh (OCR_FIX, FACT_RESOLUTION, SAME/DIFFERENT_SUBJECT) cho loan-appraisal (COR-R18…R21). ' +
+          'files[] = đúng một JSON { contract: "loan-appraisal.correction-draft-input", contract_version: "1.0", documents, dossier_precheck, case_seal, instruction } lấy từ kết quả thẩm định; ' +
+          'kết quả là drafts[] (PROPOSED / REJECTED / NO_CHANGE / NEEDS_CLARIFICATION). Không áp hiệu chỉnh nào: bản người đồng ý gửi lại qua case_input.json của loan-appraisal. ' +
+          'Step key correction_draft ({{instruction}}, {{context}}, {{candidates}}, {{output_schema}}; model/reasoning mặc định lấy của evaluate).',
+        parameters: {},
+        connections: [],
+        isWorkflow: true,
+      },
       'loan-appraisal': {
         displayName: 'Thẩm định Bộ Hồ sơ Vay',
         description: 'Loan Appraisal V2 theo state machine 5 stage: AI phân loại/bóc tách (OCR) hồ sơ → ' +
@@ -1217,6 +1227,8 @@ export const ENDPOINT_ALLOWED_EXTENSIONS: Record<string, readonly string[]> = {
   // Loan appraisal ingests a whole loan dossier: PDF + images + Office docs. `.json` = case_input.json của lần tính lại
   // (COR-R02): workflow chỉ nhận đúng một file JSON đứng một mình, kiểm schema + niêm phong HMAC trước khi dùng.
   'workflows:loan-appraisal': [...EXT_DOC_SHEET, '.json'],
+  // Trợ lý hiệu chỉnh: chỉ nhận một file JSON đầu vào (COR-R18).
+  'workflows:loan-correction-draft': ['.json'],
   // Account opening ingests a whole onboarding dossier: scanned forms, ID images,
   // legal documents — same breadth as a loan dossier.
   'workflows:account-opening': EXT_DOC_SHEET,

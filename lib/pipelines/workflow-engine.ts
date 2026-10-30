@@ -1205,6 +1205,7 @@ import { runFinancialReportTranslation } from '@/lib/pipelines/workflows/financi
 import { runStatementAnalyze } from '@/lib/pipelines/workflows/statement-analyze';
 import { runTracingPortal } from '@/lib/pipelines/workflows/tracing-portal';
 import { runLoanAppraisal } from '@/lib/pipelines/workflows/loan-appraisal';
+import { runLoanCorrectionDraft } from '@/lib/pipelines/workflows/loan-correction-draft';
 import { runAccountOpening } from '@/lib/pipelines/workflows/account-opening';
 import { runMarginDeposit } from '@/lib/pipelines/workflows/margin-deposit';
 
@@ -1230,6 +1231,7 @@ const WORKFLOW_REGISTRY: Record<string, (ctx: WorkflowContext) => Promise<void>>
   'statement-analyze': runStatementAnalyze,
   'tracing-portal': runTracingPortal,
   'loan-appraisal': runLoanAppraisal,
+  'loan-correction-draft': runLoanCorrectionDraft,
   'account-opening': runAccountOpening,
   'margin-deposit': runMarginDeposit,
 };

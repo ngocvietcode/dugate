@@ -42,13 +42,14 @@ function LegacySummary({ result }: { result: AppraisalResult }) {
 }
 
 /** Giai đoạn 2. Luôn xem được, kể cả khi hồ sơ chưa đủ chứng từ. */
-export function AppraisalWorkspace({ result, extraction = null, onRecompute, busy = false }: {
+export function AppraisalWorkspace({ result, extraction = null, onRecompute, busy = false, apiKey }: {
   result: AppraisalResult | null;
   /** OCR giữa chừng (từ checkpoint bước 1) để tab Hồ sơ khách hàng hiện sớm khi giai đoạn 2 đang chạy; kết quả cuối ưu tiên hơn. */
   extraction?: DossierEvidence[] | null;
   /** COR-R16: gửi case_input.json để tính lại sau hiệu chỉnh. */
   onRecompute?: (file: File) => void;
   busy?: boolean;
+  apiKey?: string;
 }) {
   const [view, setView] = useState<View>('profile');
   if (!result) {
@@ -85,7 +86,7 @@ export function AppraisalWorkspace({ result, extraction = null, onRecompute, bus
                 {view === 'decision' && (
                   <RecommendationPanel result={result} />
                 )}
-                {view === 'corrections' && <CorrectionsPanel result={result} onRecompute={onRecompute} busy={busy} />}
+                {view === 'corrections' && <CorrectionsPanel result={result} onRecompute={onRecompute} busy={busy} apiKey={apiKey} />}
               </ErrorBoundary>
             </div>
           </Card>
