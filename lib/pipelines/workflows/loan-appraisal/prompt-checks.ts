@@ -391,7 +391,7 @@ export function resolvePromptRefs(
 }
 
 /** Trust nào không cho phép PASS (LAC-R13 bước 3). */
-const UNSAFE_PASS_TRUST = new Set<LacFact['trust']>(['DISPUTED', 'PROBABLE_OCR_ERROR', 'SUPERSEDED']);
+const UNSAFE_PASS_TRUST = new Set<LacFact['trust']>(['DISPUTED', 'PROBABLE_OCR_ERROR', 'SUPERSEDED', 'OVERRULED']);
 
 function compactFinancial(financial: FinancialMetrics): string {
   return Object.entries(financial)
@@ -414,7 +414,7 @@ QUY TẮC BẮT BUỘC:
 4. status chỉ nhận: PASS | REVIEW | FAIL | INSUFFICIENT_DATA.
 5. PASS chỉ khi mọi dữ kiện dẫn chiếu không "cần soát" và không DISPUTED / PROBABLE_OCR_ERROR. Dữ kiện DECLARED là lời khai của khách hàng (đơn vay, bảng kê): PASS không được dẫn dữ kiện DECLARED; dẫn dữ kiện CORROBORATED / SINGLE_SOURCE của chính thông tin đó, không có thì trả REVIEW.
 6. Người và tài sản đã được hệ thống gom: person-n / asset-n là CÙNG một chủ thể trên mọi chứng từ. Không tự gom lại; nếu thấy gom sai, trả REVIEW và nêu lý do.
-7. Mâu thuẫn đã được liệt kê ở mục MÂU THUẪN; chỉ báo mâu thuẫn khác khi khác biệt mang tính thực chất (OCR có thể sai dấu, nhầm O↔0, l↔1).
+7. Mâu thuẫn đã được liệt kê ở mục MÂU THUẪN; chỉ báo mâu thuẫn khác khi khác biệt mang tính thực chất (OCR có thể sai dấu, nhầm O↔0, l↔1). Mục HIỆU CHỈNH CỦA NGƯỜI THẨM ĐỊNH là quyết định đã có: dùng giá trị được chọn, không đánh giá lại, không dẫn giá trị bị bác.
 8. confidence là số thực 0..1 thể hiện mức chắc chắn của bạn; BẮT BUỘC có cho mọi kết quả.
 9. reason viết bằng tiếng Việt, ngắn gọn (tối đa 2 câu), nêu rõ giá trị bạn đã so sánh. Mỗi kết quả dẫn tối đa 6 mã tiêu biểu.
 

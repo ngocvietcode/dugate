@@ -14,9 +14,11 @@ export const LacTrustSchema = z.enum([
   'PROBABLE_OCR_ERROR', // lệch 1 ký tự so với đa số
   'DISPUTED', // khác giá trị thực chất
   'SUPERSEDED', // chỉ còn nguồn là bản đã bị thay thế (S3-R27)
+  'OVERRULED', // người thẩm định đã chọn giá trị khác của cùng trường (FACT_RESOLUTION, COR-R09)
 ]);
 
-export const LacSubjectFlagSchema = z.enum(['ROLE_CONFLICT', 'ID_NUMBER_REVIEW', 'LOW_MATCH_CONFIDENCE', 'NAME_SPELLING_DIFFERENCE']);
+/** `HUMAN_LINK` (COR-R08): có lần xuất hiện được gộp vào chủ thể do người thẩm định khẳng định. */
+export const LacSubjectFlagSchema = z.enum(['ROLE_CONFLICT', 'ID_NUMBER_REVIEW', 'LOW_MATCH_CONFIDENCE', 'NAME_SPELLING_DIFFERENCE', 'HUMAN_LINK']);
 
 export const LacGapCodeSchema = z.enum([
   'NO_LOAN_APPLICATION', // không có anchor: không gom được người nào
@@ -46,6 +48,8 @@ export const LacSourceSchema = z.object({
   doc_type_key: z.string(),
   page: z.number().int().nullable(),
   read_confidence: z.number().nullable(),
+  /** COR-R07: `HUMAN_EDIT` = lá đã qua OCR_FIX (read_confidence = 1.0 cho đúng lá này). Vắng = OCR. */
+  origin: z.literal('HUMAN_EDIT').optional(),
 }).strict();
 
 export const LacFactSchema = z.object({
@@ -66,6 +70,8 @@ export const LacFactSchema = z.object({
    * theo chứng từ, `ownership.*` (đã thành quan hệ), thành phần địa chỉ (đã có full_text).
    */
   hidden: z.boolean(),
+  /** COR-R09: fact thuộc một FACT_RESOLUTION — giá trị được chọn hay bị bác. Vắng = không có hiệu chỉnh. */
+  adjudication: z.object({ correction_id: z.string(), role: z.enum(['CHOSEN', 'OVERRULED']) }).strict().optional(),
 }).strict();
 
 export const LacRelationSchema = z.object({
@@ -89,6 +95,14 @@ export const LacConflictSchema = z.object({
   fact_ids: z.array(z.string()).min(2),
 }).strict();
 
+export const LacResolutionSchema = z.object({
+  correction_id: z.string(),
+  subject_id: z.string(),
+  field: z.string(),
+  chosen_fact_id: z.string(),
+  overruled_fact_ids: z.array(z.string()).min(1),
+}).strict();
+
 export const LacGapSchema = z.object({
   code: LacGapCodeSchema,
   subject_id: z.string().nullable(),
@@ -104,6 +118,8 @@ export const LoanApplicationContextSchema = z.object({
   facts: z.array(LacFactSchema),
   relations: z.array(LacRelationSchema),
   conflicts: z.array(LacConflictSchema),
+  /** COR-R09: lựa chọn giá trị của người thẩm định đã áp. Vắng = không có hiệu chỉnh. */
+  resolutions: z.array(LacResolutionSchema).optional(),
   gaps: z.array(LacGapSchema),
   meta: z.object({
     /** = ClaimLedger.leaf_count (bất biến lossless: = Σ sources của facts). */
@@ -127,5 +143,6 @@ export type LacSource = z.infer<typeof LacSourceSchema>;
 export type LacFact = z.infer<typeof LacFactSchema>;
 export type LacRelation = z.infer<typeof LacRelationSchema>;
 export type LacConflict = z.infer<typeof LacConflictSchema>;
+export type LacResolution = z.infer<typeof LacResolutionSchema>;
 export type LacGap = z.infer<typeof LacGapSchema>;
 export type LoanApplicationContext = z.infer<typeof LoanApplicationContextSchema>;
