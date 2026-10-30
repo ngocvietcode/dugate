@@ -4,7 +4,7 @@
 > Theo dõi tiến độ ở `PLAN.md` (milestone) và `IMPLEMENT.md` (nhật ký); file này không lưu trạng thái.
 > Nền v2 (D-32): triển khai trong workflow `loan-appraisal` 8 stage — xem `cross_cutting/v2_integration.md`.
 
-Tổng: **158 task cần làm**, 19 lớp song song + 3 cổng cuối; 57 task không áp dụng trên nền v2 (cuối file).
+Tổng: **159 task cần làm**, 19 lớp song song + 3 cổng cuối; 57 task không áp dụng trên nền v2 (cuối file).
 
 Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đã xong mới làm. Trong cùng một lớp, các task độc lập — có thể giao song song.
 
@@ -139,11 +139,12 @@ Cách dùng: chọn task ở lớp thấp nhất chưa xong; mọi `Depends` đ�
 | T-S5-08 | Dòng từ `identifier_conflicts` | T-S5-02 | `stages/S5_cross_check_documents.md` | `npx jest tests/loan-dossier/s5-identifier-conflicts.test.ts` |
 | T-V2-10 | Bảng ánh xạ và bộ chấm UAT | T-CAT-02, T-S2-10 | `cross_cutting/v2_integration.md` | `npx jest tests/loan-appraisal/v2-uat-map.test.ts` |
 
-## Lớp 6 (8 task)
+## Lớp 6 (9 task)
 
 | Task | Tiêu đề | Phụ thuộc | Spec | Verify |
 |---|---|---|---|---|
 | T-360-13 | P2: Giao dịch mua | T-360-18 | `cross_cutting/loan_360.md` | `npx jest tests/loan-dossier/profile360.test.ts` |
+| T-COR-08 | Trợ lý hiệu chỉnh bằng LLM | T-COR-05, T-COR-06 | `cross_cutting/case_corrections.md` | `npx jest tests/loan-dossier/corrections-draft.test.ts` |
 | T-FS-06 | Đánh giá và bật `fs` | T-FS-04 | `cross_cutting/s3_fellegi_sunter.md` | `npx jest tests/scripts/fs-estimate-params.test.ts tests/loan-dossier/s3-fs-compare.test.ts tests/loan-dossier/s3-fs-score.test.ts` |
 | T-LAC-06 | Lưu trữ, an toàn, tài liệu | T-LAC-05 | `cross_cutting/loan_application_context.md` | `npx jest tests/loan-appraisal/lac-pii.test.ts` |
 | T-LAC-07 | Đo trên UAT và quyết định bật | T-LAC-05 | `cross_cutting/loan_application_context.md` | `npx jest tests/scripts/lac-compare.test.ts` |
