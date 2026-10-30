@@ -957,6 +957,8 @@ export const SERVICE_REGISTRY: Record<string, ServiceDef> = {
           'Các bước kiểm tra hồ sơ (Customer 360, checklist, đối chiếu chéo, master data, kiểm tra nháp) đang TẠM TẮT ở giai đoạn 2: kết quả chỉ có OCR, chỉ số tài chính, bộ rule và khuyến nghị. ' +
           'Giữ các field AppraisalResult V1, bổ sung evidence, financial_metrics, policy_compliance, ' +
           'recommendation, review và audit có version. Các kiểm tra ngoài chưa cấu hình trả NOT_RUN. ' +
+          'Tính lại sau hiệu chỉnh (COR): gửi files[] = đúng một case_input.json (documents + dossier_precheck + case_seal của kết quả trước, kèm corrections[]); ' +
+          'workflow kiểm niêm phong, bỏ phân loại / OCR, áp hiệu chỉnh rồi chạy từ gom người & tài sản; kết quả có correction_report. ' +
           'Step key (cấu hình prompt / model / reasoning THEO SẢN PHẨM trong loan_product_config, không còn theo Profile): ' +
           'classify ({{file_name}}, {{product_name}}, {{doc_types}}), extract ({{file_name}}, {{doc_sections}}, {{doc_keys}}), ' +
           'evaluate ({{product_name}}, {{checklist}}, {{classification}}, {{extracted_data}}), ' +
@@ -1212,8 +1214,9 @@ export const ENDPOINT_ALLOWED_EXTENSIONS: Record<string, readonly string[]> = {
   'workflows:payment-account-management': [...PDF_EXTENSIONS, ...IMAGE_EXTENSIONS],
   // Statement analyze reads bank statement PDFs only.
   'workflows:statement-analyze': [...PDF_EXTENSIONS],
-  // Loan appraisal ingests a whole loan dossier: PDF + images + Office docs.
-  'workflows:loan-appraisal': EXT_DOC_SHEET,
+  // Loan appraisal ingests a whole loan dossier: PDF + images + Office docs. `.json` = case_input.json của lần tính lại
+  // (COR-R02): workflow chỉ nhận đúng một file JSON đứng một mình, kiểm schema + niêm phong HMAC trước khi dùng.
+  'workflows:loan-appraisal': [...EXT_DOC_SHEET, '.json'],
   // Account opening ingests a whole onboarding dossier: scanned forms, ID images,
   // legal documents — same breadth as a loan dossier.
   'workflows:account-opening': EXT_DOC_SHEET,

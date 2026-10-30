@@ -45,6 +45,8 @@ export interface ReproducibilitySnapshot {
   workflow_version: string;
   catalog_versions: Record<string, string>;
   ai_steps: Record<string, AiStepSnapshot>;
+  /** COR-R13: sha256 của `canonical(corrections)` khi kết quả là lần tính lại từ case_input.json. */
+  corrections_sha256?: string;
 }
 
 export interface ReproducibilityInput {

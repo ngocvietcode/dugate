@@ -68,6 +68,10 @@ import {
 } from './loan-appraisal/dossier-stages';
 import { createDossierPorts } from './loan-appraisal/stage-adapters';
 import { runMapStage } from './loan-appraisal/dossier-map';
+import { byKind, checkpointsFromCase, correctionsSha256, findCaseInputFile, loadCaseInput, mergeReports } from './loan-appraisal/case-input';
+import { applyOcrFixes } from '@/lib/loan-dossier/corrections/ocr-fix';
+import type { CaseInput, CorrectionReport } from '@/lib/loan-dossier/corrections/schema';
+import { sealCase } from '@/lib/loan-dossier/corrections/seal';
 import { buildDossierGraph, toDossierGraphView, type DossierGraph } from '@/lib/loan-dossier/graph';
 import { resolveLoanProductPolicy, snapshotPolicy } from './loan-appraisal/product-policy';
 import { buildReproducibilitySnapshot } from './loan-appraisal/reproducibility';
@@ -162,6 +166,27 @@ function stageResult(
 
 export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
   const { logger, filesData, pipelineVars } = ctx;
+  // ── Tính lại từ case_input.json (COR-R02, R03): bỏ S1/S2, dựng checkpoint 0–1 từ `documents` đã niêm phong. Đọc lại file ở mọi lần
+  // chạy (kể cả resume) vì hiệu chỉnh không nằm trong checkpoint. Sản phẩm / luồng lấy từ niêm phong, không từ form. ──
+  let caseInput: CaseInput | null = null;
+  try {
+    const caseFile = findCaseInputFile(filesData);
+    caseInput = caseFile ? await loadCaseInput(caseFile) : null;
+  } catch (error) {
+    await failWorkflow(ctx, error);
+    return;
+  }
+  if (caseInput) {
+    pipelineVars.product_code = caseInput.case_seal.product_code;
+    if (caseInput.case_seal.flow) pipelineVars.flow = caseInput.case_seal.flow;
+    pipelineVars.stop_after_intake = false;
+    if (ctx.currentStep < 2) {
+      const cp = checkpointsFromCase(caseInput);
+      saveStep(ctx, stageResult(0, { stepName: 'Phân loại (từ case_input)', processor: 'case-input', extracted_data: cp.classify }));
+      saveStep(ctx, stageResult(1, { stepName: 'Bóc tách (từ case_input)', processor: 'case-input', extracted_data: cp.extract }));
+      ctx.currentStep = 2;
+    }
+  }
   const resumeFromStep = ctx.currentStep;
   const product = getLoanProduct(pipelineVars.product_code as string | undefined);
   // Logic stage 2–4 theo phân khúc của sản phẩm (D-100); sản phẩm chưa có pack ném lỗi, không có pack mặc định.
@@ -188,7 +213,10 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
     ...snapshotPolicy(productPolicy, checkSet),
     ...(configWarnings.length ? { warnings: configWarnings } : {}),
     segment_pack: packSnapshot,
-    reproducibility: buildReproducibilitySnapshot(ctx),
+    reproducibility: {
+      ...buildReproducibilitySnapshot(ctx),
+      ...(caseInput ? { corrections_sha256: correctionsSha256(caseInput.corrections) } : {}),
+    },
   };
   const fileCount = filesData.length;
 
@@ -285,12 +313,22 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
 
     // ── Dữ liệu cho các stage sau: CHỈ OCR (S2). Registry dựng từ EvidenceEnvelope (V2-R04), thuần nên dựng lại mỗi lần resume. ──
     // Không có bản ghi trạng thái checklist (không có S4) và không loại bản bị thay thế (không có S3).
-    const evidence: EvidenceRegistry = buildEvidenceRegistryV3(extractCheckpoint.evidences, new Set(), null);
+    // COR-R06/R07: OCR_FIX áp trên bản sao trước mọi bước sau; `documents` của kết quả giữ OCR gốc (để niêm phong lại giống hệt).
+    const corrections = caseInput?.corrections ?? [];
+    const reports: Array<Pick<CorrectionReport, 'applied' | 'skipped'>> = [];
+    const fixed = applyOcrFixes(extractCheckpoint.evidences, byKind(corrections, 'OCR_FIX'));
+    if (caseInput) reports.push(fixed.report);
+    const workEvidences = caseInput ? fixed.evidences : extractCheckpoint.evidences;
+    const editedIds = new Set(fixed.edited_record_ids);
+    const registry: EvidenceRegistry = buildEvidenceRegistryV3(workEvidences, new Set(), null);
+    // Lá người đã sửa là ACCEPTED (đúng lá đó, không phải cả khóa cấp 1).
+    const evidence: EvidenceRegistry = editedIds.size === 0 ? registry
+      : { ...registry, records: registry.records.map((r) => (editedIds.has(r.evidence_id) ? { ...r, review_status: 'ACCEPTED' as const } : r)) };
 
     // ── Gom người & tài sản (S3): thuần, tất định, không LLM → dựng lại mỗi lần (kể cả resume), không checkpoint, không thêm stage. ──
     // Kết quả đi vào: (1) `customer_360` và `dossier_graph` (giao diện) của kết quả; (2) LAC và hồ sơ 360 bên dưới. Lỗi S3 không đổ workflow:
     // customer_360 = null, LAC vẫn dựng với gap S3_UNAVAILABLE (LAC-R10).
-    const mapOutcome = runMapStage(extractCheckpoint.evidences, pipelineVars);
+    const mapOutcome = runMapStage(workEvidences, pipelineVars, undefined, caseInput ? { links: byKind(corrections, 'SAME_SUBJECT', 'DIFFERENT_SUBJECT'), onLinkReport: (r) => reports.push(r) } : undefined);
     if (mapOutcome.warning) logger.warn(`[LOAN-APPRAISAL] ${mapOutcome.warning}`);
     let dossierGraph: DossierGraph | null = null;
     if (mapOutcome.data) {
@@ -306,9 +344,14 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       context = buildLoanApplicationContext({
         product_code: product.code,
         flow: typeof loanFlow === 'string' ? loanFlow : null,
-        evidences: extractCheckpoint.evidences,
+        evidences: workEvidences,
         s3: mapOutcome.data,
         s3_status: mapOutcome.data ? mapOutcome.status : null,
+        ...(caseInput ? {
+          edited_record_ids: fixed.edited_record_ids,
+          resolutions: byKind(corrections, 'FACT_RESOLUTION'),
+          onResolutionReport: (r) => reports.push(r),
+        } : {}),
       });
     } catch (error) {
       const name = error instanceof Error ? error.name : 'Error';
@@ -319,7 +362,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
     if (context) {
       try {
         const { dossier_submitted_at } = consolidateParams(pipelineVars);
-        profile360 = buildProfile360({ evidences: extractCheckpoint.evidences, s3: mapOutcome.data, lac: context, segment: packSnapshot.segment, as_of: dossier_submitted_at });
+        profile360 = buildProfile360({ evidences: workEvidences, s3: mapOutcome.data, lac: context, segment: packSnapshot.segment, as_of: dossier_submitted_at });
       } catch (error) {
         const name = error instanceof Error ? error.name : 'Error';
         configWarnings.push(`PROFILE_360_UNAVAILABLE:${name}`);
@@ -461,11 +504,25 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       dossier_precheck: classifyCheckpoint.precheck ?? null,
       flow: loanFlow,
       evidence: toStoredEvidence(evidence),
+      ...(caseInput ? { correction_report: mergeReports(caseInput.case_seal.source_operation_id, reports) } : {}),
       financial_metrics: financial,
       policy_compliance: policy,
       recommendation: decision.recommendation,
       review: decision.review,
     };
+    // COR-R03, R13: niêm phong `documents` + kiểm tra sơ bộ để lần tính lại sau nhận lại đúng OCR này; source_operation_id giữ Operation gốc.
+    try {
+      finalResult.case_seal = sealCase({
+        source_operation_id: caseInput?.case_seal.source_operation_id ?? ctx.operationId,
+        product_code: product.code,
+        flow: typeof loanFlow === 'string' ? loanFlow : null,
+        workflow_version: LOAN_APPRAISAL_WORKFLOW_VERSION,
+        documents: JSON.parse(JSON.stringify(finalResult.documents)),
+        dossier_precheck: finalResult.dossier_precheck ? JSON.parse(JSON.stringify(finalResult.dossier_precheck)) : null,
+      });
+    } catch (error) {
+      configWarnings.push(`CASE_SEAL_UNAVAILABLE:${error instanceof Error ? error.name : 'Error'}`);
+    }
     if (resumeFromStep <= 4) {
       saveStep(ctx, stageResult(4, {
         stepName: 'Khuyến nghị & định tuyến rà soát',
