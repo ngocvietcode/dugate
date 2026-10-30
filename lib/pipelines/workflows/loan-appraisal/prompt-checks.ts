@@ -7,44 +7,28 @@
 //   - Rule khai báo nhưng model không trả ⇒ NOT_RUN, không suy đoán là đạt.
 
 import { JSON_ONLY_OUTPUT_RULE } from '@/lib/loan-dossier/common/llm-json';
-import { renderLoanApplicationContext, type LacRender } from '@/lib/loan-dossier/context/render';
+import { LAC_CHAR_BUDGET, renderLoanApplicationContext, type LacRender } from '@/lib/loan-dossier/context/render';
 import type { LacFact, LoanApplicationContext } from '@/lib/loan-dossier/context/schema';
 import { lacScopeFromInputs } from '@/lib/loan-dossier/context/scope';
 import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
-import { renderDossierGraph, type DossierGraph } from '@/lib/loan-dossier/graph';
 import type { LoanCheckDefinition, LoanCheckSet } from './check-set';
 import { resolveRuleGroup } from './rule-groups';
 
 /**
- * Schema đầu ra gửi cho model. Khác `LOAN_CHECK_OUTPUT_SCHEMA` (schema lưu trong
- * config_snapshot) ở dạng tham chiếu: model trả "D<n>:<field>", server đổi về
- * evidence_id trước khi lưu, nên RuleResult.evidence_ids vẫn là evidence_id thật.
+ * Schema đầu ra gửi cho model. Khác `LOAN_CHECK_OUTPUT_SCHEMA` (schema lưu trong config_snapshot) ở dạng tham chiếu: model dẫn
+ * mã dữ kiện F<n> của Loan Application Context (LAC-R13), hoặc "D<n>:<field>" của phụ lục OCR thô; server đổi về record_id
+ * trước khi lưu, nên RuleResult.evidence_ids vẫn là evidence_id thật.
  */
 export const PROMPT_CHECK_OUTPUT_SCHEMA =
   '{ "results": [{ "id": "<id kiểm tra>", "status": "PASS|REVIEW|FAIL|INSUFFICIENT_DATA", "confidence": 0.0, '
   + '"code": "<một mã trong danh sách MÃ KẾT QUẢ của kiểm tra>", '
-  + '"reason": "<tối đa 2 câu, không lặp lại họ tên hay số định danh>", "evidence_ids": ["D1:personal_info.full_name"] }] }';
-/** Schema đầu ra khi prompt dùng Loan Application Context (`lac_mode = on`): dẫn nguồn bằng mã dữ kiện F<n> (LAC-R13). */
-export const PROMPT_CHECK_OUTPUT_SCHEMA_LAC =
-  '{ "results": [{ "id": "<id kiểm tra>", "status": "PASS|REVIEW|FAIL|INSUFFICIENT_DATA", "confidence": 0.0, '
-  + '"code": "<một mã trong danh sách MÃ KẾT QUẢ của kiểm tra>", '
   + '"reason": "<tối đa 2 câu, không lặp lại họ tên hay số định danh>", "evidence_ids": ["F3", "F12.2"] }] }';
-
-/** Chế độ dùng Loan Application Context cho rule LLM (LAC-R17). */
-export type LacMode = 'off' | 'shadow' | 'on';
-
-export function resolveLacMode(raw: unknown): LacMode {
-  const v = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
-  return v === 'shadow' || v === 'on' ? v : 'off';
-}
 import { allowedCodes, parseModelCheckOutput, resolveModelCode } from './check-contract';
 import {
   ensurePlaceholders,
-  pruneEmptyDeep,
   sanitizeFileName,
   UNTRUSTED_DATA_GUARD,
   untrustedBlock,
-  type Customer360,
 } from '../prompts/loan-appraisal-prompts';
 import type { EvidenceRecord, EvidenceRegistry, FinancialMetrics, RuleResult } from './types';
 
@@ -53,6 +37,11 @@ import type { EvidenceRecord, EvidenceRegistry, FinancialMetrics, RuleResult } f
 // tạo prompt ~50k ký tự, phần lớn là dữ liệu không rule nào cần (log tra cứu
 // CIC, metadata mẫu biểu). ~18k ký tự ≈ 6–7k token tiếng Việt.
 export const EVIDENCE_CHAR_BUDGET = 18_000;
+/**
+ * Phụ lục OCR thô (`ocr.<doc>`) dùng chung ngân sách với LAC: tối đa một phần ba, LAC nhận phần còn lại. Phụ lục chỉ bổ sung cho
+ * trường LAC không trình bày được (VD bảng CIC dài), nên không được lấn phần dữ kiện đã gom.
+ */
+export const OCR_APPENDIX_CHAR_BUDGET = Math.floor(EVIDENCE_CHAR_BUDGET / 3);
 const MAX_VALUE_LENGTH = 160;
 /** Số phần tử tối đa của một field lặp trong mảng (VD danh sách TCTD đã tra cứu CIC). */
 export const MAX_ARRAY_ITEMS_PER_FIELD = 8;
@@ -65,24 +54,21 @@ const OMITTED_FIELD_PREFIXES = ['legal_info.'];
 export interface PromptCheckInput {
   checkSet: LoanCheckSet;
   evidence: EvidenceRegistry;
-  customer360: Customer360;
-  /** Người & tài sản đã gom (S3) dạng graph. Có ⇒ `{{master_data}}` dùng dạng gọn của graph thay cho JSON `customer360`. */
-  dossierGraph?: DossierGraph | null;
   financial: FinancialMetrics;
-  /** LAC đã dựng (D-103). Chỉ dùng khi `lacMode = 'on'` và template có `{{context}}`. */
-  lac?: LoanApplicationContext | null;
-  lacMode?: LacMode;
+  /** Loan Application Context (D-103): nguồn dữ liệu duy nhất của rule LLM, trừ phụ lục OCR thô theo `ocr.<doc>`. */
+  lac: LoanApplicationContext;
   /** Hồ sơ 360 của cùng lần chạy (D-114): LAC render nguồn thu / hộ kinh doanh theo đơn vị của nó. */
   profile?: Profile360 | null;
 }
 
-/** Kết quả quyết định dùng LAC cho một lần dựng prompt (để workflow ghi warning / thống kê). */
-export interface LacPromptOutcome {
-  /** LAC đã vào prompt; parse phải dùng `render` để đổi F<n> về record_id. */
-  used: boolean;
-  /** `on` nhưng template ghi đè trên Profile không có {{context}} → chạy đường cũ (LAC-R16). */
+/** Bảng mã đã gửi cho model trong một lần dựng prompt; parse dùng đúng bảng này để đổi mã về record_id. */
+export interface PromptCheckRefs {
+  /** F<n> / F<n>.<k> của LAC. */
+  render: LacRender;
+  /** D<n>:<field> của phụ lục OCR thô; null khi không rule nào khai `ocr.<doc>`. */
+  ocr: PromptEvidenceSelection | null;
+  /** Template ghi đè trên Profile thiếu {{context}} (kiểu cũ {{master_data}} + {{evidence}}) đã được tự chuyển (D-120). */
   legacyTemplate: boolean;
-  render: LacRender | null;
 }
 
 export function enabledPromptChecks(checkSet: LoanCheckSet): LoanCheckDefinition[] {
@@ -90,37 +76,16 @@ export function enabledPromptChecks(checkSet: LoanCheckSet): LoanCheckDefinition
 }
 
 /**
- * Loại chứng từ / phạm vi master khai báo trong `input` của các rule:
- * "evidence.id_card" → "id_card"; "master.document.<item_key>" → "item:<item_key>"; "master.person" → "master:person";
- * "master.asset" → "master:asset" (MD-R10, MD-R11).
+ * Loại chứng từ cần kèm OCR thô (`ocr.<doc_type_key>` trong `input`, D-120). Rỗng ⇒ không có phụ lục. Chỉ rule khai tường minh mới
+ * kéo OCR thô vào: LAC đã chứa mọi lá (lossless), phụ lục chỉ dành cho trường LAC trình bày kém (bảng dài, cấu trúc lồng).
  */
-export function declaredEvidenceDocTypes(checks: LoanCheckDefinition[]): Set<string> {
+export function ocrAppendixDocTypes(checks: LoanCheckDefinition[]): Set<string> {
   const out = new Set<string>();
   for (const source of checks.flatMap((check) => check.input)) {
-    if (source.startsWith('evidence.')) { const k = source.slice('evidence.'.length); if (k) out.add(k); continue; }
-    const m = source.match(/^master\.(document|person|asset)(?:\.([a-z0-9_]+))?/);
-    if (!m) continue;
-    if (m[1] === 'document') { if (m[2]) out.add(`item:${m[2]}`); } else out.add(`master:${m[1]}`);
+    const m = source.trim().match(/^ocr\.([a-z0-9_]+)$/);
+    if (m) out.add(m[1]);
   }
   return out;
-}
-
-/** Nhóm Customer 360 khai báo trong `input` (VD "master_data.identity" → "identity"). */
-export function declaredMasterDataGroups(checks: LoanCheckDefinition[]): Set<string> {
-  return new Set(checks.flatMap((check) => check.input)
-    .filter((source) => source.startsWith('master_data.'))
-    .map((source) => source.slice('master_data.'.length).split('.')[0])
-    .filter(Boolean));
-}
-
-/**
- * Phạm vi dữ liệu của lần gọi rule LLM. Rule không khai báo nguồn nào (thường là
- * rule tuỳ chỉnh cũ) buộc phải nhận toàn bộ dữ liệu — vẫn trong ngân sách ký tự.
- */
-export function promptDataScope(checks: LoanCheckDefinition[]): { docTypes: Set<string> | null; masterGroups: Set<string> | null } {
-  const undeclared = checks.some((check) => !check.input.some((source) => source.startsWith('evidence.') || source.startsWith('master_data.') || source.startsWith('master.')));
-  if (undeclared) return { docTypes: null, masterGroups: null };
-  return { docTypes: declaredEvidenceDocTypes(checks), masterGroups: declaredMasterDataGroups(checks) };
 }
 
 /** Giá trị đưa vào prompt: chuỗi cắt ngắn; số/boolean giữ nguyên kiểu. */
@@ -223,9 +188,8 @@ const EVIDENCE_FORMAT_NOTE = 'Mỗi chứng từ có mã D<n> kèm [tên file ·
   + '"D2:owners[0].id_number". Dòng "REVIEW:" liệt kê field chưa được chấp nhận; field còn lại đã ACCEPTED.';
 
 /**
- * Chọn và định dạng evidence cho rule LLM:
- *   1. Chỉ loại chứng từ mà rule khai báo (`evidence.<doc_type>`), trừ khi có rule
- *      không khai báo nguồn.
+ * Chọn và định dạng phụ lục OCR thô cho rule LLM (D-120):
+ *   1. Chỉ loại chứng từ mà rule khai báo (`ocr.<doc_type>`); `null` = mọi loại.
  *   2. Bỏ metadata mẫu biểu (`legal_info.*`) và cắt field lặp trong mảng.
  *   3. Chia ngân sách ký tự xoay vòng giữa các chứng từ, để một chứng từ dài
  *      (CIC, bảng kê) không chiếm hết chỗ của chứng từ khác.
@@ -403,25 +367,31 @@ export function resolveContextRefs(
   return { evidenceIds: [...new Set(resolved)], dropped };
 }
 
-/** Trust nào không cho phép PASS (LAC-R13 bước 3). */
-const UNSAFE_PASS_TRUST = new Set<LacFact['trust']>(['DISPUTED', 'PROBABLE_OCR_ERROR', 'SUPERSEDED']);
+const OCR_REF = /^D\d+\s*[:.]/i;
 
 /**
- * Tương thích ngược: khối evidence với loại chứng từ ưu tiên. Loại ưu tiên rỗng
- * ⇒ không lọc theo loại (giống hành vi cũ khi rule không khai báo nguồn).
+ * Đổi mọi mã model trả về: "D<n>:<field>" qua bảng mã của phụ lục OCR thô (không có phụ lục ⇒ bị bỏ), còn lại (F<n>, record_id gốc)
+ * qua bảng mã LAC. Cả hai cho ra record_id của cùng registry, nên rào trust của LAC áp như nhau dù model dẫn bằng mã nào.
  */
-export function compactEvidence(evidence: EvidenceRegistry, priorityDocTypes: Set<string> = new Set()): string {
-  return selectPromptEvidence(evidence, priorityDocTypes.size > 0 ? priorityDocTypes : null).text;
+/** Phần bảng mã mà parse cần (đủ để dựng tay trong test). */
+export interface PromptRefIndex {
+  render: Pick<LacRender, 'refIndex'>;
+  ocr: Pick<PromptEvidenceSelection, 'refIndex'> | null;
 }
 
-/** Customer 360 đã bỏ giá trị rỗng, chỉ gồm các nhóm rule khai báo. */
-function compactMasterData(customer360: Customer360 | undefined, groups: Set<string> | null): string {
-  const pruned = (pruneEmptyDeep(customer360 ?? {}) ?? {}) as Record<string, unknown>;
-  const picked = groups
-    ? Object.fromEntries(Object.entries(pruned).filter(([group]) => groups.has(group)))
-    : pruned;
-  return JSON.stringify(picked);
+export function resolvePromptRefs(
+  requested: readonly string[],
+  refs: PromptRefIndex,
+  validIds: ReadonlySet<string>,
+): { evidenceIds: string[]; dropped: number } {
+  const ocrRefs = requested.filter((ref) => OCR_REF.test(ref.trim()));
+  const fromLac = resolveContextRefs(requested.filter((ref) => !OCR_REF.test(ref.trim())), refs.render, validIds);
+  const fromOcr = refs.ocr ? resolveEvidenceRefs(ocrRefs, refs.ocr, validIds) : { evidenceIds: [], dropped: ocrRefs.length };
+  return { evidenceIds: [...new Set([...fromLac.evidenceIds, ...fromOcr.evidenceIds])], dropped: fromLac.dropped + fromOcr.dropped };
 }
+
+/** Trust nào không cho phép PASS (LAC-R13 bước 3). */
+const UNSAFE_PASS_TRUST = new Set<LacFact['trust']>(['DISPUTED', 'PROBABLE_OCR_ERROR', 'SUPERSEDED']);
 
 function compactFinancial(financial: FinancialMetrics): string {
   return Object.entries(financial)
@@ -430,47 +400,16 @@ function compactFinancial(financial: FinancialMetrics): string {
 }
 
 /**
- * Prompt mặc định của rule LLM (step key `policy_checks`). Dùng chung cho code và
- * bản mẫu trên /profiles. Placeholder: {{checks}}, {{evidence}}, {{financial}},
- * {{master_data}}, {{output_schema}}. Ngưỡng tin cậy KHÔNG đưa vào prompt để model
- * không tự nâng confidence cho vượt ngưỡng; ngưỡng chỉ áp ở bước parse.
+ * Prompt mặc định của rule LLM (step key `policy_checks`; LAC-R16, spec §6.2, D-120). Dùng chung cho code và bản mẫu trên /profiles.
+ * Placeholder bắt buộc: {{checks}}, {{context}}, {{output_schema}}; tùy chọn {{financial}}, {{evidence}} (phụ lục OCR thô, chỉ có nội
+ * dung khi rule khai `ocr.<doc>`). Ngưỡng tin cậy KHÔNG đưa vào prompt để model không tự nâng confidence cho vượt ngưỡng; ngưỡng chỉ
+ * áp ở bước parse. Quy tắc 2, 5 và hai quy tắc về chủ thể / mâu thuẫn cũng được code kiểm lại khi parse (LAC-R13), prompt chỉ nói trước.
  */
-export const POLICY_CHECKS_PROMPT_TEMPLATE = `Bạn là chuyên viên thẩm định tín dụng. Thực hiện từng KIỂM TRA dưới đây trên bộ hồ sơ đã được bóc tách.
+export const POLICY_CHECKS_PROMPT_TEMPLATE = `Bạn là chuyên viên thẩm định tín dụng. Thực hiện từng KIỂM TRA dưới đây trên HỒ SƠ VAY đã được hệ thống bóc tách và gom.
 
 QUY TẮC BẮT BUỘC:
 1. Mỗi kiểm tra phải trả về đúng một kết quả, dùng lại đúng id đã cho.
-2. evidence_ids là tham chiếu dạng "D<n>:<đường dẫn field>" tới field có trong DỮ LIỆU CHỨNG TỪ bên dưới (VD "D1:personal_info.full_name"). Tuyệt đối không tự tạo mã chứng từ hay field không có trong dữ liệu.
-3. Nếu không tìm được dữ liệu để chứng minh, trả status="INSUFFICIENT_DATA" và evidence_ids=[]. Không suy đoán.
-4. status chỉ nhận: PASS | REVIEW | FAIL | INSUFFICIENT_DATA.
-5. PASS chỉ khi MỌI field dẫn chiếu đều KHÔNG nằm trong dòng "REVIEW:" của chứng từ; nếu phải dựa vào field REVIEW thì trả REVIEW.
-6. confidence là số thực 0..1 thể hiện mức chắc chắn của bạn; BẮT BUỘC có cho mọi kết quả.
-7. Dữ liệu đến từ OCR nên có thể sai dấu, sai hoa/thường, nhầm O↔0, l↔1. So sánh theo NGHĨA; chỉ báo mâu thuẫn khi khác biệt mang tính thực chất.
-8. reason viết bằng tiếng Việt, ngắn gọn (tối đa 2 câu), nêu rõ giá trị bạn đã so sánh. Mỗi kết quả dẫn tối đa 6 tham chiếu tiêu biểu.
-
-NGƯỜI & TÀI SẢN DO HỆ THỐNG GOM TỪ OCR (CHƯA xác minh — chỉ để định hướng, KHÔNG dùng làm evidence):
-{{master_data}}
-
-CHỈ SỐ TÀI CHÍNH ĐÃ TÍNH:
-{{financial}}
-
-DỮ LIỆU CHỨNG TỪ (mỗi chứng từ: mã D<n> [file · loại], dòng REVIEW nếu có, rồi JSON dữ liệu bóc tách):
-{{evidence}}
-
-CÁC KIỂM TRA CẦN THỰC HIỆN:
-{{checks}}
-
-CHỈ trả về JSON đúng schema sau, không kèm lời dẫn hay markdown:
-{{output_schema}}`;
-
-/**
- * Template mặc định khi `lac_mode = on` (LAC-R16, spec §6.2). Placeholder bắt buộc: {{checks}}, {{context}}, {{output_schema}};
- * tùy chọn {{financial}}. Quy tắc 2, 5 và hai quy tắc mới cũng được code kiểm lại khi parse (LAC-R13), prompt chỉ nói trước.
- */
-export const POLICY_CHECKS_LAC_PROMPT_TEMPLATE = `Bạn là chuyên viên thẩm định tín dụng. Thực hiện từng KIỂM TRA dưới đây trên HỒ SƠ VAY đã được hệ thống bóc tách và gom.
-
-QUY TẮC BẮT BUỘC:
-1. Mỗi kiểm tra phải trả về đúng một kết quả, dùng lại đúng id đã cho.
-2. evidence_ids là mã dữ kiện F<n> (hoặc F<n>.<k> để chỉ chứng từ thứ k của dữ kiện đó) có trong HỒ SƠ VAY bên dưới. Tuyệt đối không tự tạo mã.
+2. evidence_ids là mã dữ kiện F<n> (hoặc F<n>.<k> để chỉ chứng từ thứ k của dữ kiện đó) có trong HỒ SƠ VAY bên dưới. Chỉ khi dữ liệu cần dùng chỉ có ở PHỤ LỤC OCR THÔ mới dẫn "D<n>:<đường dẫn field>" của phụ lục. Tuyệt đối không tự tạo mã.
 3. Nếu không tìm được dữ kiện để chứng minh, trả status="INSUFFICIENT_DATA" và evidence_ids=[]. Không suy đoán. Kiểm tra cần dữ liệu nằm ở mục KHOẢNG TRỐNG thì trả INSUFFICIENT_DATA.
 4. status chỉ nhận: PASS | REVIEW | FAIL | INSUFFICIENT_DATA.
 5. PASS chỉ khi mọi dữ kiện dẫn chiếu không "cần soát" và không DISPUTED / PROBABLE_OCR_ERROR. Dữ kiện DECLARED là lời khai của khách hàng (đơn vay, bảng kê): PASS không được dẫn dữ kiện DECLARED; dẫn dữ kiện CORROBORATED / SINGLE_SOURCE của chính thông tin đó, không có thì trả REVIEW.
@@ -485,20 +424,39 @@ CHỈ SỐ TÀI CHÍNH ĐÃ TÍNH:
 HỒ SƠ VAY (dữ kiện F<n> [trạng thái; nguồn], quan hệ, mâu thuẫn, khoảng trống):
 {{context}}
 
+PHỤ LỤC OCR THÔ (chỉ các loại chứng từ kiểm tra khai ocr.<loại>; mỗi chứng từ: mã D<n> [file · loại], dòng REVIEW nếu có, rồi JSON):
+{{evidence}}
+
 CÁC KIỂM TRA CẦN THỰC HIỆN:
 {{checks}}
 
 CHỈ trả về JSON đúng schema sau, không kèm lời dẫn hay markdown:
 {{output_schema}}`;
 
+const NO_OCR_APPENDIX = '(không có — không kiểm tra nào khai ocr.<loại chứng từ>)';
+
+/**
+ * D-120: template ghi đè kiểu cũ (trước LAC: {{master_data}} + {{evidence}}, không có {{context}}) được tự chuyển thay vì chạy
+ * đường cũ đã gỡ: {{master_data}} đầu tiên thành {{context}}, các chỗ còn lại bỏ; thiếu cả hai thì nối {{context}} ở cuối.
+ * {{evidence}} giữ nguyên nghĩa phụ lục OCR thô.
+ */
+export function upgradeLegacyPolicyTemplate(template: string): { template: string; legacy: boolean } {
+  if (/\{\{\s*context\s*\}\}/.test(template)) return { template, legacy: false };
+  let replaced = false;
+  const upgraded = template.replace(/\{\{\s*master_data\s*\}\}/g, () => {
+    if (replaced) return '';
+    replaced = true;
+    return '{{context}}';
+  });
+  return { template: ensurePlaceholders(upgraded, ['context']), legacy: true };
+}
+
 /** Dựng prompt cho TẤT CẢ rule LLM trong một lần gọi để giảm chi phí. */
 export function buildPromptCheckVars(
   input: PromptCheckInput,
   promptOverride?: string,
-  /** Nhận thống kê evidence đã đưa vào prompt (để ghi content_preview / log). */
-  onEvidenceSelected?: (stats: PromptEvidenceStats) => void,
-  /** D-103: nhận quyết định dùng LAC (và bảng mã F<n> để parse). */
-  onLac?: (outcome: LacPromptOutcome) => void,
+  /** Nhận bảng mã F<n> / D<n> đã gửi (để parse) và cờ template cũ (để ghi warning). */
+  onRefs?: (refs: PromptCheckRefs) => void,
 ): Record<string, unknown> {
   const checks = enabledPromptChecks(input.checkSet);
   const checkBlock = checks
@@ -511,55 +469,25 @@ export function buildPromptCheckVars(
     ].join('\n'))
     .join('\n\n');
 
-  // ── D-103: Loan Application Context thay cặp {{master_data}} + {{evidence}} (LAC-R16) ──
-  // Dùng khi lac_mode = on, đã dựng được LAC và template có {{context}} (mặc định LAC, hoặc bản ghi đè có {{context}}).
-  // Bản ghi đè KHÔNG có {{context}} → đường cũ (mã D<n>); không tự chèn {{context}} vì template cũ dạy model dẫn D<n>.
-  const lacWanted = input.lacMode === 'on' && !!input.lac;
-  const lacTemplate = lacWanted ? (promptOverride || POLICY_CHECKS_LAC_PROMPT_TEMPLATE) : null;
-  if (lacTemplate && /\{\{\s*context\s*\}\}/.test(lacTemplate)) {
-    const render = renderLoanApplicationContext(input.lac!, lacScopeFromInputs(checks.map((c) => c.input)), undefined, input.profile ?? null);
-    onLac?.({ used: true, legacyTemplate: false, render });
-    const body = ensurePlaceholders(lacTemplate, ['checks', 'context', 'output_schema']).replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) => {
-      switch (key) {
-        case 'checks': return checkBlock;
-        case 'context': return untrustedBlock('untrusted_loan_context', render.text);
-        case 'financial': return compactFinancial(input.financial);
-        // Template ghi đè có cả placeholder cũ: dữ liệu đã nằm trong {{context}}, không gửi hai lần.
-        case 'evidence':
-        case 'master_data': return '(xem HỒ SƠ VAY)';
-        case 'output_schema': return PROMPT_CHECK_OUTPUT_SCHEMA_LAC;
-        default: return match;
-      }
-    });
-    return { _prompt: `${UNTRUSTED_DATA_GUARD}\n\n${body}\n\n${JSON_ONLY_OUTPUT_RULE}` };
-  }
-  onLac?.({ used: false, legacyTemplate: lacWanted, render: null });
+  // Phụ lục OCR thô trước, LAC nhận phần ngân sách còn lại (cùng tổng với một khối dữ liệu).
+  const ocrTypes = ocrAppendixDocTypes(checks);
+  const ocr = ocrTypes.size > 0 ? selectPromptEvidence(input.evidence, ocrTypes, OCR_APPENDIX_CHAR_BUDGET) : null;
+  const render = renderLoanApplicationContext(input.lac, lacScopeFromInputs(checks.map((c) => c.input)), LAC_CHAR_BUDGET - (ocr?.chars ?? 0), input.profile ?? null);
+  const { template, legacy } = upgradeLegacyPolicyTemplate(promptOverride || POLICY_CHECKS_PROMPT_TEMPLATE);
+  onRefs?.({ render, ocr, legacyTemplate: legacy });
 
-  const template = ensurePlaceholders(
-    promptOverride || POLICY_CHECKS_PROMPT_TEMPLATE,
-    ['checks', 'evidence', 'output_schema'],
-  );
-  const scope = promptDataScope(checks);
-  const selection = selectPromptEvidence(input.evidence, scope.docTypes);
-  if (onEvidenceSelected) {
-    const { text: _text, refIndex: _refIndex, ...stats } = selection;
-    onEvidenceSelected(stats);
-  }
-  const prompt = template.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) => {
+  const required = ['checks', 'context', 'output_schema', ...(ocr ? ['evidence'] : [])];
+  const body = ensurePlaceholders(template, required).replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) => {
     switch (key) {
       case 'checks': return checkBlock;
-      case 'evidence': return untrustedBlock('untrusted_evidence', selection.text);
+      case 'context': return untrustedBlock('untrusted_loan_context', render.text);
+      case 'evidence': return ocr ? untrustedBlock('untrusted_evidence', ocr.text) : NO_OCR_APPENDIX;
       case 'financial': return compactFinancial(input.financial);
-      case 'master_data': return untrustedBlock(
-        'untrusted_master_data',
-        input.dossierGraph ? renderDossierGraph(input.dossierGraph, scope.masterGroups) : compactMasterData(input.customer360, scope.masterGroups),
-      );
       case 'output_schema': return PROMPT_CHECK_OUTPUT_SCHEMA;
       default: return match;
     }
   });
-
-  return { _prompt: `${UNTRUSTED_DATA_GUARD}\n\n${prompt}\n\n${JSON_ONLY_OUTPUT_RULE}` };
+  return { _prompt: `${UNTRUSTED_DATA_GUARD}\n\n${body}\n\n${JSON_ONLY_OUTPUT_RULE}` };
 }
 
 const VALID_STATUSES = new Set(['PASS', 'REVIEW', 'FAIL', 'INSUFFICIENT_DATA']);
@@ -587,21 +515,17 @@ export function parsePromptCheckResults(
   parsed: unknown,
   checkSet: LoanCheckSet,
   evidence: EvidenceRegistry,
-  /**
-   * Bảng mã D<n> đã gửi cho model. Không truyền thì dựng lại — selectPromptEvidence
-   * thuần và tất định nên ra đúng bảng mã của lần dựng prompt (kể cả khi resume).
-   */
-  selection?: Pick<PromptEvidenceSelection, 'refIndex'>,
-  /** D-103: prompt đã dùng Loan Application Context — model dẫn F<n>; áp thêm rào theo trust của dữ kiện (LAC-R13). */
-  context?: { render: Pick<LacRender, 'refIndex'>; lac: LoanApplicationContext },
+  /** Bảng mã F<n> (LAC) và D<n> (phụ lục OCR thô) đã gửi cho model, từ `buildPromptCheckVars`. */
+  refs: PromptRefIndex,
+  /** LAC của lần dựng prompt: rào theo trust của dữ kiện được dẫn (LAC-R13), dẫn bằng F<n> hay D<n> đều áp. */
+  lac: Pick<LoanApplicationContext, 'facts'>,
 ): RuleResult[] {
   const checks = enabledPromptChecks(checkSet);
   if (checks.length === 0) return [];
 
   const validIds = new Set(evidence.records.map((record) => record.evidence_id));
-  const refSelection = context ? null : selection ?? selectPromptEvidence(evidence, promptDataScope(checks).docTypes);
   const factOfRecord = new Map<string, LacFact>();
-  for (const f of context?.lac.facts ?? []) for (const s of f.sources) factOfRecord.set(s.record_id, f);
+  for (const f of lac.facts) for (const s of f.sources) factOfRecord.set(s.record_id, f);
   const acceptedIds = new Set(
     evidence.records.filter((record) => record.review_status === 'ACCEPTED').map((record) => record.evidence_id),
   );
@@ -647,9 +571,7 @@ export function parsePromptCheckResults(
     const requestedEvidence = Array.isArray(raw.evidence_ids)
       ? raw.evidence_ids.filter((id): id is string => typeof id === 'string')
       : [];
-    const { evidenceIds, dropped: droppedEvidence } = context
-      ? resolveContextRefs(requestedEvidence, context.render, validIds)
-      : resolveEvidenceRefs(requestedEvidence, refSelection!, validIds);
+    const { evidenceIds, dropped: droppedEvidence } = resolvePromptRefs(requestedEvidence, refs, validIds);
     // Mã đóng: chỉ nhận mã rule đã khai báo; ngoài danh sách → UNKNOWN_CODE và hạ REVIEW (không bao giờ PASS/FAIL).
     const resolvedCode = resolveModelCode(typeof raw.code === 'string' ? raw.code : undefined, check.outputs?.codes);
     const withCode = <T extends object>(r: T): T & { model_code?: string } => (resolvedCode.code ? { ...r, model_code: resolvedCode.code } : r);
@@ -708,7 +630,7 @@ export function parsePromptCheckResults(
 
     // LAC-R13 (D-103): PASS không được dựa trên dữ kiện đang tranh chấp / nghi đọc sai / bị thay thế,
     // và không được chỉ dựa trên lời khai trên đơn vay (trừ rule khai allow_declared_pass).
-    if (context && status === 'PASS') {
+    if (status === 'PASS') {
       const cited = [...new Set(evidenceIds.map((id) => factOfRecord.get(id)).filter((f): f is LacFact => !!f))];
       if (cited.some((f) => UNSAFE_PASS_TRUST.has(f.trust))) {
         return {

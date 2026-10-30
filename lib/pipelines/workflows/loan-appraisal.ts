@@ -10,7 +10,7 @@
 //
 // Giai đoạn 2 TẠM THỜI không chạy các bước kiểm tra hồ sơ: checklist, đối chiếu chéo, master data, kiểm tra nháp (intake_assessment) và
 // readiness. Gom người & tài sản (S3, Customer 360) CHẠY sau S2 (thuần, không LLM, không stage riêng) và được dùng cho: `customer_360` của kết quả,
-// giá trị TSBĐ / LTV, và khối người & tài sản (dạng gọn dựng từ DossierGraph) trong prompt rule LLM. Kết quả gồm OCR (S2), Customer 360, chỉ số
+// giá trị TSBĐ / LTV, và Loan Application Context trong prompt rule LLM (D-120). Kết quả gồm OCR (S2), Customer 360, chỉ số
 // tài chính, bộ rule (engine + LLM) và khuyến nghị chạy cuối cùng.
 // Code các bước còn lại (lib/loan-dossier/s4..s5, master, intake-*) còn nguyên, chỉ không được gọi từ workflow (D-98).
 // Đường resume operation cũ (checkpoint `consolidate_dossier`, artifact không có stage_key) đã gỡ ở D-99.
@@ -79,13 +79,10 @@ import {
   enabledPromptChecks,
   parsePromptCheckResults,
   promptChecksNotRun,
-  resolveLacMode,
-  type LacPromptOutcome,
+  type PromptCheckRefs,
 } from './loan-appraisal/prompt-checks';
 import { buildLoanApplicationContext } from '@/lib/loan-dossier/context/build';
-import { renderLoanApplicationContext } from '@/lib/loan-dossier/context/render';
 import type { LoanApplicationContext } from '@/lib/loan-dossier/context/schema';
-import { lacScopeFromInputs } from '@/lib/loan-dossier/context/scope';
 import { buildProfile360 } from '@/lib/loan-dossier/profile360/build';
 import type { Profile360 } from '@/lib/loan-dossier/profile360/schema';
 import { packForProduct } from './loan-appraisal/segment-packs/registry';
@@ -291,8 +288,8 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
     const evidence: EvidenceRegistry = buildEvidenceRegistryV3(extractCheckpoint.evidences, new Set(), null);
 
     // ── Gom người & tài sản (S3): thuần, tất định, không LLM → dựng lại mỗi lần (kể cả resume), không checkpoint, không thêm stage. ──
-    // Kết quả đi vào: (1) `customer_360` của kết quả; (2) giá trị TSBĐ / LTV ở stage tài chính; (3) khối {{master_data}} của rule LLM, dưới dạng
-    // gọn dựng từ DossierGraph. Lỗi S3 không đổ workflow: customer_360 = null, tài chính giữ skipCollateral, rule LLM không có khối người & tài sản.
+    // Kết quả đi vào: (1) `customer_360` và `dossier_graph` (giao diện) của kết quả; (2) LAC và hồ sơ 360 bên dưới. Lỗi S3 không đổ workflow:
+    // customer_360 = null, LAC vẫn dựng với gap S3_UNAVAILABLE (LAC-R10).
     const mapOutcome = runMapStage(extractCheckpoint.evidences, pipelineVars);
     if (mapOutcome.warning) logger.warn(`[LOAN-APPRAISAL] ${mapOutcome.warning}`);
     let dossierGraph: DossierGraph | null = null;
@@ -302,10 +299,8 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       }
     }
 
-    // ── Loan Application Context (D-103) và hồ sơ 360 (D-114). Dựng lại mỗi lần (hàm thuần), không checkpoint. LAC luôn dựng vì hồ sơ 360 —
-    // nguồn sự thật duy nhất cho tài chính, giao diện và danh sách vấn đề — đứng trên nó; `lac_mode` chỉ quyết định prompt rule LLM dùng LAC
-    // (off | shadow | on). Lỗi dựng → warning, stage không đổ.
-    const lacMode = resolveLacMode(pipelineVars.lac_mode);
+    // ── Loan Application Context (D-103) và hồ sơ 360 (D-114). Dựng lại mỗi lần (hàm thuần), không checkpoint. LAC là đầu vào của hồ sơ 360
+    // và là dữ liệu duy nhất của rule LLM (D-120, kèm phụ lục OCR thô khi rule khai `ocr.<doc>`). Lỗi dựng → warning, rule LLM NOT_RUN.
     let context: LoanApplicationContext | null = null;
     try {
       context = buildLoanApplicationContext({
@@ -320,7 +315,6 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       configWarnings.push(`LAC_UNAVAILABLE:${name}`);
       logger.warn(`[LOAN-APPRAISAL] LAC_UNAVAILABLE: ${name}`);
     }
-    const lac: LoanApplicationContext | null = lacMode !== 'off' ? context : null;
     let profile360: Profile360 | null = null;
     if (context) {
       try {
@@ -366,34 +360,19 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       let promptResults: RuleResult[] = [];
       const promptChecks = enabledPromptChecks(checkSet);
       let promptSubOperationId: string | null = null;
-      let promptEvidenceStats: Record<string, number> | null = null;
-      let lacOutcome: LacPromptOutcome | null = null;
-      // LAC-R17: shadow chỉ đo (độ dài, số dữ kiện, cắt bớt…) để so với đường cũ; không gửi model, không đổi kết quả.
-      const lacStats = lac && lacMode === 'shadow' && promptChecks.length > 0
-        ? renderLoanApplicationContext(lac, lacScopeFromInputs(promptChecks.map((c) => c.input)), undefined, profile360).stats
-        : null;
-      if (promptChecks.length > 0) {
+      let promptRefs: PromptCheckRefs | null = null;
+      if (promptChecks.length > 0 && !context) {
+        // Không có LAC thì không có dữ liệu để dẫn nguồn: rule LLM không gọi model (đường OCR-only cũ đã gỡ, D-120).
+        promptResults = promptChecksNotRun(checkSet, 'LAC_UNAVAILABLE: chưa dựng được ngữ cảnh đơn vay.');
+      } else if (promptChecks.length > 0 && context) {
+        const lacForPrompt = context;
         try {
           const response = await enqueueChecked(
             ctx,
             'ext-fact-verifier',
-            buildPromptCheckVars({
-              checkSet,
-              // Rule LLM đọc OCR trực tiếp + người & tài sản đã gom (S3) dạng gọn dựng từ graph. S3 lỗi ⇒ khối master_data ra rỗng.
-              // lac_mode = on: thay bằng Loan Application Context ({{context}}, mã F<n>).
-              evidence,
-              customer360: {},
-              dossierGraph,
-              financial,
-              lac,
-              lacMode,
-              profile: profile360,
-            }, ctx.promptOverrides.policy_checks, (stats) => {
-              promptEvidenceStats = { ...stats };
-              logger.info(`[LOAN-APPRAISAL] Rule LLM evidence: ${JSON.stringify(stats)}`);
-            }, (outcome) => {
-              lacOutcome = outcome;
-              if (outcome.legacyTemplate) configWarnings.push('LAC_TEMPLATE_LEGACY');
+            buildPromptCheckVars({ checkSet, evidence, financial, lac: lacForPrompt, profile: profile360 }, ctx.promptOverrides.policy_checks, (refs) => {
+              promptRefs = refs;
+              if (refs.legacyTemplate) configWarnings.push('LAC_TEMPLATE_LEGACY');
             }),
             null,
             // Step key riêng `policy_checks`; chưa cấu hình thì dùng model của bước evaluate
@@ -402,11 +381,7 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
             ctx.reasoningEffortOverrides.policy_checks ?? ctx.reasoningEffortOverrides.evaluate,
           );
           promptSubOperationId = response.operation.id;
-          const usedLac = lacOutcome as LacPromptOutcome | null;
-          promptResults = parsePromptCheckResults(
-            parseDeep(cleanLlmJson(response.content)), checkSet, evidence, undefined,
-            usedLac?.used && usedLac.render && lac ? { render: usedLac.render, lac } : undefined,
-          );
+          promptResults = parsePromptCheckResults(parseDeep(cleanLlmJson(response.content)), checkSet, evidence, (promptRefs as PromptCheckRefs | null)!, lacForPrompt);
         } catch (error) {
           if (error instanceof WorkflowCancelledError) throw error;
           const message = error instanceof Error ? error.message : String(error);
@@ -415,9 +390,10 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
         }
       }
 
-      const lacUsedRender = (lacOutcome as LacPromptOutcome | null)?.render ?? null;
-      const lacRenderedStats = lacStats ?? lacUsedRender?.stats ?? null;
-      if (lacRenderedStats) lacPromptUse = { used: Boolean((lacOutcome as LacPromptOutcome | null)?.used), facts_rendered: lacRenderedStats.facts_rendered };
+      const usedRefs = promptRefs as PromptCheckRefs | null;
+      if (usedRefs) lacPromptUse = { used: true, facts_rendered: usedRefs.render.stats.facts_rendered };
+      const ocrStats = usedRefs?.ocr ? (({ text: _text, refIndex: _refIndex, ...stats }) => stats)(usedRefs.ocr) : null;
+      if (ocrStats) logger.info(`[LOAN-APPRAISAL] Rule LLM OCR appendix: ${JSON.stringify(ocrStats)}`);
 
       policy = pack.evaluatePolicy({ policy: productPolicy, checkSet, financial, promptResults });
       const passed = policy.rule_results.filter((rule) => rule.result === 'PASS').length;
@@ -434,15 +410,9 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
           deterministic_rules: policy.rule_results.filter((rule) => rule.check_kind !== 'PROMPT').length,
           prompt_rules: policy.rule_results.filter((rule) => rule.check_kind === 'PROMPT').length,
           check_set_source: checkSet.source,
-          ...(promptEvidenceStats ? { prompt_evidence: promptEvidenceStats } : {}),
-          // D-103: chỉ số đếm của LAC (không có giá trị dữ kiện — LAC-R19).
-          ...(lacMode !== 'off' ? {
-            lac: {
-              mode: lacMode,
-              used: (lacOutcome as LacPromptOutcome | null)?.used ?? false,
-              ...(lacStats ?? (lacOutcome as LacPromptOutcome | null)?.render?.stats ?? {}),
-            },
-          } : {}),
+          // Chỉ số đếm của LAC và phụ lục OCR thô (không có giá trị dữ kiện — LAC-R19).
+          ...(ocrStats ? { prompt_evidence: ocrStats } : {}),
+          ...(usedRefs ? { lac: usedRefs.render.stats } : {}),
           external_checks: policy.external_checks,
         },
         extracted_data: policy,
@@ -466,16 +436,15 @@ export async function runLoanAppraisal(ctx: WorkflowContext): Promise<void> {
       customer_360: mapOutcome.data,
       dossier_graph: dossierGraph ? toDossierGraphView(dossierGraph) : null,
       profile_360: profile360,
-      ...(lac && lacMode !== 'off' ? {
+      ...(context ? {
         loan_application_context_summary: {
-          lac_version: lac.lac_version,
-          mode: lacMode,
+          lac_version: context.lac_version,
           used_in_prompt: lacPromptUse?.used ?? false,
-          source_hash: lac.meta.source_hash,
-          fact_count: lac.meta.fact_count,
+          source_hash: context.meta.source_hash,
+          fact_count: context.meta.fact_count,
           rendered_fact_count: lacPromptUse?.facts_rendered ?? null,
-          conflicts: lac.conflicts.length,
-          gaps: lac.gaps.map((g) => ({ code: g.code, count: g.count })),
+          conflicts: context.conflicts.length,
+          gaps: context.gaps.map((g) => ({ code: g.code, count: g.count })),
         },
       } : {}),
       ...(mapOutcome.fs_shadow ? { s3_matcher_summary: { mode: 'shadow' as const, ...mapOutcome.fs_shadow } } : {}),

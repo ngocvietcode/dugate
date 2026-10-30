@@ -46,9 +46,6 @@ async function request(url: string, init: RequestInit): Promise<Response> {
   }
 }
 
-/** Tham số lac_mode của workflow (D-103): off (mặc định) | shadow | on. */
-export type LacMode = 'off' | 'shadow' | 'on';
-
 export async function submitWorkflow(
   files: File[],
   apiKey: string | undefined,
@@ -56,7 +53,6 @@ export async function submitWorkflow(
   flow: LoanFlow | undefined,
   signal?: AbortSignal,
   stopAfterIntake = false,
-  lacMode: LacMode = 'off',
 ): Promise<string> {
   if (files.length === 0) throw new ApiError('http', 'Cần upload ít nhất 1 tài liệu để thẩm định.');
   const formData = new FormData();
@@ -66,8 +62,6 @@ export async function submitWorkflow(
   // D-51/D-53: backend mặc định dừng sau giai đoạn 1 khi không truyền, nên luôn gửi giá trị rõ ràng.
   // true: giai đoạn 2 chỉ chạy khi người dùng chuyển (resumeOperation); false: chạy hết một lần.
   formData.append('stop_after_intake', stopAfterIntake ? 'true' : 'false');
-  // Chỉ gửi khi khác mặc định: Profile có thể khoá lac_mode, khi đó gửi giá trị bị từ chối (400).
-  if (lacMode !== 'off') formData.append('lac_mode', lacMode);
   files.forEach((file) => formData.append('files[]', file));
 
   const response = await request('/api/v1/docs/workflows', {

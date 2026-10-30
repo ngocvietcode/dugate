@@ -278,3 +278,16 @@ Xem [open_questions.md](open_questions.md).
   → hai GCN khác thửa thành một tài sản `AMBIGUOUS`; sau D-118 conflict số GCN còn bị gắn nghi lỗi đọc. Nay xét ở cấp cụm: cạnh FS chỉ
   nhận khi mọi cặp giữa hai cụm hai đầu không mâu thuẫn, cạnh điểm cao xét trước. `s3_asset_matcher = rules` không đổi.
   Spec `cross_cutting/s3_fellegi_sunter.md` §9.1.
+
+- **D-120 (2026-10-30)** LAC là đường duy nhất của rule LLM (yêu cầu người dùng; không giữ tương thích ngược, như D-114/D-115).
+  (1) Gỡ tham số `lac_mode` (registry, ô chọn trên `/loan-appraisal-v2`), chế độ `shadow`, đường prompt cũ `{{master_data}}` + OCR thô
+  cho mọi rule (`promptDataScope`, `compactMasterData`, `renderDossierGraph` / `graph/render.ts`), `scripts/lac-shadow-report.ts` và
+  `lac-compare`. T-LAC-07 bỏ: không còn `off` để so; bộ hồ sơ chuẩn vẫn dùng cho T-FS-06. `POLICY_CHECKS_PROMPT_TEMPLATE` là template LAC
+  (nên `reproducibility.prompt_sha256` của `policy_checks` ghi đúng template thực gửi — trước đây ghi template cũ khi chạy `on`).
+  (2) OCR thô **giữ** làm phụ lục `{{evidence}}` (đổi OQ-LAC-07): chỉ loại chứng từ rule khai `ocr.<doc_type_key>` (khóa mới,
+  `isKnownInput` kiểm như `evidence.*`; cũng đưa dữ kiện LAC của loại đó vào phạm vi), ngân sách một phần ba `EVIDENCE_CHAR_BUDGET`,
+  LAC nhận phần còn lại. Model dẫn `D<n>:<field>`; `resolvePromptRefs` đổi cả `F<n>` lẫn `D<n>` về `record_id`, rào trust của LAC áp
+  như nhau (dẫn `D<n>` của đơn vay vẫn `DECLARED_ONLY`). (3) Template ghi đè thiếu `{{context}}` được tự chuyển
+  (`upgradeLegacyPolicyTemplate`: `{{master_data}}` đầu tiên → `{{context}}`), warning `LAC_TEMPLATE_LEGACY` (đổi nghĩa LAC-R16).
+  (4) Dựng LAC lỗi → rule LLM `NOT_RUN` (`LAC_UNAVAILABLE`), không còn đường dự phòng. `loan_application_context_summary` bỏ `mode`;
+  `content_preview.lac` luôn có khi rule LLM chạy. Kết quả cũ trong DB còn `mode` — giao diện bỏ qua.

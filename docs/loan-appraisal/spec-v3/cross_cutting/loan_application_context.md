@@ -1,7 +1,9 @@
 # Loan Application Context (`loan_application_context`, LAC)
 
-> Trạng thái: **đã cài đặt T-LAC-01…06 (IMPLEMENT D-103, 2026-10-27); `lac_mode` mặc định `off`.** Bật làm mặc định chờ
-> T-LAC-07 (đo trên bộ UAT). Các điểm §9 dùng **mặc định đề xuất**. Áp dụng trên workflow v2 ([v2_integration.md](v2_integration.md)),
+> Trạng thái: **đã cài đặt T-LAC-01…06 (IMPLEMENT D-103, 2026-10-27). D-120 (2026-10-30): LAC là đường duy nhất của rule LLM;
+> gỡ `lac_mode` (LAC-R17), đường cũ và T-LAC-07 (không còn chế độ `off` để so). LAC-R16 đổi: template ghi đè thiếu `{{context}}` được
+> tự chuyển. OQ-LAC-07 đổi: giữ OCR thô làm phụ lục `{{evidence}}`, chỉ cho loại chứng từ rule khai `ocr.<doc_type_key>` (mã `D<n>`,
+> cùng rào trust).** Các điểm §9 còn lại dùng **mặc định đề xuất**. Áp dụng trên workflow v2 ([v2_integration.md](v2_integration.md)),
 > giai đoạn 2. Không thay [master_dossier.md](master_dossier.md); quan hệ giữa hai bản ở §3.
 >
 > **Lệch so với bản đề xuất (D-103):** (1) fact có thêm `hidden` (thay cho "không render" của LAC-R04), phủ cả mã vai trò / loại

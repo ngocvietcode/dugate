@@ -12,7 +12,7 @@ export interface LacScope {
   /** null = không lấy tài sản; rỗng = mọi tài sản; có phần tử = chỉ tài sản có một trong các mục đích đó. */
   assetUsages: Set<string> | null;
   relations: boolean;
-  /** Fact có nguồn thuộc các loại chứng từ này (mọi chủ thể) — từ `evidence.<doc>` và `lac.document.<doc>`. */
+  /** Fact có nguồn thuộc các loại chứng từ này (mọi chủ thể) — từ `evidence.<doc>`, `ocr.<doc>` và `lac.document.<doc>`. */
   docTypes: Set<string>;
   /** `master_data.income`: thêm fact `income_sources` của người. */
   personIncome: boolean;
@@ -44,7 +44,8 @@ export function lacScopeFromInputs(inputsPerCheck: ReadonlyArray<ReadonlyArray<s
         else if (part === 'document' && sub) scope.docTypes.add(sub);
         continue;
       }
-      const evidence = src.match(/^evidence\.([a-z0-9_]+)$/);
+      // `ocr.<doc>` (D-120) kéo thêm OCR thô của loại đó vào phụ lục; dữ kiện LAC của cùng loại cũng vào phạm vi.
+      const evidence = src.match(/^(?:evidence|ocr)\.([a-z0-9_]+)$/);
       if (evidence) { recognized = true; scope.docTypes.add(evidence[1]); continue; }
       const master = src.match(/^master_data\.([a-z]+)/);
       if (master) {

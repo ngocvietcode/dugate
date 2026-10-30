@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Coins, FolderOpen, RotateCcw, ShieldCheck } from 'lucide-react';
 import type { LoanFlow, LoanPhaseKey } from '@/app/loan-appraisal/types';
-import type { LacMode } from './lib/api';
 import { AppraisalWorkspace } from '@/components/loan-appraisal-v2/appraisal/AppraisalWorkspace';
 import { IntakeWorkspace } from '@/components/loan-appraisal-v2/intake/IntakeWorkspace';
 import { PageShell } from '@/components/loan-appraisal-v2/layout/PageShell';
@@ -44,7 +43,6 @@ export default function LoanAppraisalV2Page() {
   const [loanNeed, setLoanNeed] = useState('');
   // Mặc định bỏ chọn: chạy hết một lần. Chọn: dừng sau giai đoạn 1 (stop_after_intake) rồi chuyển giai đoạn 2 thủ công.
   const [stopAfterIntake, setStopAfterIntake] = useState(false);
-  const [lacMode, setLacMode] = useState<LacMode>('off');
   const [entries, setEntries] = useState<FileEntry[]>([]);
   // Người dùng chọn giai đoạn thủ công; không bao giờ tự nhảy khi kết quả về.
   const [activePhase, setActivePhase] = useState<PageTab>('DOSSIER_INTAKE');
@@ -100,8 +98,8 @@ export default function LoanAppraisalV2Page() {
 
   const handleRun = useCallback(() => {
     setActivePhase('DOSSIER_INTAKE');
-    void run.submit(entries.map((entry) => entry.file), apiKey, flow, productCode, stopAfterIntake, lacMode);
-  }, [run, entries, apiKey, flow, productCode, stopAfterIntake, lacMode]);
+    void run.submit(entries.map((entry) => entry.file), apiKey, flow, productCode, stopAfterIntake);
+  }, [run, entries, apiKey, flow, productCode, stopAfterIntake]);
 
   // Đổi sản phẩm → luồng phải thuộc chương trình checklist của sản phẩm mới (giữ luồng cũ nếu vẫn hợp lệ).
   const handleProduct = useCallback((code: string) => {
@@ -157,8 +155,6 @@ export default function LoanAppraisalV2Page() {
           onLoanNeed={setLoanNeed}
           stopAfterIntake={stopAfterIntake}
           onStopAfterIntake={setStopAfterIntake}
-          lacMode={lacMode}
-          onLacMode={setLacMode}
           entries={entries}
           onFiles={handleFiles}
           onRemove={handleRemove}
