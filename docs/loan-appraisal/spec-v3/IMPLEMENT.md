@@ -291,3 +291,16 @@ Xem [open_questions.md](open_questions.md).
   (`upgradeLegacyPolicyTemplate`: `{{master_data}}` đầu tiên → `{{context}}`), warning `LAC_TEMPLATE_LEGACY` (đổi nghĩa LAC-R16).
   (4) Dựng LAC lỗi → rule LLM `NOT_RUN` (`LAC_UNAVAILABLE`), không còn đường dự phòng. `loan_application_context_summary` bỏ `mode`;
   `content_preview.lac` luôn có khi rule LLM chạy. Kết quả cũ trong DB còn `mode` — giao diện bỏ qua.
+- **D-121 (2026-10-30)** Hiệu chỉnh hồ sơ và tính lại theo [case_corrections.md](cross_cutting/case_corrections.md), T-COR-01…08, nhánh
+  `feat/case-corrections`. Không lưu trạng thái (D-01, D-02): mọi kết quả có `case_seal` (HMAC-SHA256, HKDF từ `ENCRYPTION_KEY`) trên
+  `documents` + `dossier_precheck`; tính lại = Operation mới với đúng một `case_input.json`, bỏ S1/S2 (spike: `documents.classify` +
+  `dossier_precheck` đủ dựng checkpoint 0–1). Ba loại hiệu chỉnh: `OCR_FIX` (`applyOcrFixes`, thay T-EDIT-01; chỉ đánh dấu lá đã sửa, không
+  nâng `field_confidences` cấp 1), `SAME/DIFFERENT_SUBJECT` (S3 must-link / cannot-link, `matched_by = HUMAN_LINK`, tài sản `link = HUMAN`;
+  thêm mã `LINK_UNSUPPORTED`, `LINK_CONFLICT`), `FACT_RESOLUTION` (trust mới `OVERRULED`, rào như `DISPUTED`; hồ sơ 360 dùng giá trị được
+  chọn cho trường khoản vay / định danh, số tiền thu nhập chưa — OQ-COR-06). Hồ sơ 360 `conflicts[].options[].record_ids` để UI dựng hiệu
+  chỉnh bằng mã ổn định. Upload `.json` chỉ cho `workflows:loan-appraisal` và `workflows:loan-correction-draft`. UI: tab "Hiệu chỉnh"
+  (`CorrectionsPanel`), khay giữ trong state trang, tải `case_input.json`, "Tính lại". Trợ lý LLM (`loan-correction-draft`): một lời gọi,
+  bảng ứng viên mã ngắn, mọi mục kiểm bằng code (`validateDrafts`), không tự áp. **Lệch so với spec:** hạn tính lại hiện là câu nhắc cố định
+  ("lưu 7 ngày"), chưa tính ngày theo `created_at` vì kết quả không mang thời điểm tạo Operation; tab UI chưa chạy thử trên app (không có
+  Postgres / Redis trên máy lúc làm). Endpoint `workflows:loan-correction-draft` phải được bật trên Profile thì UI mới gọi được. Kiểm tra:
+  `tsc` 0 lỗi; full jest 334 suite / 3476 test qua (một test thời gian `property-17-trend` chập chờn khi chạy cả bộ, chạy riêng qua).
