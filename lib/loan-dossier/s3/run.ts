@@ -1,5 +1,6 @@
 // Lắp ráp stage S3 `map_dossier_roles` (T-S3-15). Rule-based, tất định, không gọi LLM, không log PII.
 import type { MapDossierData, MapDossierStageResult } from '../contracts/check-stages';
+import type { CorrectionReport, SubjectLink } from '../corrections/schema';
 import type { DocumentParty } from '../s2/common-schema';
 import { validityByDocType as loadValidity, type DocValidityRule } from '../s4/catalog';
 import { pickAnchor } from './anchor';
@@ -10,6 +11,7 @@ import { buildCustomer360 } from './customer360';
 import { loadAssetFsParams, type AssetFsParams } from './fs/asset-params';
 import { descriptorOwners, makeAssetScorer } from './fs/asset-score';
 import { computeIdState, type IdState } from './id-check';
+import { resolveLinks, type LinkOutcome } from './links';
 import { matchParties } from './match-parties';
 import { buildRegistry, primaryRole } from './registry';
 import { classifyRelationship, type RelationshipType } from './relationship';
@@ -30,6 +32,10 @@ export interface MapDossierInput {
   asset_matcher?: S3AssetMatcher;
   /** Mặc định nạp từ asset_fs_params.json; catalog hỏng → chạy `rules`. */
   asset_fs_params?: AssetFsParams;
+  /** COR-R08: liên kết chủ thể do người thẩm định khai (SAME / DIFFERENT_SUBJECT). Không truyền → kết quả như trước. */
+  links?: ReadonlyArray<SubjectLink>;
+  /** Nhận báo cáo áp liên kết (chỉ mã, không giá trị). */
+  onLinkReport?: (report: Pick<CorrectionReport, 'applied' | 'skipped'>) => void;
 }
 
 export type S3AssetMatcher = 'fs' | 'rules';
@@ -64,14 +70,24 @@ export function runMapDossier(input: MapDossierInput): MapDossierStageResult {
 
   // Người
   const persons: Person[] = anchor ? buildRegistry(anchor, evidences.indexOf(anchor)) : [];
-  const { unmatched, personOf } = anchor ? matchParties(persons, evidences, anchor.evidence_id) : { unmatched: [], personOf: new Map<string, string>() };
+  const links = resolveLinks(input.links ?? [], evidences, anchor?.evidence_id ?? null);
+  const linkOutcome: LinkOutcome = new Map();
+  const { unmatched, personOf } = anchor ? matchParties(persons, evidences, anchor.evidence_id, links.person, linkOutcome) : { unmatched: [], personOf: new Map<string, string>() };
   const unmapped = anchor ? buildUnmapped(unmatched, evidences, new Set(personOf.keys()), anchor.evidence_id) : [];
   const idStates = new Map<string, IdState>(persons.map((p) => [p.person_id, computeIdState(p)]));
 
   // Tài sản (dựng cả khi không có anchor — S3-R01)
   const assetParams = (input.asset_matcher ?? 'fs') === 'fs' ? input.asset_fs_params ?? (() => { const r = loadAssetFsParams(); return r.ok ? r.params : null; })() : null;
   const scorer = assetParams ? makeAssetScorer(assetParams, descriptorOwners(evidences, personOf)) : undefined;
-  const assets = finalizeAssets(groupAssets(collectDescriptors(evidences), scorer), personOf, evidences);
+  const assets = finalizeAssets(groupAssets(collectDescriptors(evidences), scorer, links.asset, linkOutcome), personOf, evidences);
+  if (input.onLinkReport) {
+    const kindOf = new Map((input.links ?? []).map((l) => [l.correction_id, l.kind]));
+    const passed = [...links.person.same, ...links.person.different, ...links.asset.same, ...links.asset.different];
+    input.onLinkReport({
+      applied: passed.filter((l) => !linkOutcome.has(l.correction_id)).map((l) => ({ correction_id: l.correction_id, kind: kindOf.get(l.correction_id)! })),
+      skipped: [...links.skipped, ...passed.filter((l) => linkOutcome.has(l.correction_id)).map((l) => ({ correction_id: l.correction_id, kind: kindOf.get(l.correction_id)!, code: linkOutcome.get(l.correction_id)! }))],
+    });
+  }
 
   // Bản bị thay thế
   const superseded = findSuperseded(evidences, personOfEvidence(personOf, evidences), assets, input.validityByDocType ?? loadValidity(), input.dossier_submitted_at);
